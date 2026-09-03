@@ -15,6 +15,8 @@ description: 根据一个 SaaS/开放平台的开发者文档站，生成一份�
 
 不要跳过第 3、4 步直接交付——第 1、2 步产出的是"看起来权威、实际上继承了官方文档所有错误"的半成品，只有走完真实调用验证，才是真正对得起"Skill"这个名字的东西。
 
+**每一次生成或迭代，都必须调用 `/anthropic-skills:skill-creator` 来做优化**，而不是自己手写一套评测/打分/打包流程。它提供的 `evals/evals.json` 规范、`run_eval.py`/`run_loop.py`（with-skill vs baseline 对照）、`aggregate_benchmark.py`（汇总 pass rate/耗时/tokens）、`improve_description.py`（优化触发描述）、`package_skill.py`（校验并打包）是本流程第 2、4、5 步的默认工具。哪怕只是小改一个 reference 文件，也要重新走一遍 skill-creator 的评测，确认没有把之前验证过的结论改坏。
+
 ---
 
 ## 第一步：抓取与勘探
@@ -33,6 +35,8 @@ description: 根据一个 SaaS/开放平台的开发者文档站，生成一份�
 ## 第二步：结构化撰写
 
 目标：把"一堆文档页面"重组成一份 Agent 能高效导航、按需查阅的 Skill，而不是把文档结构原样照搬。
+
+先加载 `/anthropic-skills:skill-creator`，按它的规范初始化 skill 目录（frontmatter 字段、`references/` 与 `evals/` 的位置、SKILL.md 行数上限），再往里填内容——不要先凭印象搭好结构、最后再去凑它的校验。
 
 ### 设计 Skill 结构（渐进式加载三层）
 
@@ -93,7 +97,7 @@ description: 根据一个 SaaS/开放平台的开发者文档站，生成一份�
 目标：不要只交付"我觉得这份 Skill 应该有用"，要交付"这是实测出来的，有用在哪、体现在哪几个具体场景"。
 
 1. **设计测试场景时，专挑"有经验的开发者会凭其他平台的直觉写错"的任务**，而不是"这个平台的标准 Hello World"——后者预训练知识本来就覆盖得不错，测不出技能包的价值。好的场景来自第三步里发现的那些真实偏差：比如"这个平台不支持某个其他家平台都支持的标准参数，但不会报错，会静默失效"这类坑，最容易在真实调用里现出原形，也最难靠读代码发现。
-2. 每个场景都跑两个版本：一个 Agent 读了 Skill 再写代码（with-skill），一个 Agent 完全凭自己的知识写代码（baseline，不给它看 Skill）。同一个 prompt，只有"有没有 Skill"这一个变量。
+2. 每个场景都跑两个版本：一个 Agent 读了 Skill 再写代码（with-skill），一个 Agent 完全凭自己的知识写代码（baseline，不给它看 Skill）。同一个 prompt，只有"有没有 Skill"这一个变量。把场景写进 `evals/evals.json`，用 `/anthropic-skills:skill-creator` 的 `run_eval.py`/`run_loop.py` 跑对照、用它的 grader 按断言打分、用 `aggregate_benchmark.py` 汇总，每轮产出一个 `iteration-N/`（`benchmark.json`、`benchmark.md`、`review.html`）。不要自己另写一套跑评测的脚本。
 3. **打分依据真实调用结果，不是凭代码读起来顺不顺眼**——用第三步里实测过的真实报错信息去判定 with/without 两版代码在生产环境里到底会不会跑通，而不是主观判断"这段代码写得像不像对"。
 4. **诚实报告，不要为了显得 Skill 有用而夸大**：有些场景两版代码会打平（比如某个冷门细节碰巧在预训练语料里被覆盖到了，或者 baseline 用了足够健壮的防御性编程习惯，意外规避了它自己都不知道的坑），这种"平局"和"技能包获胜"一样值得如实记录——一份诚实的"7 赢 7 平"比夸大的"14 战全胜"更让人相信这份评测是认真做的。
 5. 把每一轮测试的 prompt、打分依据、真实调用证据留档（本仓库 `skills/bigmodel-cn/data/` 就是这么做的），不只是给一个"通过率 92%"的数字——数字背后的推理过程才是能让人信任这份评测的东西。
@@ -102,8 +106,8 @@ description: 根据一个 SaaS/开放平台的开发者文档站，生成一份�
 
 ## 第五步：打包发布
 
-1. 用 `skill-creator` 技能自带的 `scripts/package_skill.py` 打包，它会自动跑一遍格式校验、排除 `evals/`/临时数据目录。
-2. 检查 `SKILL.md` 是否仍在几百行以内、`description` 是否列全了用户可能提到的触发词（产品名、平台域名、SDK 包名、常见别称）。
+1. 用 `/anthropic-skills:skill-creator` 的 `scripts/improve_description.py` 优化 `description`：它会把触发查询拆成训练/测试集，反复评估并改写描述，最后按测试集得分选出最优版本。把 `best_description` 写回 frontmatter，检查是否列全了用户可能提到的触发词（产品名、平台域名、SDK 包名、常见别称）。
+2. 用同一个技能的 `scripts/package_skill.py` 打包，它会自动跑一遍格式校验、排除 `evals/`/临时数据目录。确认 `SKILL.md` 仍在几百行以内。
 3. 如果某个 reference 文件明显偏大（比如把好几个关系不算特别紧密的能力域塞进了一个文件），考虑按子领域再拆一次，换取更细粒度的按需加载。
 
 ---

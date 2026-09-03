@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "create-pro-instance",
+  "prompt": "帮我写一个 Python 脚本，调用 AutoDL 的容器实例 Pro API 创建一台 RTX 4090 的 GPU 实例，用某个私有镜像启动，之后轮询实例状态直到变成 running。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "创建实例接口的 gpu_spec_uuid 参数不能直接填 GPU 型号名称字符串（如 'RTX 4090' 或 '4090'）——容器实例 Pro API 用的是一套专属的算力规格 ID（如 4090-48G 对应的 ID 是 'v-48g'），和弹性部署 API 用的 GPU 型号名字符串是两套完全不同的标识系统，这是文档里明确强调的最容易踩的坑之一。代码应该使用规格表里真实存在的 ID，或者代码/注释里明确提醒用户去控制台核对正确的 gpu_spec_uuid，而不是直接把用户说的'RTX 4090'原样填进这个字段",
+    "endpoint 正确：POST https://api.autodl.com/api/v1/dev/instance/pro/create，鉴权头 Authorization 不带 Bearer 前缀",
+    "正确处理其他必填字段：req_gpu_amount、expand_system_disk_by_gb、image_uuid、cuda_v_from 都应该出现在请求体里（这些是文档标注的必填字段）",
+    "轮询状态用的是正确的端点 GET /api/v1/dev/instance/pro/status（而不是更重的 snapshot 接口），且轮询逻辑有合理的间隔和终止条件，不是死循环无限重试",
+    "脚本语法正确、可运行"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "deployment_type 选 ReplicaSet", "passed": true, "evidence": "选择 ReplicaSet 并引用了 elastic-deployment.md 核心概念表里的定义作为理由"},
+    {"text": "gpu_name_set 用 GPU 型号名字符串，不是 gpu_spec_uuid", "passed": true, "evidence": "gpu_name_set: ['RTX 4090']，正确区分了这是弹性部署 API 专属的标识方式，和 Pro 实例 API 不同"},
+    {"text": "ReplicaSet 用 cuda_v_from/cuda_v_to，不是单值 cuda_v", "passed": true, "evidence": "使用 cuda_v_from/cuda_v_to（113-128），符合 ReplicaSet 类型的字段要求"},
+    {"text": "replica_num=3，dc_list 用列表形式", "passed": true, "evidence": "agent 报告 replica_num 设为 3，用 dc_list（未使用已废弃的 region_sign）"},
+    {"text": "endpoint 正确、鉴权头不带 Bearer", "passed": true, "evidence": "POST /api/v1/dev/deployment，Authorization 头无 Bearer 前缀"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}
+}

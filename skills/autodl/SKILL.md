@@ -11,6 +11,8 @@ AutoDL 是一个面向个人开发者和企业的 GPU 算力租用平台。本�
 
 内容忠实转录自官方文档站（`www.autodl.com/docs/`），但**没有可用的 AutoDL API Token 做过实际调用测试**——不像本仓库另一份 `bigmodel-cn` 技能包那样，每一条关键结论都用真实 Key 验证过。用这份技能包写代码时，如果遇到和文档描述不一致的真实报错，**优先信任 API 的实际行为**，并考虑回来修正这份技能包（做法可参考 [`skills/generate-skill-from-api-docs`](../generate-skill-from-api-docs) 里"真实 API 验证"那一步）。
 
+不过做过一轮**文档保真度对照测试**（3 个场景，读了这份技能包的 Agent vs 完全凭通用知识写代码的 Agent，对照官方文档判定谁写对了）：通过率 100% vs 40%。没装技能包的版本会编出一些"听起来很合理、但这个平台并不存在"的接口路径和字段（比如把 GPU 规格 ID 当成可以动态查询的接口、把弹性部署的 `deployment_type` 猜成 `"fixed"`/`"scaling"` 这种通用云平台常见的说法）——AutoDL 是个相对小众的平台，公开语料里对它的 API 细节覆盖不多，所以这次差距比 `bigmodel-cn`（很多场景会打平）更明显。详见 `../../autodl-workspace/iteration-1/review.html`。这仍然不能代替真实调用验证，只能说明"至少比凭空编强"。
+
 ## 用之前先确认三件事
 
 1. **Base URL 固定为** `https://api.autodl.com`。

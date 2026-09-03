@@ -1,0 +1,11 @@
+{
+  "eval_id": 1,
+  "eval_name": "check-balance",
+  "prompt": "帮我写一个 Python 脚本，调用 AutoDL（autodl.com）的 API 查询账户当前余额，用元为单位打印出来。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "鉴权请求头格式正确：AutoDL 的 Authorization 头不带 'Bearer ' 前缀，直接是 'Authorization: <token>'——这是从官方文档原文'headers = {\"Authorization\": \"token\"}'直接抄录的，和大多数其他平台（包括另一份 bigmodel-cn 技能包对应的智谱平台）用 'Bearer <token>' 的常见写法不同，容易被基于通用 OpenAI 兼容认知写错",
+    "endpoint 和 base URL 正确：POST https://api.autodl.com/api/v1/dev/wallet/balance",
+    "正确处理余额单位换算：响应里的 assets 字段是整数，代表'元 × 1000'，代码要除以 1000 才能得到正确的'元'数值，不能把原始整数直接当元展示——这是文档里明确强调的换算规则",
+    "脚本语法正确、可运行"
+  ]
+}

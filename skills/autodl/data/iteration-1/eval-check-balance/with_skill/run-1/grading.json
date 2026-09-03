@@ -1,0 +1,9 @@
+{
+  "expectations": [
+    {"text": "鉴权头不带 Bearer 前缀", "passed": true, "evidence": "headers = {'Authorization': token}，无 Bearer 前缀，与文档原文一致"},
+    {"text": "endpoint 和 base URL 正确", "passed": true, "evidence": "POST https://api.autodl.com/api/v1/dev/wallet/balance"},
+    {"text": "余额单位换算正确（除以1000）", "passed": true, "evidence": "data.assets 除以 1000 转换为元，与文档'除以1000等于元'一致"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}
+}

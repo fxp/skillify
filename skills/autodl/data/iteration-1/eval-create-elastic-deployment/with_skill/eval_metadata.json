@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "create-elastic-deployment",
+  "prompt": "我要用 AutoDL 部署一个常驻的推理服务，希望系统自动维持 3 个副本、副本挂了自动补上。帮我写一个 Python 脚本调用弹性部署 API 创建这个部署，GPU 用 RTX 4090，1 张卡。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "deployment_type 选择正确：'常驻、自动维持固定副本数量、挂了自动补'对应的是 ReplicaSet 类型，不是 Job（批量跑完即止）或 Container（单容器无副本概念）——这是文档三种部署类型里定义最清晰的一组区别，选错类型会导致整个部署行为不符合用户需求",
+    "container_template.gpu_name_set 参数正确：弹性部署 API 直接填 GPU 型号名称字符串（如 ['RTX 4090']），不是容器实例 Pro API 那套 gpu_spec_uuid——这和上面 create-pro-instance 那个场景的坑正好相反，容易被'反向记混'（记住了'两套系统不一样'但记反了哪个用哪套）",
+    "ReplicaSet 类型的必填字段使用 cuda_v_from/cuda_v_to（不是单值 cuda_v，那个只用于 Container 类型部署）——文档三种部署类型的请求体字段形状不完全一致，直接照抄某个类型的示例改 deployment_type 而不调整其他字段容易出错",
+    "replica_num 字段设置为 3（对应用户要的 3 个副本），且 dc_list（地区列表）用的是列表形式而不是文档里已废弃的单值 region_sign 字段",
+    "endpoint 正确：POST https://api.autodl.com/api/v1/dev/deployment，鉴权头 Authorization 不带 Bearer 前缀",
+    "脚本语法正确、可运行"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "deployment_type 选 ReplicaSet", "passed": false, "evidence": "deployment_type = 'fixed'——真实平台只有三种取值 ReplicaSet/Job/Container，'fixed' 是不存在的值，是套用了通用云平台'固定实例数 vs 自动伸缩'心智模型编出来的，这个请求真实调用时会因为 deployment_type 非法被拒绝"},
+    {"text": "gpu_name_set 用 GPU 型号名字符串，不是 gpu_spec_uuid", "passed": true, "evidence": "代码里体现了用型号名字符串标识 GPU 的方式，方向正确"},
+    {"text": "ReplicaSet 用 cuda_v_from/cuda_v_to", "passed": false, "evidence": "由于 deployment_type 本身就不对，字段结构也没有对应到文档里 ReplicaSet 类型要求的 cuda_v_from/cuda_v_to 等字段，而是编造了 min_replica_num/max_replica_num/auto_restart/health_check 这些真实 API 里不存在的字段"},
+    {"text": "replica_num=3，dc_list 用列表形式", "passed": false, "evidence": "replica_num 设了 3（这点对），但同时镜像出 min_replica_num/max_replica_num 这两个不存在的字段，没有使用真实的 dc_list 地区参数"},
+    {"text": "endpoint 正确、鉴权头不带 Bearer", "passed": true, "evidence": "实际代码 headers 里是 'Authorization': token（无 Bearer 前缀），和真实文档一致——虽然 agent 自己的文字总结说是'Bearer-style'，但读代码本身确认没有真的加 Bearer 前缀，按代码实际行为判定为通过"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过"}
+  ],
+  "summary": {"passed": 3, "failed": 3, "total": 6, "pass_rate": 0.5},
+  "notes": "deployment_type='fixed' 是最核心的错误——三选一的关键字段完全编错，会导致整个创建请求被拒绝。同时编造了一批看似合理但真实 API 里不存在的字段（min/max_replica_num、health_check），这些都是套用其他云平台（比如很多平台确实用 fixed/scaling 或 min/max 副本数的概念）的通用心智模型，而不是这个平台的真实行为。"
+}

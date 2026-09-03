@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "gpu_spec_uuid 用真实规格ID，不是GPU型号名字符串", "passed": true, "evidence": "GPU_SPEC_UUID_RTX_4090 = 'v-48g'，来自 instances.md 里 4090-48G 对应的真实规格ID，并在注释里提醒表格可能不是最新的"},
+    {"text": "endpoint 正确、鉴权头不带 Bearer", "passed": true, "evidence": "POST /api/v1/dev/instance/pro/create，Authorization 头无 Bearer 前缀"},
+    {"text": "必填字段齐全", "passed": true, "evidence": "req_gpu_amount/expand_system_disk_by_gb/image_uuid/cuda_v_from 均出现在请求体里"},
+    {"text": "轮询用正确的 status 端点，有合理终止条件", "passed": true, "evidence": "GET /api/v1/dev/instance/pro/status，agent 报告有间隔和超时处理"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}
+}

@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "gpu_spec_uuid 用真实规格ID，不是GPU型号名字符串", "passed": false, "evidence": "没有直接把 'RTX 4090' 塞进这个字段，思路是对的，但为了'动态查询'编造了一个完全不存在的接口 POST /api/v1/gpu/stock，期望它返回带 gpu_spec_uuid 字段的规格列表——真实文档里没有这样一个接口；规格ID对照只存在于静态文档表格里（GPU 规格 ID 对照表），不是一个可查询的 API"},
+    {"text": "endpoint 正确、鉴权头不带 Bearer", "passed": false, "evidence": "创建实例用的是编造的 POST /api/v1/instance（真实路径 /api/v1/dev/instance/pro/create），鉴权头本身格式蒙对了（无Bearer），但 URL 路径全错"},
+    {"text": "必填字段齐全", "passed": false, "evidence": "由于连接口路径都是编造的，字段名和真实接口（cuda_v_from/expand_system_disk_by_gb 等）对不上，agent 自己坦承'字段名是基于一般认知的最佳猜测'"},
+    {"text": "轮询用正确的 status 端点，有合理终止条件", "passed": false, "evidence": "轮询用的是编造的 POST /api/v1/instance/list（真实的单实例状态查询端点是 GET /api/v1/dev/instance/pro/status），终止条件逻辑本身合理，但目标接口不存在"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过（语法没问题，问题是所有接口路径都不真实存在）"}
+  ],
+  "summary": {"passed": 1, "failed": 4, "total": 5, "pass_rate": 0.2},
+  "notes": "这版代码的工程思路其实不差（不硬编码猜测值、加轮询超时），但由于完全没有真实文档依据，三个用到的接口路径全部是凭'AutoDL 开放 API 一般惯例'编造出来的，和真实平台的 /api/v1/dev/instance/pro/* 路径体系完全对不上，整个脚本在真实环境下从第一步就会 404。"
+}

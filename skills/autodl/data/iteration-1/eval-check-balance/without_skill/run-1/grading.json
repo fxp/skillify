@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "鉴权头不带 Bearer 前缀", "passed": true, "evidence": "'Authorization: <token>' 直接放token原文，没有加 Bearer 前缀——这一点碰巧蒙对了"},
+    {"text": "endpoint 和 base URL 正确", "passed": false, "evidence": "BALANCE_ENDPOINT = f'{API_BASE_URL}/api/v1/dev/wallet/my/balance'——多了一段不存在的 '/my/'，真实路径是 /api/v1/dev/wallet/balance，这个 URL 会直接 404"},
+    {"text": "余额单位换算正确（除以1000）", "passed": false, "evidence": "代码按 /100 转换（agent 自述'除以100等于元'），这是套用了国内很多支付类 API 常见的'分'单位换算习惯，但 AutoDL 文档明确写的是'除以1000等于元'，用错换算系数会让展示的余额数字直接错一个数量级"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过"}
+  ],
+  "summary": {"passed": 2, "failed": 2, "total": 4, "pass_rate": 0.5},
+  "notes": "鉴权格式蒙对了，但 endpoint 路径和金额换算系数都错——这两个错误代码本身跑起来不会报语法错误，是那种'样子对、结果错'的坑：URL 错会在真实调用时直接 404，换算系数错则会安静地展示出错误了10倍的余额数字，都不是读代码就能一眼看出的问题。"
+}

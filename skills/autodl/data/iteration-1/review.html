@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "autodl", "runs": [{"id": "eval-check-balance-with_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4e00\u4e2a Python \u811a\u672c\uff0c\u8c03\u7528 AutoDL\uff08autodl.com\uff09\u7684 API \u67e5\u8be2\u8d26\u6237\u5f53\u524d\u4f59\u989d\uff0c\u7528\u5143\u4e3a\u5355\u4f4d\u6253\u5370\u51fa\u6765\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 1, "outputs": [{"name": "check_balance.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\n\u67e5\u8be2 AutoDL\uff08autodl.com\uff09\u8d26\u6237\u5f53\u524d\u4f59\u989d\uff0c\u5e76\u4ee5\u201c\u5143\u201d\u4e3a\u5355\u4f4d\u6253\u5370\u3002\n\n\u4f7f\u7528\u65b9\u6cd5\uff1a\n    export AUTODL_TOKEN=\"\u4f60\u7684\u5f00\u53d1\u8005 Token\"   # \u63a7\u5236\u53f0 -> \u8d26\u53f7 -> \u8bbe\u7f6e -> \u5f00\u53d1\u8005Token\n    python3 check_balance.py\n\n\u8bf4\u660e\uff1a\n- AutoDL API \u7684\u9274\u6743\u65b9\u5f0f\u6bd4\u8f83\u7279\u6b8a\uff1a\u8bf7\u6c42\u5934\u662f `Authorization: <token>`\uff0c\n  \u6ca1\u6709\u5e38\u89c1\u7684 \"Bearer \" \u524d\u7f00\uff0c\u76f4\u63a5\u628a token \u539f\u6837\u653e\u8fdb\u53bb\u5373\u53ef\u3002\n- \u4f59\u989d\u63a5\u53e3\u8fd4\u56de\u7684 `assets` \u5b57\u6bb5\u5355\u4f4d\u662f\u201c\u5143 \u00d7 1000\u201d\u7684\u6574\u6570\uff08\u4f8b\u5982 1000 \u8868\u793a 1 \u5143\uff09\uff0c\n  \u9700\u8981\u81ea\u5df1\u9664\u4ee5 1000 \u624d\u662f\u201c\u5143\u201d\uff0c\u63a5\u53e3\u4e0d\u4f1a\u5e2e\u4f60\u8f6c\u6362\u3002\n\"\"\"\n\nimport os\nimport sys\n\nimport requests\n\nAUTODL_API_BASE = \"https://api.autodl.com\"\nBALANCE_ENDPOINT = f\"{AUTODL_API_BASE}/api/v1/dev/wallet/balance\"\n\n# \u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6 token\uff0c\u907f\u514d\u628a\u5bc6\u94a5\u5199\u6b7b\u5728\u4ee3\u7801\u91cc\u3002\n# \u5b9e\u9645\u4f7f\u7528\u524d\u8bf7\u5148\u6267\u884c\uff1aexport AUTODL_TOKEN=\"your_token_here\"\nAUTODL_TOKEN = os.environ.get(\"AUTODL_TOKEN\", \"your_token_here\")\n\n\ndef get_balance_yuan(token: str) -> float:\n    \"\"\"\u8c03\u7528 AutoDL \u4f59\u989d\u67e5\u8be2\u63a5\u53e3\uff0c\u8fd4\u56de\u5f53\u524d\u4f59\u989d\uff08\u5355\u4f4d\uff1a\u5143\uff09\u3002\"\"\"\n    resp = requests.post(\n        BALANCE_ENDPOINT,\n        # \u6ce8\u610f\uff1aAutoDL \u7684 Authorization \u5934\u4e0d\u5e26 \"Bearer \" \u524d\u7f00\uff0c\u76f4\u63a5\u662f token \u672c\u8eab\u3002\n        headers={\"Authorization\": token},\n        timeout=10,\n    )\n    resp.raise_for_status()\n\n    body = resp.json()\n    if body.get(\"code\") != \"Success\":\n        raise RuntimeError(f\"AutoDL API \u8fd4\u56de\u9519\u8bef\uff1a{body.get('msg')!r}\uff08\u539f\u59cb\u54cd\u5e94\uff1a{body}\uff09\")\n\n    data = body.get(\"data\", {})\n    # assets \u662f\u201c\u5143 x 1000\u201d\u7684\u6574\u6570\uff0c\u9700\u8981\u9664\u4ee5 1000 \u624d\u662f\u201c\u5143\u201d\u3002\n    assets_raw = data.get(\"assets\")\n    if assets_raw is None:\n        raise RuntimeError(f\"\u54cd\u5e94\u4e2d\u7f3a\u5c11 assets \u5b57\u6bb5\uff1a{body}\")\n\n    return assets_raw / 1000\n\n\ndef main() -> int:\n    if not AUTODL_TOKEN or AUTODL_TOKEN == \"your_token_here\":\n        print(\n            \"\u9519\u8bef\uff1a\u8bf7\u5148\u8bbe\u7f6e\u73af\u5883\u53d8\u91cf AUTODL_TOKEN \u4e3a\u4f60\u7684 AutoDL \u5f00\u53d1\u8005 Token\uff0c\"\n            \"\u518d\u8fd0\u884c\u672c\u811a\u672c\u3002\\n\"\n            \"  export AUTODL_TOKEN=\\\"your_token_here\\\"\",\n            file=sys.stderr,\n        )\n        return 1\n\n    try:\n        balance_yuan = get_balance_yuan(AUTODL_TOKEN)\n    except requests.exceptions.RequestException as e:\n        print(f\"\u8bf7\u6c42 AutoDL API \u5931\u8d25\uff1a{e}\", file=sys.stderr)\n        return 1\n    except RuntimeError as e:\n        print(f\"\u67e5\u8be2\u4f59\u989d\u5931\u8d25\uff1a{e}\", file=sys.stderr)\n        return 1\n\n    print(f\"\u5f53\u524d\u8d26\u6237\u4f59\u989d\uff1a{balance_yuan:.3f} \u5143\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"}], "grading": {"expectations": [{"text": "\u9274\u6743\u5934\u4e0d\u5e26 Bearer \u524d\u7f00", "passed": true, "evidence": "headers = {'Authorization': token}\uff0c\u65e0 Bearer \u524d\u7f00\uff0c\u4e0e\u6587\u6863\u539f\u6587\u4e00\u81f4"}, {"text": "endpoint \u548c base URL \u6b63\u786e", "passed": true, "evidence": "POST https://api.autodl.com/api/v1/dev/wallet/balance"}, {"text": "\u4f59\u989d\u5355\u4f4d\u6362\u7b97\u6b63\u786e\uff08\u9664\u4ee51000\uff09", "passed": true, "evidence": "data.assets \u9664\u4ee5 1000 \u8f6c\u6362\u4e3a\u5143\uff0c\u4e0e\u6587\u6863'\u9664\u4ee51000\u7b49\u4e8e\u5143'\u4e00\u81f4"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}}}, {"id": "eval-check-balance-without_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4e00\u4e2a Python \u811a\u672c\uff0c\u8c03\u7528 AutoDL\uff08autodl.com\uff09\u7684 API \u67e5\u8be2\u8d26\u6237\u5f53\u524d\u4f59\u989d\uff0c\u7528\u5143\u4e3a\u5355\u4f4d\u6253\u5370\u51fa\u6765\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 1, "outputs": [{"name": "check_balance.py", "type": "text", "content": "#!/usr/bin/env python3\n# -*- coding: utf-8 -*-\n\"\"\"\n\u67e5\u8be2 AutoDL (autodl.com) \u8d26\u6237\u5f53\u524d\u4f59\u989d\uff0c\u5e76\u4ee5\u201c\u5143\u201d\u4e3a\u5355\u4f4d\u6253\u5370\u3002\n\n\u524d\u7f6e\u6761\u4ef6:\n    1. \u767b\u5f55 AutoDL \u63a7\u5236\u53f0\uff0c\u5728\u201c\u8d26\u53f7\u8bbe\u7f6e -> \u5f00\u53d1\u8005Token\uff08API Token\uff09\u201d\u9875\u9762\u83b7\u53d6\u4f60\u7684 API Token\u3002\n    2. \u5c06 Token \u8bbe\u7f6e\u4e3a\u73af\u5883\u53d8\u91cf AUTODL_TOKEN\uff0c\u4f8b\u5982:\n           export AUTODL_TOKEN=\"\u4f60\u7684token\"\n    3. \u8fd0\u884c:\n           python3 check_balance.py\n\n\u8bf4\u660e:\n    - AutoDL \u5f00\u653e API \u7684\u9274\u6743\u65b9\u5f0f\u662f\u5728\u8bf7\u6c42\u5934\u4e2d\u76f4\u63a5\u643a\u5e26 Token \u539f\u6587\uff0c\n      \u5373 `Authorization: <token>`\uff0c\u6ce8\u610f\u4e0d\u662f OAuth \u5e38\u89c1\u7684 \"Bearer <token>\" \u683c\u5f0f\u3002\n    - \u672c\u811a\u672c\u53ea\u4f7f\u7528 Python \u6807\u51c6\u5e93\u4e4b\u5916\u7684 `requests` \u5e93\u76f4\u63a5\u53d1\u8d77 HTTP \u8bf7\u6c42\uff0c\n      \u672a\u4f7f\u7528\u4efb\u4f55 AutoDL \u5b98\u65b9 SDK\u3002\n    - \u7531\u4e8e\u672c\u6b21\u6ca1\u6709\u53ef\u7528\u7684\u771f\u5b9e Token/\u672a\u8054\u7f51\u9a8c\u8bc1\u63a5\u53e3\u7684\u6700\u65b0\u5b57\u6bb5\u547d\u540d\uff0c\n      \u4e0b\u9762\u7684 endpoint \u8def\u5f84\u3001\u8bf7\u6c42\u65b9\u6cd5\u548c\u54cd\u5e94\u5b57\u6bb5\u540d\u662f\u57fa\u4e8e\u5bf9 AutoDL \u5f00\u653e API\n      \u7684\u4e00\u822c\u8ba4\u77e5\u505a\u7684\u201c\u6700\u4f73\u731c\u6d4b\u201d\u5b9e\u73b0\u3002\u5982\u679c\u5b9e\u9645\u8c03\u7528\u62a5 404 / \u5b57\u6bb5\u7f3a\u5931\uff0c\n      \u8bf7\u5bf9\u7167 AutoDL \u5b98\u65b9 API \u6587\u6863 (https://www.autodl.com/docs/api_doc/)\n      \u6838\u5bf9\u5e76\u8c03\u6574 BALANCE_ENDPOINT \u4e0e parse_balance() \u4e2d\u7684\u5b57\u6bb5\u540d\u3002\n\"\"\"\n\nimport os\nimport sys\n\nimport requests\n\nAPI_BASE_URL = \"https://www.autodl.com\"\n# AutoDL \u5f00\u653e API \u4e2d\u67e5\u8be2\u8d26\u6237\u4f59\u989d\uff08\u94b1\u5305\u8d44\u4ea7\uff09\u7684\u63a5\u53e3\u8def\u5f84\u3002\nBALANCE_ENDPOINT = f\"{API_BASE_URL}/api/v1/dev/wallet/my/balance\"\n\nREQUEST_TIMEOUT_SECONDS = 10\n\n\ndef get_token() -> str:\n    \"\"\"\u4ece\u73af\u5883\u53d8\u91cf AUTODL_TOKEN \u4e2d\u8bfb\u53d6 API Token\u3002\"\"\"\n    token = os.environ.get(\"AUTODL_TOKEN\")\n    if not token:\n        print(\n            \"\u9519\u8bef: \u672a\u627e\u5230\u73af\u5883\u53d8\u91cf AUTODL_TOKEN\uff0c\u8bf7\u5148\u8bbe\u7f6e\u4f60\u7684 AutoDL API Token \u540e\u518d\u8fd0\u884c\u672c\u811a\u672c\u3002\\n\"\n            '\u793a\u4f8b: export AUTODL_TOKEN=\"your_token_here\"',\n            file=sys.stderr,\n        )\n        sys.exit(1)\n    return token\n\n\ndef fetch_balance_raw(token: str) -> dict:\n    \"\"\"\n    \u8c03\u7528 AutoDL \u5f00\u653e API \u67e5\u8be2\u8d26\u6237\u4f59\u989d\u4fe1\u606f\uff0c\u8fd4\u56de\u539f\u59cb JSON\uff08dict\uff09\u3002\n\n    \u9274\u6743\u65b9\u5f0f: \u8bf7\u6c42\u5934 Authorization \u5b57\u6bb5\u76f4\u63a5\u586b\u5165 token \u672c\u8eab\uff08\u975e \"Bearer \" \u524d\u7f00\uff09\u3002\n    \"\"\"\n    headers = {\n        \"Authorization\": token,\n        \"Content-Type\": \"application/json\",\n    }\n\n    try:\n        response = requests.post(\n            BALANCE_ENDPOINT,\n            headers=headers,\n            json={},\n            timeout=REQUEST_TIMEOUT_SECONDS,\n        )\n    except requests.exceptions.RequestException as exc:\n        print(f\"\u8bf7\u6c42 AutoDL API \u5931\u8d25\uff08\u7f51\u7edc\u6216\u8fde\u63a5\u9519\u8bef\uff09: {exc}\", file=sys.stderr)\n        sys.exit(1)\n\n    if response.status_code != 200:\n        print(\n            f\"AutoDL API \u8fd4\u56de\u975e 200 \u72b6\u6001\u7801: {response.status_code}\\n\u54cd\u5e94\u5185\u5bb9: {response.text}\",\n            file=sys.stderr,\n        )\n        sys.exit(1)\n\n    try:\n        result = response.json()\n    except ValueError:\n        print(f\"\u54cd\u5e94\u5185\u5bb9\u4e0d\u662f\u5408\u6cd5\u7684 JSON: {response.text}\", file=sys.stderr)\n        sys.exit(1)\n\n    return result\n\n\ndef parse_balance_in_yuan(result: dict) -> float:\n    \"\"\"\n    \u4ece AutoDL API \u8fd4\u56de\u7684 JSON \u4e2d\u89e3\u6790\u51fa\u4f59\u989d\uff0c\u5e76\u8f6c\u6362\u4e3a\u201c\u5143\u201d\u4e3a\u5355\u4f4d\u7684\u6d6e\u70b9\u6570\u3002\n\n    AutoDL \u63a5\u53e3\u901a\u5e38\u4ee5\u5982\u4e0b\u7ed3\u6784\u8fd4\u56de\u4e1a\u52a1\u6570\u636e:\n        {\n            \"code\": \"Success\",\n            \"msg\": \"\",\n            \"data\": {\n                \"assets\": 12345   # \u5355\u4f4d: \u5206\uff081 \u5143 = 100 \u5206\uff09\n            }\n        }\n\n    \u5982\u679c\u4e1a\u52a1\u8fd4\u56de\u7801\u8868\u793a\u5931\u8d25\uff0c\u6216\u8005\u627e\u4e0d\u5230\u4f59\u989d\u5b57\u6bb5\uff0c\u5c06\u62a5\u9519\u9000\u51fa\u3002\n    \"\"\"\n    code = result.get(\"code\")\n    if code not in (0, \"0\", \"Success\", \"success\", \"OK\", \"ok\"):\n        print(f\"AutoDL API \u8fd4\u56de\u4e1a\u52a1\u9519\u8bef: {result}\", file=sys.stderr)\n        sys.exit(1)\n\n    data = result.get(\"data\", {}) or {}\n\n    # \u4f59\u989d\u5b57\u6bb5\u540d\u53ef\u80fd\u56e0\u63a5\u53e3\u7248\u672c\u800c\u5f02\uff0c\u8fd9\u91cc\u4f9d\u6b21\u5c1d\u8bd5\u51e0\u4e2a\u5e38\u89c1\u5019\u9009\u540d\u3002\n    balance_in_cents = None\n    for field_name in (\"assets\", \"balance\", \"amount\"):\n        if field_name in data:\n            balance_in_cents = data[field_name]\n            break\n\n    if balance_in_cents is None:\n        print(f\"\u672a\u80fd\u5728\u8fd4\u56de\u6570\u636e\u4e2d\u627e\u5230\u4f59\u989d\u5b57\u6bb5\uff0c\u539f\u59cb\u8fd4\u56de: {result}\", file=sys.stderr)\n        sys.exit(1)\n\n    # AutoDL \u4f59\u989d\u901a\u5e38\u4ee5\u201c\u5206\u201d\u4e3a\u6700\u5c0f\u5355\u4f4d\u8fd4\u56de\uff0c\u8fd9\u91cc\u9664\u4ee5 100 \u8f6c\u6362\u4e3a\u201c\u5143\u201d\u3002\n    balance_in_yuan = balance_in_cents / 100\n    return balance_in_yuan\n\n\ndef main() -> None:\n    token = get_token()\n    result = fetch_balance_raw(token)\n    balance_in_yuan = parse_balance_in_yuan(result)\n    print(f\"\u5f53\u524d\u8d26\u6237\u4f59\u989d: {balance_in_yuan:.2f} \u5143\")\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"expectations": [{"text": "\u9274\u6743\u5934\u4e0d\u5e26 Bearer \u524d\u7f00", "passed": true, "evidence": "'Authorization: <token>' \u76f4\u63a5\u653etoken\u539f\u6587\uff0c\u6ca1\u6709\u52a0 Bearer \u524d\u7f00\u2014\u2014\u8fd9\u4e00\u70b9\u78b0\u5de7\u8499\u5bf9\u4e86"}, {"text": "endpoint \u548c base URL \u6b63\u786e", "passed": false, "evidence": "BALANCE_ENDPOINT = f'{API_BASE_URL}/api/v1/dev/wallet/my/balance'\u2014\u2014\u591a\u4e86\u4e00\u6bb5\u4e0d\u5b58\u5728\u7684 '/my/'\uff0c\u771f\u5b9e\u8def\u5f84\u662f /api/v1/dev/wallet/balance\uff0c\u8fd9\u4e2a URL \u4f1a\u76f4\u63a5 404"}, {"text": "\u4f59\u989d\u5355\u4f4d\u6362\u7b97\u6b63\u786e\uff08\u9664\u4ee51000\uff09", "passed": false, "evidence": "\u4ee3\u7801\u6309 /100 \u8f6c\u6362\uff08agent \u81ea\u8ff0'\u9664\u4ee5100\u7b49\u4e8e\u5143'\uff09\uff0c\u8fd9\u662f\u5957\u7528\u4e86\u56fd\u5185\u5f88\u591a\u652f\u4ed8\u7c7b API \u5e38\u89c1\u7684'\u5206'\u5355\u4f4d\u6362\u7b97\u4e60\u60ef\uff0c\u4f46 AutoDL \u6587\u6863\u660e\u786e\u5199\u7684\u662f'\u9664\u4ee51000\u7b49\u4e8e\u5143'\uff0c\u7528\u9519\u6362\u7b97\u7cfb\u6570\u4f1a\u8ba9\u5c55\u793a\u7684\u4f59\u989d\u6570\u5b57\u76f4\u63a5\u9519\u4e00\u4e2a\u6570\u91cf\u7ea7"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1 py_compile \u901a\u8fc7"}], "summary": {"passed": 2, "failed": 2, "total": 4, "pass_rate": 0.5}, "notes": "\u9274\u6743\u683c\u5f0f\u8499\u5bf9\u4e86\uff0c\u4f46 endpoint \u8def\u5f84\u548c\u91d1\u989d\u6362\u7b97\u7cfb\u6570\u90fd\u9519\u2014\u2014\u8fd9\u4e24\u4e2a\u9519\u8bef\u4ee3\u7801\u672c\u8eab\u8dd1\u8d77\u6765\u4e0d\u4f1a\u62a5\u8bed\u6cd5\u9519\u8bef\uff0c\u662f\u90a3\u79cd'\u6837\u5b50\u5bf9\u3001\u7ed3\u679c\u9519'\u7684\u5751\uff1aURL \u9519\u4f1a\u5728\u771f\u5b9e\u8c03\u7528\u65f6\u76f4\u63a5 404\uff0c\u6362\u7b97\u7cfb\u6570\u9519\u5219\u4f1a\u5b89\u9759\u5730\u5c55\u793a\u51fa\u9519\u8bef\u4e8610\u500d\u7684\u4f59\u989d\u6570\u5b57\uff0c\u90fd\u4e0d\u662f\u8bfb\u4ee3\u7801\u5c31\u80fd\u4e00\u773c\u770b\u51fa\u7684\u95ee\u9898\u3002"}}, {"id": "eval-create-pro-instance-with_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4e00\u4e2a Python \u811a\u672c\uff0c\u8c03\u7528 AutoDL \u7684\u5bb9\u5668\u5b9e\u4f8b Pro API \u521b\u5efa\u4e00\u53f0 RTX 4090 \u7684 GPU \u5b9e\u4f8b\uff0c\u7528\u67d0\u4e2a\u79c1\u6709\u955c\u50cf\u542f\u52a8\uff0c\u4e4b\u540e\u8f6e\u8be2\u5b9e\u4f8b\u72b6\u6001\u76f4\u5230\u53d8\u6210 running\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 2, "outputs": [{"name": "create_instance.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\n\u8c03\u7528 AutoDL \u5bb9\u5668\u5b9e\u4f8b Pro API\uff0c\u521b\u5efa\u4e00\u53f0 RTX 4090 GPU \u5b9e\u4f8b\uff08\u4f7f\u7528\u79c1\u6709\u955c\u50cf\u542f\u52a8\uff09\uff0c\n\u5e76\u8f6e\u8be2\u5b9e\u4f8b\u72b6\u6001\u76f4\u5230\u53d8\u4e3a running\u3002\n\n\u524d\u7f6e\u6761\u4ef6\uff08\u8be6\u89c1 AutoDL \u6280\u80fd\u5305 autodl/references/instances.md\uff09\uff1a\n  1. \u8d26\u53f7\u5df2\u5b8c\u6210\u4e2a\u4eba\u5b9e\u540d\u8ba4\u8bc1\u6216\u4f01\u4e1a\u8ba4\u8bc1\uff08\u5bb9\u5668\u5b9e\u4f8b Pro API \u7684\u95e8\u69db\uff09\u3002\n  2. \u5df2\u5728\u63a7\u5236\u53f0 -> \u8d26\u53f7 -> \u8bbe\u7f6e -> \u5f00\u53d1\u8005Token \u91cc\u751f\u6210 Token\uff0c\n     \u901a\u8fc7\u73af\u5883\u53d8\u91cf AUTODL_TOKEN \u4f20\u5165\uff08\u6ce8\u610f\uff1a\u8bf7\u6c42\u5934\u662f \"Authorization: <token>\"\uff0c\n     \u4e0d\u5e26 \"Bearer \" \u524d\u7f00\uff0c\u8fd9\u662f AutoDL \u548c\u5927\u591a\u6570\u5e73\u53f0\u4e0d\u4e00\u6837\u7684\u5730\u65b9\uff09\u3002\n  3. \u5df2\u77e5\u8981\u542f\u52a8\u7684\u79c1\u6709\u955c\u50cf\u7684 image_uuid\uff08\u53ef\u901a\u8fc7 image/private/list \u63a5\u53e3\u67e5\u5230\uff09\uff0c\n     \u901a\u8fc7\u73af\u5883\u53d8\u91cf AUTODL_IMAGE_UUID \u4f20\u5165\u3002\n\n\u672c\u811a\u672c\u53ea\u4f7f\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03\u7528 HTTP \u63a5\u53e3\uff0c\u4e0d\u4f7f\u7528\u4efb\u4f55 AutoDL SDK\u3002\n\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nimport sys\nimport time\nfrom typing import Any, Optional\n\nimport requests\n\nBASE_URL = \"https://api.autodl.com\"\n\n# \u5bb9\u5668\u5b9e\u4f8b Pro API \u4e13\u7528\u7684 GPU \u578b\u53f7\u6807\u8bc6\uff08gpu_spec_uuid\uff09\uff0c\u4e0d\u662f\u578b\u53f7\u540d\u79f0\u5b57\u7b26\u4e32\u3002\n# \u5bf9\u7167 autodl/references/instances.md \u91cc\u7684\"GPU \u89c4\u683c ID \u5bf9\u7167\u8868\"\uff1a\n#   \u7f51\u9875\u663e\u793a \"4090-48G\"\uff08\u901a\u7528\u578b\uff09 -> gpu_spec_uuid = \"v-48g\"\n# \u8fd9\u662f\u8be5\u5bf9\u7167\u8868\u91cc\u4e0e \"RTX 4090\" \u5bf9\u5e94\u7684\u6761\u76ee\uff08AutoDL \u4e0a\u5e38\u89c4 RTX 4090 \u5b9e\u4f8b\u5373\u4ee5\u6b64\u89c4\u683c\u51fa\u552e\uff0c\n# 48G \u6307\u7684\u662f\u8be5\u578b\u53f7\u663e\u5b58\u6269\u5bb9\u7248\u672c\uff0c\u82af\u7247\u4ecd\u662f RTX 4090\uff09\u3002\n# \u6ce8\u610f\uff1a\u8fd9\u5f20\u8868\u5b98\u65b9\u672c\u8eab\u4e5f\u5728\u6301\u7eed\u589e\u8865\u65b0\u89c4\u683c\uff0c\u5982\u679c\u8c03\u7528\u62a5\"\u89c4\u683c\u4e0d\u5b58\u5728\"\uff0c\n# \u8bf7\u53bb\u63a7\u5236\u53f0\u521b\u5efa\u5b9e\u4f8b\u9875\u9762\u6838\u5bf9\u6700\u65b0\u7684 gpu_spec_uuid\uff0c\u4e0d\u8981\u6b7b\u8bb0\u8fd9\u91cc\u7684\u503c\u3002\nGPU_SPEC_UUID_RTX_4090 = \"v-48g\"\n\n\nclass AutoDLAPIError(RuntimeError):\n    \"\"\"AutoDL \u63a5\u53e3\u8fd4\u56de code != \"Success\" \u65f6\u629b\u51fa\u3002\"\"\"\n\n\ndef _request(method: str, path: str, token: str, **kwargs: Any) -> Any:\n    \"\"\"\u7edf\u4e00\u53d1\u8d77\u8bf7\u6c42\u5e76\u89e3\u6790 AutoDL \u7684\u901a\u7528\u54cd\u5e94\u7ed3\u6784 {code, msg, data}\u3002\"\"\"\n    url = f\"{BASE_URL}{path}\"\n    headers = kwargs.pop(\"headers\", {})\n    # AutoDL \u9274\u6743\u6ca1\u6709 Bearer \u524d\u7f00\uff0c\u76f4\u63a5\u662f token \u672c\u8eab\u3002\n    headers[\"Authorization\"] = token\n\n    resp = requests.request(method, url, headers=headers, timeout=30, **kwargs)\n    resp.raise_for_status()\n    body = resp.json()\n\n    # \u54cd\u5e94\u4f53\u7edf\u4e00\u7ed3\u6784\uff1a{\"code\": \"Success\"/\u5176\u4ed6, \"msg\": \"\", \"data\": ...}\n    # code \u4e0d\u7b49\u4e8e \"Success\" \u5373\u89c6\u4e3a\u51fa\u9519\uff1b\u6587\u6863\u6ca1\u6709\u63d0\u4f9b\u7a33\u5b9a\u7684\u9519\u8bef\u7801\u679a\u4e3e\uff0c\n    # \u53ea\u80fd\u9760 msg \u6587\u672c\u5224\u65ad\u539f\u56e0\uff0c\u8fd9\u91cc\u7edf\u4e00\u5305\u88c5\u6210\u5f02\u5e38\u629b\u51fa\u3002\n    if body.get(\"code\") != \"Success\":\n        raise AutoDLAPIError(\n            f\"AutoDL API \u8c03\u7528\u5931\u8d25: path={path}, code={body.get('code')}, \"\n            f\"msg={body.get('msg')}, request_id={body.get('request_id')}\"\n        )\n    return body.get(\"data\")\n\n\ndef create_pro_instance(\n    token: str,\n    image_uuid: str,\n    gpu_spec_uuid: str = GPU_SPEC_UUID_RTX_4090,\n    req_gpu_amount: int = 1,\n    expand_system_disk_by_gb: int = 0,\n    cuda_v_from: int = 118,\n    data_center_list: Optional[list[str]] = None,\n    instance_name: Optional[str] = None,\n    start_command: Optional[str] = None,\n) -> str:\n    \"\"\"\u521b\u5efa\u4e00\u53f0\u6309\u91cf\u8ba1\u8d39\u7684\u5bb9\u5668\u5b9e\u4f8b\uff08Pro API \u76ee\u524d\u53ea\u652f\u6301\u6309\u91cf\u8ba1\u8d39\uff09\u3002\n\n    \u8fd4\u56de\u65b0\u5efa\u5b9e\u4f8b\u7684 instance_uuid\u3002\n    \"\"\"\n    payload: dict[str, Any] = {\n        \"gpu_spec_uuid\": gpu_spec_uuid,\n        \"req_gpu_amount\": req_gpu_amount,\n        \"image_uuid\": image_uuid,\n        \"expand_system_disk_by_gb\": expand_system_disk_by_gb,\n        # cuda_v_from: \u8c03\u5ea6\u673a\u5668\u6700\u4f4e\u9700\u652f\u6301\u7684 CUDA \u7248\u672c\uff0c\u6574\u6570\u7f16\u7801\uff08\u53bb\u6389\u7248\u672c\u53f7\u91cc\u7684\u70b9\uff0c\n        # \u4f8b\u5982 11.8 -> 118\uff09\u3002\n        \"cuda_v_from\": cuda_v_from,\n    }\n    if data_center_list:\n        payload[\"data_center_list\"] = data_center_list\n    if instance_name:\n        payload[\"instance_name\"] = instance_name\n    if start_command:\n        payload[\"start_command\"] = start_command\n\n    # \u521b\u5efa\u6210\u529f\u65f6 data \u76f4\u63a5\u662f instance_uuid \u5b57\u7b26\u4e32\uff08\u4e0d\u662f\u5bf9\u8c61\uff09\uff0c\u4f8b\u5982 \"pro-76419909953e\"\u3002\n    instance_uuid = _request(\n        \"POST\", \"/api/v1/dev/instance/pro/create\", token, json=payload\n    )\n    if not isinstance(instance_uuid, str) or not instance_uuid:\n        raise AutoDLAPIError(f\"\u521b\u5efa\u5b9e\u4f8b\u63a5\u53e3\u8fd4\u56de\u4e86\u610f\u6599\u4e4b\u5916\u7684 data: {instance_uuid!r}\")\n    return instance_uuid\n\n\ndef get_instance_status(token: str, instance_uuid: str) -> str:\n    \"\"\"\u67e5\u8be2\u5b9e\u4f8b\u72b6\u6001\uff08\u6bd4 snapshot \u63a5\u53e3\u66f4\u8f7b\u91cf\uff0c\u9002\u5408\u8f6e\u8be2\uff09\u3002\"\"\"\n    status = _request(\n        \"GET\",\n        \"/api/v1/dev/instance/pro/status\",\n        token,\n        params={\"instance_uuid\": instance_uuid},\n    )\n    if not isinstance(status, str):\n        raise AutoDLAPIError(f\"\u72b6\u6001\u67e5\u8be2\u63a5\u53e3\u8fd4\u56de\u4e86\u610f\u6599\u4e4b\u5916\u7684 data: {status!r}\")\n    return status\n\n\ndef wait_until_running(\n    token: str,\n    instance_uuid: str,\n    poll_interval_seconds: float = 10.0,\n    timeout_seconds: float = 20 * 60.0,\n) -> str:\n    \"\"\"\u8f6e\u8be2\u5b9e\u4f8b\u72b6\u6001\u76f4\u5230\u53d8\u4e3a running\uff0c\u8d85\u65f6\u6216\u8fdb\u5165\u5931\u8d25\u6001\u5219\u629b\u5f02\u5e38\u3002\"\"\"\n    # \u5df2\u77e5\u4f1a\u51fa\u73b0\u7684\u975e\u7ec8\u6001/\u7ec8\u6001\u5927\u81f4\u6709 creating / starting / running / stopped /\n    # deploying_image / error \u7b49\uff0c\u6587\u6863\u6ca1\u6709\u7ed9\u51fa\u5b8c\u6574\u72b6\u6001\u679a\u4e3e\uff0c\u8fd9\u91cc\u53ea\u5bf9\n    # \"running\"\uff08\u6210\u529f\uff09\u505a\u6b63\u5411\u5224\u65ad\uff0c\u5176\u4f59\u4e00\u5f8b\u7ee7\u7eed\u8f6e\u8be2\u76f4\u5230\u8d85\u65f6\u3002\n    deadline = time.monotonic() + timeout_seconds\n    last_status = None\n    while time.monotonic() < deadline:\n        status = get_instance_status(token, instance_uuid)\n        if status != last_status:\n            print(f\"[{instance_uuid}] \u5f53\u524d\u72b6\u6001: {status}\", file=sys.stderr)\n            last_status = status\n        if status == \"running\":\n            return status\n        time.sleep(poll_interval_seconds)\n\n    raise TimeoutError(\n        f\"\u7b49\u5f85\u5b9e\u4f8b {instance_uuid} \u53d8\u4e3a running \u8d85\u65f6\"\n        f\"\uff08{timeout_seconds:.0f} \u79d2\uff09\uff0c\u6700\u540e\u4e00\u6b21\u72b6\u6001\u4e3a {last_status!r}\"\n    )\n\n\ndef main() -> int:\n    token = os.environ.get(\"AUTODL_TOKEN\")\n    if not token:\n        print(\n            \"\u9519\u8bef: \u8bf7\u901a\u8fc7\u73af\u5883\u53d8\u91cf AUTODL_TOKEN \u63d0\u4f9b\u4f60\u7684 AutoDL \u5f00\u53d1\u8005 Token\"\n            \"\uff08\u63a7\u5236\u53f0 -> \u8d26\u53f7 -> \u8bbe\u7f6e -> \u5f00\u53d1\u8005Token\uff09\u3002\",\n            file=sys.stderr,\n        )\n        return 1\n\n    image_uuid = os.environ.get(\"AUTODL_IMAGE_UUID\")\n    if not image_uuid:\n        print(\n            \"\u9519\u8bef: \u8bf7\u901a\u8fc7\u73af\u5883\u53d8\u91cf AUTODL_IMAGE_UUID \u63d0\u4f9b\u8981\u542f\u52a8\u7684\u79c1\u6709\u955c\u50cf UUID\"\n            \"\uff08\u53ef\u7528 POST /api/v1/dev/instance/pro/image/private/list \u63a5\u53e3\u67e5\u8be2\uff09\u3002\",\n            file=sys.stderr,\n        )\n        return 1\n\n    instance_name = os.environ.get(\"AUTODL_INSTANCE_NAME\", \"\u811a\u672c\u521b\u5efa\u7684RTX4090\u5b9e\u4f8b\")\n\n    try:\n        instance_uuid = create_pro_instance(\n            token=token,\n            image_uuid=image_uuid,\n            gpu_spec_uuid=GPU_SPEC_UUID_RTX_4090,\n            req_gpu_amount=1,\n            expand_system_disk_by_gb=0,\n            cuda_v_from=118,\n            instance_name=instance_name,\n        )\n        print(f\"\u5b9e\u4f8b\u521b\u5efa\u6210\u529f: instance_uuid={instance_uuid}\")\n\n        final_status = wait_until_running(token, instance_uuid)\n        print(f\"\u5b9e\u4f8b {instance_uuid} \u5df2\u8fdb\u5165 {final_status} \u72b6\u6001\u3002\")\n    except AutoDLAPIError as exc:\n        print(f\"AutoDL API \u9519\u8bef: {exc}\", file=sys.stderr)\n        return 1\n    except TimeoutError as exc:\n        print(f\"\u8d85\u65f6: {exc}\", file=sys.stderr)\n        return 1\n    except requests.RequestException as exc:\n        print(f\"\u7f51\u7edc\u8bf7\u6c42\u5f02\u5e38: {exc}\", file=sys.stderr)\n        return 1\n\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"}], "grading": {"expectations": [{"text": "gpu_spec_uuid \u7528\u771f\u5b9e\u89c4\u683cID\uff0c\u4e0d\u662fGPU\u578b\u53f7\u540d\u5b57\u7b26\u4e32", "passed": true, "evidence": "GPU_SPEC_UUID_RTX_4090 = 'v-48g'\uff0c\u6765\u81ea instances.md \u91cc 4090-48G \u5bf9\u5e94\u7684\u771f\u5b9e\u89c4\u683cID\uff0c\u5e76\u5728\u6ce8\u91ca\u91cc\u63d0\u9192\u8868\u683c\u53ef\u80fd\u4e0d\u662f\u6700\u65b0\u7684"}, {"text": "endpoint \u6b63\u786e\u3001\u9274\u6743\u5934\u4e0d\u5e26 Bearer", "passed": true, "evidence": "POST /api/v1/dev/instance/pro/create\uff0cAuthorization \u5934\u65e0 Bearer \u524d\u7f00"}, {"text": "\u5fc5\u586b\u5b57\u6bb5\u9f50\u5168", "passed": true, "evidence": "req_gpu_amount/expand_system_disk_by_gb/image_uuid/cuda_v_from \u5747\u51fa\u73b0\u5728\u8bf7\u6c42\u4f53\u91cc"}, {"text": "\u8f6e\u8be2\u7528\u6b63\u786e\u7684 status \u7aef\u70b9\uff0c\u6709\u5408\u7406\u7ec8\u6b62\u6761\u4ef6", "passed": true, "evidence": "GET /api/v1/dev/instance/pro/status\uff0cagent \u62a5\u544a\u6709\u95f4\u9694\u548c\u8d85\u65f6\u5904\u7406"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}}}, {"id": "eval-create-pro-instance-without_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4e00\u4e2a Python \u811a\u672c\uff0c\u8c03\u7528 AutoDL \u7684\u5bb9\u5668\u5b9e\u4f8b Pro API \u521b\u5efa\u4e00\u53f0 RTX 4090 \u7684 GPU \u5b9e\u4f8b\uff0c\u7528\u67d0\u4e2a\u79c1\u6709\u955c\u50cf\u542f\u52a8\uff0c\u4e4b\u540e\u8f6e\u8be2\u5b9e\u4f8b\u72b6\u6001\u76f4\u5230\u53d8\u6210 running\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 2, "outputs": [{"name": "create_instance.py", "type": "text", "content": "#!/usr/bin/env python3\n# -*- coding: utf-8 -*-\n\"\"\"\n\u4f7f\u7528 AutoDL \u5bb9\u5668\u5b9e\u4f8b Pro API \u521b\u5efa\u4e00\u53f0 RTX 4090 GPU \u5b9e\u4f8b\uff08\u57fa\u4e8e\u67d0\u4e2a\u79c1\u6709\u955c\u50cf\u542f\u52a8\uff09\uff0c\n\u7136\u540e\u8f6e\u8be2\u5b9e\u4f8b\u72b6\u6001\u76f4\u5230\u53d8\u4e3a running\u3002\n\n\u4ec5\u4f7f\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03\u7528 HTTP \u63a5\u53e3\uff08\u4e0d\u4f9d\u8d56 AutoDL \u5b98\u65b9 SDK\uff09\u3002\n\n\u91cd\u8981\u8bf4\u660e\uff08\u52a1\u5fc5\u5728\u6b63\u5f0f\u4f7f\u7528\u524d\u6838\u5bf9\uff09\uff1a\n    \u672c\u811a\u672c\u6ca1\u6709\u8c03\u7528\u771f\u5b9e\u7684 AutoDL API\uff08\u6ca1\u6709\u6709\u6548 token\uff09\uff0c\u63a5\u53e3\u8def\u5f84 / \u8bf7\u6c42\u4f53\u5b57\u6bb5\u540d /\n    \u54cd\u5e94\u7ed3\u6784\u662f\u6839\u636e AutoDL \u5f00\u653e\u5e73\u53f0\uff08\u5bb9\u5668\u5b9e\u4f8b Pro API\uff0chttps://www.autodl.com/docs/\uff09\n    \u7684\u901a\u7528\u98ce\u683c\u6574\u7406\u7684\u201c\u6700\u4f73\u731c\u6d4b\u201d\u7248\u672c\u3002\u5b9e\u9645\u4f7f\u7528\u524d\u8bf7\u5bf9\u7167\u4f60\u8d26\u53f7\u53ef\u89c1\u7684\u5b98\u65b9\u6587\u6863\uff0c\u6838\u5bf9\uff1a\n        1. \u5404\u63a5\u53e3\u7684\u8def\u5f84\u4e0e HTTP method\n        2. \u521b\u5efa\u5b9e\u4f8b\u8bf7\u6c42\u4f53\u7684\u5b57\u6bb5\u540d\uff08\u672c\u811a\u672c\u5047\u8bbe\u4e3a region_sign / gpu_spec_uuid /\n           gpu_num / image.private_image_uuid / cmd \u7b49\uff09\n        3. \u5b9e\u4f8b\u72b6\u6001\u67e5\u8be2\u63a5\u53e3\u8def\u5f84\uff0c\u4ee5\u53ca\u72b6\u6001\u53d6\u503c\uff08\u672c\u811a\u672c\u5047\u8bbe\u4e3a\n           created / waiting / starting / running / stopping / shutdown /\n           restarting / error \u7b49\uff0c\u76ee\u6807\u72b6\u6001\u4e3a \"running\"\uff09\n    \u5982\u5b57\u6bb5\u540d\u4e0e\u771f\u5b9e\u63a5\u53e3\u4e0d\u7b26\uff0c\u8bf7\u6309\u62a5\u9519\u4fe1\u606f\u6216\u5b98\u65b9\u6587\u6863\u8c03\u6574\u3002\n\n\u73af\u5883\u53d8\u91cf\uff1a\n    AUTODL_TOKEN            \u5fc5\u586b\u3002AutoDL \u5f00\u653e\u5e73\u53f0\u63a5\u53e3 token\uff08\u63a7\u5236\u53f0 -> \u8d26\u6237 -> \u5f00\u653e\u5e73\u53f0\uff09\u3002\n    AUTODL_IMAGE_UUID       \u5fc5\u586b\u3002\u7528\u4e8e\u542f\u52a8\u5b9e\u4f8b\u7684\u79c1\u6709\u955c\u50cf uuid\u3002\n    AUTODL_REGION_SIGN      \u9009\u586b\u3002\u90e8\u7f72\u5730\u533a\u4ee3\u7801\uff0c\u9ed8\u8ba4 \"westDC2\"\u3002\n    AUTODL_GPU_SPEC_UUID    \u9009\u586b\u3002RTX 4090 \u5bf9\u5e94\u7684 GPU \u89c4\u683c uuid\uff0c\n                             \u5982\u679c\u4e0d\u8bbe\u7f6e\uff0c\u4f1a\u5c1d\u8bd5\u8c03\u7528\u5e93\u5b58\u63a5\u53e3\u6309\u540d\u79f0\u81ea\u52a8\u67e5\u627e\u3002\n\n\u7528\u6cd5\uff1a\n    export AUTODL_TOKEN=\"xxxxx\"\n    export AUTODL_IMAGE_UUID=\"your-private-image-uuid\"\n    python3 create_instance.py\n\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nimport sys\nimport time\nfrom typing import Any, Dict, List, Optional\n\nimport requests\n\n# ---------------------------------------------------------------------------\n# \u914d\u7f6e\n# ---------------------------------------------------------------------------\n\nAPI_BASE_URL = \"https://api.autodl.com\"\n\n# \u63a5\u53e3 token\uff1a\u51fa\u4e8e\u5b89\u5168\u8003\u8651\u4e0d\u8981\u786c\u7f16\u7801\uff0c\u7edf\u4e00\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6\u3002\nAPI_TOKEN = os.environ.get(\"AUTODL_TOKEN\", \"\")\n\n# \u7528\u6765\u542f\u52a8\u5b9e\u4f8b\u7684\u79c1\u6709\u955c\u50cf uuid\uff08\u5728\u63a7\u5236\u53f0\u201c\u955c\u50cf -> \u6211\u7684\u955c\u50cf\u201d\u91cc\u53ef\u4ee5\u67e5\u5230\uff09\u3002\nPRIVATE_IMAGE_UUID = os.environ.get(\"AUTODL_IMAGE_UUID\", \"\")\n\n# \u90e8\u7f72\u5730\u533a\u4ee3\u7801\uff0c\u4e0d\u540c\u5730\u533a\u7684 GPU \u5e93\u5b58\u4e0d\u540c\u3002\nREGION_SIGN = os.environ.get(\"AUTODL_REGION_SIGN\", \"westDC2\")\n\n# RTX 4090 \u5bf9\u5e94\u7684 GPU \u89c4\u683c uuid\u3002\n# AutoDL \u5185\u90e8\u6309\u201c\u89c4\u683c uuid\u201d\u800c\u4e0d\u662f\u7b80\u5355\u7684\u578b\u53f7\u5b57\u7b26\u4e32\u6807\u8bc6 GPU \u578b\u53f7\uff0c\u4e25\u8c28\u505a\u6cd5\u662f\u5148\u8c03\u7528\n# GPU \u5e93\u5b58/\u89c4\u683c\u67e5\u8be2\u63a5\u53e3\uff0c\u7528\u578b\u53f7\u540d\u79f0\uff08\u5982 \"RTX 4090\"\uff09\u8fc7\u6ee4\u540e\u53d6\u5f97\u8be5\u5b57\u6bb5\u3002\n# \u5982\u679c\u4f60\u5df2\u7ecf\u77e5\u9053\u5177\u4f53 uuid\uff0c\u53ef\u4ee5\u76f4\u63a5\u901a\u8fc7 AUTODL_GPU_SPEC_UUID \u73af\u5883\u53d8\u91cf\u4f20\u5165\uff0c\u8df3\u8fc7\u67e5\u8be2\u6b65\u9aa4\u3002\nGPU_SPEC_UUID_ENV = os.environ.get(\"AUTODL_GPU_SPEC_UUID\", \"\")\nGPU_NAME_KEYWORD = \"RTX 4090\"\n\nREQUEST_TIMEOUT = 15              # \u5355\u6b21 HTTP \u8bf7\u6c42\u8d85\u65f6\u65f6\u95f4\uff08\u79d2\uff09\nPOLL_INTERVAL_SECONDS = 10        # \u8f6e\u8be2\u5b9e\u4f8b\u72b6\u6001\u7684\u95f4\u9694\uff08\u79d2\uff09\nPOLL_TIMEOUT_SECONDS = 20 * 60    # \u6700\u957f\u8f6e\u8be2\u7b49\u5f85\u65f6\u95f4\uff08\u79d2\uff09\uff0c\u8d85\u65f6\u5219\u653e\u5f03\n\nRUNNING_STATUS = \"running\"\n# \u89c6\u4e3a\u521b\u5efa/\u542f\u52a8\u5931\u8d25\u3001\u4e0d\u5fc5\u518d\u7ee7\u7eed\u8f6e\u8be2\u7684\u7ec8\u6001\nFAILED_STATUSES = {\"error\", \"expired\", \"released\", \"shutdown\"}\n\n\nclass AutoDLAPIError(RuntimeError):\n    \"\"\"AutoDL \u63a5\u53e3\u8fd4\u56de\u975e\u6210\u529f\u72b6\u6001\u65f6\u629b\u51fa\u3002\"\"\"\n\n\ndef _headers() -> Dict[str, str]:\n    if not API_TOKEN:\n        raise RuntimeError(\n            \"\u672a\u68c0\u6d4b\u5230 AUTODL_TOKEN \u73af\u5883\u53d8\u91cf\uff0c\u8bf7\u5148\u6267\u884c\uff1a\"\n            \"export AUTODL_TOKEN='\u4f60\u7684 AutoDL \u5f00\u653e\u5e73\u53f0 token'\"\n        )\n    return {\n        \"Authorization\": API_TOKEN,\n        \"Content-Type\": \"application/json\",\n    }\n\n\ndef _request(method: str, path: str, json_body: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:\n    \"\"\"\n    \u7edf\u4e00\u5c01\u88c5 HTTP \u8bf7\u6c42\u3002\n\n    \u5047\u8bbe AutoDL \u63a5\u53e3\u8fd4\u56de\u7edf\u4e00\u7684\u4fe1\u5c01\u683c\u5f0f\uff1a\n        {\"code\": \"Success\", \"msg\": \"...\", \"data\": {...}}\n    \u5982\u679c\u5b9e\u9645\u8fd4\u56de\u7ed3\u6784\u4e0d\u540c\uff0c\u8bf7\u6309\u9700\u8c03\u6574\u6b64\u5904\u7684\u89e3\u6790\u903b\u8f91\u3002\n    \"\"\"\n    url = f\"{API_BASE_URL}{path}\"\n    resp = requests.request(\n        method,\n        url,\n        headers=_headers(),\n        json=json_body,\n        timeout=REQUEST_TIMEOUT,\n    )\n    resp.raise_for_status()\n\n    try:\n        payload = resp.json()\n    except ValueError as exc:\n        raise AutoDLAPIError(f\"\u63a5\u53e3 {path} \u8fd4\u56de\u5185\u5bb9\u4e0d\u662f\u5408\u6cd5 JSON: {resp.text[:500]}\") from exc\n\n    code = payload.get(\"code\")\n    if code not in (\"Success\", \"success\", 0, \"0\"):\n        raise AutoDLAPIError(f\"\u8c03\u7528 {path} \u5931\u8d25\uff0c\u8fd4\u56de: {payload}\")\n\n    return payload.get(\"data\") or {}\n\n\ndef find_gpu_spec_uuid(region_sign: str, gpu_name_keyword: str = GPU_NAME_KEYWORD) -> str:\n    \"\"\"\n    \u901a\u8fc7 GPU \u5e93\u5b58/\u89c4\u683c\u67e5\u8be2\u63a5\u53e3\uff0c\u6309\u540d\u79f0\u5173\u952e\u5b57\uff08\u5982 \"RTX 4090\"\uff09\u627e\u5230\u5bf9\u5e94\u7684 gpu_spec_uuid\u3002\n\n    \u5047\u8bbe\u63a5\u53e3\u4e3a POST /api/v1/gpu/stock\uff0c\u8fd4\u56de data.list \u4e2d\u6bcf\u9879\u5305\u542b gpu_name \u4e0e\n    gpu_spec_uuid \u5b57\u6bb5\u3002\u5982\u4e0e\u5b9e\u9645\u63a5\u53e3\u4e0d\u7b26\uff0c\u8bf7\u6309\u5b98\u65b9\u6587\u6863\u8c03\u6574\u3002\n    \"\"\"\n    data = _request(\"POST\", \"/api/v1/gpu/stock\", json_body={\"region_sign\": region_sign})\n    items: List[Dict[str, Any]] = data.get(\"list\", [])\n    for item in items:\n        if gpu_name_keyword in item.get(\"gpu_name\", \"\"):\n            spec_uuid = item.get(\"gpu_spec_uuid\")\n            if spec_uuid:\n                print(f\"[GPU \u89c4\u683c] \u627e\u5230 {item.get('gpu_name')} -> gpu_spec_uuid = {spec_uuid}\")\n                return spec_uuid\n    raise RuntimeError(\n        f\"\u5728\u5730\u533a '{region_sign}' \u672a\u627e\u5230\u540d\u79f0\u5305\u542b '{gpu_name_keyword}' \u7684 GPU \u89c4\u683c\uff0c\"\n        \"\u8bf7\u786e\u8ba4\u8be5\u5730\u533a\u662f\u5426\u6709\u8d27\uff0c\u6216\u76f4\u63a5\u901a\u8fc7 AUTODL_GPU_SPEC_UUID \u624b\u52a8\u6307\u5b9a\u3002\"\n    )\n\n\ndef create_instance(\n    gpu_spec_uuid: str,\n    private_image_uuid: str,\n    region_sign: str = REGION_SIGN,\n    gpu_num: int = 1,\n) -> str:\n    \"\"\"\n    \u521b\u5efa\u4e00\u53f0\u5bb9\u5668\u5b9e\u4f8b\uff0c\u8fd4\u56de instance_uuid\u3002\n\n    \u5047\u8bbe\u63a5\u53e3\u4e3a POST /api/v1/instance\uff0c\u8bf7\u6c42\u4f53\u5b57\u6bb5\uff1a\n        region_sign          \u90e8\u7f72\u5730\u533a\n        gpu_spec_uuid         GPU \u89c4\u683c\uff08\u8fd9\u91cc\u5bf9\u5e94 RTX 4090\uff09\n        gpu_num               GPU \u6570\u91cf\n        image.type            \"private\" \u8868\u793a\u4f7f\u7528\u79c1\u6709\u955c\u50cf\n        image.private_image_uuid  \u79c1\u6709\u955c\u50cf uuid\n        cmd                    \u5bb9\u5668\u542f\u52a8\u540e\u6267\u884c\u7684\u4fdd\u6d3b\u547d\u4ee4\uff1b\u5982\u679c\u79c1\u6709\u955c\u50cf\u81ea\u8eab\u5df2\u6709\n                                \u5e38\u9a7b\u524d\u53f0\u8fdb\u7a0b\uff08\u5982\u542f\u52a8\u4e86 SSH/Jupyter \u670d\u52a1\uff09\uff0c\u53ef\u4ee5\u53bb\u6389\u8fd9\u4e00\u9879\n    \"\"\"\n    if not private_image_uuid:\n        raise RuntimeError(\n            \"\u7f3a\u5c11\u79c1\u6709\u955c\u50cf uuid\uff0c\u8bf7\u901a\u8fc7 AUTODL_IMAGE_UUID \u73af\u5883\u53d8\u91cf\u6307\u5b9a\u3002\"\n        )\n\n    body: Dict[str, Any] = {\n        \"region_sign\": region_sign,\n        \"gpu_spec_uuid\": gpu_spec_uuid,\n        \"gpu_num\": gpu_num,\n        \"image\": {\n            \"type\": \"private\",\n            \"private_image_uuid\": private_image_uuid,\n        },\n        \"cmd\": \"sleep infinity\",\n    }\n\n    data = _request(\"POST\", \"/api/v1/instance\", json_body=body)\n    instance_uuid = data.get(\"instance_uuid\") or data.get(\"uuid\")\n    if not instance_uuid:\n        raise AutoDLAPIError(f\"\u521b\u5efa\u5b9e\u4f8b\u63a5\u53e3\u672a\u8fd4\u56de instance_uuid\uff0c\u539f\u59cb\u8fd4\u56de: {data}\")\n\n    print(f\"[\u521b\u5efa\u6210\u529f] instance_uuid = {instance_uuid}\")\n    return instance_uuid\n\n\ndef get_instance_status(instance_uuid: str) -> str:\n    \"\"\"\n    \u67e5\u8be2\u5b9e\u4f8b\u5f53\u524d\u72b6\u6001\u3002\n\n    \u5047\u8bbe\u63a5\u53e3\u4e3a POST /api/v1/instance/list\uff0c\u8bf7\u6c42\u4f53\u4f20\u5165 instance_uuid_list \u505a\u8fc7\u6ee4\uff0c\n    \u8fd4\u56de data.list \u4e2d\u6bcf\u9879\u5305\u542b status \u5b57\u6bb5\u3002\n\n    AutoDL \u5b9e\u4f8b\u72b6\u6001\u5e38\u89c1\u53d6\u503c\uff08\u4f9b\u53c2\u8003\uff0c\u5177\u4f53\u4ee5\u5b98\u65b9\u6587\u6863\u4e3a\u51c6\uff09\uff1a\n        created     \u521b\u5efa\u4e2d\n        waiting     \u7b49\u5f85\u5f00\u673a\n        starting    \u5f00\u673a\u4e2d\n        running     \u8fd0\u884c\u4e2d\uff08\u76ee\u6807\u72b6\u6001\uff09\n        stopping    \u5173\u673a\u4e2d\n        shutdown    \u5df2\u5173\u673a\n        restarting  \u91cd\u542f\u4e2d\n        error       \u5f02\u5e38\n    \"\"\"\n    data = _request(\n        \"POST\",\n        \"/api/v1/instance/list\",\n        json_body={\"instance_uuid_list\": [instance_uuid]},\n    )\n    instances: List[Dict[str, Any]] = data.get(\"list\", [])\n    if not instances:\n        raise AutoDLAPIError(f\"\u672a\u67e5\u8be2\u5230\u5b9e\u4f8b {instance_uuid} \u7684\u4fe1\u606f\")\n    return instances[0].get(\"status\", \"\")\n\n\ndef wait_until_running(\n    instance_uuid: str,\n    poll_interval: int = POLL_INTERVAL_SECONDS,\n    timeout: int = POLL_TIMEOUT_SECONDS,\n) -> None:\n    \"\"\"\u8f6e\u8be2\u5b9e\u4f8b\u72b6\u6001\uff0c\u76f4\u5230\u53d8\u4e3a running\uff0c\u6216\u8005\u8fdb\u5165\u5931\u8d25\u7ec8\u6001 / \u8d85\u65f6\u540e\u629b\u51fa\u5f02\u5e38\u3002\"\"\"\n    start = time.monotonic()\n    last_status: Optional[str] = None\n\n    while True:\n        status = get_instance_status(instance_uuid)\n\n        if status != last_status:\n            elapsed = int(time.monotonic() - start)\n            print(f\"[{elapsed:>4}s] \u5b9e\u4f8b\u72b6\u6001: {status}\")\n            last_status = status\n\n        if status == RUNNING_STATUS:\n            print(\"\u5b9e\u4f8b\u5df2\u8fdb\u5165 running \u72b6\u6001\u3002\")\n            return\n\n        if status in FAILED_STATUSES:\n            raise RuntimeError(f\"\u5b9e\u4f8b\u8fdb\u5165\u5f02\u5e38\u7ec8\u6b62\u72b6\u6001: {status}\uff0c\u505c\u6b62\u8f6e\u8be2\u3002\")\n\n        if time.monotonic() - start > timeout:\n            raise TimeoutError(\n                f\"\u7b49\u5f85\u5b9e\u4f8b\u8fdb\u5165 running \u72b6\u6001\u8d85\u65f6\uff08{timeout} \u79d2\uff09\uff0c\u5f53\u524d\u72b6\u6001: {status}\"\n            )\n\n        time.sleep(poll_interval)\n\n\ndef main() -> int:\n    try:\n        gpu_spec_uuid = GPU_SPEC_UUID_ENV or find_gpu_spec_uuid(REGION_SIGN, GPU_NAME_KEYWORD)\n\n        instance_uuid = create_instance(\n            gpu_spec_uuid=gpu_spec_uuid,\n            private_image_uuid=PRIVATE_IMAGE_UUID,\n            region_sign=REGION_SIGN,\n            gpu_num=1,\n        )\n\n        wait_until_running(instance_uuid)\n\n    except Exception as exc:  # noqa: BLE001 - \u9876\u5c42\u7edf\u4e00\u6355\u83b7\uff0c\u6253\u5370\u540e\u4ee5\u975e\u96f6\u72b6\u6001\u9000\u51fa\n        print(f\"[\u5931\u8d25] {exc}\", file=sys.stderr)\n        return 1\n\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n"}], "grading": {"expectations": [{"text": "gpu_spec_uuid \u7528\u771f\u5b9e\u89c4\u683cID\uff0c\u4e0d\u662fGPU\u578b\u53f7\u540d\u5b57\u7b26\u4e32", "passed": false, "evidence": "\u6ca1\u6709\u76f4\u63a5\u628a 'RTX 4090' \u585e\u8fdb\u8fd9\u4e2a\u5b57\u6bb5\uff0c\u601d\u8def\u662f\u5bf9\u7684\uff0c\u4f46\u4e3a\u4e86'\u52a8\u6001\u67e5\u8be2'\u7f16\u9020\u4e86\u4e00\u4e2a\u5b8c\u5168\u4e0d\u5b58\u5728\u7684\u63a5\u53e3 POST /api/v1/gpu/stock\uff0c\u671f\u671b\u5b83\u8fd4\u56de\u5e26 gpu_spec_uuid \u5b57\u6bb5\u7684\u89c4\u683c\u5217\u8868\u2014\u2014\u771f\u5b9e\u6587\u6863\u91cc\u6ca1\u6709\u8fd9\u6837\u4e00\u4e2a\u63a5\u53e3\uff1b\u89c4\u683cID\u5bf9\u7167\u53ea\u5b58\u5728\u4e8e\u9759\u6001\u6587\u6863\u8868\u683c\u91cc\uff08GPU \u89c4\u683c ID \u5bf9\u7167\u8868\uff09\uff0c\u4e0d\u662f\u4e00\u4e2a\u53ef\u67e5\u8be2\u7684 API"}, {"text": "endpoint \u6b63\u786e\u3001\u9274\u6743\u5934\u4e0d\u5e26 Bearer", "passed": false, "evidence": "\u521b\u5efa\u5b9e\u4f8b\u7528\u7684\u662f\u7f16\u9020\u7684 POST /api/v1/instance\uff08\u771f\u5b9e\u8def\u5f84 /api/v1/dev/instance/pro/create\uff09\uff0c\u9274\u6743\u5934\u672c\u8eab\u683c\u5f0f\u8499\u5bf9\u4e86\uff08\u65e0Bearer\uff09\uff0c\u4f46 URL \u8def\u5f84\u5168\u9519"}, {"text": "\u5fc5\u586b\u5b57\u6bb5\u9f50\u5168", "passed": false, "evidence": "\u7531\u4e8e\u8fde\u63a5\u53e3\u8def\u5f84\u90fd\u662f\u7f16\u9020\u7684\uff0c\u5b57\u6bb5\u540d\u548c\u771f\u5b9e\u63a5\u53e3\uff08cuda_v_from/expand_system_disk_by_gb \u7b49\uff09\u5bf9\u4e0d\u4e0a\uff0cagent \u81ea\u5df1\u5766\u627f'\u5b57\u6bb5\u540d\u662f\u57fa\u4e8e\u4e00\u822c\u8ba4\u77e5\u7684\u6700\u4f73\u731c\u6d4b'"}, {"text": "\u8f6e\u8be2\u7528\u6b63\u786e\u7684 status \u7aef\u70b9\uff0c\u6709\u5408\u7406\u7ec8\u6b62\u6761\u4ef6", "passed": false, "evidence": "\u8f6e\u8be2\u7528\u7684\u662f\u7f16\u9020\u7684 POST /api/v1/instance/list\uff08\u771f\u5b9e\u7684\u5355\u5b9e\u4f8b\u72b6\u6001\u67e5\u8be2\u7aef\u70b9\u662f GET /api/v1/dev/instance/pro/status\uff09\uff0c\u7ec8\u6b62\u6761\u4ef6\u903b\u8f91\u672c\u8eab\u5408\u7406\uff0c\u4f46\u76ee\u6807\u63a5\u53e3\u4e0d\u5b58\u5728"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1 py_compile \u901a\u8fc7\uff08\u8bed\u6cd5\u6ca1\u95ee\u9898\uff0c\u95ee\u9898\u662f\u6240\u6709\u63a5\u53e3\u8def\u5f84\u90fd\u4e0d\u771f\u5b9e\u5b58\u5728\uff09"}], "summary": {"passed": 1, "failed": 4, "total": 5, "pass_rate": 0.2}, "notes": "\u8fd9\u7248\u4ee3\u7801\u7684\u5de5\u7a0b\u601d\u8def\u5176\u5b9e\u4e0d\u5dee\uff08\u4e0d\u786c\u7f16\u7801\u731c\u6d4b\u503c\u3001\u52a0\u8f6e\u8be2\u8d85\u65f6\uff09\uff0c\u4f46\u7531\u4e8e\u5b8c\u5168\u6ca1\u6709\u771f\u5b9e\u6587\u6863\u4f9d\u636e\uff0c\u4e09\u4e2a\u7528\u5230\u7684\u63a5\u53e3\u8def\u5f84\u5168\u90e8\u662f\u51ed'AutoDL \u5f00\u653e API \u4e00\u822c\u60ef\u4f8b'\u7f16\u9020\u51fa\u6765\u7684\uff0c\u548c\u771f\u5b9e\u5e73\u53f0\u7684 /api/v1/dev/instance/pro/* \u8def\u5f84\u4f53\u7cfb\u5b8c\u5168\u5bf9\u4e0d\u4e0a\uff0c\u6574\u4e2a\u811a\u672c\u5728\u771f\u5b9e\u73af\u5883\u4e0b\u4ece\u7b2c\u4e00\u6b65\u5c31\u4f1a 404\u3002"}}, {"id": "eval-create-elastic-deployment-with_skill-run-1", "prompt": "\u6211\u8981\u7528 AutoDL \u90e8\u7f72\u4e00\u4e2a\u5e38\u9a7b\u7684\u63a8\u7406\u670d\u52a1\uff0c\u5e0c\u671b\u7cfb\u7edf\u81ea\u52a8\u7ef4\u6301 3 \u4e2a\u526f\u672c\u3001\u526f\u672c\u6302\u4e86\u81ea\u52a8\u8865\u4e0a\u3002\u5e2e\u6211\u5199\u4e00\u4e2a Python \u811a\u672c\u8c03\u7528\u5f39\u6027\u90e8\u7f72 API \u521b\u5efa\u8fd9\u4e2a\u90e8\u7f72\uff0cGPU \u7528 RTX 4090\uff0c1 \u5f20\u5361\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 3, "outputs": [{"name": "create_deployment.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\n\u5728 AutoDL\uff08autodl.com\uff09\u4e0a\u521b\u5efa\u4e00\u4e2a\u5e38\u9a7b\u63a8\u7406\u670d\u52a1\u7684\u5f39\u6027\u90e8\u7f72\uff08Elastic Deployment\uff09\u3002\n\n\u9700\u6c42\uff1a\n    - \u7cfb\u7edf\u81ea\u52a8\u7ef4\u6301 3 \u4e2a\u526f\u672c\uff0c\u526f\u672c\u6302\u4e86\u81ea\u52a8\u8865\u4e0a\n      -> \u8fd9\u6b63\u662f\u5f39\u6027\u90e8\u7f72 API \u91cc deployment_type=\"ReplicaSet\" \u7684\u5b9a\u4e49\n         \uff08Job \u662f\"\u6279\u91cf\u4efb\u52a1\u8dd1\u5b8c\u5373\u6b62\"\uff0cContainer \u662f\"\u5355\u4e2a\u5bb9\u5668\u65e0\u526f\u672c\u6982\u5ff5\"\uff0c\u90fd\u4e0d\u7b26\u5408\u672c\u9700\u6c42\uff09\n    - GPU \u7528 RTX 4090\uff0c1 \u5f20\u5361\n      -> \u5f39\u6027\u90e8\u7f72 API \u7528 gpu_name_set\uff08\u578b\u53f7\u540d\u79f0\u5b57\u7b26\u4e32\uff09\u800c\u4e0d\u662f\u5bb9\u5668\u5b9e\u4f8b Pro API \u91cc\u7684\n         gpu_spec_uuid\uff0c\u8fd9\u91cc\u586b [\"RTX 4090\"]\uff1bgpu_num=1 \u8868\u793a\u5355\u4e2a\u5bb9\u5668\u5360 1 \u5f20\u5361\n\n\u524d\u7f6e\u6761\u4ef6\uff08\u5199\u4ee3\u7801\u524d\u52a1\u5fc5\u548c\u7528\u6237\u786e\u8ba4\uff0c\u5426\u5219\u8c03\u7528\u5fc5\u7136\u5931\u8d25\uff09\uff1a\n    1. AutoDL \u8d26\u53f7\u5fc5\u987b\u5b8c\u6210\u3010\u4f01\u4e1a\u8ba4\u8bc1\u3011\u2014\u2014\u5f39\u6027\u90e8\u7f72 API \u7684\u8ba4\u8bc1\u95e8\u69db\u6bd4\u5bb9\u5668\u5b9e\u4f8b Pro API\n       \uff08\u4e2a\u4eba\u5b9e\u540d\u6216\u4f01\u4e1a\u8ba4\u8bc1\u5747\u53ef\uff09\u66f4\u9ad8\uff0c\u4e2a\u4eba\u5b9e\u540d\u8ba4\u8bc1\u4e0d\u591f\u7528\u3002\n    2. \u5df2\u7ecf\u5728 AutoDL \u63a7\u5236\u53f0\uff08\u7f51\u9875\u7aef\uff09\u4fdd\u5b58\u597d\u4e00\u4e2a\u53ef\u7528\u7684\u79c1\u6709\u955c\u50cf\uff0c\u6216\u4f7f\u7528\u5e73\u53f0\u63d0\u4f9b\u7684\u516c\u5171\n       \u57fa\u7840\u955c\u50cf UUID\u2014\u2014\u5f39\u6027\u90e8\u7f72\u4e0d\u652f\u6301\u4ece\u5916\u90e8\u5bfc\u5165\u955c\u50cf\u3002\n    3. \u5df2\u7ecf\u4ece \u63a7\u5236\u53f0 \u2192 \u8d26\u53f7 \u2192 \u8bbe\u7f6e \u2192 \u5f00\u53d1\u8005Token \u62ff\u5230 API Token\uff0c\u5e76\u8bbe\u7f6e\u5230\u73af\u5883\u53d8\u91cf\n       AUTODL_TOKEN \u4e2d\uff08\u672c\u811a\u672c\u4e0d\u63a5\u53d7\u5728\u4ee3\u7801\u91cc\u786c\u7f16\u7801 token\uff09\u3002\n\n\u7528\u6cd5\uff1a\n    export AUTODL_TOKEN=\"your_real_token_here\"\n    python create_deployment.py\n\n\u672c\u811a\u672c\u53ea\u4f7f\u7528\u6807\u51c6\u5e93 + requests\uff0c\u76f4\u63a5\u8c03\u7528 AutoDL \u7684 HTTP REST \u63a5\u53e3\uff0c\u4e0d\u4f9d\u8d56\u4efb\u4f55 SDK\u3002\n\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nimport sys\nfrom typing import Any\n\nimport requests\n\n# AutoDL API \u56fa\u5b9a base url\nBASE_URL = \"https://api.autodl.com\"\n\n# \u9274\u6743\u6ce8\u610f\uff1aAutoDL \u548c\u5927\u591a\u6570\u5e73\u53f0\u4e0d\u4e00\u6837\uff0cAuthorization \u5934\u76f4\u63a5\u5c31\u662f token \u672c\u8eab\uff0c\n# \u6ca1\u6709 \"Bearer \" \u524d\u7f00\u3002\nAUTODL_TOKEN = os.environ.get(\"AUTODL_TOKEN\")\n\n\ndef _request(method: str, path: str, **kwargs: Any) -> dict:\n    \"\"\"\u7edf\u4e00\u53d1\u8d77\u8bf7\u6c42\u5e76\u505a AutoDL \u7ea6\u5b9a\u7684\u9519\u8bef\u5904\u7406\u3002\n\n    AutoDL \u54cd\u5e94\u4f53\u7edf\u4e00\u7ed3\u6784\u4e3a {\"code\": \"Success\"/\u5176\u4ed6, \"msg\": \"\", \"data\": ...}\u3002\n    code \u4e0d\u7b49\u4e8e \"Success\" \u5373\u89c6\u4e3a\u51fa\u9519\uff1b\u5b98\u65b9\u6587\u6863\u6ca1\u6709\u63d0\u4f9b\u7a33\u5b9a\u7684\u9519\u8bef\u7801\u679a\u4e3e\uff0c\n    \u53ea\u80fd\u4f9d\u8d56 msg \u7684\u6587\u672c\u5185\u5bb9\u5224\u65ad\u539f\u56e0\uff0c\u56e0\u6b64\u8fd9\u91cc\u4e0d\u5bf9 msg \u505a switch/case\uff0c\n    \u53ea\u662f\u628a\u5b83\u539f\u6837\u629b\u51fa\u7ed9\u8c03\u7528\u65b9\u67e5\u770b\u3002\n    \"\"\"\n    url = f\"{BASE_URL}{path}\"\n    headers = kwargs.pop(\"headers\", {})\n    headers[\"Authorization\"] = AUTODL_TOKEN\n\n    resp = requests.request(method, url, headers=headers, timeout=30, **kwargs)\n    resp.raise_for_status()  # \u5148\u5904\u7406 HTTP \u5c42\u9762\u7684\u9519\u8bef\uff08\u7f51\u7edc/\u9274\u6743\u5931\u8d25\u7b49\uff09\n\n    payload = resp.json()\n    if payload.get(\"code\") != \"Success\":\n        raise RuntimeError(\n            f\"AutoDL API \u8c03\u7528\u5931\u8d25: path={path}, code={payload.get('code')!r}, \"\n            f\"msg={payload.get('msg')!r}\"\n        )\n    return payload[\"data\"]\n\n\ndef create_replica_set_deployment(\n    *,\n    name: str,\n    image_uuid: str,\n    cmd: str,\n    replica_num: int = 3,\n    dc_list: list[str] | None = None,\n    gpu_name: str = \"RTX 4090\",\n    gpu_num: int = 1,\n) -> dict:\n    \"\"\"\u521b\u5efa\u4e00\u4e2a ReplicaSet \u7c7b\u578b\u7684\u5f39\u6027\u90e8\u7f72\uff1a\u5e38\u9a7b\u7ef4\u6301\u56fa\u5b9a\u526f\u672c\u6570\uff0c\u526f\u672c\u6302\u4e86\u81ea\u52a8\u8865\u3002\n\n    Args:\n        name: \u90e8\u7f72\u540d\u79f0\u3002\n        image_uuid: \u79c1\u6709\u955c\u50cf UUID \u6216\u516c\u5171\u57fa\u7840\u955c\u50cf UUID\uff08\u5f39\u6027\u90e8\u7f72\u4e0d\u652f\u6301\u5916\u90e8\u5bfc\u5165\u955c\u50cf\uff09\u3002\n        cmd: \u5bb9\u5668\u542f\u52a8\u547d\u4ee4\uff0c\u5373\u63a8\u7406\u670d\u52a1\u7684\u542f\u52a8\u811a\u672c/\u547d\u4ee4\u3002\n        replica_num: \u671f\u671b\u7ef4\u6301\u7684\u526f\u672c\u6570\u91cf\uff0c\u9ed8\u8ba4 3\u3002\n        dc_list: \u53ef\u8c03\u5ea6\u5730\u533a\u5217\u8868\uff0c\u9ed8\u8ba4\u4f7f\u7528\u6587\u6863\u63a8\u8350\u7684\u897f\u5317\u4f01\u4e1a\u533a + \u897f\u5317B\u533a\u4e24\u4e2a\u533a\uff0c\n                 \u6269\u5927\u53ef\u8c03\u5ea6\u8303\u56f4\u3001\u964d\u4f4e\u6392\u961f\u7b49\u5f85\u6982\u7387\u3002\n        gpu_name: GPU \u578b\u53f7\u540d\u79f0\u5b57\u7b26\u4e32\uff08\u6ce8\u610f\u4e0d\u662f gpu_spec_uuid\uff09\u3002\n        gpu_num: \u5355\u4e2a\u5bb9\u5668\u6240\u9700 GPU \u6570\u91cf\u3002\n\n    Returns:\n        \u521b\u5efa\u6210\u529f\u540e\u7684 data \u5b57\u6bb5\uff0c\u5305\u542b deployment_uuid\u3002\n    \"\"\"\n    if dc_list is None:\n        dc_list = [\"westDC2\", \"westDC3\"]\n\n    body = {\n        \"name\": name,\n        \"deployment_type\": \"ReplicaSet\",\n        \"replica_num\": replica_num,\n        # \u590d\u7528\u5df2\u505c\u6b62\u7684\u5bb9\u5668\u53ef\u4ee5\u663e\u8457\u63d0\u5347\u540e\u7eed\u6269\u5bb9/\u91cd\u5efa\u526f\u672c\u7684\u901f\u5ea6\n        \"reuse_container\": True,\n        \"reuse_container_scope\": \"all\",\n        \"container_template\": {\n            \"dc_list\": dc_list,\n            \"gpu_name_set\": [gpu_name],\n            \"gpu_num\": gpu_num,\n            # CUDA \u7248\u672c\u8303\u56f4\uff1a113~128 \u8986\u76d6\u7edd\u5927\u591a\u6570\u6846\u67b6\u9700\u6c42\uff1b\n            # \u9009\u578b\u539f\u5219\u89c1 skill \u6587\u6863\u2014\u2014\u627e\u4e0d\u5230\u7cbe\u786e\u5bf9\u5e94\u7248\u672c\u65f6\u9009\"\u517c\u5bb9\u6240\u9700\u7248\u672c\u7684\u6700\u4f4e\u53ef\u9009\u503c\"\uff0c\n            # \u907f\u514d\u9009\u5f97\u8fc7\u9ad8\u5bfc\u81f4\u53ef\u8c03\u5ea6\u673a\u5668\u8303\u56f4\u53d8\u7a84\u3002\n            \"cuda_v_from\": 113,\n            \"cuda_v_to\": 128,\n            \"cpu_num_from\": 1,\n            \"cpu_num_to\": 100,\n            \"memory_size_from\": 1,\n            \"memory_size_to\": 256,\n            # \u4ef7\u683c\u5355\u4f4d\u662f\"\u5143 x 1000\"\u7684\u6574\u6570\uff1a0.01 \u5143/\u5c0f\u65f6 ~ 9 \u5143/\u5c0f\u65f6\n            \"price_from\": 10,\n            \"price_to\": 9000,\n            \"image_uuid\": image_uuid,\n            \"cmd\": cmd,\n        },\n    }\n\n    return _request(\"POST\", \"/api/v1/dev/deployment\", json=body)\n\n\ndef main() -> int:\n    if not AUTODL_TOKEN:\n        print(\n            \"\u9519\u8bef\uff1a\u672a\u8bbe\u7f6e\u73af\u5883\u53d8\u91cf AUTODL_TOKEN\u3002\\n\"\n            \"\u8bf7\u5148\u6267\u884c: export AUTODL_TOKEN=\\\"your_real_token_here\\\"\\n\"\n            \"Token \u83b7\u53d6\u4f4d\u7f6e\uff1aAutoDL \u63a7\u5236\u53f0 -> \u8d26\u53f7 -> \u8bbe\u7f6e -> \u5f00\u53d1\u8005Token\u3002\\n\"\n            \"\u53e6\u5916\u8bf7\u786e\u8ba4\u8d26\u53f7\u5df2\u5b8c\u6210\u3010\u4f01\u4e1a\u8ba4\u8bc1\u3011\u2014\u2014\u5f39\u6027\u90e8\u7f72 API \u8981\u6c42\u4f01\u4e1a\u8ba4\u8bc1\uff0c\"\n            \"\u4e2a\u4eba\u5b9e\u540d\u8ba4\u8bc1\u4e0d\u591f\u7528\uff0c\u8ba4\u8bc1\u4e0d\u591f\u4f1a\u5bfc\u81f4\u4e0b\u9762\u7684\u8c03\u7528\u76f4\u63a5\u5931\u8d25\u3002\",\n            file=sys.stderr,\n        )\n        return 1\n\n    # TODO: \u66ff\u6362\u6210\u4f60\u81ea\u5df1\u5728 AutoDL \u63a7\u5236\u53f0\u4fdd\u5b58\u597d\u7684\u79c1\u6709\u955c\u50cf UUID\uff0c\n    # \u6216\u66ff\u6362\u6210 references/elastic-deployment.md \u9644\u5f55\u91cc\u7684\u516c\u5171\u57fa\u7840\u955c\u50cf UUID\u3002\n    image_uuid = \"image-db8346e037\"\n\n    # TODO: \u66ff\u6362\u6210\u4f60\u7684\u63a8\u7406\u670d\u52a1\u771f\u6b63\u7684\u542f\u52a8\u547d\u4ee4\uff0c\n    # \u4f8b\u5982: \"python -m vllm.entrypoints.openai.api_server --model /root/model --port 6006\"\n    cmd = \"python -m my_inference_service --port 6006\"\n\n    try:\n        data = create_replica_set_deployment(\n            name=\"inference-service-replicaset\",\n            image_uuid=image_uuid,\n            cmd=cmd,\n            replica_num=3,\n            gpu_name=\"RTX 4090\",\n            gpu_num=1,\n        )\n    except requests.exceptions.RequestException as exc:\n        print(f\"\u7f51\u7edc\u8bf7\u6c42\u5931\u8d25: {exc}\", file=sys.stderr)\n        return 1\n    except RuntimeError as exc:\n        print(str(exc), file=sys.stderr)\n        return 1\n\n    deployment_uuid = data.get(\"deployment_uuid\")\n    print(\"\u90e8\u7f72\u521b\u5efa\u6210\u529f\uff01\")\n    print(f\"deployment_uuid = {deployment_uuid}\")\n    print(\n        \"\u8be5\u90e8\u7f72\u4e3a ReplicaSet \u7c7b\u578b\uff0c\u4f1a\u81ea\u52a8\u7ef4\u6301 3 \u4e2a\u526f\u672c\uff0c\u526f\u672c\u5f02\u5e38\u9000\u51fa\u540e\u7cfb\u7edf\u4f1a\u81ea\u52a8\u8865\u65b0\u526f\u672c\uff0c\"\n        \"\u65e0\u9700\u989d\u5916\u7684\u5065\u5eb7\u68c0\u67e5/\u81ea\u6108\u811a\u672c\u3002\"\n    )\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"}], "grading": {"expectations": [{"text": "deployment_type \u9009 ReplicaSet", "passed": true, "evidence": "\u9009\u62e9 ReplicaSet \u5e76\u5f15\u7528\u4e86 elastic-deployment.md \u6838\u5fc3\u6982\u5ff5\u8868\u91cc\u7684\u5b9a\u4e49\u4f5c\u4e3a\u7406\u7531"}, {"text": "gpu_name_set \u7528 GPU \u578b\u53f7\u540d\u5b57\u7b26\u4e32\uff0c\u4e0d\u662f gpu_spec_uuid", "passed": true, "evidence": "gpu_name_set: ['RTX 4090']\uff0c\u6b63\u786e\u533a\u5206\u4e86\u8fd9\u662f\u5f39\u6027\u90e8\u7f72 API \u4e13\u5c5e\u7684\u6807\u8bc6\u65b9\u5f0f\uff0c\u548c Pro \u5b9e\u4f8b API \u4e0d\u540c"}, {"text": "ReplicaSet \u7528 cuda_v_from/cuda_v_to\uff0c\u4e0d\u662f\u5355\u503c cuda_v", "passed": true, "evidence": "\u4f7f\u7528 cuda_v_from/cuda_v_to\uff08113-128\uff09\uff0c\u7b26\u5408 ReplicaSet \u7c7b\u578b\u7684\u5b57\u6bb5\u8981\u6c42"}, {"text": "replica_num=3\uff0cdc_list \u7528\u5217\u8868\u5f62\u5f0f", "passed": true, "evidence": "agent \u62a5\u544a replica_num \u8bbe\u4e3a 3\uff0c\u7528 dc_list\uff08\u672a\u4f7f\u7528\u5df2\u5e9f\u5f03\u7684 region_sign\uff09"}, {"text": "endpoint \u6b63\u786e\u3001\u9274\u6743\u5934\u4e0d\u5e26 Bearer", "passed": true, "evidence": "POST /api/v1/dev/deployment\uff0cAuthorization \u5934\u65e0 Bearer \u524d\u7f00"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}}}, {"id": "eval-create-elastic-deployment-without_skill-run-1", "prompt": "\u6211\u8981\u7528 AutoDL \u90e8\u7f72\u4e00\u4e2a\u5e38\u9a7b\u7684\u63a8\u7406\u670d\u52a1\uff0c\u5e0c\u671b\u7cfb\u7edf\u81ea\u52a8\u7ef4\u6301 3 \u4e2a\u526f\u672c\u3001\u526f\u672c\u6302\u4e86\u81ea\u52a8\u8865\u4e0a\u3002\u5e2e\u6211\u5199\u4e00\u4e2a Python \u811a\u672c\u8c03\u7528\u5f39\u6027\u90e8\u7f72 API \u521b\u5efa\u8fd9\u4e2a\u90e8\u7f72\uff0cGPU \u7528 RTX 4090\uff0c1 \u5f20\u5361\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 3, "outputs": [{"name": "create_deployment.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\ncreate_deployment.py\n\n\u7528\u9014\uff1a\n    \u901a\u8fc7 AutoDL \u7684\u201c\u5f39\u6027\u90e8\u7f72\u201d\u5f00\u653e API\uff0c\u521b\u5efa\u4e00\u4e2a\u5e38\u9a7b\u63a8\u7406\u670d\u52a1\u90e8\u7f72\uff1a\n      - \u56fa\u5b9a\u7ef4\u6301 3 \u4e2a\u526f\u672c\uff08replica\uff09\n      - \u67d0\u4e2a\u526f\u672c\u5f02\u5e38\u9000\u51fa / \u88ab\u56de\u6536\u540e\uff0c\u7531 AutoDL \u81ea\u52a8\u91cd\u65b0\u62c9\u8d77\u8865\u9f50\uff08\u81ea\u6108\uff09\n      - \u6bcf\u4e2a\u526f\u672c\u4f7f\u7528 GPU\uff1aRTX 4090 x 1 \u5f20\u5361\n\n\u4f9d\u8d56\uff1a\n    \u4ec5\u4f7f\u7528\u7b2c\u4e09\u65b9\u5e93 `requests` \u76f4\u63a5\u53d1\u8d77 HTTP \u8bf7\u6c42\uff08\u4e0d\u4f7f\u7528\u5b98\u65b9 SDK\uff09\u3002\n    \u8fd0\u884c\u524d\u8bf7\u5148\u5b89\u88c5\uff1apip install requests\n\n\u9274\u6743\uff1a\n    AutoDL API Token \u901a\u8fc7\u73af\u5883\u53d8\u91cf AUTODL_TOKEN \u4f20\u5165\uff0c\u4e0d\u5728\u4ee3\u7801\u4e2d\u786c\u7f16\u7801\u3002\n    Token \u83b7\u53d6\u65b9\u5f0f\uff1aAutoDL \u63a7\u5236\u53f0 -> \u8d26\u53f7\u8bbe\u7f6e / \u5f00\u53d1\u8005\u9009\u9879 -> API Token\u3002\n    \u4f7f\u7528\u524d\u6267\u884c\uff1a\n        export AUTODL_TOKEN=\"\u4f60\u7684\u771f\u5b9e Token\"\n\n!!! \u91cd\u8981\u58f0\u660e !!!\n    \u7f16\u5199\u672c\u811a\u672c\u65f6\u672a\u8054\u7f51\u6838\u5bf9 AutoDL \u6700\u65b0\u7248\u5b98\u65b9 API \u6587\u6863\uff0c\u4e0b\u9762\u7684\uff1a\n      - API_BASE_URL / CREATE_DEPLOYMENT_PATH\uff08\u63a5\u53e3\u57df\u540d\u4e0e\u8def\u5f84\uff09\n      - \u8bf7\u6c42\u4f53\u5404\u5b57\u6bb5\u540d\u79f0\u3001\u5c42\u7ea7\u7ed3\u6784\u3001\u53d6\u503c\uff08\u5c24\u5176\u662f deployment_type \u7684\n        \u5177\u4f53\u679a\u4e3e\u5b57\u7b26\u4e32\u3001GPU \u578b\u53f7\u7684\u5408\u6cd5\u5199\u6cd5\u3001\u955c\u50cf/\u542f\u52a8\u547d\u4ee4\u76f8\u5173\u5b57\u6bb5\uff09\n    \u5747\u662f\u57fa\u4e8e\u5bf9 AutoDL\u201c\u5f39\u6027\u90e8\u7f72\u201d\u4ea7\u54c1\u529f\u80fd\u7684\u7406\u89e3\u6784\u9020\u7684\u201c\u6700\u4f73\u731c\u6d4b\u201d\u7248\u672c\u3002\n    \u5728\u6b63\u5f0f\u4f7f\u7528\u524d\uff0c\u8bf7\u52a1\u5fc5\u5bf9\u7167 AutoDL \u5b98\u65b9\u6700\u65b0\u5f00\u653e API \u6587\u6863\n    \uff08AutoDL \u63a7\u5236\u53f0 -> \u6587\u6863\u4e2d\u5fc3 -> \u5f00\u653e API\uff09\u9010\u9879\u6838\u5b9e\u5e76\u6309\u9700\u8c03\u6574\uff0c\n    \u5426\u5219\u76f4\u63a5\u8c03\u7528\u5f88\u53ef\u80fd\u4f1a\u56e0\u5b57\u6bb5\u4e0d\u5339\u914d\u800c\u62a5\u9519\u6216\u884c\u4e3a\u4e0d\u7b26\u5408\u9884\u671f\u3002\n\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport os\nimport sys\nfrom typing import Any, Dict\n\nimport requests\n\n# --------------------------------------------------------------------------\n# \u57fa\u7840\u914d\u7f6e\n# --------------------------------------------------------------------------\n\n# AutoDL \u5f00\u653e API \u57df\u540d\u3002\u5982\u4e0e\u5b98\u65b9\u6587\u6863\u4e0d\u7b26\uff0c\u53ef\u901a\u8fc7\u73af\u5883\u53d8\u91cf\u8986\u76d6\uff0c\u6216\u76f4\u63a5\u4fee\u6539\u6b64\u5904\u3002\nAPI_BASE_URL = os.environ.get(\"AUTODL_API_BASE\", \"https://api.autodl.com\")\n\n# \u521b\u5efa\u5f39\u6027\u90e8\u7f72\u7684\u63a5\u53e3\u8def\u5f84\uff08\u5360\u4f4d\u503c\uff0c\u8bf7\u5bf9\u7167\u5b98\u65b9\u6587\u6863\u6838\u5b9e\u540e\u6309\u9700\u8c03\u6574\uff09\u3002\nCREATE_DEPLOYMENT_PATH = \"/api/v1/dev/deployment\"\n\n# API Token\uff1a\u51fa\u4e8e\u5b89\u5168\u8003\u8651\u4e0d\u5199\u6b7b\u5728\u4ee3\u7801\u91cc\uff0c\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6\u3002\nAUTODL_TOKEN_ENV_VAR = \"AUTODL_TOKEN\"\n\nREQUEST_TIMEOUT_SECONDS = 30\n\n\ndef get_api_token() -> str:\n    \"\"\"\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6 API Token\uff0c\u7f3a\u5931\u65f6\u7ed9\u51fa\u660e\u786e\u62a5\u9519\u800c\u4e0d\u662f\u53d1\u8d77\u65e0\u6548\u8bf7\u6c42\u3002\"\"\"\n    token = os.environ.get(AUTODL_TOKEN_ENV_VAR, \"\").strip()\n    if not token:\n        raise RuntimeError(\n            f\"\u672a\u68c0\u6d4b\u5230\u73af\u5883\u53d8\u91cf {AUTODL_TOKEN_ENV_VAR}\u3002\\n\"\n            f\"\u8bf7\u5148\u6267\u884c\uff1aexport {AUTODL_TOKEN_ENV_VAR}='\u4f60\u7684 AutoDL API Token' \u540e\u518d\u8fd0\u884c\u672c\u811a\u672c\u3002\"\n        )\n    return token\n\n\ndef build_headers(token: str) -> Dict[str, str]:\n    \"\"\"\u6784\u9020\u8bf7\u6c42\u5934\u3002AutoDL \u5f00\u653e API \u901a\u5e38\u901a\u8fc7 Authorization \u5934\u4f20\u9012 Token\u3002\"\"\"\n    return {\n        \"Authorization\": token,\n        \"Content-Type\": \"application/json\",\n    }\n\n\ndef build_payload() -> Dict[str, Any]:\n    \"\"\"\n    \u6784\u9020\u521b\u5efa\u5f39\u6027\u90e8\u7f72\u6240\u9700\u7684\u8bf7\u6c42\u4f53\u3002\n\n    \u5173\u4e8e deployment_type \u7684\u9009\u578b\u8bf4\u660e\uff1a\n        AutoDL \u5f39\u6027\u90e8\u7f72\u652f\u6301\u4e24\u7c7b\u526f\u672c\u8c03\u63a7\u7b56\u7565\uff08\u6982\u5ff5\u4e0a\uff09\uff1a\n          * \"fixed\"   \u56fa\u5b9a\u526f\u672c\u6570\u6a21\u5f0f\uff1a\u59cb\u7ec8\u7ef4\u6301\u6307\u5b9a\u6570\u91cf\u7684\u526f\u672c\u8fd0\u884c\uff0c\n                      \u67d0\u4e2a\u526f\u672c\u5f02\u5e38\u9000\u51fa / \u88ab\u7cfb\u7edf\u56de\u6536\u540e\uff0cAutoDL \u4f1a\u81ea\u52a8\n                      \u91cd\u65b0\u8c03\u5ea6\u3001\u8865\u62c9\u8d77\u65b0\u526f\u672c\uff0c\u526f\u672c\u6570\u91cf\u672c\u8eab\u4e0d\u968f\u8d1f\u8f7d\u6ce2\u52a8\u3002\n          * \"scaling\" \u533a\u95f4\u81ea\u52a8\u4f38\u7f29\u6a21\u5f0f\uff1a\u5728 [min_replica_num, max_replica_num]\n                      \u533a\u95f4\u5185\uff0c\u6839\u636e\u8d1f\u8f7d\u6307\u6807\uff08\u5982 GPU \u5229\u7528\u7387 / \u8bf7\u6c42\u91cf\uff09\u81ea\u52a8\n                      \u589e\u51cf\u526f\u672c\u6570\u91cf\u3002\n\n        \u672c\u4efb\u52a1\u7684\u9700\u6c42\u662f\u201c\u5e38\u9a7b\u670d\u52a1\u3001\u56fa\u5b9a\u7ef4\u6301 3 \u4e2a\u526f\u672c\u3001\u526f\u672c\u6302\u4e86\u81ea\u52a8\u8865\u4e0a\u201d\uff0c\n        \u6838\u5fc3\u8bc9\u6c42\u662f\u201c\u6052\u5b9a\u526f\u672c\u6570 + \u6545\u969c\u81ea\u6108\u201d\uff0c\u800c\u4e0d\u662f\u201c\u6839\u636e\u6d41\u91cf\u81ea\u52a8\u6269\u7f29\u5bb9\u201d\uff0c\n        \u56e0\u6b64\u9009\u62e9 deployment_type = \"fixed\"\uff0c\u5e76\u5c06\u526f\u672c\u6570\u56fa\u5b9a\u4e3a 3\n        \uff08min_replica_num = max_replica_num = replica_num = 3\uff09\u3002\n        \u6545\u969c\u81ea\u6108\uff08\u6302\u4e86\u81ea\u52a8\u8865\u4e0a\uff09\u662f\u5f39\u6027\u90e8\u7f72\u7684\u5185\u7f6e\u80fd\u529b\uff0c\u901a\u8fc7\u5065\u5eb7\u68c0\u67e5 /\n        auto_restart \u914d\u7f6e\u4f53\u73b0\uff0c\u4e0d\u9700\u8981\u989d\u5916\u7684\u6269\u7f29\u5bb9\u903b\u8f91\u3002\n    \"\"\"\n    payload: Dict[str, Any] = {\n        # \u90e8\u7f72\u540d\u79f0\uff0c\u9700\u5728\u8d26\u53f7\u5185\u552f\u4e00\uff0c\u53ef\u81ea\u884c\u4fee\u6539\n        \"name\": \"inference-service-standing\",\n\n        # \u90e8\u7f72\u7c7b\u578b\uff1a\u56fa\u5b9a\u526f\u672c\u6570\u6a21\u5f0f\uff08\u533a\u522b\u4e8e\u6309\u8d1f\u8f7d\u81ea\u52a8\u4f38\u7f29\u7684 \"scaling\" \u6a21\u5f0f\uff09\n        \"deployment_type\": \"fixed\",\n\n        # \u56fa\u5b9a\u526f\u672c\u6570\uff1a\u59cb\u7ec8\u7ef4\u6301 3 \u4e2a\u526f\u672c\uff1b\u526f\u672c\u6302\u6389\u540e\u81ea\u52a8\u91cd\u65b0\u8c03\u5ea6\u8865\u9f50\n        \"replica_num\": 3,\n        # \u90e8\u5206\u63a5\u53e3\u7248\u672c\u4f7f\u7528 min/max \u8868\u8fbe\u201c\u56fa\u5b9a\u526f\u672c\u6570\u201d\u8bed\u4e49\uff0c\u8fd9\u91cc\u4e00\u5e76\u7ed9\u51fa\u4ee5\u517c\u5bb9\uff1a\n        # min == max == replica_num \u5373\u8868\u793a\u4e0d\u505a\u81ea\u52a8\u4f38\u7f29\uff0c\u53ea\u7ef4\u6301\u56fa\u5b9a\u6570\u91cf\u3002\n        \"min_replica_num\": 3,\n        \"max_replica_num\": 3,\n\n        # \u5065\u5eb7\u68c0\u67e5\u4e0e\u81ea\u6108\uff1a\u526f\u672c\u5f02\u5e38\u9000\u51fa / \u5065\u5eb7\u68c0\u67e5\u5931\u8d25\u65f6\u81ea\u52a8\u91cd\u542f\u6216\u91cd\u65b0\u8c03\u5ea6\u65b0\u526f\u672c\n        \"auto_restart\": True,\n        \"health_check\": {\n            \"enabled\": True,\n            # \u5065\u5eb7\u68c0\u67e5\u63a2\u6d4b\u8def\u5f84\uff0c\u8bf7\u66ff\u6362\u4e3a\u4f60\u7684\u63a8\u7406\u670d\u52a1\u5b9e\u9645\u63d0\u4f9b\u7684\u5065\u5eb7\u68c0\u67e5\u63a5\u53e3\n            \"path\": \"/health\",\n            \"port\": 6006,\n            \"interval_seconds\": 30,\n            \"timeout_seconds\": 5,\n            \"failure_threshold\": 3,\n        },\n\n        # \u5bb9\u5668 / \u8fd0\u884c\u73af\u5883\u6a21\u677f\n        \"container_template\": {\n            # \u955c\u50cf\uff1a\u8bf7\u66ff\u6362\u4e3a\u4f60\u81ea\u5df1\u7684\u63a8\u7406\u670d\u52a1\u955c\u50cf\uff08\u53ef\u57fa\u4e8e AutoDL \u5b98\u65b9\u57fa\u7840\u955c\u50cf\u6784\u5efa\uff09\n            \"image\": \"your-registry/your-inference-image:latest\",\n\n            # \u5bb9\u5668\u542f\u52a8\u547d\u4ee4\uff0c\u8bf7\u66ff\u6362\u4e3a\u5b9e\u9645\u542f\u52a8\u63a8\u7406\u670d\u52a1\u7684\u547d\u4ee4\n            \"cmd\": \"python3 -u server.py --port 6006\",\n\n            # \u670d\u52a1\u76d1\u542c\u7aef\u53e3\uff0c\u8bf7\u6309\u5b9e\u9645\u63a8\u7406\u670d\u52a1\u7aef\u53e3\u8c03\u6574\n            \"port\": 6006,\n\n            # \u53ef\u9009\uff1a\u73af\u5883\u53d8\u91cf\uff0c\u6309\u9700\u589e\u5220\n            \"env_vars\": {\n                # \"MODEL_NAME\": \"your-model-name\",\n            },\n\n            # \u53ef\u9009\uff1a\u6570\u636e\u76d8\u6302\u8f7d\u7b49\uff0c\u6309\u9700\u589e\u5220\n            # \"data_volumes\": [],\n        },\n\n        # GPU \u8d44\u6e90\u9700\u6c42\uff1aRTX 4090\uff0c\u6bcf\u4e2a\u526f\u672c 1 \u5f20\u5361\n        \"gpu_resource\": {\n            \"gpu_name_set\": [\"RTX 4090\"],\n            \"gpu_num\": 1,\n        },\n    }\n    return payload\n\n\ndef create_deployment(payload: Dict[str, Any], token: str) -> Dict[str, Any]:\n    \"\"\"\u8c03\u7528 AutoDL \u5f39\u6027\u90e8\u7f72\u521b\u5efa\u63a5\u53e3\uff0c\u8fd4\u56de\u89e3\u6790\u540e\u7684 JSON \u54cd\u5e94\u3002\"\"\"\n    url = f\"{API_BASE_URL}{CREATE_DEPLOYMENT_PATH}\"\n    headers = build_headers(token)\n\n    response = requests.post(\n        url,\n        headers=headers,\n        data=json.dumps(payload, ensure_ascii=False).encode(\"utf-8\"),\n        timeout=REQUEST_TIMEOUT_SECONDS,\n    )\n\n    try:\n        response.raise_for_status()\n    except requests.HTTPError as exc:\n        raise RuntimeError(\n            f\"\u521b\u5efa\u5f39\u6027\u90e8\u7f72\u5931\u8d25\uff1aHTTP {response.status_code}\\n\u54cd\u5e94\u5185\u5bb9\uff1a{response.text}\"\n        ) from exc\n\n    try:\n        result = response.json()\n    except ValueError as exc:\n        raise RuntimeError(f\"\u54cd\u5e94\u4e0d\u662f\u5408\u6cd5 JSON\uff1a{response.text}\") from exc\n\n    return result\n\n\ndef main() -> int:\n    try:\n        token = get_api_token()\n    except RuntimeError as exc:\n        print(f\"[ERROR] {exc}\", file=sys.stderr)\n        return 1\n\n    payload = build_payload()\n    print(\"\u5373\u5c06\u521b\u5efa\u5f39\u6027\u90e8\u7f72\uff0c\u8bf7\u6c42\u4f53\u5982\u4e0b\uff1a\")\n    print(json.dumps(payload, ensure_ascii=False, indent=2))\n    print(f\"\\n\u8bf7\u6c42\u5730\u5740\uff1aPOST {API_BASE_URL}{CREATE_DEPLOYMENT_PATH}\\n\")\n\n    try:\n        result = create_deployment(payload, token)\n    except Exception as exc:  # noqa: BLE001 - \u9876\u5c42\u6355\u83b7\u540e\u7edf\u4e00\u6253\u5370\u9000\u51fa\n        print(f\"[ERROR] {exc}\", file=sys.stderr)\n        return 1\n\n    print(\"\u521b\u5efa\u6210\u529f\uff0c\u8fd4\u56de\u7ed3\u679c\uff1a\")\n    print(json.dumps(result, ensure_ascii=False, indent=2))\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"}], "grading": {"expectations": [{"text": "deployment_type \u9009 ReplicaSet", "passed": false, "evidence": "deployment_type = 'fixed'\u2014\u2014\u771f\u5b9e\u5e73\u53f0\u53ea\u6709\u4e09\u79cd\u53d6\u503c ReplicaSet/Job/Container\uff0c'fixed' \u662f\u4e0d\u5b58\u5728\u7684\u503c\uff0c\u662f\u5957\u7528\u4e86\u901a\u7528\u4e91\u5e73\u53f0'\u56fa\u5b9a\u5b9e\u4f8b\u6570 vs \u81ea\u52a8\u4f38\u7f29'\u5fc3\u667a\u6a21\u578b\u7f16\u51fa\u6765\u7684\uff0c\u8fd9\u4e2a\u8bf7\u6c42\u771f\u5b9e\u8c03\u7528\u65f6\u4f1a\u56e0\u4e3a deployment_type \u975e\u6cd5\u88ab\u62d2\u7edd"}, {"text": "gpu_name_set \u7528 GPU \u578b\u53f7\u540d\u5b57\u7b26\u4e32\uff0c\u4e0d\u662f gpu_spec_uuid", "passed": true, "evidence": "\u4ee3\u7801\u91cc\u4f53\u73b0\u4e86\u7528\u578b\u53f7\u540d\u5b57\u7b26\u4e32\u6807\u8bc6 GPU \u7684\u65b9\u5f0f\uff0c\u65b9\u5411\u6b63\u786e"}, {"text": "ReplicaSet \u7528 cuda_v_from/cuda_v_to", "passed": false, "evidence": "\u7531\u4e8e deployment_type \u672c\u8eab\u5c31\u4e0d\u5bf9\uff0c\u5b57\u6bb5\u7ed3\u6784\u4e5f\u6ca1\u6709\u5bf9\u5e94\u5230\u6587\u6863\u91cc ReplicaSet \u7c7b\u578b\u8981\u6c42\u7684 cuda_v_from/cuda_v_to \u7b49\u5b57\u6bb5\uff0c\u800c\u662f\u7f16\u9020\u4e86 min_replica_num/max_replica_num/auto_restart/health_check \u8fd9\u4e9b\u771f\u5b9e API \u91cc\u4e0d\u5b58\u5728\u7684\u5b57\u6bb5"}, {"text": "replica_num=3\uff0cdc_list \u7528\u5217\u8868\u5f62\u5f0f", "passed": false, "evidence": "replica_num \u8bbe\u4e86 3\uff08\u8fd9\u70b9\u5bf9\uff09\uff0c\u4f46\u540c\u65f6\u955c\u50cf\u51fa min_replica_num/max_replica_num \u8fd9\u4e24\u4e2a\u4e0d\u5b58\u5728\u7684\u5b57\u6bb5\uff0c\u6ca1\u6709\u4f7f\u7528\u771f\u5b9e\u7684 dc_list \u5730\u533a\u53c2\u6570"}, {"text": "endpoint \u6b63\u786e\u3001\u9274\u6743\u5934\u4e0d\u5e26 Bearer", "passed": true, "evidence": "\u5b9e\u9645\u4ee3\u7801 headers \u91cc\u662f 'Authorization': token\uff08\u65e0 Bearer \u524d\u7f00\uff09\uff0c\u548c\u771f\u5b9e\u6587\u6863\u4e00\u81f4\u2014\u2014\u867d\u7136 agent \u81ea\u5df1\u7684\u6587\u5b57\u603b\u7ed3\u8bf4\u662f'Bearer-style'\uff0c\u4f46\u8bfb\u4ee3\u7801\u672c\u8eab\u786e\u8ba4\u6ca1\u6709\u771f\u7684\u52a0 Bearer \u524d\u7f00\uff0c\u6309\u4ee3\u7801\u5b9e\u9645\u884c\u4e3a\u5224\u5b9a\u4e3a\u901a\u8fc7"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1 py_compile \u901a\u8fc7"}], "summary": {"passed": 3, "failed": 3, "total": 6, "pass_rate": 0.5}, "notes": "deployment_type='fixed' \u662f\u6700\u6838\u5fc3\u7684\u9519\u8bef\u2014\u2014\u4e09\u9009\u4e00\u7684\u5173\u952e\u5b57\u6bb5\u5b8c\u5168\u7f16\u9519\uff0c\u4f1a\u5bfc\u81f4\u6574\u4e2a\u521b\u5efa\u8bf7\u6c42\u88ab\u62d2\u7edd\u3002\u540c\u65f6\u7f16\u9020\u4e86\u4e00\u6279\u770b\u4f3c\u5408\u7406\u4f46\u771f\u5b9e API \u91cc\u4e0d\u5b58\u5728\u7684\u5b57\u6bb5\uff08min/max_replica_num\u3001health_check\uff09\uff0c\u8fd9\u4e9b\u90fd\u662f\u5957\u7528\u5176\u4ed6\u4e91\u5e73\u53f0\uff08\u6bd4\u5982\u5f88\u591a\u5e73\u53f0\u786e\u5b9e\u7528 fixed/scaling \u6216 min/max \u526f\u672c\u6570\u7684\u6982\u5ff5\uff09\u7684\u901a\u7528\u5fc3\u667a\u6a21\u578b\uff0c\u800c\u4e0d\u662f\u8fd9\u4e2a\u5e73\u53f0\u7684\u771f\u5b9e\u884c\u4e3a\u3002"}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "autodl", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-09-03T09:02:49Z", "evals_run": [1, 2, 3], "runs_per_configuration": 3}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 29.8, "tokens": 62400, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u9274\u6743\u5934\u4e0d\u5e26 Bearer \u524d\u7f00", "passed": true, "evidence": "headers = {'Authorization': token}\uff0c\u65e0 Bearer \u524d\u7f00\uff0c\u4e0e\u6587\u6863\u539f\u6587\u4e00\u81f4"}, {"text": "endpoint \u548c base URL \u6b63\u786e", "passed": true, "evidence": "POST https://api.autodl.com/api/v1/dev/wallet/balance"}, {"text": "\u4f59\u989d\u5355\u4f4d\u6362\u7b97\u6b63\u786e\uff08\u9664\u4ee51000\uff09", "passed": true, "evidence": "data.assets \u9664\u4ee5 1000 \u8f6c\u6362\u4e3a\u5143\uff0c\u4e0e\u6587\u6863'\u9664\u4ee51000\u7b49\u4e8e\u5143'\u4e00\u81f4"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 53.9, "tokens": 69698, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "deployment_type \u9009 ReplicaSet", "passed": true, "evidence": "\u9009\u62e9 ReplicaSet \u5e76\u5f15\u7528\u4e86 elastic-deployment.md \u6838\u5fc3\u6982\u5ff5\u8868\u91cc\u7684\u5b9a\u4e49\u4f5c\u4e3a\u7406\u7531"}, {"text": "gpu_name_set \u7528 GPU \u578b\u53f7\u540d\u5b57\u7b26\u4e32\uff0c\u4e0d\u662f gpu_spec_uuid", "passed": true, "evidence": "gpu_name_set: ['RTX 4090']\uff0c\u6b63\u786e\u533a\u5206\u4e86\u8fd9\u662f\u5f39\u6027\u90e8\u7f72 API \u4e13\u5c5e\u7684\u6807\u8bc6\u65b9\u5f0f\uff0c\u548c Pro \u5b9e\u4f8b API \u4e0d\u540c"}, {"text": "ReplicaSet \u7528 cuda_v_from/cuda_v_to\uff0c\u4e0d\u662f\u5355\u503c cuda_v", "passed": true, "evidence": "\u4f7f\u7528 cuda_v_from/cuda_v_to\uff08113-128\uff09\uff0c\u7b26\u5408 ReplicaSet \u7c7b\u578b\u7684\u5b57\u6bb5\u8981\u6c42"}, {"text": "replica_num=3\uff0cdc_list \u7528\u5217\u8868\u5f62\u5f0f", "passed": true, "evidence": "agent \u62a5\u544a replica_num \u8bbe\u4e3a 3\uff0c\u7528 dc_list\uff08\u672a\u4f7f\u7528\u5df2\u5e9f\u5f03\u7684 region_sign\uff09"}, {"text": "endpoint \u6b63\u786e\u3001\u9274\u6743\u5934\u4e0d\u5e26 Bearer", "passed": true, "evidence": "POST /api/v1/dev/deployment\uff0cAuthorization \u5934\u65e0 Bearer \u524d\u7f00"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 59.7, "tokens": 68428, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "gpu_spec_uuid \u7528\u771f\u5b9e\u89c4\u683cID\uff0c\u4e0d\u662fGPU\u578b\u53f7\u540d\u5b57\u7b26\u4e32", "passed": true, "evidence": "GPU_SPEC_UUID_RTX_4090 = 'v-48g'\uff0c\u6765\u81ea instances.md \u91cc 4090-48G \u5bf9\u5e94\u7684\u771f\u5b9e\u89c4\u683cID\uff0c\u5e76\u5728\u6ce8\u91ca\u91cc\u63d0\u9192\u8868\u683c\u53ef\u80fd\u4e0d\u662f\u6700\u65b0\u7684"}, {"text": "endpoint \u6b63\u786e\u3001\u9274\u6743\u5934\u4e0d\u5e26 Bearer", "passed": true, "evidence": "POST /api/v1/dev/instance/pro/create\uff0cAuthorization \u5934\u65e0 Bearer \u524d\u7f00"}, {"text": "\u5fc5\u586b\u5b57\u6bb5\u9f50\u5168", "passed": true, "evidence": "req_gpu_amount/expand_system_disk_by_gb/image_uuid/cuda_v_from \u5747\u51fa\u73b0\u5728\u8bf7\u6c42\u4f53\u91cc"}, {"text": "\u8f6e\u8be2\u7528\u6b63\u786e\u7684 status \u7aef\u70b9\uff0c\u6709\u5408\u7406\u7ec8\u6b62\u6761\u4ef6", "passed": true, "evidence": "GET /api/v1/dev/instance/pro/status\uff0cagent \u62a5\u544a\u6709\u95f4\u9694\u548c\u8d85\u65f6\u5904\u7406"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 2, "failed": 2, "total": 4, "time_seconds": 47.4, "tokens": 60353, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u9274\u6743\u5934\u4e0d\u5e26 Bearer \u524d\u7f00", "passed": true, "evidence": "'Authorization: <token>' \u76f4\u63a5\u653etoken\u539f\u6587\uff0c\u6ca1\u6709\u52a0 Bearer \u524d\u7f00\u2014\u2014\u8fd9\u4e00\u70b9\u78b0\u5de7\u8499\u5bf9\u4e86"}, {"text": "endpoint \u548c base URL \u6b63\u786e", "passed": false, "evidence": "BALANCE_ENDPOINT = f'{API_BASE_URL}/api/v1/dev/wallet/my/balance'\u2014\u2014\u591a\u4e86\u4e00\u6bb5\u4e0d\u5b58\u5728\u7684 '/my/'\uff0c\u771f\u5b9e\u8def\u5f84\u662f /api/v1/dev/wallet/balance\uff0c\u8fd9\u4e2a URL \u4f1a\u76f4\u63a5 404"}, {"text": "\u4f59\u989d\u5355\u4f4d\u6362\u7b97\u6b63\u786e\uff08\u9664\u4ee51000\uff09", "passed": false, "evidence": "\u4ee3\u7801\u6309 /100 \u8f6c\u6362\uff08agent \u81ea\u8ff0'\u9664\u4ee5100\u7b49\u4e8e\u5143'\uff09\uff0c\u8fd9\u662f\u5957\u7528\u4e86\u56fd\u5185\u5f88\u591a\u652f\u4ed8\u7c7b API \u5e38\u89c1\u7684'\u5206'\u5355\u4f4d\u6362\u7b97\u4e60\u60ef\uff0c\u4f46 AutoDL \u6587\u6863\u660e\u786e\u5199\u7684\u662f'\u9664\u4ee51000\u7b49\u4e8e\u5143'\uff0c\u7528\u9519\u6362\u7b97\u7cfb\u6570\u4f1a\u8ba9\u5c55\u793a\u7684\u4f59\u989d\u6570\u5b57\u76f4\u63a5\u9519\u4e00\u4e2a\u6570\u91cf\u7ea7"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1 py_compile \u901a\u8fc7"}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 3, "failed": 3, "total": 6, "time_seconds": 122.4, "tokens": 67692, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "deployment_type \u9009 ReplicaSet", "passed": false, "evidence": "deployment_type = 'fixed'\u2014\u2014\u771f\u5b9e\u5e73\u53f0\u53ea\u6709\u4e09\u79cd\u53d6\u503c ReplicaSet/Job/Container\uff0c'fixed' \u662f\u4e0d\u5b58\u5728\u7684\u503c\uff0c\u662f\u5957\u7528\u4e86\u901a\u7528\u4e91\u5e73\u53f0'\u56fa\u5b9a\u5b9e\u4f8b\u6570 vs \u81ea\u52a8\u4f38\u7f29'\u5fc3\u667a\u6a21\u578b\u7f16\u51fa\u6765\u7684\uff0c\u8fd9\u4e2a\u8bf7\u6c42\u771f\u5b9e\u8c03\u7528\u65f6\u4f1a\u56e0\u4e3a deployment_type \u975e\u6cd5\u88ab\u62d2\u7edd"}, {"text": "gpu_name_set \u7528 GPU \u578b\u53f7\u540d\u5b57\u7b26\u4e32\uff0c\u4e0d\u662f gpu_spec_uuid", "passed": true, "evidence": "\u4ee3\u7801\u91cc\u4f53\u73b0\u4e86\u7528\u578b\u53f7\u540d\u5b57\u7b26\u4e32\u6807\u8bc6 GPU \u7684\u65b9\u5f0f\uff0c\u65b9\u5411\u6b63\u786e"}, {"text": "ReplicaSet \u7528 cuda_v_from/cuda_v_to", "passed": false, "evidence": "\u7531\u4e8e deployment_type \u672c\u8eab\u5c31\u4e0d\u5bf9\uff0c\u5b57\u6bb5\u7ed3\u6784\u4e5f\u6ca1\u6709\u5bf9\u5e94\u5230\u6587\u6863\u91cc ReplicaSet \u7c7b\u578b\u8981\u6c42\u7684 cuda_v_from/cuda_v_to \u7b49\u5b57\u6bb5\uff0c\u800c\u662f\u7f16\u9020\u4e86 min_replica_num/max_replica_num/auto_restart/health_check \u8fd9\u4e9b\u771f\u5b9e API \u91cc\u4e0d\u5b58\u5728\u7684\u5b57\u6bb5"}, {"text": "replica_num=3\uff0cdc_list \u7528\u5217\u8868\u5f62\u5f0f", "passed": false, "evidence": "replica_num \u8bbe\u4e86 3\uff08\u8fd9\u70b9\u5bf9\uff09\uff0c\u4f46\u540c\u65f6\u955c\u50cf\u51fa min_replica_num/max_replica_num \u8fd9\u4e24\u4e2a\u4e0d\u5b58\u5728\u7684\u5b57\u6bb5\uff0c\u6ca1\u6709\u4f7f\u7528\u771f\u5b9e\u7684 dc_list \u5730\u533a\u53c2\u6570"}, {"text": "endpoint \u6b63\u786e\u3001\u9274\u6743\u5934\u4e0d\u5e26 Bearer", "passed": true, "evidence": "\u5b9e\u9645\u4ee3\u7801 headers \u91cc\u662f 'Authorization': token\uff08\u65e0 Bearer \u524d\u7f00\uff09\uff0c\u548c\u771f\u5b9e\u6587\u6863\u4e00\u81f4\u2014\u2014\u867d\u7136 agent \u81ea\u5df1\u7684\u6587\u5b57\u603b\u7ed3\u8bf4\u662f'Bearer-style'\uff0c\u4f46\u8bfb\u4ee3\u7801\u672c\u8eab\u786e\u8ba4\u6ca1\u6709\u771f\u7684\u52a0 Bearer \u524d\u7f00\uff0c\u6309\u4ee3\u7801\u5b9e\u9645\u884c\u4e3a\u5224\u5b9a\u4e3a\u901a\u8fc7"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1 py_compile \u901a\u8fc7"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.2, "passed": 1, "failed": 4, "total": 5, "time_seconds": 108.8, "tokens": 67295, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "gpu_spec_uuid \u7528\u771f\u5b9e\u89c4\u683cID\uff0c\u4e0d\u662fGPU\u578b\u53f7\u540d\u5b57\u7b26\u4e32", "passed": false, "evidence": "\u6ca1\u6709\u76f4\u63a5\u628a 'RTX 4090' \u585e\u8fdb\u8fd9\u4e2a\u5b57\u6bb5\uff0c\u601d\u8def\u662f\u5bf9\u7684\uff0c\u4f46\u4e3a\u4e86'\u52a8\u6001\u67e5\u8be2'\u7f16\u9020\u4e86\u4e00\u4e2a\u5b8c\u5168\u4e0d\u5b58\u5728\u7684\u63a5\u53e3 POST /api/v1/gpu/stock\uff0c\u671f\u671b\u5b83\u8fd4\u56de\u5e26 gpu_spec_uuid \u5b57\u6bb5\u7684\u89c4\u683c\u5217\u8868\u2014\u2014\u771f\u5b9e\u6587\u6863\u91cc\u6ca1\u6709\u8fd9\u6837\u4e00\u4e2a\u63a5\u53e3\uff1b\u89c4\u683cID\u5bf9\u7167\u53ea\u5b58\u5728\u4e8e\u9759\u6001\u6587\u6863\u8868\u683c\u91cc\uff08GPU \u89c4\u683c ID \u5bf9\u7167\u8868\uff09\uff0c\u4e0d\u662f\u4e00\u4e2a\u53ef\u67e5\u8be2\u7684 API"}, {"text": "endpoint \u6b63\u786e\u3001\u9274\u6743\u5934\u4e0d\u5e26 Bearer", "passed": false, "evidence": "\u521b\u5efa\u5b9e\u4f8b\u7528\u7684\u662f\u7f16\u9020\u7684 POST /api/v1/instance\uff08\u771f\u5b9e\u8def\u5f84 /api/v1/dev/instance/pro/create\uff09\uff0c\u9274\u6743\u5934\u672c\u8eab\u683c\u5f0f\u8499\u5bf9\u4e86\uff08\u65e0Bearer\uff09\uff0c\u4f46 URL \u8def\u5f84\u5168\u9519"}, {"text": "\u5fc5\u586b\u5b57\u6bb5\u9f50\u5168", "passed": false, "evidence": "\u7531\u4e8e\u8fde\u63a5\u53e3\u8def\u5f84\u90fd\u662f\u7f16\u9020\u7684\uff0c\u5b57\u6bb5\u540d\u548c\u771f\u5b9e\u63a5\u53e3\uff08cuda_v_from/expand_system_disk_by_gb \u7b49\uff09\u5bf9\u4e0d\u4e0a\uff0cagent \u81ea\u5df1\u5766\u627f'\u5b57\u6bb5\u540d\u662f\u57fa\u4e8e\u4e00\u822c\u8ba4\u77e5\u7684\u6700\u4f73\u731c\u6d4b'"}, {"text": "\u8f6e\u8be2\u7528\u6b63\u786e\u7684 status \u7aef\u70b9\uff0c\u6709\u5408\u7406\u7ec8\u6b62\u6761\u4ef6", "passed": false, "evidence": "\u8f6e\u8be2\u7528\u7684\u662f\u7f16\u9020\u7684 POST /api/v1/instance/list\uff08\u771f\u5b9e\u7684\u5355\u5b9e\u4f8b\u72b6\u6001\u67e5\u8be2\u7aef\u70b9\u662f GET /api/v1/dev/instance/pro/status\uff09\uff0c\u7ec8\u6b62\u6761\u4ef6\u903b\u8f91\u672c\u8eab\u5408\u7406\uff0c\u4f46\u76ee\u6807\u63a5\u53e3\u4e0d\u5b58\u5728"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1 py_compile \u901a\u8fc7\uff08\u8bed\u6cd5\u6ca1\u95ee\u9898\uff0c\u95ee\u9898\u662f\u6240\u6709\u63a5\u53e3\u8def\u5f84\u90fd\u4e0d\u771f\u5b9e\u5b58\u5728\uff09"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 47.8, "stddev": 15.8559, "min": 29.8, "max": 59.7}, "tokens": {"mean": 66842.0, "stddev": 3898.9419, "min": 62400, "max": 69698}}, "without_skill": {"pass_rate": {"mean": 0.4, "stddev": 0.1732, "min": 0.2, "max": 0.5}, "time_seconds": {"mean": 92.8667, "stddev": 39.9581, "min": 47.4, "max": 122.4}, "tokens": {"mean": 65113.3333, "stddev": 4127.3457, "min": 60353, "max": 67692}}, "delta": {"pass_rate": "+0.60", "time_seconds": "-45.1", "tokens": "+1729"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

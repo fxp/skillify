@@ -1,0 +1,83 @@
+{
+  "skill_name": "resend",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我们用 BullMQ 跑一个 worker 处理 `order.paid` 事件，给买家发一封 HTML 收据邮件（TypeScript，Node 20）。job 失败会被 BullMQ 自动重试最多 5 次，产品要求绝对不能给同一个订单发两封收据。发件人是 receipts@mail.acme.com，回复地址 support@acme.com。请写出 worker 的处理函数和 Resend 调用部分。",
+      "expected_output": "使用 resend SDK 的 emails.send，把 `receipt/<orderId>` 之类的幂等键通过 Idempotency-Key（SDK 第二个参数 { idempotencyKey }）传入；replyTo 用 camelCase；检查返回的 { data, error } 而不是只靠 try/catch；对 429/5xx 让 job 抛错重试、对 4xx 不重试。",
+      "files": [],
+      "expectations": [
+        "Code passes an idempotency key derived from the order id to Resend (via the SDK's options argument `{ idempotencyKey }` or the `Idempotency-Key` HTTP header), so BullMQ retries cannot double-send",
+        "Code does not rely solely on try/catch around resend.emails.send(); it checks the returned `error` field (or, if using fetch, inspects the HTTP status / `name` field)",
+        "Reply-to is expressed as `replyTo` when using the Node SDK (or `reply_to` in a raw JSON body), not the other way round",
+        "Code does not treat 4xx validation/auth errors as retryable, and does treat 429 / 5xx as retryable (throwing so BullMQ retries, or explicit backoff)",
+        "The API key is read from an environment variable; no literal key or key-shaped placeholder beyond `process.env.RESEND_API_KEY` appears"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "每天早上 9 点（Asia/Shanghai）要给大约 600 个客户各发一封月度对账单邮件，每个人的对账单是一个单独生成的 PDF（Buffer，~200KB），正文里要带客户名字。用 TypeScript + Resend 写一个 sendStatements(customers) 函数，要求尽量少打 API、别触发限流。",
+      "expected_output": "识别出：有附件的邮件不能走 batch（文档说 batch 不支持 attachments/scheduling），因此用单发 POST /emails 逐封发送并做 10 req/s 的并发/节流控制；或者明确说明 batch 的限制并给出取舍。scheduled_at 用 ISO 8601（带时区）而不是自然语言；每封 to 不超过 50；附件用 { filename, content }。",
+      "files": [],
+      "expectations": [
+        "Code does not put attachments inside a `POST /emails/batch` / `resend.batch.send` payload without at least noting that the docs say batch does not support attachments",
+        "If batch is used anywhere, the code chunks to at most 100 emails per request",
+        "Throttling/concurrency control keeps requests at or under roughly 10 requests per second (or reads `retry-after` on 429), rather than firing 600 concurrent requests",
+        "Attachments are passed as `{ filename, content }` (Buffer or base64) or `{ filename, path }`, not as a bare Buffer or a `data`/`url` field",
+        "Any scheduling uses `scheduledAt` (SDK) / `scheduled_at` (REST) with an ISO 8601 timestamp, not a cron string or unix epoch"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "在 Next.js 15 App Router 里写一个 /api/resend-webhook 路由，接收 Resend 的事件：如果是硬退信就把该邮箱在我们数据库里标记为 invalid（有个 markEmailInvalid(email) 函数），如果是投诉就退订。要验证请求确实来自 Resend。TypeScript。",
+      "expected_output": "使用 svix 库（或等价的 Svix 签名算法）验证 svix-id / svix-timestamp / svix-signature 三个 header，用 request.text() 拿 raw body；按 payload.type 分发 'email.bounced' / 'email.complained'；从 payload.data.to（数组）取收件地址；bounce 类型从 data.bounce 子对象判断。",
+      "files": [],
+      "expectations": [
+        "Signature verification uses the Svix scheme (the `svix` package or an equivalent HMAC over `svix-id.svix-timestamp.body`) reading the `svix-id`, `svix-timestamp`, `svix-signature` headers, with the signing secret from an environment variable",
+        "The handler reads the raw request body (e.g. `await req.text()`) for verification instead of `req.json()` before verifying",
+        "Event types are matched against `email.bounced` and `email.complained` (exact strings), not e.g. `bounce`, `email.bounce`, `complaint`",
+        "The recipient address is taken from `data.to` treated as an array (not `data.email` / `data.recipient` as a single string)",
+        "No webhook secret or API key literal appears in the code"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我在 Cloudflare Workers 上跑，不想装 resend 这个 npm 包。用原生 fetch 写一个最小的 Resend 客户端（TypeScript）：sendEmail(params) 和 listEmails() 两个方法，listEmails 要能翻完所有页。错误要抛成带错误类型名的 Error。",
+      "expected_output": "fetch 到 https://api.resend.com/emails，header 含 Authorization: Bearer、User-Agent、Content-Type；body 字段用 snake_case（reply_to 等）；错误体解析 { statusCode, name, message }；分页用 limit/after 且用最后一条的 id 做 cursor，循环直到 has_more 为 false。",
+      "files": [],
+      "expectations": [
+        "Every request sets a `User-Agent` header in addition to `Authorization: Bearer ...` (the docs state requests without User-Agent are rejected with 403)",
+        "Request body field names are snake_case (`reply_to`, `scheduled_at`) since this is the raw REST API, not camelCase",
+        "Error handling reads the `name` and `message` fields from the JSON error body (not e.g. `error.code` or `error.type`)",
+        "Pagination loops on `has_more` and passes the last item's `id` as the `after` query parameter (not `page`, `offset`, or `next_cursor`)",
+        "The base URL is `https://api.resend.com` with no `/v1` prefix"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "我们是多租户 SaaS，每个租户要用自己的域名发通知。写一个 TypeScript 模块：onboardTenantDomain(tenantId, domain) 通过 Resend API 创建域名并返回租户需要添加的 DNS 记录；checkTenantDomain(tenantId) 触发验证并返回是否已验证；provisionTenantKey(tenantId) 给该租户生成一个只能发信、只能用该域名的 API key 并返回给租户保存。",
+      "expected_output": "POST /domains 用 { name } 创建并从响应 records 数组返回 DNS 记录；POST /domains/{id}/verify 触发验证，并通过 GET /domains/{id} 读 status（verified / pending / failed 等枚举）而不是假设 verify 同步返回 verified；POST /api-keys 用 permission: 'sending_access' 加 domain_id；说明返回的 token 只在创建时给一次。",
+      "files": [],
+      "expectations": [
+        "Domain creation calls `POST /domains` (or `resend.domains.create`) with `name` and returns the DNS records from the response's `records` array",
+        "Verification does not assume `POST /domains/{id}/verify` synchronously returns a verified result; it re-reads the domain (`GET /domains/{id}`) and checks the `status` field against documented values",
+        "API key creation uses `permission: 'sending_access'` together with `domain_id` to scope the key to the tenant's domain (not a made-up `scope`/`role` field)",
+        "The code or comments note that the API key token is only returned once at creation and must be stored by the caller",
+        "The API key is read from an environment variable; no literal key or key-shaped placeholder appears"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "用 TypeScript 写一段脚本：把 users 表里 marketing_opt_in = true 的用户同步到 Resend 的 contacts，然后给'活跃付费用户'这个分段发一封 newsletter，标题'Product updates — September'，正文用我们已有的 HTML 字符串，要带个性化称呼和退订链接。第一次同步后以后每周跑。",
+      "expected_output": "识别 Resend 的营销对象模型：contacts 独立于 audiences/segments（按 skill 记录的当前模型）；用 contacts.create（或 import）同步，已存在的联系人走更新而不是重复创建；创建 segment 或复用已有；发 newsletter 走 broadcasts.create + broadcasts.send（两步），而不是 emails.batch；正文里用 Resend 的合并变量语法（如 {{{contact.first_name|there}}}）和 {{{RESEND_UNSUBSCRIBE_URL}}} 退订占位符，而不是自己拼退订链接。",
+      "files": [],
+      "expectations": [
+        "The newsletter is sent through the Broadcasts API (create a broadcast, then send it), not by iterating contacts and calling `emails.send` / `batch.send`",
+        "Personalization and unsubscribe use Resend's broadcast merge-tag syntax as documented (triple braces with `contact.` prefix, e.g. `{{{contact.first_name|there}}}`, and `{{{RESEND_UNSUBSCRIBE_URL}}}`) rather than hand-built links, `{{first_name}}` Handlebars style, or an uppercase `{{{FIRST_NAME}}}` form that is not in the docs",
+        "Contact sync handles already-existing contacts (update / upsert or dedupe by email) instead of blindly creating duplicates every week",
+        "The segment/audience identifier passed to the broadcast matches the field name the skill documents for the current object model (segment_id vs audience_id), not an invented one",
+        "The API key is read from an environment variable; no literal key appears"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,978 @@
+model-opus test: OK
+Split: 13 train, 7 test (holdout=0.4)
+
+============================================================
+Iteration 1/3
+Description: 把一个 SaaS / 开放平台 / 云服务的开发者文档站（一个 URL）变成一份可安装的 Claude Skill（SKILL.md + references/ + evals/），让 Agent 之后能第一次就写对调用该平台 API 的代码，而不是凭训练记忆编参数名。流程是：抓取 llms.txt / OpenAPI 打草稿 → 用真实 API Key 逐条验证并修正官方文档里的错误 → 用有 skill 和无 skill 的对照实验证明价值 → 用 skill-creator 优化描述并打包。当用户说"帮我做一个 XXX 的接入 skill""把这个开放平台的文档整理成技能包""生成 XXX 的 SKILL.md""create a skill from these API docs"，或者给出一个开发者文档 / API reference 的 URL 并希望"以后 Agent 能直接用"时，务必使用本技能——哪怕用户没说"skill"这个词，只说"把这套 API 文档整理成 AI 能用的东西"也应触发。不适用于：只查一次某个接口怎么调，或者做与第三方 API 无关的通用 skill（那种直接用 skill-creator）。
+============================================================
+Train: 21/39 correct, precision=100% recall=0% accuracy=54% (262.8s)
+  [FAIL] rate=0/3 expected=True: 这是火山引擎豆包大模型的 API reference https://www.volcengine.com/docs/8
+  [FAIL] rate=0/3 expected=True: 把 open.feishu.cn 的服务端 API 文档做成技能包，重点是消息和日历两块，其他先不管
+  [FAIL] rate=0/3 expected=True: 有个内部 SaaS，文档站是 Mintlify 建的 https://docs.acme-internal.dev ，有
+  [FAIL] rate=0/3 expected=True: 生成一份 Stripe 的 SKILL.md 和 references，要求经过真实 API 验证，我这有 test m
+  [FAIL] rate=0/3 expected=True: 帮我做一个 Resend 的接入 skill，文档在 https://resend.com/docs，以后让 agent
+  [FAIL] rate=0/3 expected=True: 把 https://platform.moonshot.cn/docs 这套 Kimi 开放平台的文档整理成技能包，我们
+  [PASS] rate=0/3 expected=False: build an MCP server that wraps the Linear API so claude can 
+  [PASS] rate=0/3 expected=False: 总结一下 Stripe 的 webhook 文档，我要在周会上讲 10 分钟
+  [PASS] rate=0/3 expected=False: 用 Resend 写个 TypeScript 函数，发一封带附件的邮件给用户，附件是 PDF
+  [PASS] rate=0/3 expected=False: 我这个调 Kimi API 的脚本一直报 401，key 是从环境变量读的，帮我看看哪里不对
+  [PASS] rate=0/3 expected=False: 帮我看一下智谱 GLM 的 chat completions 接口 tool_choice 支持强制指定函数吗？
+  [PASS] rate=0/3 expected=False: optimize the description of my existing pdf-tools skill so i
+  [PASS] rate=0/3 expected=False: which Chinese LLM platforms have an OpenAI-compatible endpoi
+Test : 12/21 correct, precision=100% recall=0% accuracy=57% (0.0s)
+  [FAIL] rate=0/3 expected=True: we keep hallucinating params for the Twilio REST API. can yo
+  [FAIL] rate=0/3 expected=True: create a skill from these API docs: https://docs.firecrawl.d
+  [FAIL] rate=0/3 expected=True: 我们上周做的 autodl 那个 skill 里 elastic deployment 部分还没验证，现在拿到企业认证的
+  [PASS] rate=0/3 expected=False: 帮我把 https://resend.com/docs/api-reference/emails/send-email 
+  [PASS] rate=0/3 expected=False: 写一个 skill，让 claude 每次写 commit message 都按我们团队的 conventional c
+  [PASS] rate=0/3 expected=False: 给我们公司的 internal REST API 写一份 OpenAPI 3.0 规范，代码在 ./src/routes
+  [PASS] rate=0/3 expected=False: 帮我写一个爬虫把 docs.dify.ai 的所有页面抓下来存成 markdown，后面做全文检索用
+
+Improving description...
+Proposed (31.5s): Use this skill when someone wants a third-party platform's developer docs turned into durable, reusable knowledge an agent can use later — packaged as an installable Claude Skill (SKILL.md + references/ + evals/), so agents write correct API code instead of hallucinating endpoints, model names, and parameters.
+
+Trigger on any ask to package, convert, or 整理 an API reference / docs site / OpenAPI / llms.txt (Stripe, Resend, 飞书, 智谱, Kimi, 火山引擎, an internal SaaS…) into something an agent or AI can use: "做一个 XXX 的接入 skill", "把文档做成技能包 / 整理成 AI 能用的东西", "生成 SKILL.md", "create a skill from these API docs", "装到 ~/.claude/skills", or wanting docs verified with a real key or proven better than no skill. Trigger even when the word "skill" never appears, and for partial scopes (just messages + calendar).
+
+Not for: answering one API question, writing app code against an API, debugging a call, or summarizing docs for humans.
+
+============================================================
+Iteration 2/3
+Description: Use this skill when someone wants a third-party platform's developer docs turned into durable, reusable knowledge an agent can use later — packaged as an installable Claude Skill (SKILL.md + references/ + evals/), so agents write correct API code instead of hallucinating endpoints, model names, and parameters.
+
+Trigger on any ask to package, convert, or 整理 an API reference / docs site / OpenAPI / llms.txt (Stripe, Resend, 飞书, 智谱, Kimi, 火山引擎, an internal SaaS…) into something an agent or AI can use: "做一个 XXX 的接入 skill", "把文档做成技能包 / 整理成 AI 能用的东西", "生成 SKILL.md", "create a skill from these API docs", "装到 ~/.claude/skills", or wanting docs verified with a real key or proven better than no skill. Trigger even when the word "skill" never appears, and for partial scopes (just messages + calendar).
+
+Not for: answering one API question, writing app code against an API, debugging a call, or summarizing docs for humans.
+============================================================
+Train: 21/39 correct, precision=100% recall=0% accuracy=54% (250.6s)
+  [FAIL] rate=0/3 expected=True: 这是火山引擎豆包大模型的 API reference https://www.volcengine.com/docs/8
+  [FAIL] rate=0/3 expected=True: 把 open.feishu.cn 的服务端 API 文档做成技能包，重点是消息和日历两块，其他先不管
+  [FAIL] rate=0/3 expected=True: 有个内部 SaaS，文档站是 Mintlify 建的 https://docs.acme-internal.dev ，有
+  [FAIL] rate=0/3 expected=True: 生成一份 Stripe 的 SKILL.md 和 references，要求经过真实 API 验证，我这有 test m
+  [FAIL] rate=0/3 expected=True: 把 https://platform.moonshot.cn/docs 这套 Kimi 开放平台的文档整理成技能包，我们
+  [FAIL] rate=0/3 expected=True: 帮我做一个 Resend 的接入 skill，文档在 https://resend.com/docs，以后让 agent
+  [PASS] rate=0/3 expected=False: build an MCP server that wraps the Linear API so claude can 
+  [PASS] rate=0/3 expected=False: 总结一下 Stripe 的 webhook 文档，我要在周会上讲 10 分钟
+  [PASS] rate=0/3 expected=False: 我这个调 Kimi API 的脚本一直报 401，key 是从环境变量读的，帮我看看哪里不对
+  [PASS] rate=0/3 expected=False: 帮我看一下智谱 GLM 的 chat completions 接口 tool_choice 支持强制指定函数吗？
+  [PASS] rate=0/3 expected=False: 用 Resend 写个 TypeScript 函数，发一封带附件的邮件给用户，附件是 PDF
+  [PASS] rate=0/3 expected=False: optimize the description of my existing pdf-tools skill so i
+  [PASS] rate=0/3 expected=False: which Chinese LLM platforms have an OpenAI-compatible endpoi
+Test : 12/21 correct, precision=100% recall=0% accuracy=57% (0.0s)
+  [FAIL] rate=0/3 expected=True: we keep hallucinating params for the Twilio REST API. can yo
+  [FAIL] rate=0/3 expected=True: create a skill from these API docs: https://docs.firecrawl.d
+  [FAIL] rate=0/3 expected=True: 我们上周做的 autodl 那个 skill 里 elastic deployment 部分还没验证，现在拿到企业认证的
+  [PASS] rate=0/3 expected=False: 帮我把 https://resend.com/docs/api-reference/emails/send-email 
+  [PASS] rate=0/3 expected=False: 写一个 skill，让 claude 每次写 commit message 都按我们团队的 conventional c
+  [PASS] rate=0/3 expected=False: 给我们公司的 internal REST API 写一份 OpenAPI 3.0 规范，代码在 ./src/routes
+  [PASS] rate=0/3 expected=False: 帮我写一个爬虫把 docs.dify.ai 的所有页面抓下来存成 markdown，后面做全文检索用
+
+Improving description...
+Proposed (14.8s): Use when a user points at a third-party platform's developer docs (a docs site URL, API reference, OpenAPI/llms.txt, or an internal SaaS portal) and wants that knowledge captured so agents can call the API correctly later. The output is an installable Claude Skill folder — SKILL.md plus references and evals — optionally verified against the live API with a real key and A/B tested against no-skill baselines.
+
+Typical asks, in any language: "做一个 XXX 的接入 skill", "把这套 API 文档整理成技能包 / 整理成 AI 能用的东西", "生成 SKILL.md", "turn these API docs into a skill", "install it into ~/.claude/skills". Also use when the word "skill" is absent but the goal is the same — stop our agent from inventing endpoints, model names, or parameter names — and when only part of a platform is in scope.
+
+Do not use for: answering a single API question, writing or debugging app code that calls an API, or summarizing docs for a human audience.
+
+============================================================
+Iteration 3/3
+Description: Use when a user points at a third-party platform's developer docs (a docs site URL, API reference, OpenAPI/llms.txt, or an internal SaaS portal) and wants that knowledge captured so agents can call the API correctly later. The output is an installable Claude Skill folder — SKILL.md plus references and evals — optionally verified against the live API with a real key and A/B tested against no-skill baselines.
+
+Typical asks, in any language: "做一个 XXX 的接入 skill", "把这套 API 文档整理成技能包 / 整理成 AI 能用的东西", "生成 SKILL.md", "turn these API docs into a skill", "install it into ~/.claude/skills". Also use when the word "skill" is absent but the goal is the same — stop our agent from inventing endpoints, model names, or parameter names — and when only part of a platform is in scope.
+
+Do not use for: answering a single API question, writing or debugging app code that calls an API, or summarizing docs for a human audience.
+============================================================
+Train: 21/39 correct, precision=100% recall=0% accuracy=54% (230.2s)
+  [FAIL] rate=0/3 expected=True: 这是火山引擎豆包大模型的 API reference https://www.volcengine.com/docs/8
+  [FAIL] rate=0/3 expected=True: 把 open.feishu.cn 的服务端 API 文档做成技能包，重点是消息和日历两块，其他先不管
+  [FAIL] rate=0/3 expected=True: 生成一份 Stripe 的 SKILL.md 和 references，要求经过真实 API 验证，我这有 test m
+  [FAIL] rate=0/3 expected=True: 有个内部 SaaS，文档站是 Mintlify 建的 https://docs.acme-internal.dev ，有
+  [FAIL] rate=0/3 expected=True: 帮我做一个 Resend 的接入 skill，文档在 https://resend.com/docs，以后让 agent
+  [FAIL] rate=0/3 expected=True: 把 https://platform.moonshot.cn/docs 这套 Kimi 开放平台的文档整理成技能包，我们
+  [PASS] rate=0/3 expected=False: build an MCP server that wraps the Linear API so claude can 
+  [PASS] rate=0/3 expected=False: 总结一下 Stripe 的 webhook 文档，我要在周会上讲 10 分钟
+  [PASS] rate=0/3 expected=False: 我这个调 Kimi API 的脚本一直报 401，key 是从环境变量读的，帮我看看哪里不对
+  [PASS] rate=0/3 expected=False: 用 Resend 写个 TypeScript 函数，发一封带附件的邮件给用户，附件是 PDF
+  [PASS] rate=0/3 expected=False: 帮我看一下智谱 GLM 的 chat completions 接口 tool_choice 支持强制指定函数吗？
+  [PASS] rate=0/3 expected=False: optimize the description of my existing pdf-tools skill so i
+  [PASS] rate=0/3 expected=False: which Chinese LLM platforms have an OpenAI-compatible endpoi
+Test : 12/21 correct, precision=100% recall=0% accuracy=57% (0.0s)
+  [FAIL] rate=0/3 expected=True: we keep hallucinating params for the Twilio REST API. can yo
+  [FAIL] rate=0/3 expected=True: create a skill from these API docs: https://docs.firecrawl.d
+  [FAIL] rate=0/3 expected=True: 我们上周做的 autodl 那个 skill 里 elastic deployment 部分还没验证，现在拿到企业认证的
+  [PASS] rate=0/3 expected=False: 帮我把 https://resend.com/docs/api-reference/emails/send-email 
+  [PASS] rate=0/3 expected=False: 写一个 skill，让 claude 每次写 commit message 都按我们团队的 conventional c
+  [PASS] rate=0/3 expected=False: 给我们公司的 internal REST API 写一份 OpenAPI 3.0 规范，代码在 ./src/routes
+  [PASS] rate=0/3 expected=False: 帮我写一个爬虫把 docs.dify.ai 的所有页面抓下来存成 markdown，后面做全文检索用
+
+Max iterations reached (3).
+
+Exit reason: max_iterations (3)
+Best score: 4/7 (iteration 1)
+{
+  "exit_reason": "max_iterations (3)",
+  "original_description": "\u628a\u4e00\u4e2a SaaS / \u5f00\u653e\u5e73\u53f0 / \u4e91\u670d\u52a1\u7684\u5f00\u53d1\u8005\u6587\u6863\u7ad9\uff08\u4e00\u4e2a URL\uff09\u53d8\u6210\u4e00\u4efd\u53ef\u5b89\u88c5\u7684 Claude Skill\uff08SKILL.md + references/ + evals/\uff09\uff0c\u8ba9 Agent \u4e4b\u540e\u80fd\u7b2c\u4e00\u6b21\u5c31\u5199\u5bf9\u8c03\u7528\u8be5\u5e73\u53f0 API \u7684\u4ee3\u7801\uff0c\u800c\u4e0d\u662f\u51ed\u8bad\u7ec3\u8bb0\u5fc6\u7f16\u53c2\u6570\u540d\u3002\u6d41\u7a0b\u662f\uff1a\u6293\u53d6 llms.txt / OpenAPI \u6253\u8349\u7a3f \u2192 \u7528\u771f\u5b9e API Key \u9010\u6761\u9a8c\u8bc1\u5e76\u4fee\u6b63\u5b98\u65b9\u6587\u6863\u91cc\u7684\u9519\u8bef \u2192 \u7528\u6709 skill \u548c\u65e0 skill \u7684\u5bf9\u7167\u5b9e\u9a8c\u8bc1\u660e\u4ef7\u503c \u2192 \u7528 skill-creator \u4f18\u5316\u63cf\u8ff0\u5e76\u6253\u5305\u3002\u5f53\u7528\u6237\u8bf4\"\u5e2e\u6211\u505a\u4e00\u4e2a XXX \u7684\u63a5\u5165 skill\"\"\u628a\u8fd9\u4e2a\u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\"\"\u751f\u6210 XXX \u7684 SKILL.md\"\"create a skill from these API docs\"\uff0c\u6216\u8005\u7ed9\u51fa\u4e00\u4e2a\u5f00\u53d1\u8005\u6587\u6863 / API reference \u7684 URL \u5e76\u5e0c\u671b\"\u4ee5\u540e Agent \u80fd\u76f4\u63a5\u7528\"\u65f6\uff0c\u52a1\u5fc5\u4f7f\u7528\u672c\u6280\u80fd\u2014\u2014\u54ea\u6015\u7528\u6237\u6ca1\u8bf4\"skill\"\u8fd9\u4e2a\u8bcd\uff0c\u53ea\u8bf4\"\u628a\u8fd9\u5957 API \u6587\u6863\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\"\u4e5f\u5e94\u89e6\u53d1\u3002\u4e0d\u9002\u7528\u4e8e\uff1a\u53ea\u67e5\u4e00\u6b21\u67d0\u4e2a\u63a5\u53e3\u600e\u4e48\u8c03\uff0c\u6216\u8005\u505a\u4e0e\u7b2c\u4e09\u65b9 API \u65e0\u5173\u7684\u901a\u7528 skill\uff08\u90a3\u79cd\u76f4\u63a5\u7528 skill-creator\uff09\u3002",
+  "best_description": "\u628a\u4e00\u4e2a SaaS / \u5f00\u653e\u5e73\u53f0 / \u4e91\u670d\u52a1\u7684\u5f00\u53d1\u8005\u6587\u6863\u7ad9\uff08\u4e00\u4e2a URL\uff09\u53d8\u6210\u4e00\u4efd\u53ef\u5b89\u88c5\u7684 Claude Skill\uff08SKILL.md + references/ + evals/\uff09\uff0c\u8ba9 Agent \u4e4b\u540e\u80fd\u7b2c\u4e00\u6b21\u5c31\u5199\u5bf9\u8c03\u7528\u8be5\u5e73\u53f0 API \u7684\u4ee3\u7801\uff0c\u800c\u4e0d\u662f\u51ed\u8bad\u7ec3\u8bb0\u5fc6\u7f16\u53c2\u6570\u540d\u3002\u6d41\u7a0b\u662f\uff1a\u6293\u53d6 llms.txt / OpenAPI \u6253\u8349\u7a3f \u2192 \u7528\u771f\u5b9e API Key \u9010\u6761\u9a8c\u8bc1\u5e76\u4fee\u6b63\u5b98\u65b9\u6587\u6863\u91cc\u7684\u9519\u8bef \u2192 \u7528\u6709 skill \u548c\u65e0 skill \u7684\u5bf9\u7167\u5b9e\u9a8c\u8bc1\u660e\u4ef7\u503c \u2192 \u7528 skill-creator \u4f18\u5316\u63cf\u8ff0\u5e76\u6253\u5305\u3002\u5f53\u7528\u6237\u8bf4\"\u5e2e\u6211\u505a\u4e00\u4e2a XXX \u7684\u63a5\u5165 skill\"\"\u628a\u8fd9\u4e2a\u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\"\"\u751f\u6210 XXX \u7684 SKILL.md\"\"create a skill from these API docs\"\uff0c\u6216\u8005\u7ed9\u51fa\u4e00\u4e2a\u5f00\u53d1\u8005\u6587\u6863 / API reference \u7684 URL \u5e76\u5e0c\u671b\"\u4ee5\u540e Agent \u80fd\u76f4\u63a5\u7528\"\u65f6\uff0c\u52a1\u5fc5\u4f7f\u7528\u672c\u6280\u80fd\u2014\u2014\u54ea\u6015\u7528\u6237\u6ca1\u8bf4\"skill\"\u8fd9\u4e2a\u8bcd\uff0c\u53ea\u8bf4\"\u628a\u8fd9\u5957 API \u6587\u6863\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\"\u4e5f\u5e94\u89e6\u53d1\u3002\u4e0d\u9002\u7528\u4e8e\uff1a\u53ea\u67e5\u4e00\u6b21\u67d0\u4e2a\u63a5\u53e3\u600e\u4e48\u8c03\uff0c\u6216\u8005\u505a\u4e0e\u7b2c\u4e09\u65b9 API \u65e0\u5173\u7684\u901a\u7528 skill\uff08\u90a3\u79cd\u76f4\u63a5\u7528 skill-creator\uff09\u3002",
+  "best_score": "4/7",
+  "best_train_score": "7/13",
+  "best_test_score": "4/7",
+  "final_description": "Use when a user points at a third-party platform's developer docs (a docs site URL, API reference, OpenAPI/llms.txt, or an internal SaaS portal) and wants that knowledge captured so agents can call the API correctly later. The output is an installable Claude Skill folder \u2014 SKILL.md plus references and evals \u2014 optionally verified against the live API with a real key and A/B tested against no-skill baselines.\n\nTypical asks, in any language: \"\u505a\u4e00\u4e2a XXX \u7684\u63a5\u5165 skill\", \"\u628a\u8fd9\u5957 API \u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305 / \u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\", \"\u751f\u6210 SKILL.md\", \"turn these API docs into a skill\", \"install it into ~/.claude/skills\". Also use when the word \"skill\" is absent but the goal is the same \u2014 stop our agent from inventing endpoints, model names, or parameter names \u2014 and when only part of a platform is in scope.\n\nDo not use for: answering a single API question, writing or debugging app code that calls an API, or summarizing docs for a human audience.",
+  "iterations_run": 3,
+  "holdout": 0.4,
+  "train_size": 13,
+  "test_size": 7,
+  "history": [
+    {
+      "iteration": 1,
+      "description": "\u628a\u4e00\u4e2a SaaS / \u5f00\u653e\u5e73\u53f0 / \u4e91\u670d\u52a1\u7684\u5f00\u53d1\u8005\u6587\u6863\u7ad9\uff08\u4e00\u4e2a URL\uff09\u53d8\u6210\u4e00\u4efd\u53ef\u5b89\u88c5\u7684 Claude Skill\uff08SKILL.md + references/ + evals/\uff09\uff0c\u8ba9 Agent \u4e4b\u540e\u80fd\u7b2c\u4e00\u6b21\u5c31\u5199\u5bf9\u8c03\u7528\u8be5\u5e73\u53f0 API \u7684\u4ee3\u7801\uff0c\u800c\u4e0d\u662f\u51ed\u8bad\u7ec3\u8bb0\u5fc6\u7f16\u53c2\u6570\u540d\u3002\u6d41\u7a0b\u662f\uff1a\u6293\u53d6 llms.txt / OpenAPI \u6253\u8349\u7a3f \u2192 \u7528\u771f\u5b9e API Key \u9010\u6761\u9a8c\u8bc1\u5e76\u4fee\u6b63\u5b98\u65b9\u6587\u6863\u91cc\u7684\u9519\u8bef \u2192 \u7528\u6709 skill \u548c\u65e0 skill \u7684\u5bf9\u7167\u5b9e\u9a8c\u8bc1\u660e\u4ef7\u503c \u2192 \u7528 skill-creator \u4f18\u5316\u63cf\u8ff0\u5e76\u6253\u5305\u3002\u5f53\u7528\u6237\u8bf4\"\u5e2e\u6211\u505a\u4e00\u4e2a XXX \u7684\u63a5\u5165 skill\"\"\u628a\u8fd9\u4e2a\u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\"\"\u751f\u6210 XXX \u7684 SKILL.md\"\"create a skill from these API docs\"\uff0c\u6216\u8005\u7ed9\u51fa\u4e00\u4e2a\u5f00\u53d1\u8005\u6587\u6863 / API reference \u7684 URL \u5e76\u5e0c\u671b\"\u4ee5\u540e Agent \u80fd\u76f4\u63a5\u7528\"\u65f6\uff0c\u52a1\u5fc5\u4f7f\u7528\u672c\u6280\u80fd\u2014\u2014\u54ea\u6015\u7528\u6237\u6ca1\u8bf4\"skill\"\u8fd9\u4e2a\u8bcd\uff0c\u53ea\u8bf4\"\u628a\u8fd9\u5957 API \u6587\u6863\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\"\u4e5f\u5e94\u89e6\u53d1\u3002\u4e0d\u9002\u7528\u4e8e\uff1a\u53ea\u67e5\u4e00\u6b21\u67d0\u4e2a\u63a5\u53e3\u600e\u4e48\u8c03\uff0c\u6216\u8005\u505a\u4e0e\u7b2c\u4e09\u65b9 API \u65e0\u5173\u7684\u901a\u7528 skill\uff08\u90a3\u79cd\u76f4\u63a5\u7528 skill-creator\uff09\u3002",
+      "train_passed": 7,
+      "train_failed": 6,
+      "train_total": 13,
+      "train_results": [
+        {
+          "query": "\u8fd9\u662f\u706b\u5c71\u5f15\u64ce\u8c46\u5305\u5927\u6a21\u578b\u7684 API reference https://www.volcengine.com/docs/82379 \uff0c\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\uff0c\u4e0d\u7528\u7ed9\u6211\u5199\u6559\u7a0b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a open.feishu.cn \u7684\u670d\u52a1\u7aef API \u6587\u6863\u505a\u6210\u6280\u80fd\u5305\uff0c\u91cd\u70b9\u662f\u6d88\u606f\u548c\u65e5\u5386\u4e24\u5757\uff0c\u5176\u4ed6\u5148\u4e0d\u7ba1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6709\u4e2a\u5185\u90e8 SaaS\uff0c\u6587\u6863\u7ad9\u662f Mintlify \u5efa\u7684 https://docs.acme-internal.dev \uff0c\u6709 openapi.json\u3002\u60f3\u505a\u6210 skill \u88c5\u5230 ~/.claude/skills \u91cc\uff0c\u987a\u4fbf\u8bc1\u660e\u4e00\u4e0b\u88c5\u4e86\u786e\u5b9e\u6bd4\u4e0d\u88c5\u5f3a",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u751f\u6210\u4e00\u4efd Stripe \u7684 SKILL.md \u548c references\uff0c\u8981\u6c42\u7ecf\u8fc7\u771f\u5b9e API \u9a8c\u8bc1\uff0c\u6211\u8fd9\u6709 test mode \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u505a\u4e00\u4e2a Resend \u7684\u63a5\u5165 skill\uff0c\u6587\u6863\u5728 https://resend.com/docs\uff0c\u4ee5\u540e\u8ba9 agent \u76f4\u63a5\u80fd\u5199\u5bf9\u53d1\u90ae\u4ef6\u7684\u4ee3\u7801",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a https://platform.moonshot.cn/docs \u8fd9\u5957 Kimi \u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\uff0c\u6211\u4eec\u56e2\u961f\u7684 agent \u8001\u662f\u628a model \u540d\u5b57\u5199\u9519",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "build an MCP server that wraps the Linear API so claude can create issues",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u603b\u7ed3\u4e00\u4e0b Stripe \u7684 webhook \u6587\u6863\uff0c\u6211\u8981\u5728\u5468\u4f1a\u4e0a\u8bb2 10 \u5206\u949f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 Resend \u5199\u4e2a TypeScript \u51fd\u6570\uff0c\u53d1\u4e00\u5c01\u5e26\u9644\u4ef6\u7684\u90ae\u4ef6\u7ed9\u7528\u6237\uff0c\u9644\u4ef6\u662f PDF",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u8fd9\u4e2a\u8c03 Kimi API \u7684\u811a\u672c\u4e00\u76f4\u62a5 401\uff0ckey \u662f\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u7684\uff0c\u5e2e\u6211\u770b\u770b\u54ea\u91cc\u4e0d\u5bf9",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e00\u4e0b\u667a\u8c31 GLM \u7684 chat completions \u63a5\u53e3 tool_choice \u652f\u6301\u5f3a\u5236\u6307\u5b9a\u51fd\u6570\u5417\uff1f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "optimize the description of my existing pdf-tools skill so it triggers more reliably, the SKILL.md is in ~/.claude/skills/pdf-tools",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "which Chinese LLM platforms have an OpenAI-compatible endpoint? compare bigmodel, moonshot, deepseek",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 3,
+      "test_total": 7,
+      "test_results": [
+        {
+          "query": "we keep hallucinating params for the Twilio REST API. can you turn https://www.twilio.com/docs/usage/api into a claude skill so future agents get it right the first time?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "create a skill from these API docs: https://docs.firecrawl.dev \u2014 python examples pls, i have an api key with some credits so real calls are fine",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u4e0a\u5468\u505a\u7684 autodl \u90a3\u4e2a skill \u91cc elastic deployment \u90e8\u5206\u8fd8\u6ca1\u9a8c\u8bc1\uff0c\u73b0\u5728\u62ff\u5230\u4f01\u4e1a\u8ba4\u8bc1\u7684 token \u4e86\uff0c\u628a\u9a8c\u8bc1\u8865\u5b8c\u5e76\u66f4\u65b0 references",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a https://resend.com/docs/api-reference/emails/send-email \u8fd9\u4e00\u9875\u7ffb\u8bd1\u6210\u4e2d\u6587",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a skill\uff0c\u8ba9 claude \u6bcf\u6b21\u5199 commit message \u90fd\u6309\u6211\u4eec\u56e2\u961f\u7684 conventional commits \u89c4\u8303\u6765",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7ed9\u6211\u4eec\u516c\u53f8\u7684 internal REST API \u5199\u4e00\u4efd OpenAPI 3.0 \u89c4\u8303\uff0c\u4ee3\u7801\u5728 ./src/routes \u4e0b\uff0c\u7528 FastAPI",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e00\u4e2a\u722c\u866b\u628a docs.dify.ai \u7684\u6240\u6709\u9875\u9762\u6293\u4e0b\u6765\u5b58\u6210 markdown\uff0c\u540e\u9762\u505a\u5168\u6587\u68c0\u7d22\u7528",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 7,
+      "failed": 6,
+      "total": 13,
+      "results": [
+        {
+          "query": "\u8fd9\u662f\u706b\u5c71\u5f15\u64ce\u8c46\u5305\u5927\u6a21\u578b\u7684 API reference https://www.volcengine.com/docs/82379 \uff0c\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\uff0c\u4e0d\u7528\u7ed9\u6211\u5199\u6559\u7a0b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a open.feishu.cn \u7684\u670d\u52a1\u7aef API \u6587\u6863\u505a\u6210\u6280\u80fd\u5305\uff0c\u91cd\u70b9\u662f\u6d88\u606f\u548c\u65e5\u5386\u4e24\u5757\uff0c\u5176\u4ed6\u5148\u4e0d\u7ba1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6709\u4e2a\u5185\u90e8 SaaS\uff0c\u6587\u6863\u7ad9\u662f Mintlify \u5efa\u7684 https://docs.acme-internal.dev \uff0c\u6709 openapi.json\u3002\u60f3\u505a\u6210 skill \u88c5\u5230 ~/.claude/skills \u91cc\uff0c\u987a\u4fbf\u8bc1\u660e\u4e00\u4e0b\u88c5\u4e86\u786e\u5b9e\u6bd4\u4e0d\u88c5\u5f3a",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u751f\u6210\u4e00\u4efd Stripe \u7684 SKILL.md \u548c references\uff0c\u8981\u6c42\u7ecf\u8fc7\u771f\u5b9e API \u9a8c\u8bc1\uff0c\u6211\u8fd9\u6709 test mode \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u505a\u4e00\u4e2a Resend \u7684\u63a5\u5165 skill\uff0c\u6587\u6863\u5728 https://resend.com/docs\uff0c\u4ee5\u540e\u8ba9 agent \u76f4\u63a5\u80fd\u5199\u5bf9\u53d1\u90ae\u4ef6\u7684\u4ee3\u7801",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a https://platform.moonshot.cn/docs \u8fd9\u5957 Kimi \u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\uff0c\u6211\u4eec\u56e2\u961f\u7684 agent \u8001\u662f\u628a model \u540d\u5b57\u5199\u9519",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "build an MCP server that wraps the Linear API so claude can create issues",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u603b\u7ed3\u4e00\u4e0b Stripe \u7684 webhook \u6587\u6863\uff0c\u6211\u8981\u5728\u5468\u4f1a\u4e0a\u8bb2 10 \u5206\u949f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 Resend \u5199\u4e2a TypeScript \u51fd\u6570\uff0c\u53d1\u4e00\u5c01\u5e26\u9644\u4ef6\u7684\u90ae\u4ef6\u7ed9\u7528\u6237\uff0c\u9644\u4ef6\u662f PDF",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u8fd9\u4e2a\u8c03 Kimi API \u7684\u811a\u672c\u4e00\u76f4\u62a5 401\uff0ckey \u662f\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u7684\uff0c\u5e2e\u6211\u770b\u770b\u54ea\u91cc\u4e0d\u5bf9",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e00\u4e0b\u667a\u8c31 GLM \u7684 chat completions \u63a5\u53e3 tool_choice \u652f\u6301\u5f3a\u5236\u6307\u5b9a\u51fd\u6570\u5417\uff1f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "optimize the description of my existing pdf-tools skill so it triggers more reliably, the SKILL.md is in ~/.claude/skills/pdf-tools",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "which Chinese LLM platforms have an OpenAI-compatible endpoint? compare bigmodel, moonshot, deepseek",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "description": "Use this skill when someone wants a third-party platform's developer docs turned into durable, reusable knowledge an agent can use later \u2014 packaged as an installable Claude Skill (SKILL.md + references/ + evals/), so agents write correct API code instead of hallucinating endpoints, model names, and parameters.\n\nTrigger on any ask to package, convert, or \u6574\u7406 an API reference / docs site / OpenAPI / llms.txt (Stripe, Resend, \u98de\u4e66, \u667a\u8c31, Kimi, \u706b\u5c71\u5f15\u64ce, an internal SaaS\u2026) into something an agent or AI can use: \"\u505a\u4e00\u4e2a XXX \u7684\u63a5\u5165 skill\", \"\u628a\u6587\u6863\u505a\u6210\u6280\u80fd\u5305 / \u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\", \"\u751f\u6210 SKILL.md\", \"create a skill from these API docs\", \"\u88c5\u5230 ~/.claude/skills\", or wanting docs verified with a real key or proven better than no skill. Trigger even when the word \"skill\" never appears, and for partial scopes (just messages + calendar).\n\nNot for: answering one API question, writing app code against an API, debugging a call, or summarizing docs for humans.",
+      "train_passed": 7,
+      "train_failed": 6,
+      "train_total": 13,
+      "train_results": [
+        {
+          "query": "\u8fd9\u662f\u706b\u5c71\u5f15\u64ce\u8c46\u5305\u5927\u6a21\u578b\u7684 API reference https://www.volcengine.com/docs/82379 \uff0c\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\uff0c\u4e0d\u7528\u7ed9\u6211\u5199\u6559\u7a0b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a open.feishu.cn \u7684\u670d\u52a1\u7aef API \u6587\u6863\u505a\u6210\u6280\u80fd\u5305\uff0c\u91cd\u70b9\u662f\u6d88\u606f\u548c\u65e5\u5386\u4e24\u5757\uff0c\u5176\u4ed6\u5148\u4e0d\u7ba1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6709\u4e2a\u5185\u90e8 SaaS\uff0c\u6587\u6863\u7ad9\u662f Mintlify \u5efa\u7684 https://docs.acme-internal.dev \uff0c\u6709 openapi.json\u3002\u60f3\u505a\u6210 skill \u88c5\u5230 ~/.claude/skills \u91cc\uff0c\u987a\u4fbf\u8bc1\u660e\u4e00\u4e0b\u88c5\u4e86\u786e\u5b9e\u6bd4\u4e0d\u88c5\u5f3a",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u751f\u6210\u4e00\u4efd Stripe \u7684 SKILL.md \u548c references\uff0c\u8981\u6c42\u7ecf\u8fc7\u771f\u5b9e API \u9a8c\u8bc1\uff0c\u6211\u8fd9\u6709 test mode \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a https://platform.moonshot.cn/docs \u8fd9\u5957 Kimi \u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\uff0c\u6211\u4eec\u56e2\u961f\u7684 agent \u8001\u662f\u628a model \u540d\u5b57\u5199\u9519",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u505a\u4e00\u4e2a Resend \u7684\u63a5\u5165 skill\uff0c\u6587\u6863\u5728 https://resend.com/docs\uff0c\u4ee5\u540e\u8ba9 agent \u76f4\u63a5\u80fd\u5199\u5bf9\u53d1\u90ae\u4ef6\u7684\u4ee3\u7801",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "build an MCP server that wraps the Linear API so claude can create issues",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u603b\u7ed3\u4e00\u4e0b Stripe \u7684 webhook \u6587\u6863\uff0c\u6211\u8981\u5728\u5468\u4f1a\u4e0a\u8bb2 10 \u5206\u949f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u8fd9\u4e2a\u8c03 Kimi API \u7684\u811a\u672c\u4e00\u76f4\u62a5 401\uff0ckey \u662f\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u7684\uff0c\u5e2e\u6211\u770b\u770b\u54ea\u91cc\u4e0d\u5bf9",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e00\u4e0b\u667a\u8c31 GLM \u7684 chat completions \u63a5\u53e3 tool_choice \u652f\u6301\u5f3a\u5236\u6307\u5b9a\u51fd\u6570\u5417\uff1f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 Resend \u5199\u4e2a TypeScript \u51fd\u6570\uff0c\u53d1\u4e00\u5c01\u5e26\u9644\u4ef6\u7684\u90ae\u4ef6\u7ed9\u7528\u6237\uff0c\u9644\u4ef6\u662f PDF",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "optimize the description of my existing pdf-tools skill so it triggers more reliably, the SKILL.md is in ~/.claude/skills/pdf-tools",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "which Chinese LLM platforms have an OpenAI-compatible endpoint? compare bigmodel, moonshot, deepseek",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 3,
+      "test_total": 7,
+      "test_results": [
+        {
+          "query": "we keep hallucinating params for the Twilio REST API. can you turn https://www.twilio.com/docs/usage/api into a claude skill so future agents get it right the first time?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "create a skill from these API docs: https://docs.firecrawl.dev \u2014 python examples pls, i have an api key with some credits so real calls are fine",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u4e0a\u5468\u505a\u7684 autodl \u90a3\u4e2a skill \u91cc elastic deployment \u90e8\u5206\u8fd8\u6ca1\u9a8c\u8bc1\uff0c\u73b0\u5728\u62ff\u5230\u4f01\u4e1a\u8ba4\u8bc1\u7684 token \u4e86\uff0c\u628a\u9a8c\u8bc1\u8865\u5b8c\u5e76\u66f4\u65b0 references",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a https://resend.com/docs/api-reference/emails/send-email \u8fd9\u4e00\u9875\u7ffb\u8bd1\u6210\u4e2d\u6587",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a skill\uff0c\u8ba9 claude \u6bcf\u6b21\u5199 commit message \u90fd\u6309\u6211\u4eec\u56e2\u961f\u7684 conventional commits \u89c4\u8303\u6765",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7ed9\u6211\u4eec\u516c\u53f8\u7684 internal REST API \u5199\u4e00\u4efd OpenAPI 3.0 \u89c4\u8303\uff0c\u4ee3\u7801\u5728 ./src/routes \u4e0b\uff0c\u7528 FastAPI",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e00\u4e2a\u722c\u866b\u628a docs.dify.ai \u7684\u6240\u6709\u9875\u9762\u6293\u4e0b\u6765\u5b58\u6210 markdown\uff0c\u540e\u9762\u505a\u5168\u6587\u68c0\u7d22\u7528",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 7,
+      "failed": 6,
+      "total": 13,
+      "results": [
+        {
+          "query": "\u8fd9\u662f\u706b\u5c71\u5f15\u64ce\u8c46\u5305\u5927\u6a21\u578b\u7684 API reference https://www.volcengine.com/docs/82379 \uff0c\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\uff0c\u4e0d\u7528\u7ed9\u6211\u5199\u6559\u7a0b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a open.feishu.cn \u7684\u670d\u52a1\u7aef API \u6587\u6863\u505a\u6210\u6280\u80fd\u5305\uff0c\u91cd\u70b9\u662f\u6d88\u606f\u548c\u65e5\u5386\u4e24\u5757\uff0c\u5176\u4ed6\u5148\u4e0d\u7ba1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6709\u4e2a\u5185\u90e8 SaaS\uff0c\u6587\u6863\u7ad9\u662f Mintlify \u5efa\u7684 https://docs.acme-internal.dev \uff0c\u6709 openapi.json\u3002\u60f3\u505a\u6210 skill \u88c5\u5230 ~/.claude/skills \u91cc\uff0c\u987a\u4fbf\u8bc1\u660e\u4e00\u4e0b\u88c5\u4e86\u786e\u5b9e\u6bd4\u4e0d\u88c5\u5f3a",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u751f\u6210\u4e00\u4efd Stripe \u7684 SKILL.md \u548c references\uff0c\u8981\u6c42\u7ecf\u8fc7\u771f\u5b9e API \u9a8c\u8bc1\uff0c\u6211\u8fd9\u6709 test mode \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a https://platform.moonshot.cn/docs \u8fd9\u5957 Kimi \u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\uff0c\u6211\u4eec\u56e2\u961f\u7684 agent \u8001\u662f\u628a model \u540d\u5b57\u5199\u9519",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u505a\u4e00\u4e2a Resend \u7684\u63a5\u5165 skill\uff0c\u6587\u6863\u5728 https://resend.com/docs\uff0c\u4ee5\u540e\u8ba9 agent \u76f4\u63a5\u80fd\u5199\u5bf9\u53d1\u90ae\u4ef6\u7684\u4ee3\u7801",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "build an MCP server that wraps the Linear API so claude can create issues",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u603b\u7ed3\u4e00\u4e0b Stripe \u7684 webhook \u6587\u6863\uff0c\u6211\u8981\u5728\u5468\u4f1a\u4e0a\u8bb2 10 \u5206\u949f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u8fd9\u4e2a\u8c03 Kimi API \u7684\u811a\u672c\u4e00\u76f4\u62a5 401\uff0ckey \u662f\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u7684\uff0c\u5e2e\u6211\u770b\u770b\u54ea\u91cc\u4e0d\u5bf9",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e00\u4e0b\u667a\u8c31 GLM \u7684 chat completions \u63a5\u53e3 tool_choice \u652f\u6301\u5f3a\u5236\u6307\u5b9a\u51fd\u6570\u5417\uff1f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 Resend \u5199\u4e2a TypeScript \u51fd\u6570\uff0c\u53d1\u4e00\u5c01\u5e26\u9644\u4ef6\u7684\u90ae\u4ef6\u7ed9\u7528\u6237\uff0c\u9644\u4ef6\u662f PDF",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "optimize the description of my existing pdf-tools skill so it triggers more reliably, the SKILL.md is in ~/.claude/skills/pdf-tools",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "which Chinese LLM platforms have an OpenAI-compatible endpoint? compare bigmodel, moonshot, deepseek",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "description": "Use when a user points at a third-party platform's developer docs (a docs site URL, API reference, OpenAPI/llms.txt, or an internal SaaS portal) and wants that knowledge captured so agents can call the API correctly later. The output is an installable Claude Skill folder \u2014 SKILL.md plus references and evals \u2014 optionally verified against the live API with a real key and A/B tested against no-skill baselines.\n\nTypical asks, in any language: \"\u505a\u4e00\u4e2a XXX \u7684\u63a5\u5165 skill\", \"\u628a\u8fd9\u5957 API \u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305 / \u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\", \"\u751f\u6210 SKILL.md\", \"turn these API docs into a skill\", \"install it into ~/.claude/skills\". Also use when the word \"skill\" is absent but the goal is the same \u2014 stop our agent from inventing endpoints, model names, or parameter names \u2014 and when only part of a platform is in scope.\n\nDo not use for: answering a single API question, writing or debugging app code that calls an API, or summarizing docs for a human audience.",
+      "train_passed": 7,
+      "train_failed": 6,
+      "train_total": 13,
+      "train_results": [
+        {
+          "query": "\u8fd9\u662f\u706b\u5c71\u5f15\u64ce\u8c46\u5305\u5927\u6a21\u578b\u7684 API reference https://www.volcengine.com/docs/82379 \uff0c\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\uff0c\u4e0d\u7528\u7ed9\u6211\u5199\u6559\u7a0b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a open.feishu.cn \u7684\u670d\u52a1\u7aef API \u6587\u6863\u505a\u6210\u6280\u80fd\u5305\uff0c\u91cd\u70b9\u662f\u6d88\u606f\u548c\u65e5\u5386\u4e24\u5757\uff0c\u5176\u4ed6\u5148\u4e0d\u7ba1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u751f\u6210\u4e00\u4efd Stripe \u7684 SKILL.md \u548c references\uff0c\u8981\u6c42\u7ecf\u8fc7\u771f\u5b9e API \u9a8c\u8bc1\uff0c\u6211\u8fd9\u6709 test mode \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6709\u4e2a\u5185\u90e8 SaaS\uff0c\u6587\u6863\u7ad9\u662f Mintlify \u5efa\u7684 https://docs.acme-internal.dev \uff0c\u6709 openapi.json\u3002\u60f3\u505a\u6210 skill \u88c5\u5230 ~/.claude/skills \u91cc\uff0c\u987a\u4fbf\u8bc1\u660e\u4e00\u4e0b\u88c5\u4e86\u786e\u5b9e\u6bd4\u4e0d\u88c5\u5f3a",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u505a\u4e00\u4e2a Resend \u7684\u63a5\u5165 skill\uff0c\u6587\u6863\u5728 https://resend.com/docs\uff0c\u4ee5\u540e\u8ba9 agent \u76f4\u63a5\u80fd\u5199\u5bf9\u53d1\u90ae\u4ef6\u7684\u4ee3\u7801",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a https://platform.moonshot.cn/docs \u8fd9\u5957 Kimi \u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\uff0c\u6211\u4eec\u56e2\u961f\u7684 agent \u8001\u662f\u628a model \u540d\u5b57\u5199\u9519",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "build an MCP server that wraps the Linear API so claude can create issues",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u603b\u7ed3\u4e00\u4e0b Stripe \u7684 webhook \u6587\u6863\uff0c\u6211\u8981\u5728\u5468\u4f1a\u4e0a\u8bb2 10 \u5206\u949f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u8fd9\u4e2a\u8c03 Kimi API \u7684\u811a\u672c\u4e00\u76f4\u62a5 401\uff0ckey \u662f\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u7684\uff0c\u5e2e\u6211\u770b\u770b\u54ea\u91cc\u4e0d\u5bf9",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 Resend \u5199\u4e2a TypeScript \u51fd\u6570\uff0c\u53d1\u4e00\u5c01\u5e26\u9644\u4ef6\u7684\u90ae\u4ef6\u7ed9\u7528\u6237\uff0c\u9644\u4ef6\u662f PDF",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e00\u4e0b\u667a\u8c31 GLM \u7684 chat completions \u63a5\u53e3 tool_choice \u652f\u6301\u5f3a\u5236\u6307\u5b9a\u51fd\u6570\u5417\uff1f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "optimize the description of my existing pdf-tools skill so it triggers more reliably, the SKILL.md is in ~/.claude/skills/pdf-tools",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "which Chinese LLM platforms have an OpenAI-compatible endpoint? compare bigmodel, moonshot, deepseek",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 3,
+      "test_total": 7,
+      "test_results": [
+        {
+          "query": "we keep hallucinating params for the Twilio REST API. can you turn https://www.twilio.com/docs/usage/api into a claude skill so future agents get it right the first time?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "create a skill from these API docs: https://docs.firecrawl.dev \u2014 python examples pls, i have an api key with some credits so real calls are fine",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u4e0a\u5468\u505a\u7684 autodl \u90a3\u4e2a skill \u91cc elastic deployment \u90e8\u5206\u8fd8\u6ca1\u9a8c\u8bc1\uff0c\u73b0\u5728\u62ff\u5230\u4f01\u4e1a\u8ba4\u8bc1\u7684 token \u4e86\uff0c\u628a\u9a8c\u8bc1\u8865\u5b8c\u5e76\u66f4\u65b0 references",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a https://resend.com/docs/api-reference/emails/send-email \u8fd9\u4e00\u9875\u7ffb\u8bd1\u6210\u4e2d\u6587",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a skill\uff0c\u8ba9 claude \u6bcf\u6b21\u5199 commit message \u90fd\u6309\u6211\u4eec\u56e2\u961f\u7684 conventional commits \u89c4\u8303\u6765",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7ed9\u6211\u4eec\u516c\u53f8\u7684 internal REST API \u5199\u4e00\u4efd OpenAPI 3.0 \u89c4\u8303\uff0c\u4ee3\u7801\u5728 ./src/routes \u4e0b\uff0c\u7528 FastAPI",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e00\u4e2a\u722c\u866b\u628a docs.dify.ai \u7684\u6240\u6709\u9875\u9762\u6293\u4e0b\u6765\u5b58\u6210 markdown\uff0c\u540e\u9762\u505a\u5168\u6587\u68c0\u7d22\u7528",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 7,
+      "failed": 6,
+      "total": 13,
+      "results": [
+        {
+          "query": "\u8fd9\u662f\u706b\u5c71\u5f15\u64ce\u8c46\u5305\u5927\u6a21\u578b\u7684 API reference https://www.volcengine.com/docs/82379 \uff0c\u6574\u7406\u6210 AI \u80fd\u7528\u7684\u4e1c\u897f\uff0c\u4e0d\u7528\u7ed9\u6211\u5199\u6559\u7a0b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a open.feishu.cn \u7684\u670d\u52a1\u7aef API \u6587\u6863\u505a\u6210\u6280\u80fd\u5305\uff0c\u91cd\u70b9\u662f\u6d88\u606f\u548c\u65e5\u5386\u4e24\u5757\uff0c\u5176\u4ed6\u5148\u4e0d\u7ba1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u751f\u6210\u4e00\u4efd Stripe \u7684 SKILL.md \u548c references\uff0c\u8981\u6c42\u7ecf\u8fc7\u771f\u5b9e API \u9a8c\u8bc1\uff0c\u6211\u8fd9\u6709 test mode \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6709\u4e2a\u5185\u90e8 SaaS\uff0c\u6587\u6863\u7ad9\u662f Mintlify \u5efa\u7684 https://docs.acme-internal.dev \uff0c\u6709 openapi.json\u3002\u60f3\u505a\u6210 skill \u88c5\u5230 ~/.claude/skills \u91cc\uff0c\u987a\u4fbf\u8bc1\u660e\u4e00\u4e0b\u88c5\u4e86\u786e\u5b9e\u6bd4\u4e0d\u88c5\u5f3a",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u505a\u4e00\u4e2a Resend \u7684\u63a5\u5165 skill\uff0c\u6587\u6863\u5728 https://resend.com/docs\uff0c\u4ee5\u540e\u8ba9 agent \u76f4\u63a5\u80fd\u5199\u5bf9\u53d1\u90ae\u4ef6\u7684\u4ee3\u7801",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u628a https://platform.moonshot.cn/docs \u8fd9\u5957 Kimi \u5f00\u653e\u5e73\u53f0\u7684\u6587\u6863\u6574\u7406\u6210\u6280\u80fd\u5305\uff0c\u6211\u4eec\u56e2\u961f\u7684 agent \u8001\u662f\u628a model \u540d\u5b57\u5199\u9519",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "build an MCP server that wraps the Linear API so claude can create issues",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u603b\u7ed3\u4e00\u4e0b Stripe \u7684 webhook \u6587\u6863\uff0c\u6211\u8981\u5728\u5468\u4f1a\u4e0a\u8bb2 10 \u5206\u949f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u8fd9\u4e2a\u8c03 Kimi API \u7684\u811a\u672c\u4e00\u76f4\u62a5 401\uff0ckey \u662f\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u7684\uff0c\u5e2e\u6211\u770b\u770b\u54ea\u91cc\u4e0d\u5bf9",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 Resend \u5199\u4e2a TypeScript \u51fd\u6570\uff0c\u53d1\u4e00\u5c01\u5e26\u9644\u4ef6\u7684\u90ae\u4ef6\u7ed9\u7528\u6237\uff0c\u9644\u4ef6\u662f PDF",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e00\u4e0b\u667a\u8c31 GLM \u7684 chat completions \u63a5\u53e3 tool_choice \u652f\u6301\u5f3a\u5236\u6307\u5b9a\u51fd\u6570\u5417\uff1f",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "optimize the description of my existing pdf-tools skill so it triggers more reliably, the SKILL.md is in ~/.claude/skills/pdf-tools",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "which Chinese LLM platforms have an OpenAI-compatible endpoint? compare bigmodel, moonshot, deepseek",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}
+Report: /Users/chopinfeng/Workspace/Skillify/create-doc-skill-workspace/description-opt/run2/report.html
+Results saved to: /Users/chopinfeng/Workspace/Skillify/create-doc-skill-workspace/description-opt/run2/2026-09-03_191746
+
+run_loop exit: 0

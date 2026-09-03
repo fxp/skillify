@@ -1,0 +1,114 @@
+{
+  "skill_name": "resend",
+  "notes": "Comparison scenarios: each prompt is run once with the skill and once without (baseline, no skill). Scenarios deliberately target details an engineer experienced with SendGrid/SES/Postmark/Mailgun would guess wrong. Expectations are graded from the code the agent produces; the items tagged [LIVE] additionally need a real RESEND_API_KEY to be settled and are cross-referenced in verification-plan.md.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "raw-fetch-user-agent",
+      "prompt": "I'm on Cloudflare Workers and don't want to add the resend npm package. Write a TypeScript function sendWelcome(email: string) that POSTs a welcome email through the Resend REST API using fetch. Our sender is Acme <hello@mail.acme.dev>. The API key is in env.RESEND_API_KEY. Return the email id.",
+      "expected_output": "A fetch() call to https://api.resend.com/emails with Authorization: Bearer, Content-Type: application/json, AND a User-Agent header; snake_case JSON body (from, to, subject, html/text); reads data.id from the JSON response; handles non-2xx.",
+      "files": [],
+      "expectations": [
+        "The request sets a User-Agent header (Resend rejects raw requests without one with 403 / error 1010)",
+        "The request URL is exactly https://api.resend.com/emails (no /v1 prefix, no trailing path)",
+        "The body uses snake_case field names when raw JSON is sent (e.g. reply_to, not replyTo)",
+        "The Authorization header is `Bearer <key>` read from env, and no key literal appears in the code",
+        "The code checks response.ok / status and surfaces the error body's name and message"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "batch-with-attachments-trap",
+      "prompt": "We generate 300 monthly invoices as PDFs (Buffers in memory). Write TypeScript using the Resend Node SDK that emails each customer their own PDF invoice as an attachment, as efficiently as possible, respecting Resend's limits. Sender: billing@invoices.acme.dev.",
+      "expected_output": "Does NOT use resend.batch.send for attachments (batch endpoint does not support attachments); sends individually with attachments[{ filename, content }], throttles to <= 10 req/s, uses camelCase, and ideally an idempotency key per invoice.",
+      "files": [],
+      "expectations": [
+        "The solution does not put attachments inside a batch.send() call (batch endpoint does not support attachments)",
+        "Attachments are passed as { filename, content } with content as a Buffer or base64 string (or { filename, path } for a URL)",
+        "Sending is throttled or queued to stay within 10 requests per second",
+        "An idempotency key is supplied per invoice via the second argument of emails.send (e.g. `invoice/<id>`), or the answer explains why not",
+        "The code checks the { data, error } result instead of relying on try/catch for API errors"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "schedule-and-cancel",
+      "prompt": "Using the Resend Node SDK in TypeScript: schedule a reminder email to go out 24 hours before an event (I have eventStart as a Date), store whatever id I need, and write a second function cancelReminder(id) that cancels it if the user unregisters. Note any limits I should know about.",
+      "expected_output": "Uses scheduledAt (camelCase) with an ISO 8601 string (or documents natural-language option), stores data.id from emails.send, cancels with resend.emails.cancel(id), mentions the 30-day horizon and that a canceled email cannot be rescheduled.",
+      "files": [],
+      "expectations": [
+        "The scheduling field is named scheduledAt in the SDK (or scheduled_at in raw JSON), not sendAt/send_at",
+        "The value is an ISO 8601 timestamp string (toISOString) or the answer notes natural language is also accepted",
+        "Cancellation uses resend.emails.cancel(id) (POST /emails/{id}/cancel), not a DELETE",
+        "The answer mentions the 30-day maximum scheduling window",
+        "The answer mentions that a canceled email cannot be rescheduled (use emails.update to reschedule instead)"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "nextjs-webhook-verification",
+      "prompt": "Write a Next.js 14 App Router route handler (app/api/resend/route.ts, TypeScript) that receives Resend webhooks, verifies the signature, ignores duplicate deliveries, and on email.bounced marks the user in our DB as bounced (call markBounced(email)). The signing secret is in RESEND_WEBHOOK_SECRET.",
+      "expected_output": "Reads the raw body with request.text(), verifies using svix headers (svix-id, svix-timestamp, svix-signature) via resend.webhooks.verify or the svix package, dedupes on svix-id, reads event.type === 'email.bounced' and event.data.to[] (array), returns 200 fast.",
+      "files": [],
+      "expectations": [
+        "The raw request body string (request.text()) is used for verification, not a re-serialized JSON object",
+        "Verification uses the svix-id, svix-timestamp and svix-signature headers (via resend.webhooks.verify or the svix package), read with request.headers.get()",
+        "Duplicate deliveries are handled by de-duplicating on the svix-id header (at-least-once delivery)",
+        "The bounced recipient is taken from event.data.to (an array), and event.type is compared to 'email.bounced'",
+        "The handler returns a 2xx response promptly and a 400 on signature failure"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "template-send-with-variables",
+      "prompt": "We created a Resend template with alias 'order-confirmation' that uses {{{PRODUCT}}} and {{{PRICE}}}. Write a TypeScript function sendOrderConfirmation(to, product, price) with the Resend Node SDK. Also tell me what has to be true about the template before this works.",
+      "expected_output": "emails.send with template: { id: 'order-confirmation', variables: { PRODUCT, PRICE } } and no html/text/react; states the template must be published; mentions from/subject fall back to template defaults but must be provided if the template lacks them; notes missing variables without fallback cause a validation error.",
+      "files": [],
+      "expectations": [
+        "The payload uses template: { id, variables } where id can be the alias, and does not also pass html, text or react",
+        "The answer states the template must be published before it can be used for sending",
+        "The answer explains from/subject/reply_to precedence (payload overrides template defaults; required if the template has none)",
+        "The answer notes that a variable without a value or fallback causes a validation error"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "domain-setup-dns-records",
+      "prompt": "Write a small TypeScript CLI script that adds the domain notifications.acme.dev to Resend in the EU region, prints the DNS records our ops team needs to add (type, name, value, priority), and then has a second command `verify` that triggers verification and prints the status.",
+      "expected_output": "resend.domains.create({ name, region: 'eu-west-1' }), iterate data.records printing record/type/name/value/priority, then resend.domains.verify(id) and resend.domains.get(id) to read status; mentions not proxying CNAMEs and possible 72h propagation.",
+      "files": [],
+      "expectations": [
+        "The region value is 'eu-west-1' (one of us-east-1 | eu-west-1 | sa-east-1 | ap-northeast-1)",
+        "DNS records are read from the create/get response's records[] array with fields type, name, value (and priority for MX)",
+        "Verification is triggered with domains.verify(id) (POST /domains/{id}/verify) and status is read from the domain object (pending/verified/failed...)",
+        "The answer warns that the domain must be verified before it can appear in a from address, and mentions CNAME proxying / propagation delay"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "list-all-emails-pagination",
+      "prompt": "Write a TypeScript async generator that yields every email our team has sent through Resend (use the Node SDK), newest first, so I can export them to CSV. It must not stop early and must not hammer the API.",
+      "expected_output": "Loops on resend.emails.list({ limit: 100, after: lastId }) checking has_more, cursor = id of last item, respects rate limits (small delay / sequential), does not use page numbers or offset.",
+      "files": [],
+      "expectations": [
+        "Pagination uses the cursor parameters after/before with the id of the last/first item, not page numbers or offsets",
+        "The loop terminates on has_more === false and passes limit <= 100",
+        "Requests are sequential and/or throttled so the 10 req/s team limit is not exceeded",
+        "The result shape { object: 'list', has_more, data } is read correctly (data array, has_more boolean)"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "inbound-email-body-fetch",
+      "prompt": "We set up inbound email on support.acme.dev with Resend. Write the TypeScript webhook handler (Express) that, when a new email arrives, fetches its full text body and any attachments and passes them to createTicket({ from, subject, text, attachments: [{ filename, url }] }).",
+      "expected_output": "Handles event.type === 'email.received'; recognises that the webhook contains metadata only; calls resend.emails.receiving.get(event.data.email_id) for html/text/headers and resend.emails.receiving.listAttachments / the attachments endpoint for download_url; verifies signature with raw body (express.raw).",
+      "files": [],
+      "expectations": [
+        "The handler recognises that the email.received webhook payload does not include the body and fetches it via the received-email API (GET /emails/receiving/{id})",
+        "Attachments are obtained from the received-email attachments endpoint, using the temporary download_url, not from the webhook payload",
+        "The Express route uses a raw-body parser so the Svix signature can be verified",
+        "The email id is read from event.data.email_id"
+      ]
+    }
+  ]
+}

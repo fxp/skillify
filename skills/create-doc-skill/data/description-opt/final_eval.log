@@ -1,0 +1,25 @@
+moved aside
+Evaluating: 把一个 SaaS / 开放平台 / 云服务的开发者文档站（一个 URL）变成一份可安装的 Claude Skill（SKILL.md + references/ + evals/），让 Agent 之后能第一次就写对调用该平台 API 的代码，而不是凭训练记忆编参数名。流程是：抓取 llms.txt / OpenAPI 打草稿 → 用真实 API Key 逐条验证并修正官方文档里的错误 → 用有 skill 和无 skill 的对照实验证明价值 → 用 skill-creator 优化描述并打包。当用户说"帮我做一个 XXX 的接入 skill""把这个开放平台的文档整理成技能包""生成 XXX 的 SKILL.md""create a skill from these API docs"，或者给出一个开发者文档 / API reference 的 URL 并希望"以后 Agent 能直接用"时，务必使用本技能——哪怕用户没说"skill"这个词，只说"把这套 API 文档整理成 AI 能用的东西"也应触发；更新、补验证、迭代一份之前用这套方法生成的接入 skill（"拿到 key 了把 XX skill 的验证补完"）也用本技能。不适用于：只查一次某个接口怎么调，或者做与第三方 API 无关的通用 skill（那种直接用 skill-creator）。
+Results: 19/20 passed
+  [PASS] rate=1/2 expected=True: 帮我做一个 Resend 的接入 skill，文档在 https://resend.com/docs，以后让 agent 直接能写对发邮件的
+  [PASS] rate=1/2 expected=True: 把 https://platform.moonshot.cn/docs 这套 Kimi 开放平台的文档整理成技能包，我们团队的 agent 
+  [PASS] rate=1/2 expected=True: 生成一份 Stripe 的 SKILL.md 和 references，要求经过真实 API 验证，我这有 test mode 的 key
+  [PASS] rate=1/2 expected=True: we keep hallucinating params for the Twilio REST API. can you turn htt
+  [PASS] rate=1/2 expected=True: 这是火山引擎豆包大模型的 API reference https://www.volcengine.com/docs/82379 ，整理成 
+  [PASS] rate=2/2 expected=True: 有个内部 SaaS，文档站是 Mintlify 建的 https://docs.acme-internal.dev ，有 openapi.j
+  [PASS] rate=1/2 expected=True: create a skill from these API docs: https://docs.firecrawl.dev — pytho
+  [FAIL] rate=0/2 expected=True: 我们上周做的 autodl 那个 skill 里 elastic deployment 部分还没验证，现在拿到企业认证的 token 了，把
+  [PASS] rate=1/2 expected=True: 把 open.feishu.cn 的服务端 API 文档做成技能包，重点是消息和日历两块，其他先不管
+  [PASS] rate=0/2 expected=False: 用 Resend 写个 TypeScript 函数，发一封带附件的邮件给用户，附件是 PDF
+  [PASS] rate=0/2 expected=False: 帮我看一下智谱 GLM 的 chat completions 接口 tool_choice 支持强制指定函数吗？
+  [PASS] rate=0/2 expected=False: 写一个 skill，让 claude 每次写 commit message 都按我们团队的 conventional commits 规范来
+  [PASS] rate=0/2 expected=False: 帮我把 https://resend.com/docs/api-reference/emails/send-email 这一页翻译成中文
+  [PASS] rate=0/2 expected=False: 给我们公司的 internal REST API 写一份 OpenAPI 3.0 规范，代码在 ./src/routes 下，用 FastA
+  [PASS] rate=0/2 expected=False: build an MCP server that wraps the Linear API so claude can create iss
+  [PASS] rate=0/2 expected=False: 我这个调 Kimi API 的脚本一直报 401，key 是从环境变量读的，帮我看看哪里不对
+  [PASS] rate=0/2 expected=False: 总结一下 Stripe 的 webhook 文档，我要在周会上讲 10 分钟
+  [PASS] rate=0/2 expected=False: optimize the description of my existing pdf-tools skill so it triggers
+  [PASS] rate=0/2 expected=False: 帮我写一个爬虫把 docs.dify.ai 的所有页面抓下来存成 markdown，后面做全文检索用
+  [PASS] rate=0/2 expected=False: which Chinese LLM platforms have an OpenAI-compatible endpoint? compar
+run_eval exit: 0
+restored

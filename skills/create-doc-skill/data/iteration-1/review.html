@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "create-doc-skill", "runs": [{"id": "eval-kimi-no-llms-txt-fallback-old_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "process-log.md", "type": "text", "content": "# process-log.md \u2014 Kimi API skill \u751f\u6210\u8fc7\u7a0b\u8bb0\u5f55\n\n\u65e5\u671f\uff1a2026-09-03\u3002\u6267\u884c\u7684\u6280\u80fd\uff1a`create-doc-skill-workspace/skill-snapshot/SKILL.md`\uff08generate-skill-from-api-docs\uff09\u3002\u7ea6\u675f\uff1a\u65e0 API Key\u3001\u4e0d\u505a\u4efb\u4f55\u771f\u5b9e Moonshot \u8c03\u7528\u3001\u226460 \u6b21\u9875\u9762\u6293\u53d6\u3001\u226425 \u5206\u949f\u3002\n\n## 1. \u63a2\u6d4b\u8fc7\u7684 URL\uff08\u6309\u65f6\u95f4\u987a\u5e8f\uff0cHTTP \u72b6\u6001\uff09\n\n\u5168\u90e8\u7528 `curl -sS -L -A \"Mozilla/5.0\"` \u6293\u53d6\uff0c\u72b6\u6001\u7801\u4e3a\u8ddf\u968f\u91cd\u5b9a\u5411\u540e\u7684\u6700\u7ec8\u72b6\u6001\u3002\u524d 9 \u6761\u662f\u624b\u52a8\u52d8\u63a2\uff0c\u7b2c 10\u201356 \u6761\u662f\u4e00\u6b21 `xargs -P 8` \u5e76\u53d1\u6279\u91cf\u62c9\u53d6\uff08\u4e0b\u8868\u6309 URL \u5b57\u5178\u5e8f\uff0c\u56e0\u4e3a\u5e76\u53d1\u5b8c\u6210\u987a\u5e8f\u65e0\u610f\u4e49\uff09\uff0c\u7b2c 57 \u6761\u662f\u4e8b\u540e\u8865\u6293\u3002\n\n| # | URL | HTTP |\n|---|---|---|\n| 1 | https://platform.moonshot.cn/llms.txt | 404 |\n| 2 | https://platform.moonshot.cn/docs/llms.txt | 200 |\n| 3 | https://platform.moonshot.cn/openapi.json | 404 |\n| 4 | https://platform.moonshot.cn/docs/openapi.json | 200 |\n| 5 | https://platform.moonshot.cn/docs | 200 |\n| 6 | https://platform.moonshot.cn/sitemap.xml | 200 |\n| 7 | https://platform.moonshot.cn/robots.txt | 200 |\n| 8 | https://platform.moonshot.cn/docs/sitemap.xml | 200 |\n| 9 | https://platform.kimi.com/docs/llms.txt | 200 |\n| 10 | https://platform.moonshot.cn/docs/api/balance.md | 200 |\n| 11 | https://platform.moonshot.cn/docs/api/batch-cancel.md | 200 |\n| 12 | https://platform.moonshot.cn/docs/api/batch-create.md | 200 |\n| 13 | https://platform.moonshot.cn/docs/api/batch-list.md | 200 |\n| 14 | https://platform.moonshot.cn/docs/api/batch-retrieve.md | 200 |\n| 15 | https://platform.moonshot.cn/docs/api/chat.md | 200 |\n| 16 | https://platform.moonshot.cn/docs/api/errors.md | 200 |\n| 17 | https://platform.moonshot.cn/docs/api/estimate.md | 200 |\n| 18 | https://platform.moonshot.cn/docs/api/files-content.md | 200 |\n| 19 | https://platform.moonshot.cn/docs/api/files-delete.md | 200 |\n| 20 | https://platform.moonshot.cn/docs/api/files-list.md | 200 |\n| 21 | https://platform.moonshot.cn/docs/api/files-retrieve.md | 200 |\n| 22 | https://platform.moonshot.cn/docs/api/files-upload.md | 200 |\n| 23 | https://platform.moonshot.cn/docs/api/files.md | 200 |\n| 24 | https://platform.moonshot.cn/docs/api/list-models.md | 200 |\n| 25 | https://platform.moonshot.cn/docs/api/messages.md | 200 |\n| 26 | https://platform.moonshot.cn/docs/api/models-overview.md | 200 |\n| 27 | https://platform.moonshot.cn/docs/api/overview.md | 200 |\n| 28 | https://platform.moonshot.cn/docs/api/responses.md | 200 |\n| 29 | https://platform.moonshot.cn/docs/api/signatures-verify.md | 200 |\n| 30 | https://platform.moonshot.cn/docs/get-api-key.md | 200 |\n| 31 | https://platform.moonshot.cn/docs/guide/engage-in-multi-turn-conversations-using-kimi-api.md | 200 |\n| 32 | https://platform.moonshot.cn/docs/guide/kimi-k2-6-quickstart.md | 200 |\n| 33 | https://platform.moonshot.cn/docs/guide/kimi-k2-7-code-quickstart.md | 200 |\n| 34 | https://platform.moonshot.cn/docs/guide/kimi-k3-quickstart.md | 200 |\n| 35 | https://platform.moonshot.cn/docs/guide/response_format.md | 200 |\n| 36 | https://platform.moonshot.cn/docs/guide/tool-call-repeat.md | 200 |\n| 37 | https://platform.moonshot.cn/docs/guide/troubleshooting.md | 200 |\n| 38 | https://platform.moonshot.cn/docs/guide/use-batch-api.md | 200 |\n| 39 | https://platform.moonshot.cn/docs/guide/use-context-caching-feature-of-kimi-api.md | 200 |\n| 40 | https://platform.moonshot.cn/docs/guide/use-dynamic-tool-loading.md | 200 |\n| 41 | https://platform.moonshot.cn/docs/guide/use-json-mode-feature-of-kimi-api.md | 200 |\n| 42 | https://platform.moonshot.cn/docs/guide/use-kimi-api-for-file-based-qa.md | 200 |\n| 43 | https://platform.moonshot.cn/docs/guide/use-kimi-api-to-complete-tool-calls.md | 200 |\n| 44 | https://platform.moonshot.cn/docs/guide/use-kimi-vision-model.md | 200 |\n| 45 | https://platform.moonshot.cn/docs/guide/use-official-tools.md | 200 |\n| 46 | https://platform.moonshot.cn/docs/guide/use-partial-mode-feature-of-kimi-api.md | 200 |\n| 47 | https://platform.moonshot.cn/docs/guide/use-reasoning-effort.md | 200 |\n| 48 | https://platform.moonshot.cn/docs/guide/use-thinking-models.md | 200 |\n| 49 | https://platform.moonshot.cn/docs/guide/use-tool-choice.md | 200 |\n| 50 | https://platform.moonshot.cn/docs/guide/use-web-search.md | 200 |\n| 51 | https://platform.moonshot.cn/docs/guide/utilize-the-streaming-output-feature-of-kimi-api.md | 200 |\n| 52 | https://platform.moonshot.cn/docs/hosted-agents/quickstart.md | 200 |\n| 53 | https://platform.moonshot.cn/docs/introduction.md | 200 |\n| 54 | https://platform.moonshot.cn/docs/models.md | 200 |\n| 55 | https://platform.moonshot.cn/docs/pricing/chat.md | 200 |\n| 56 | https://platform.moonshot.cn/docs/pricing/limits.md | 200 |\n| 57 | https://platform.moonshot.cn/docs/guide/kimi-k3-tool-calling-best-practice.md | 200 |\n\n\u5408\u8ba1 57 \u6b21\u6293\u53d6\uff08\u9884\u7b97 60\uff09\u3002\u96f6\u6b21 API \u8c03\u7528\uff08`api.moonshot.cn` \u4ece\u672a\u88ab\u8bbf\u95ee\uff09\u3002\n\n\u52d8\u63a2\u7ed3\u8bba\uff1a\n- `https://platform.moonshot.cn/llms.txt`\uff08\u6839\u8def\u5f84\uff09\u2192 404\uff08\u8fd4\u56de\u7684\u662f Next.js \u7684 HTML 404 \u9875\uff09\u3002**\u6280\u80fd\u7b2c\u4e00\u6b65\u53ea\u5199\u4e86\"\u6839\u8def\u5f84\u8bd5 /llms.txt\"**\uff0c\u6211\u987a\u624b\u591a\u8bd5\u4e86 `/docs/llms.txt` \u624d\u62ff\u5230\uff08200\uff0c39.8KB\uff0c199 \u4e2a\u9875\u9762\u94fe\u63a5\uff0c\u672b\u5c3e\u6709 \"OpenAPI Specs\" \u4e00\u8282\uff09\u3002\u540c\u7406 `/openapi.json` 404\u3001`/docs/openapi.json` 200\uff08118KB\uff0cOpenAPI 3.1\uff0c16 \u4e2a endpoint\uff09\u3002\n- `platform.moonshot.cn` \u4e0e `platform.kimi.com` \u662f\u540c\u4e00\u7ad9\u70b9\u7684\u53cc\u57df\u540d\uff08robots.txt Host \u6307\u5411 kimi.com\uff0cllms.txt \u5185\u94fe\u5168\u662f kimi.com\uff0c\u4f46\u7528 moonshot.cn \u57df\u540d\u52a0 `.md` \u540e\u7f00\u540c\u6837 200\uff09\u3002\n- `/docs/sitemap.xml` \u6709 199 \u4e2a URL\uff0c\u5176\u4e2d\u7ea6 120 \u4e2a\u662f\"\u6258\u7ba1\u667a\u80fd\u4f53\"\uff08hosted-agents / api-reference/\u4f1a\u8bdd\u3001\u8bb0\u5fc6\u5e93\u3001\u89e6\u53d1\u5668\u2026\uff09\u7684\u72ec\u7acb\u4ea7\u54c1\u7ebf\uff0c\u8d85\u51fa\"Kimi \u6a21\u578b API\"\u8303\u56f4\uff0c\u672c\u6b21\u53ea\u6293\u4e86 hosted-agents/quickstart \u4e00\u9875\u4f5c\u4e3a\u8303\u56f4\u8bf4\u660e\uff0c\u672a\u6574\u7406\u8fdb\u6280\u80fd\u3002\n\n## 2. \u7528\u5230\u7684\u5de5\u5177 / \u811a\u672c\n\n| \u5de5\u5177 | \u7528\u9014 |\n|---|---|\n| `curl`\uff08Bash\uff09 | \u5168\u90e8\u9875\u9762\u63a2\u6d4b\u4e0e\u6293\u53d6\uff1b\u6bcf\u6b21\u8c03\u7528\u8bb0\u5f55 `%{http_code}` \u5230 `probes.log` |\n| `xargs -P 8` + `fetch.sh` | 47 \u4e2a `.md` \u9875\u9762\u5e76\u53d1\u6279\u91cf\u4e0b\u8f7d\u5230 scratch `pages/`\uff08\u7b2c\u4e00\u6b21\u7528 `export -f` \u5728 zsh \u4e0b\u5931\u8d25\uff0c\u6539\u6210\u72ec\u7acb\u811a\u672c\u6587\u4ef6\u540e\u6210\u529f\uff09 |\n| `expand_openapi.py`\uff08\u81ea\u5199\uff0cPython \u6807\u51c6\u5e93 json\uff09 | \u89e3\u6790 `/docs/openapi.json`\uff0c\u5bf9\u6bcf\u4e2a endpoint \u9012\u5f52\u5c55\u5f00 `$ref`\uff0c\u6309 tag \u751f\u6210 8 \u4efd\u53ef\u8bfb schema \u6458\u8981\uff08`schema/*.txt`\uff0c\u5171 1118 \u884c\uff09 |\n| `grep` / `sed` / `awk` | \u4ece 15.7k \u884c Markdown \u91cc\u5b9a\u4f4d base URL\u3001temperature\u3001\u9650\u901f\u8868\u7b49\u5173\u952e\u6bb5\u843d |\n| `/anthropic-skills:skill-creator`\uff08Skill \u5de5\u5177\u52a0\u8f7d\uff09 | \u53d6\u5f97 skill \u76ee\u5f55\u89c4\u8303\uff08SKILL.md + references/ + evals/evals.json\u3001<500 \u884c\uff09\u4e0e evals.json \u683c\u5f0f |\n| `skill-creator/scripts/package_skill.py` | \u6700\u7ec8\u6821\u9a8c\uff08\"Skill is valid\"\uff09\u5e76\u6253\u5305\u5230 scratch `pkg/kimi-api.skill`\uff08\u672a\u653e\u8fdb outputs\uff0c\u975e\u4ea4\u4ed8\u8981\u6c42\uff09 |\n| Agent \u5b50\u4ee3\u7406 \u00d72\uff08general-purpose\uff09 | \u5e76\u884c\u64b0\u5199 `references/chat-completions.md` \u4e0e `references/tools.md`\uff08\u5404\u7ed9\u7edf\u4e00\u5199\u4f5c\u89c4\u8303 `WRITING-SPEC.md` + \u6e90\u6587\u4ef6\u8def\u5f84\uff09 |\n| `python3 -c json.load` / `grep -rnE 'sk-\u2026'` | evals.json \u5408\u6cd5\u6027\u3001\u5168\u76ee\u5f55 Key \u6cc4\u6f0f\u68c0\u67e5\uff08\u65e0\uff09 |\n\n\u672a\u4f7f\u7528\uff1a\u6d4f\u89c8\u5668\u5de5\u5177\uff08\u7eaf Markdown \u6e90\u7801\u8db3\u591f\uff09\u3001`uv`\uff08\u6ca1\u6709\u9700\u8981\u5b89\u88c5\u7684\u5305\uff09\u3001`run_eval.py` / `run_loop.py` / `improve_description.py`\uff08\u539f\u56e0\u89c1\u4e0b\uff09\u3002\n\n## 3. \u6280\u80fd\u5404\u6b65\u9aa4\uff1a\u6267\u884c / \u8df3\u8fc7 \u53ca\u539f\u56e0\n\n### \u7b2c\u4e00\u6b65\uff1a\u6293\u53d6\u4e0e\u52d8\u63a2 \u2014 **\u6267\u884c**\n- 1.1 \u627e llms.txt\uff1a\u6267\u884c\u3002\u6839\u8def\u5f84 404\uff0c`/docs/llms.txt` \u547d\u4e2d\u3002\n- 1.2 \u627e OpenAPI\uff1a\u6267\u884c\u3002`/docs/openapi.json` \u547d\u4e2d\uff0c\u7528 Python \u5c55\u5f00 `$ref` \u843d\u5730 schema \u6458\u8981\uff08\u6280\u80fd\u8981\u6c42\u7684\u505a\u6cd5\uff09\u3002`securitySchemes` = bearerAuth\uff0cservers = `https://api.moonshot.cn`\u3002\n- 1.3 \u6279\u91cf\u4e0b\u8f7d Markdown \u6e90\u9875\uff1a\u6267\u884c\u3002llms.txt \u94fe\u63a5\u52a0 `.md` \u540e\u7f00\u76f4\u63a5\u8fd4\u56de\u7eaf Markdown\uff08\u542b MDX \u7ec4\u4ef6\u6807\u7b7e\uff09\uff0c`xargs -P 8` \u5e76\u53d1\u3002\n- 1.4 \u6478\u6e05\u9274\u6743\uff1a\u6267\u884c\u3002`Authorization: Bearer $MOONSHOT_API_KEY`\uff0cAnthropic \u5165\u53e3 base_url \u4e0d\u540c\u3002\n\n### \u7b2c\u4e8c\u6b65\uff1a\u7ed3\u6784\u5316\u64b0\u5199 \u2014 **\u6267\u884c**\n- \u5148\u52a0\u8f7d skill-creator \u518d\u5efa\u76ee\u5f55\uff08\u6309\u6280\u80fd\u8981\u6c42\uff09\u3002\n- \u6309\u5f00\u53d1\u8005\u610f\u56fe\u5206\u7ec4\u6210 7 \u4e2a reference\uff08models / chat-completions / tools / vision-and-files / batch / responses-and-messages / errors-and-limits\uff09\uff0c\u4e0d\u7167\u6284\u6587\u6863\u76ee\u5f55\u6811\u3002\u4f8b\u5982\"PDF \u95ee\u7b54\"\u5728\u5b98\u65b9\u5206\u6563\u5728 files-upload\u3001files-content\u3001file-based-qa\u3001vision \u56db\u9875\uff0c\u5408\u5e76\u5230 vision-and-files.md \u4e00\u5f20\u9009\u578b\u8868\u91cc\u3002\n- \u5e76\u884c\u59d4\u6d3e\uff1a\u8ba1\u5212\u6d3e 4 \u4e2a\u5b50\u4ee3\u7406\uff0c**\u53ea\u6210\u529f\u542f\u52a8 2 \u4e2a**\uff08\u53e6\u5916 2 \u4e2a\u89e6\u53d1 \"Concurrent subagent limit reached (20)\" \u4e14\u63d0\u793a\u4e0d\u8981\u91cd\u8bd5\uff09\u3002vision-and-files\u3001batch\u3001responses-and-messages\u3001errors-and-limits\u3001models \u4e94\u4e2a\u6587\u4ef6\u6539\u7531\u6211\u81ea\u5df1\u64b0\u5199\u3002\n- SKILL.md \u53ea\u505a\u8def\u7531 + \u8de8\u9886\u57df\u89c4\u5219 + \"10 \u4e2a\u6700\u5bb9\u6613\u5199\u9519\u7684\u70b9\" + \u68c0\u67e5\u6e05\u5355\uff0c81 \u884c\u3002\n- \u6bcf\u4e2a reference \u5f3a\u5236\u5e26\"\u5c1a\u672a\u9a8c\u8bc1\"\u72b6\u6001\u884c\u548c\u672b\u5c3e\"\u5f85\u9a8c\u8bc1\u7591\u70b9\"\u8282\uff08\u8fd9\u662f\u6211\u5728\u5199\u4f5c\u89c4\u8303\u91cc\u52a0\u7684\u8981\u6c42\uff0c\u6280\u80fd\u672c\u8eab\u6ca1\u5199\uff0c\u4f46\u5bf9\u7b2c\u4e09\u6b65\u7f3a\u5e2d\u65f6\u7684\u53ef\u8ffd\u6eaf\u6027\u5f88\u5173\u952e\uff09\u3002\n\n### \u7b2c\u4e09\u6b65\uff1a\u771f\u5b9e API \u9a8c\u8bc1\u4e0e\u4fee\u6b63 \u2014 **\u8df3\u8fc7\uff08\u65e0 Key\uff0c\u4e14\u4efb\u52a1\u660e\u786e\u7981\u6b62\u4efb\u4f55\u771f\u5b9e\u8c03\u7528\uff09**\n- \u66ff\u4ee3\u4ea7\u51fa\uff1a`verification-plan.md`\uff08109 \u884c\uff0c8 \u4e2a\u6d4b\u8bd5\u7ec4\u3001\u7ea6 55 \u6761\u6d4b\u8bd5\u9879\uff0c\u6bcf\u6761\u6ce8\u660e\u6765\u6e90\u7591\u70b9\u4e0e\u56de\u5199\u4f4d\u7f6e\uff09\uff0c\u4ee5\u53ca\u5404 reference \u672b\u5c3e\u5408\u8ba1\u7ea6 90 \u6761\"\u5f85\u9a8c\u8bc1\u7591\u70b9\"\u3002\n- \u7eaf\u8bfb\u6587\u6863\u5c31\u5df2\u7ecf\u53d1\u73b0\u7684**\u6587\u6863\u81ea\u76f8\u77db\u76fe**\uff08\u6280\u80fd\u7b2c\u4e09\u6b65\u8b66\u544a\u7684\u90a3\u7c7b\u95ee\u9898\uff0c\u5728\u6ca1\u6709 Key \u7684\u60c5\u51b5\u4e0b\u53ea\u80fd\u6807\u8bb0\u4e0d\u80fd\u88c1\u51b3\uff09\uff1a\n  1. `docs/api/files-upload` \u793a\u4f8b\u5bf9 `kimi-k3` \u4f20 `temperature=0.6`\uff0c`docs/api/models-overview` \u8bf4 K3 \u6e29\u5ea6\u56fa\u5b9a 1.0\u3001\u4f20\u5176\u4ed6\u503c\u62a5\u9519\u3002\n  2. \u6587\u4ef6 `purpose` \u5408\u6cd5\u503c\uff1a\u9519\u8bef\u7801\u9875\u5217 6 \u4e2a\uff08\u542b `batch_output`\u3001`lambda`\uff09\uff0cOpenAPI \u679a\u4e3e\u53ea\u6709 4 \u4e2a\u3002\n  3. OpenAPI \u7684 `tool_choice` \u679a\u4e3e\u5bf9\u6240\u6709\u6a21\u578b\u4e00\u6837\uff0cmodels-overview \u8bf4 `required` \u5728 K2.x \u62a5\u9519\u3002\n  4. OpenAPI `tools[].type` \u53ea\u6709 `function`\uff0c\u8054\u7f51\u641c\u7d22\u9875\u7528 `builtin_function`\uff1bK3 quickstart \u53c8\u8bf4\u8054\u7f51\u641c\u7d22\"\u8fd1\u671f\u4e0d\u5efa\u8bae\u4f7f\u7528\"\u3002\n  5. \u6d41\u5f0f `usage` \u7684\u4f4d\u7f6e\u4e09\u5904\u6587\u6863\u5199\u6cd5\u4e0d\u4e00\u81f4\uff08`choices[].usage` vs \u9876\u5c42 vs \u672b\u5c3e\u7a7a choices \u5e27\uff09\u3002\n  6. `max_tokens` \u5728 OpenAPI \u6807 DEPRECATED\uff0c\u4f46\u51e0\u4e4e\u6240\u6709\u6307\u5357\u793a\u4f8b\u4ecd\u5728\u7528\u3002\n  7. OpenAPI \u7684\u8bf7\u6c42 `Message` schema \u6ca1\u6709 `reasoning_content` / `tool_calls` / `tool_call_id` \u5b57\u6bb5\uff0c\u4e14 `content` \u6807\u5fc5\u586b\"\u4e0d\u5f97\u4e3a\u7a7a\"\uff0c\u4f46\u6307\u5357\u8981\u6c42\u56de\u4f20 `reasoning_content`\u3001Partial Mode \u7528\u7a7a content\u3002\n\n### \u7b2c\u56db\u6b65\uff1a\u771f\u5b9e\u5bf9\u7167\u5b9e\u9a8c \u2014 **\u90e8\u5206\u6267\u884c**\n- \u5df2\u505a\uff1a`evals/evals.json` 8 \u4e2a\u573a\u666f\u300136 \u6761\u65ad\u8a00\uff0c\u5168\u90e8\u9009\"OpenAI \u76f4\u89c9\u4f1a\u5199\u9519\"\u7684\u70b9\uff08\u8fc1\u79fb\u65f6\u5220 temperature\u3001\u56fe\u7247 URL \u4e0d\u652f\u6301\u3001PDF \u4e0d\u80fd\u4f20 file_id\u3001\u5de5\u5177\u5faa\u73af\u8981\u56de\u4f20 reasoning_content\u3001Batch \u4e0d\u652f\u6301 K3\u3001K2.6 \u624d\u80fd\u5173\u601d\u8003\u3001Anthropic \u5165\u53e3\u53bb\u6389 budget_tokens \u7b49\uff09\u3002\n- \u8df3\u8fc7\uff1a`run_eval.py` / `run_loop.py` \u8dd1 with-skill vs baseline\u3001grader \u6253\u5206\u3001`aggregate_benchmark.py`\u3002\u539f\u56e0\uff1a\u6280\u80fd\u7b2c\u56db\u6b65\u7b2c 3 \u70b9\u8981\u6c42\"\u6253\u5206\u4f9d\u636e\u771f\u5b9e\u8c03\u7528\u7ed3\u679c\"\uff0c\u6ca1\u6709 Key \u65f6 grader \u53ea\u80fd\u9760\u6587\u6863\uff0c\u800c\u6587\u6863\u672c\u8eab\u5df2\u53d1\u73b0 7 \u5904\u81ea\u76f8\u77db\u76fe\uff0c\u6b64\u65f6\u8dd1\u5bf9\u7167\u53ea\u4f1a\u628a\u6587\u6863\u9519\u8bef\u56fa\u5316\u6210\"\u6b63\u786e\u7b54\u6848\"\uff1b\u53e6\u5916\u65f6\u95f4\u76d2 25 \u5206\u949f\u4e5f\u4e0d\u5141\u8bb8\u518d\u8dd1 16 \u4e2a\u5b50\u4ee3\u7406\u3002\n\n### \u7b2c\u4e94\u6b65\uff1a\u6253\u5305\u53d1\u5e03 \u2014 **\u90e8\u5206\u6267\u884c**\n- \u5df2\u505a\uff1a`package_skill.py` \u6821\u9a8c\u901a\u8fc7\u3002\n- \u8df3\u8fc7\uff1a`improve_description.py` \u63cf\u8ff0\u4f18\u5316\uff08\u9700\u8981 `claude -p` \u8dd1 20 \u6761\u89e6\u53d1\u67e5\u8be2 \u00d7 3 \u6b21 \u00d7 5 \u8f6e\uff0c\u8fdc\u8d85\u65f6\u95f4\u76d2\uff1b\u4e14\u63cf\u8ff0\u5e94\u5728\u9a8c\u8bc1\u540e\u5b9a\u7a3f\uff09\u3002\u5f53\u524d description \u5df2\u624b\u5199\u8986\u76d6\u4ea7\u54c1\u540d/\u57df\u540d/\u6a21\u578b\u540d/SDK \u540d/\u4e2d\u6587\u522b\u79f0\u3002\n\n## 4. \u4ea7\u51fa\u6e05\u5355\n\n```\noutputs/\n\u251c\u2500\u2500 kimi-api/\n\u2502   \u251c\u2500\u2500 SKILL.md                              81 \u884c\n\u2502   \u251c\u2500\u2500 references/\n\u2502   \u2502   \u251c\u2500\u2500 models.md                         69 \u884c\n\u2502   \u2502   \u251c\u2500\u2500 chat-completions.md              348 \u884c\uff08\u5b50\u4ee3\u7406\uff09\n\u2502   \u2502   \u251c\u2500\u2500 tools.md                         320 \u884c\uff08\u5b50\u4ee3\u7406\uff09\n\u2502   \u2502   \u251c\u2500\u2500 vision-and-files.md              205 \u884c\n\u2502   \u2502   \u251c\u2500\u2500 batch.md                         195 \u884c\n\u2502   \u2502   \u251c\u2500\u2500 responses-and-messages.md        222 \u884c\n\u2502   \u2502   \u2514\u2500\u2500 errors-and-limits.md             145 \u884c\n\u2502   \u2514\u2500\u2500 evals/evals.json                     114 \u884c\uff088 \u573a\u666f / 36 \u65ad\u8a00\uff09\n\u251c\u2500\u2500 verification-plan.md                     109 \u884c\n\u2514\u2500\u2500 process-log.md                           \u672c\u6587\u4ef6\n```\n\n## 5. \u5bf9\u6280\u80fd\u672c\u8eab\uff08skill-snapshot/SKILL.md\uff09\u7684\u53cd\u9988\n\n1. **llms.txt \u7684\u63a2\u6d4b\u8def\u5f84\u5199\u7a84\u4e86**\uff1a\u53ea\u8bf4\u6839\u8def\u5f84 `/llms.txt`\u3002\u672c\u7ad9\u6839\u8def\u5f84 404\u3001`/docs/llms.txt` \u624d\u6709\uff1bOpenAPI \u540c\u7406\u5728 `/docs/openapi.json`\u3002\u5efa\u8bae\u6539\u6210\"\u4f9d\u6b21\u8bd5 `/llms.txt`\u3001`/<docs-prefix>/llms.txt`\u3001`/llms-full.txt`\"\uff0c\u5e76\u63d0\u793a\u5148\u770b `robots.txt` / `sitemap.xml` \u627e docs \u524d\u7f00\u3002\n2. **\u6ca1\u6709\"\u6ca1\u6709 Key \u65f6\u600e\u4e48\u529e\"\u7684\u5206\u652f**\uff1a\u7b2c\u4e09\u3001\u56db\u6b65\u88ab\u5199\u6210\u7edd\u5bf9\u4e0d\u53ef\u8df3\u8fc7\uff0c\u4f46\u73b0\u5b9e\u4e2d\u7ecf\u5e38\u5148\u6ca1 Key\u3002\u5efa\u8bae\u660e\u786e\u4e00\u4e2a\u964d\u7ea7\u8def\u5f84\uff1a\u6bcf\u4e2a reference \u5f3a\u5236\"\u672a\u9a8c\u8bc1\"\u72b6\u6001\u884c + \"\u5f85\u9a8c\u8bc1\u7591\u70b9\"\u8282 + \u72ec\u7acb verification-plan\uff0cevals \u5148\u5199\u65ad\u8a00\u4e0d\u8dd1\u5bf9\u7167\u3002\u8fd9\u6b21\u662f\u6211\u81ea\u5df1\u8865\u7684\u7ea6\u5b9a\u3002\n3. **\u5e76\u884c\u5b50\u4ee3\u7406\u6570\u91cf\u5047\u8bbe\u4e0d\u6210\u7acb**\uff1a\u6280\u80fd\u5efa\u8bae\u4e00\u6b21\u6d3e 4\u20136 \u4e2a\u5b50\u4ee3\u7406\uff0c\u672c\u6b21\u73af\u5883\u5e76\u53d1\u4e0a\u9650\u88ab\u5360\u6ee1\u53ea\u6210\u529f 2 \u4e2a\u3002\u5efa\u8bae\u52a0\u4e00\u53e5\"\u542f\u52a8\u5931\u8d25\u65f6\u81ea\u5df1\u987a\u5e8f\u5199\uff0c\u4e0d\u8981\u91cd\u8bd5\"\u3002\n4. **`export -f` \u5f0f\u5e76\u53d1\u6293\u53d6\u5728 zsh \u4e0b\u4e0d\u5de5\u4f5c**\uff1a\u6280\u80fd\u91cc\"\u7528 `xargs -P 8` \u5e76\u53d1\"\u662f\u5bf9\u7684\uff0c\u4f46\u793a\u4f8b\u5e94\u5199\u6210\u72ec\u7acb\u811a\u672c\u6587\u4ef6\u800c\u4e0d\u662f shell \u51fd\u6570\u3002\n5. **\u5bf9 MDX \u6e90\u7801\u6ca1\u6709\u63d0\u793a**\uff1a`.md` \u9875\u9762\u91cc\u5927\u91cf `<DocTable rows={[...]}/>`\u3001`<Accordion>`\u3001`<CodeGroup>` \u7b49 JSX\uff0c\u5173\u952e\u8868\u683c\uff08\u9650\u901f\u7b49\u7ea7\u3001\u53c2\u6570\u56fa\u5b9a\u503c\uff09\u85cf\u5728 JSX \u6570\u7ec4\u91cc\uff0c\u7eaf\u6587\u672c grep \u9700\u8981\u989d\u5916\u5904\u7406\u3002\u5efa\u8bae\u63d0\u4e00\u53e5\u3002\n6. **\u8303\u56f4\u88c1\u526a\u6ca1\u6709\u6307\u5bfc**\uff1a\u672c\u7ad9 199 \u9875\u91cc 60% \u662f\u53e6\u4e00\u6761\u4ea7\u54c1\u7ebf\uff08\u6258\u7ba1\u667a\u80fd\u4f53\uff09\u3002\u6280\u80fd\u5e94\u63d0\u793a\"\u5148\u7528 sitemap/llms.txt \u5206\u4ea7\u54c1\u7ebf\uff0c\u548c\u7528\u6237\u786e\u8ba4\u8303\u56f4\"\u2014\u2014\u672c\u6b21\u6211\u6309\u7528\u6237\u539f\u8bdd\"Kimi \u5f00\u653e\u5e73\u53f0\u6587\u6863\"\u81ea\u884c\u88c1\u6389\u4e86 hosted-agents\uff0c\u53ea\u5728 SKILL.md \u91cc\u58f0\u660e\u672a\u8986\u76d6\u3002\n7. **\u65f6\u95f4\u76d2\u4e0e\u6280\u80fd\u7684\u671f\u671b\u4f53\u91cf\u51b2\u7a81**\uff1a\u5b8c\u6574\u8d70\u5b8c\u4e94\u6b65\uff08\u542b run_loop \u63cf\u8ff0\u4f18\u5316\uff09\u8fdc\u8d85 25 \u5206\u949f\uff1b\u6280\u80fd\u6ca1\u6709\u7ed9\"\u6700\u5c0f\u53ef\u4ea4\u4ed8\u7248\u672c\"\u7684\u5b9a\u4e49\u3002\n8. \u6280\u80fd\u5f15\u7528\u4e86 `skills/bigmodel-cn` \u4f5c\u4e3a\u8303\u4f8b\uff08\u76f8\u5bf9\u8def\u5f84 `../bigmodel-cn`\uff09\uff0c\u672c\u6b21\u4efb\u52a1\u7981\u6b62\u8bfb\u5176\u4ed6\u6280\u80fd\u76ee\u5f55\uff0c\u6240\u4ee5\u65e0\u6cd5\u53c2\u8003\u2014\u2014\u8fd9\u6761\u4f9d\u8d56\u5e94\u6539\u4e3a\u628a\u8303\u4f8b\u683c\u5f0f\u5185\u8054\u8fdb\u6280\u80fd\u672c\u8eab\u3002\n"}, {"name": "verification-plan.md", "type": "text", "content": "# Kimi API Skill \u2014 \u771f\u5b9e API \u9a8c\u8bc1\u8ba1\u5212\n\n> \u72b6\u6001\uff1a\u5f85\u6267\u884c\u3002\u672c\u6280\u80fd\uff08`kimi-api/`\uff09\u76ee\u524d\u662f\u7eaf\u6587\u6863\u8349\u7a3f\u3002\u62ff\u5230 `MOONSHOT_API_KEY` \u540e\u6309\u672c\u8ba1\u5212\u9010\u6761\u5b9e\u6d4b\uff0c\u628a\u7ed3\u8bba\uff08\u542b\u62a5\u9519\u539f\u6587 / \u54cd\u5e94\u7247\u6bb5 + \u9a8c\u8bc1\u65e5\u671f\uff09\u56de\u5199\u5230\u5bf9\u5e94 reference \u6587\u4ef6\uff0c\u5e76\u628a\"\u5f85\u9a8c\u8bc1\u7591\u70b9\"\u9010\u6761\u6d88\u6389\u3002\n> \u9884\u7b97\uff1a\u7edd\u5927\u591a\u6570\u6d4b\u8bd5\u662f\u51e0\u5341\u5230\u51e0\u767e token \u7684\u77ed\u5bf9\u8bdd\uff0c\u603b\u82b1\u8d39\u9884\u8ba1 < \u00a55\uff08K3 \u9700\u5148\u5145\u503c \u2265 \u00a510 \u89e3\u9501\uff1bTier0 \u9650\u901f RPM 3\u3001\u5e76\u53d1 1\uff0c\u5efa\u8bae\u5148\u5145 \u00a550 \u5230 Tier1 \u518d\u8dd1\uff0c\u5426\u5219\u811a\u672c\u8981\u4e32\u884c\u5e76 sleep\uff09\u3002\n\n## 0. \u51c6\u5907\n\n```bash\nexport MOONSHOT_API_KEY=...        # \u53ea\u5728 shell \u91cc\uff0c\u4e0d\u5199\u8fdb\u4efb\u4f55\u6587\u4ef6\nuv run --with openai --with anthropic --with requests python verify.py\n```\n- \u5168\u90e8\u811a\u672c\u653e\u5728 `verification/` \u76ee\u5f55\uff0c\u8f93\u51fa\u5199 `verification/results-YYYY-MM-DD.jsonl`\uff08\u6bcf\u6761\uff1atest_id\u3001request \u6458\u8981\u3001http status\u3001`error.type`\u3001message \u539f\u6587\u3001\u5173\u952e\u54cd\u5e94\u5b57\u6bb5\uff09\u3002\n- \u6bcf\u4e2a\u6d4b\u8bd5\u72ec\u7acb try/except\uff0c\u4e0d\u56e0\u4e00\u6761\u5931\u8d25\u4e2d\u65ad\u3002\n- \u6d4b\u5b8c `grep -r \"sk-\" kimi-api/ verification/` \u786e\u8ba4\u65e0 Key \u6cc4\u6f0f\uff1b\u6e05\u7406\u4e0a\u4f20\u7684\u6d4b\u8bd5\u6587\u4ef6\u4e0e Batch\u3002\n\n## 1. \u57fa\u7840\u8fde\u901a\u4e0e\u6a21\u578b\u76ee\u5f55\uff08P0\uff0c\u6210\u672c\u22480\uff09\n\n| ID | \u6d4b\u8bd5 | \u9884\u671f\uff08\u6309\u6587\u6863\uff09 | \u56de\u5199\u5230 |\n|---|---|---|---|\n| M1 | `GET /v1/models`\uff0c\u8bb0\u5f55\u5168\u90e8 `id` \u53ca `context_length` / `supports_*` \u6269\u5c55\u5b57\u6bb5 | 4 \u4e2a\u5728\u7ebf\u6a21\u578b\uff1b\u6269\u5c55\u5b57\u6bb5\u5b58\u5728 | models.md\u3001errors-and-limits.md |\n| M2 | `model=\"moonshot-v1-8k\"` / `\"kimi-latest\"` / `\"kimi-k2.5\"` \u5404\u8c03\u4e00\u6b21 | 404 `resource_not_found_error`\uff0c\u8bb0 message \u539f\u6587 | models.md |\n| M3 | `GET /v1/users/me/balance` | `{\"code\":0,\"data\":{...}}` \u5305\u88c5\u7ed3\u6784 | errors-and-limits.md |\n| M4 | \u9519\u8bef Key \u2192 401\uff1b\u7f3a header \u2192 401\uff1b\u8bb0\u5f55\u4e24\u79cd `error.type` | `invalid_authentication_error` / `incorrect_api_key_error` | errors-and-limits.md |\n| M5 | \u9519\u8bef\u54cd\u5e94\u662f\u5426\u542b `error.code` \u5b57\u6bb5 | OpenAPI \u6709\u3001\u9519\u8bef\u9875\u65e0 | errors-and-limits.md |\n\n## 2. Chat Completions \u53c2\u6570\u884c\u4e3a\uff08P0\uff09\n\n| ID | \u6d4b\u8bd5 | \u7591\u70b9\u6765\u6e90 |\n|---|---|---|\n| C1 | K3 \u4f20 `temperature=0.6` / `=1.0` / `top_p=0.5` / `n=2` / `presence_penalty=0.5` \u5404\u4e00\u6b21 | files-upload \u793a\u4f8b vs models-overview \u77db\u76fe |\n| C2 | K2.6 \u601d\u8003\u6a21\u5f0f\u4f20 `temperature=0.6`\uff1b\u975e\u601d\u8003\u4f20 `1.0`\uff1bK2.7-code \u4f20 `0.6` | \"\u4f20\u5176\u4ed6\u503c\u62a5\u9519\" \u7684\u7cbe\u786e error.type/message |\n| C3 | \u53ea\u4f20 `max_tokens`\uff08\u4e0d\u4f20 `max_completion_tokens`\uff09\uff1b\u4e24\u8005\u90fd\u4f20\u4e14\u4e0d\u540c | \u5f03\u7528\u5b57\u6bb5\u662f\u5426\u4ecd\u751f\u6548\u3001\u4f18\u5148\u7ea7 |\n| C4 | K3 `max_completion_tokens=1048576` + \u77ed\u8f93\u5165 | \u662f\u62a5\u9519\u8fd8\u662f\u81ea\u52a8\u88c1\u526a |\n| C5 | `reasoning_effort=\"medium\"`\uff1bK3 \u4f20 `thinking={\"type\":\"disabled\"}`\uff1bK2.6 \u4f20 `reasoning_effort` | \u8de8\u6a21\u578b\u53c2\u6570\uff1a\u62a5\u9519 or \u5ffd\u7565 |\n| C6 | K2.7-code \u4f20 `thinking={\"type\":\"disabled\"}`\uff1b`keep: null` | \u62a5\u9519\u539f\u6587 |\n| C7 | \u975e\u6d41\u5f0f\u54cd\u5e94\uff1a`message.reasoning_content` \u662f\u5426\u5b58\u5728\uff1b`usage` \u662f\u5426\u6709 `cached_tokens`\u3001\u6709\u65e0 `completion_tokens_details.reasoning_tokens` | usage \u7ed3\u6784 |\n| C8 | \u6d41\u5f0f\uff1a`stream=True` \u4e0d\u5e26 `stream_options` \u65f6 usage \u5728\u54ea\u4e00\u5e27\u3001\u54ea\u4e00\u5c42\uff08top-level vs `choices[].usage`\uff09\uff1b\u5e26 `include_usage=True` \u65f6\u662f\u5426\u591a\u4e00\u5e27 `choices=[]`\uff1b`delta.reasoning_content` \u662f\u5426\u51fa\u73b0 | \u4e09\u5904\u6587\u6863\u4e0d\u4e00\u81f4 |\n| C9 | \u591a\u8f6e\uff1a\u7b2c\u4e8c\u8f6e\u56de\u4f20 assistant message\uff08a\uff09\u542b `reasoning_content`\uff08b\uff09\u4e0d\u542b\uff0cK3 / K2.7-code / K2.6(keep=all) \u5404\u6d4b | \"\u5fc5\u987b\u539f\u6837\u56de\u4f20\"\u662f\u786c\u9519\u8bef\u8fd8\u662f\u964d\u7ea7 |\n| C10 | \u540c\u4e00 system prompt\uff08>256 token\uff09\u8fde\u53d1\u4e24\u6b21\uff0c\u770b\u7b2c\u4e8c\u6b21 `cached_tokens`\uff1bprompt \u6070\u597d 256 \u4e0e 255 token \u5404\u6d4b\uff1b\u52a0 `prompt_cache_key` \u5bf9\u6bd4 | \u7f13\u5b58\u9608\u503c\u4e0e key \u4f5c\u7528 |\n| C11 | `response_format={\"type\":\"json_object\"}` \u4e0d\u5728 prompt \u63d0 JSON\uff1b`json_schema` strict=true \u7528\u542b `additionalProperties`/`$ref` \u7684 schema | strict \u6821\u9a8c\uff1a\u62a5\u9519 / warning / 200 |\n| C12 | Partial Mode\uff1a\u6700\u540e\u4e00\u6761 assistant `partial: true` + `content` \u524d\u7f00\uff1b`content: \"\"`\uff1b\u4e0e `json_object` \u540c\u7528 | \u54cd\u5e94\u662f\u5426\u542b\u524d\u7f00\uff1b\u7a7a content \u662f\u5426\u88ab\u62d2 |\n| C13 | `stop` \u4f20 6 \u4e2a / \u5355\u4e2a >32 \u5b57\u8282 | \u62a5\u9519\u539f\u6587 |\n| C14 | `logprobs=True, top_logprobs=3` on K3 | \u8fd4\u56de\u7ed3\u6784 |\n| C15 | \u5e26 `X-Msh-Request-Nonce` \u7684\u6d41\u5f0f\u4e0e\u975e\u6d41\u5f0f\u8bf7\u6c42 \u2192 `POST /v1/signatures/verify`\uff1bnonce \u91cd\u653e | \u7b7e\u540d\u5934\u5728\u6d41\u5f0f\u4e0b\u662f\u5426\u8fd4\u56de |\n\n## 3. \u5de5\u5177\u8c03\u7528\uff08P0\uff09\n\n| ID | \u6d4b\u8bd5 |\n|---|---|\n| T1 | \u6807\u51c6 function \u5faa\u73af\uff08K3\uff09\uff1a\u8bb0\u5f55 `tool_calls[].id` \u683c\u5f0f\uff1b\u56de\u4f20 tool \u6d88\u606f\u5e26/\u4e0d\u5e26 `name`\uff1b`tool_call_id` \u9519\u914d |\n| T2 | `tool_choice=\"required\"` on K2.6 / K2.7-code \u2192 \u62a5\u9519\u539f\u6587\uff1b`tool_choice={\"type\":\"function\",...}` on K3\uff08\u601d\u8003\u5f00\u542f\uff09\u662f\u5426 400 |\n| T3 | `function.name` \u542b `.`\uff1b\u4e24\u4e2a\u540c\u540d\u5de5\u5177\uff1b`strict=true` + \u975e MFJS schema |\n| T4 | \u6d41\u5f0f\u5de5\u5177\u8c03\u7528\uff1a`delta.tool_calls[].index` \u62fc\u63a5\uff1b`reasoning_content` \u4e0e `tool_calls` \u51fa\u73b0\u987a\u5e8f |\n| T5 | `$web_search`\uff08`type: \"builtin_function\"`\uff09on K3 / K2.6\uff1a\u80fd\u5426\u8c03\u7528\u3001`arguments.usage.total_tokens`\u3001\u8d26\u5355\u91cc\u662f\u5426\u6309\u6b21\u8ba1\u8d39 |\n| T6 | K3 \u52a8\u6001\u5de5\u5177\u6d88\u606f `{\"role\":\"system\",\"tools\":[...]}`\uff1aK3 \u6b63\u5e38\uff1bK2.6 \u62a5\u9519\u539f\u6587\uff08\"tokenization failed\"?\uff09\uff1b\u540c\u540d\u91cd\u590d\u58f0\u660e |\n| T7 | \u53ea\u4f20 `functions` / `function_call`\uff08OpenAI \u65e7\u5f0f\uff09\u2192 \u62a5\u9519\u8fd8\u662f\u5ffd\u7565 |\n\n## 4. \u6587\u4ef6\u4e0e\u89c6\u89c9\uff08P1\uff09\n\n| ID | \u6d4b\u8bd5 |\n|---|---|\n| F1 | \u4e0a\u4f20\u5c0f PDF `purpose=file-extract` \u2192 `status` \u503c\u3001\u662f\u5426\u7acb\u5373\u53ef `content`\uff1b\u6587\u4ef6 ID \u662f\u5426 `file_` \u524d\u7f00 |\n| F2 | \u4e0a\u4f20 PNG `purpose=file-extract` \u2192 \u62a5\u9519\u539f\u6587\uff1b`purpose=batch_output` / `lambda` \u7531\u7528\u6237\u4e0a\u4f20 \u2192 \u62a5\u9519 or \u6210\u529f |\n| F3 | `GET /v1/files/{id}/content` \u5bf9 `purpose=image` \u6587\u4ef6 |\n| F4 | `GET /v1/files` \u8fd4\u56de\u7ed3\u6784\u3001\u6709\u65e0\u5206\u9875\u5b57\u6bb5 |\n| F5 | \u89c6\u89c9\uff1abase64 PNG\uff1b`image_url` \u76f4\u63a5\u7ed9\u5b57\u7b26\u4e32\uff1b\u516c\u7f51 https URL\uff08\u8bb0\u62a5\u9519\u539f\u6587\uff09\uff1b`ms://<file_id>`\uff1bSVG\uff1bGIF\uff08\u5bf9\u6bd4 estimate token\uff09 |\n| F6 | `content` \u4f20\u5e8f\u5217\u5316\u5b57\u7b26\u4e32\uff08\u9519\u8bef\u683c\u5f0f\uff09\u2192 \u884c\u4e3a |\n| F7 | K2.7-code \u4f20 `video_url` |\n| F8 | \u8bf7\u6c42\u4f53 > 100M\uff08\u53ef\u9009\uff0c\u5148\u7528 estimate \u63a5\u53e3\u8bd5 20M base64 \u662f\u5426\u88ab\u62d2\uff09 |\n\n## 5. Batch\uff08P1\uff0c\u7528 3 \u6761\u8bf7\u6c42\u6700\u5c0f\u89c4\u6a21\uff09\n\n| ID | \u6d4b\u8bd5 |\n|---|---|\n| B1 | K2.6 \u4e09\u6761 JSONL \u5168\u6d41\u7a0b\uff1a\u72b6\u6001\u8fc1\u79fb\u65f6\u95f4\u7ebf\u3001\u7ed3\u679c\u884c\u7ed3\u6784\uff08`response.status_code`\u3001error \u884c\u7ed3\u6784\uff0c\u6545\u610f\u653e\u4e00\u6761\u8d85\u957f\u8f93\u5165\uff09 |\n| B2 | `model: kimi-k3` \u2192 \u54ea\u4e00\u6b65\u62a5\u9519\u3001\u72b6\u6001 |\n| B3 | body \u5e26 `temperature=0.5` \u2192 \u6574\u6279 failed / \u5355\u884c error / \u5ffd\u7565 |\n| B4 | `completion_window=\"30m\"` / `\"1d\"` / `\"7d\"` / `\"8d\"` |\n| B5 | \u6df7\u4e24\u4e2a\u6a21\u578b\u7684 JSONL\uff1b`custom_id` \u91cd\u590d |\n| B6 | output \u6587\u4ef6\u662f\u5426\u5728 `GET /v1/files` \u51fa\u73b0\u3001\u53ef\u5426\u5220\u9664\uff1b\u7ed3\u679c\u987a\u5e8f\u4e0e\u8f93\u5165\u662f\u5426\u4e00\u81f4 |\n\n## 6. Responses \u4e0e Messages \u5165\u53e3\uff08P1\uff09\n\n| ID | \u6d4b\u8bd5 |\n|---|---|\n| R1 | `responses.create` \u57fa\u7840\u8c03\u7528 + \u6d41\u5f0f\uff0c\u8bb0\u5f55\u4e8b\u4ef6\u7c7b\u578b\u5168\u96c6 |\n| R2 | `model=\"kimi-k2.6\"` \u2192 \u62a5\u9519\uff1b`tool_choice=\"required\"` \u2192 \u62a5\u9519 or \u5f53 auto\uff1b\u8bf7\u6c42\u5e26 `temperature` |\n| R3 | `namespace` \u5de5\u5177 via OpenAI SDK \u662f\u5426\u88ab\u5ba2\u6237\u7aef\u62e6\u622a |\n| A1 | Anthropic SDK \u9ed8\u8ba4\u5934\uff08`x-api-key`\u3001`anthropic-version`\uff09\u80fd\u5426\u76f4\u63a5\u8fc7\uff1b\u53ea\u7528 `Authorization: Bearer` \u7684 requests \u7248\u672c |\n| A2 | \u7f3a `max_tokens` \u2192 400\uff1f\uff1b\u4f20 `thinking={\"type\":\"enabled\",\"budget_tokens\":1024}` \u2192 \u62a5\u9519/\u5ffd\u7565 |\n| A3 | \u591a\u8f6e\u56de\u4f20 `thinking` \u5757\uff08\u542b/\u4e0d\u542b `signature`\uff09 |\n| A4 | \u56fe\u7247 `media_type: image/bmp` |\n| A5 | \u540c\u4e00 system \u524d\u7f00\u5728 chat / responses / messages \u4e09\u5165\u53e3\u95f4\u662f\u5426\u5171\u4eab\u7f13\u5b58\u547d\u4e2d |\n\n## 7. \u9650\u901f\u4e0e\u5de5\u5177\u63a5\u53e3\uff08P2\uff09\n\n| ID | \u6d4b\u8bd5 |\n|---|---|\n| L1 | Tier1 \u8d26\u53f7\uff1a`max_completion_tokens=131072` \u8fde\u7eed 20 \u6b21\u5e76\u53d1 5 \u2192 \u662f\u5426 `rate_limit_reached_error`\uff08TPM \u9884\u6263\uff09\uff1b\u4e0d\u4f20\u65f6\u5bf9\u6bd4 |\n| L2 | 429 \u54cd\u5e94\u662f\u5426\u5e26 `Retry-After` |\n| L3 | `estimate-token-count` \u5e26 `tools`\u3001\u5e26 `ms://` \u5f15\u7528 |\n| L4 | \u672a\u5145\u503c\u8d26\u53f7\u8c03 K3 \u7684\u62a5\u9519\uff08\u82e5\u80fd\u9020\u51fa\u6b64\u72b6\u6001\uff09 |\n\n## 8. \u56de\u5199\u89c4\u5219\n\n- \u6bcf\u6761\u7ed3\u8bba\u5728 reference \u6587\u4ef6\u5bf9\u5e94\u4f4d\u7f6e\u52a0\uff1a`\u2705 \u5df2\u7528\u771f\u5b9e API \u9a8c\u8bc1 2026-MM-DD\uff1a<\u4e00\u53e5\u8bdd\u7ed3\u8bba>`\uff0c\u9644\u62a5\u9519 `type`/`message` \u539f\u6587\u6216\u54cd\u5e94\u7247\u6bb5\uff08\u22645 \u884c\uff09\u3002\n- \u4e0e\u6587\u6863\u4e0d\u7b26\u7684\uff0c\u989d\u5916\u5728\u6587\u4ef6\u9876\u90e8\u52a0\u4e00\u4e2a `## \u6587\u6863 vs \u5b9e\u6d4b\u5dee\u5f02` \u5c0f\u8282\u96c6\u4e2d\u5217\u51fa\uff08tag\uff1a**[DOC-MISMATCH]**\uff09\uff0c\u4fbf\u4e8e\u540e\u7eed\u4eba\u5feb\u901f\u5224\u65ad\u54ea\u4e9b\u7ed3\u8bba\u53ef\u80fd\u8fc7\u671f\u3002\n- \u9a8c\u8bc1\u5b8c\u6210\u540e\u66f4\u65b0 `SKILL.md` \u9876\u90e8\u72b6\u6001\u884c\uff0c\u628a\"\u5c1a\u672a\u9a8c\u8bc1\"\u6539\u4e3a\"\u5df2\u9a8c\u8bc1\uff08\u65e5\u671f\uff09\uff0c\u672a\u8986\u76d6\u9879\u89c1 verification-plan.md \u5269\u4f59\u9879\"\u3002\n- \u7136\u540e\u8dd1 `evals/evals.json`\uff08with-skill vs baseline\uff09\u7528\u771f\u5b9e\u62a5\u9519\u505a grader \u4f9d\u636e\uff0c\u4ea7\u51fa iteration-N \u5bf9\u7167\u62a5\u544a\u3002\n"}], "grading": {"expectations": [{"text": "Transcript shows the agent probed for llms.txt / an OpenAPI spec first, and on failure fell back to sitemap.xml, rendered pages, or a manually built page list rather than writing from memory", "passed": true, "evidence": "probed_llms_txt_or_openapi: //platform.kimi.com/docs/llms.txt; //platform.moonshot.cn/docs/llms.txt; //platform.moonshot.cn/docs/openapi.json; //platform.moonshot.cn/ll; fallback_when_no_index: sitemap.xml; sitemap/llms.txt"}, {"text": "SKILL.md states the base URL and exact auth header format with the source page cited", "passed": true, "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: OpenAPI"}, {"text": "SKILL.md is a routing layer under 200 lines with a navigation table (intent -> reference file -> endpoints) and cross-cutting rules, without full parameter tables", "passed": true, "evidence": "skill_md_under_200_lines: 82 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"}, {"text": "references/ has at least 3 files grouped by developer intent, and places where the docs were unclear are marked (e.g. '\u26a0 \u6587\u6863\u672a\u8bf4\u660e') instead of guessed", "passed": true, "evidence": "references_at_least_3: batch.md(196L), chat-completions.md(349L), errors-and-limits.md(146L), models.md(70L), responses-and-messages.md(223L), tools.md(321L), visi | reviewer: 7 refs by intent; unclear places collected in a '\u5f85\u9a8c\u8bc1\u7591\u70b9' section per file (13 markers) rather than inline"}, {"text": "Every reference file and SKILL.md explicitly states content is unverified against the live API", "passed": true, "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"}, {"text": "A verification plan exists listing specific claims to test cheap-first with endpoint and judging criteria", "passed": true, "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 6; verification_plan_cheap_first: priority/cost ordering words present"}, {"text": "evals/evals.json contains at least 3 trap-style scenarios (e.g. OpenAI-compatibility gaps, model-name pitfalls, context caching/file semantics) rather than hello-world chat", "passed": true, "evidence": "evals_json_at_least_3: 8 evals; prompts: \u6211\u6709\u4e00\u6bb5\u7528 openai \u5e93\u8c03 gpt-4o \u7684 Python \u4ee3\u7801\uff1aclient.chat.completions.create(model='gpt-4o' || \u7528 Python \u8c03 Kimi API\uff0c\u8ba9\u6a21\u578b\u63cf\u8ff0\u8fd9\u5f20\u7f51\u7edc\u56fe\u7247\u7684\u5185\u5bb9\uff1ahtt | reviewer: 8 scenarios: gpt-4o migration with temperature, image URL (unsupported), PDF upload, k3 tool loop, batch on strongest model, stream thinking+usage, disable thinking+JSON, anthropic SDK migration \u2014 analogy traps"}, {"text": "Python examples read the key from an environment variable; no real-looking secret appears in outputs", "passed": true, "evidence": "examples_read_key_from_env: 31 env-var reads in examples; no_real_looking_secrets: none | reviewer: Python, env var; no secrets"}, {"text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) when structuring the skill directory", "passed": true, "evidence": "used_skill_creator: skill-creator referenced"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}, "total_tokens": 220839, "tokens": 220839, "execution_metrics": {"total_tokens": 220839}, "process_observations": {"used_bundled_scripts": {"passed": false, "evidence": "bundled scripts not used"}}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}}}, {"id": "eval-kimi-no-llms-txt-fallback-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "process-log.md", "type": "text", "content": "# process-log.md \u2014 kimi-api skill \u751f\u6210\u8fc7\u7a0b\u8bb0\u5f55\n\n\u4efb\u52a1\uff1a\u628a https://platform.moonshot.cn/docs \u6574\u7406\u6210 skill\uff08\u65e0 API Key\uff1bPython \u793a\u4f8b\uff09\u3002\u6267\u884c\u65e5\u671f 2026-09-03\u3002\u9075\u5faa `/Users/chopinfeng/Workspace/Skillify/create-doc-skill/SKILL.md` \u53ca\u5176 references/explore.md\u3001write.md\u3001verify.md\u3001evaluate.md\u3002\n\n**\u5173\u4e8e\u771f\u5b9e API \u8c03\u7528\u7684\u58f0\u660e\uff1a\u5168\u7a0b\u96f6\u6b21\u8bf7\u6c42 `api.moonshot.cn`\u3002** \u4e0b\u8868 52 \u6b21\u8bf7\u6c42\u5168\u90e8\u6307\u5411\u6587\u6863\u7ad9 `platform.moonshot.cn` / `platform.kimi.com`\u3002skill \u4e0e\u9a8c\u8bc1\u8ba1\u5212\u4e2d\u5f15\u7528\u7684\u6240\u6709\u62a5\u9519\u539f\u6587\uff08`tool_choice 'specified' is incompatible with thinking enabled`\u3001`tokenization failed`\u3001`cannot be used with content`\u3001`tool_call_id not found`\u3001`Invalid purpose: ...` \u7b49\uff09**\u5747\u6284\u81ea\u6587\u6863\u9875\u9762\uff0c\u4e0d\u662f\u5b9e\u6d4b\u89c2\u5bdf**\uff0c\u5404\u5904\u5df2\u6807\u6ce8\"\u6587\u6863\u5f15\u7528 / \u672a\u9a8c\u8bc1\"\u3002\n\n## 1. \u63a2\u6d4b\u4e0e\u6293\u53d6\u7684\u5168\u90e8 URL\uff08\u6309\u65f6\u95f4\u987a\u5e8f\uff0c\u542b HTTP \u72b6\u6001\uff09\n\n| # | URL | HTTP | \u7528\u9014 / \u7ed3\u679c |\n|---|---|---|---|\n| 1 | https://platform.moonshot.cn/llms.txt | 404 | llms.txt \u63a2\u6d4b\uff08text/html; charset=utf-8\uff0c36258B\uff09 |\n| 2 | https://platform.moonshot.cn/llms-full.txt | 404 | \u6587\u6863\u5165\u53e3 / SPA \u58f3\uff08HTML\uff09\uff08text/html; charset=utf-8\uff0c36263B\uff09 |\n| 3 | https://platform.moonshot.cn/docs/llms.txt | 200 | **\u771f\u5b9e llms.txt\uff0c199 \u6761\u94fe\u63a5\uff0c\u6307\u5411 platform.kimi.com/docs/*.md**\uff08text/plain; charset=utf-8\uff0c39864B\uff09 |\n| 4 | https://platform.moonshot.cn/sitemap.xml | 200 | sitemap\uff08\u4ec5 2 \u6761 URL\uff0c\u6307\u5411 platform.kimi.com\uff09\uff08application/xml\uff0c1044B\uff09 |\n| 5 | https://platform.moonshot.cn/robots.txt | 200 | robots.txt\uff08\u7ed9\u51fa docs/sitemap.xml \u4e0e canonical host\uff09\uff08text/plain; charset=UTF-8\uff0c234B\uff09 |\n| 6 | https://platform.moonshot.cn/openapi.json | 404 | OpenAPI \u89c4\u8303\u63a2\u6d4b\uff08text/html; charset=utf-8\uff0c36262B\uff09 |\n| 7 | https://platform.moonshot.cn/docs/openapi.json | 200 | **\u771f\u5b9e OpenAPI 3.1.0\uff0c16 endpoints**\uff08application/json\uff0c118237B\uff09 |\n| 8 | https://platform.moonshot.cn/api-reference/openapi.json | 404 | OpenAPI \u89c4\u8303\u63a2\u6d4b\uff08text/html; charset=utf-8\uff0c36280B\uff09 |\n| 9 | https://platform.moonshot.cn/swagger.json | 404 | OpenAPI \u89c4\u8303\u63a2\u6d4b\uff08text/html; charset=utf-8\uff0c36262B\uff09 |\n| 10 | https://platform.moonshot.cn/docs | 200 | \u6587\u6863\u5165\u53e3 / SPA \u58f3\uff08HTML\uff09\uff08text/html; charset=utf-8\uff0c409709B\uff09 |\n| 11 | https://platform.moonshot.cn/docs/guide/start-using-kimi-api | 200 | \u6587\u6863\u5165\u53e3 / SPA \u58f3\uff08HTML\uff09\uff08text/html; charset=utf-8\uff0c409709B\uff09 |\n| 12 | https://platform.kimi.com/docs/openapi-hosted-agents.yaml | 200 | \u6258\u7ba1\u667a\u80fd\u4f53 OpenAPI\uff0864 paths\uff0c\u4ec5\u8bb0\u5f55\uff0c\u672a\u5c55\u5f00\uff09\uff08text/yaml\uff0c391285B\uff09 |\n| 13 | https://platform.kimi.com/docs/api/batch-create.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_batch-create.md`\uff08\u521b\u5efa\u6279\u5904\u7406\u4efb\u52a1\uff09 |\n| 14 | https://platform.kimi.com/docs/api/chat.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_chat.md`\uff08Chat Completions API\uff09 |\n| 15 | https://platform.kimi.com/docs/api/errors.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_errors.md`\uff08\u5e38\u89c1\u9519\u8bef\u7801\u8bf4\u660e\uff09 |\n| 16 | https://platform.kimi.com/docs/api/estimate.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_estimate.md`\uff08\u8ba1\u7b97 Token\uff09 |\n| 17 | https://platform.kimi.com/docs/api/files-upload.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_files-upload.md`\uff08\u4e0a\u4f20\u6587\u4ef6\uff09 |\n| 18 | https://platform.kimi.com/docs/api/messages.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_messages.md`\uff08Messages API\uff09 |\n| 19 | https://platform.kimi.com/docs/api/models-overview.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_models-overview.md`\uff08\u6a21\u578b\u53c2\u6570\u53c2\u8003\uff09 |\n| 20 | https://platform.kimi.com/docs/api/overview.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_overview.md`\uff08API \u6982\u8ff0\uff09 |\n| 21 | https://platform.kimi.com/docs/api/responses.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_responses.md`\uff08Responses API\uff09 |\n| 22 | https://platform.kimi.com/docs/api/signatures-verify.md | 200 | fetch_docs.sh \u2192 `pages/docs_api_signatures-verify.md`\uff08\u6821\u9a8c\u8bf7\u6c42\u7b7e\u540d\uff09 |\n| 23 | https://platform.kimi.com/docs/changelog/changelog/changelog.md | 200 | fetch_docs.sh \u2192 `pages/docs_changelog_changelog_changelog.md`\uff08\u5e73\u53f0\u65b0\u529f\u80fd\u53d1\u5e03\u8bb0\u5f55\uff09 |\n| 24 | https://platform.kimi.com/docs/get-api-key.md | 200 | fetch_docs.sh \u2192 `pages/docs_get-api-key.md`\uff08\u5feb\u901f\u5f00\u59cb\uff09 |\n| 25 | https://platform.kimi.com/docs/guide/auto-reconnect.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_auto-reconnect.md`\uff08\u81ea\u52a8\u65ad\u7ebf\u91cd\u8fde\uff09 |\n| 26 | https://platform.kimi.com/docs/guide/engage-in-multi-turn-conversations-using-kimi-api.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_engage-in-multi-turn-conversations-using-kimi-api.md`\uff08\u914d\u7f6e\u591a\u8f6e\u5bf9\u8bdd\u53c2\u6570\uff09 |\n| 27 | https://platform.kimi.com/docs/guide/kimi-k2-6-quickstart.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_kimi-k2-6-quickstart.md`\uff08Kimi K2.6\uff09 |\n| 28 | https://platform.kimi.com/docs/guide/kimi-k2-7-code-quickstart.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_kimi-k2-7-code-quickstart.md`\uff08Kimi K2.7 Code\uff09 |\n| 29 | https://platform.kimi.com/docs/guide/kimi-k3-quickstart.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_kimi-k3-quickstart.md`\uff08Kimi K3\uff09 |\n| 30 | https://platform.kimi.com/docs/guide/kimi-k3-tool-calling-best-practice.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_kimi-k3-tool-calling-best-practice.md`\uff08Kimi K3 API \u5de5\u5177\u8c03\u7528\u6700\u4f73\u5b9e\u8df5\uff09 |\n| 31 | https://platform.kimi.com/docs/guide/response_format.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_response_format.md`\uff08\u4f7f\u7528 response_format \u63a7\u5236\u6a21\u578b\u8f93\u51fa\u683c\u5f0f\uff09 |\n| 32 | https://platform.kimi.com/docs/guide/tool-call-repeat.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_tool-call-repeat.md`\uff08\u5982\u4f55\u89e3\u51b3\u91cd\u590d\u8c03\u7528\u95ee\u9898\uff09 |\n| 33 | https://platform.kimi.com/docs/guide/troubleshooting.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_troubleshooting.md`\uff08\u95ee\u9898\u6392\u67e5\uff09 |\n| 34 | https://platform.kimi.com/docs/guide/use-batch-api.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-batch-api.md`\uff08\u4f7f\u7528 Batch API \u6279\u91cf\u5904\u7406\u4efb\u52a1\uff09 |\n| 35 | https://platform.kimi.com/docs/guide/use-context-caching-feature-of-kimi-api.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-context-caching-feature-of-kimi-api.md`\uff08\u4f7f\u7528 Kimi API \u7684 Context Caching \u529f\u80fd\uff09 |\n| 36 | https://platform.kimi.com/docs/guide/use-dynamic-tool-loading.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-dynamic-tool-loading.md`\uff08\u52a8\u6001\u52a0\u8f7d\u5de5\u5177\uff09 |\n| 37 | https://platform.kimi.com/docs/guide/use-json-mode-feature-of-kimi-api.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-json-mode-feature-of-kimi-api.md`\uff08\u4f7f\u7528 Kimi API \u7684 JSON Mode\uff09 |\n| 38 | https://platform.kimi.com/docs/guide/use-kimi-api-for-file-based-qa.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-kimi-api-for-file-based-qa.md`\uff08\u4f7f\u7528 Kimi API \u8fdb\u884c\u6587\u4ef6\u95ee\u7b54\uff09 |\n| 39 | https://platform.kimi.com/docs/guide/use-kimi-api-to-complete-tool-calls.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-kimi-api-to-complete-tool-calls.md`\uff08\u4f7f\u7528 Kimi API \u5b8c\u6210\u5de5\u5177\u8c03\u7528\uff08tool_calls\uff09\uff09 |\n| 40 | https://platform.kimi.com/docs/guide/use-kimi-vision-model.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-kimi-vision-model.md`\uff08\u914d\u7f6e Kimi \u89c6\u89c9\u6a21\u578b\uff09 |\n| 41 | https://platform.kimi.com/docs/guide/use-official-tools.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-official-tools.md`\uff08\u5982\u4f55\u5728 Kimi API \u4e2d\u4f7f\u7528\u5b98\u65b9\u5de5\u5177\uff09 |\n| 42 | https://platform.kimi.com/docs/guide/use-partial-mode-feature-of-kimi-api.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-partial-mode-feature-of-kimi-api.md`\uff08\u4f7f\u7528 Kimi API \u7684 Partial Mode\uff09 |\n| 43 | https://platform.kimi.com/docs/guide/use-reasoning-effort.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-reasoning-effort.md`\uff08\u63a8\u7406\u5f3a\u5ea6\uff09 |\n| 44 | https://platform.kimi.com/docs/guide/use-thinking-models.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-thinking-models.md`\uff08\u601d\u8003\u6a21\u578b\uff09 |\n| 45 | https://platform.kimi.com/docs/guide/use-tool-choice.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-tool-choice.md`\uff08\u5de5\u5177\u8c03\u7528\u7ea6\u675f\uff09 |\n| 46 | https://platform.kimi.com/docs/guide/use-web-search.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_use-web-search.md`\uff08\u4f7f\u7528 Kimi API \u7684\u8054\u7f51\u641c\u7d22\u529f\u80fd\uff09 |\n| 47 | https://platform.kimi.com/docs/guide/utilize-the-streaming-output-feature-of-kimi-api.md | 200 | fetch_docs.sh \u2192 `pages/docs_guide_utilize-the-streaming-output-feature-of-kimi-api.md`\uff08\u4f7f\u7528 Kimi API \u7684\u6d41\u5f0f\u8f93\u51fa\u529f\u80fd\uff09 |\n| 48 | https://platform.kimi.com/docs/hosted-agents/quickstart.md | 200 | fetch_docs.sh \u2192 `pages/docs_hosted-agents_quickstart.md`\uff08\u5feb\u901f\u5f00\u59cb\uff09 |\n| 49 | https://platform.kimi.com/docs/introduction.md | 200 | fetch_docs.sh \u2192 `pages/docs_introduction.md`\uff08\u4e3b\u8981\u6982\u5ff5\uff09 |\n| 50 | https://platform.kimi.com/docs/models.md | 200 | fetch_docs.sh \u2192 `pages/docs_models.md`\uff08\u6a21\u578b\u5217\u8868\uff09 |\n| 51 | https://platform.kimi.com/docs/pricing/chat.md | 200 | fetch_docs.sh \u2192 `pages/docs_pricing_chat.md`\uff08\u6a21\u578b\u63a8\u7406\u4ef7\u683c\u8bf4\u660e\uff09 |\n| 52 | https://platform.kimi.com/docs/pricing/limits.md | 200 | fetch_docs.sh \u2192 `pages/docs_pricing_limits.md`\uff08\u5145\u503c\u4e0e\u9650\u901f\uff09 |\n\n\u5408\u8ba1 52 \u6b21 HTTP \u8bf7\u6c42\uff08\u4e0a\u9650\u7ea6 60\uff09\u3002\n\n## 2. \u4f7f\u7528\u7684\u5de5\u5177 / \u811a\u672c\uff08\u6309\u4f7f\u7528\u987a\u5e8f\uff09\n\n| \u5de5\u5177 | \u7528\u9014 |\n|---|---|\n| `Read` / `cat` | \u8bfb create-doc-skill \u7684 SKILL.md\u3001references/explore.md\u3001write.md\u3001verify.md\u3001evaluate.md\uff0c\u4ee5\u53ca scripts/ \u5934\u90e8 |\n| \u81ea\u5199 `probe.sh`\uff08`curl -sSL -A Mozilla -w '%{http_code}\\t%{size_download}\\t%{content_type}'`\uff09 | \u63a2\u6d4b llms.txt / OpenAPI / sitemap / robots \u7b49 12 \u4e2a\u5019\u9009 URL\uff0c\u5168\u90e8\u8bb0\u5165 `probes.tsv` |\n| `python3` \u5355\u884c\u811a\u672c | \u6821\u9a8c `/docs/openapi.json` \u662f\u5426\u771f\u662f OpenAPI\uff08`openapi: 3.1.0`\uff0c14 paths / 16 operations\uff0c`securitySchemes.bearerAuth`\uff09 |\n| `create-doc-skill/scripts/openapi_summary.py`\uff08`python3.12`\uff09 | \u628a\u89c4\u8303\u5c55\u5f00\u6210 8 \u4e2a\u6309 tag \u7684\u6458\u8981\u6587\u4ef6\uff08Batch / Billing / Chat / Files / Messages / Models / Responses / Utilities\uff0c\u5171 1517 \u884c\uff09 |\n| `grep` \u7b5b\u51fa 40 \u6761\u94fe\u63a5 \u2192 `llms-subset.txt` | \u4ece 199 \u6761\u94fe\u63a5\u4e2d\u6309\u4e3b\u9898\u6311\u6838\u5fc3 API \u9875\uff08\u8df3\u8fc7 100+ \u9875\u6258\u7ba1\u667a\u80fd\u4f53 API reference\u3001\u534f\u8bae/\u9690\u79c1\u3001\u7814\u7a76\u535a\u5ba2\uff09 |\n| `create-doc-skill/scripts/fetch_docs.sh llms-subset.txt docs 8` | \u5e76\u53d1\u62c9\u53d6 40 \u4e2a `.md` \u6e90\u9875\uff0c\u5168\u90e8 200\uff0c\u4ea7\u51fa `docs/index.tsv`\uff08\u6807\u9898 / URL / \u672c\u5730\u6587\u4ef6 / \u72b6\u6001\uff09 |\n| `grep -nE` \u5b9a\u5411\u68c0\u7d22\u6e90\u9875 | \u53d6\u8def\u7531\u5c42\u9700\u8981\u7684\u7cbe\u786e\u5199\u6cd5\uff08`$web_search` \u7684 `builtin_function`\u3001Batch \u6a21\u578b\u767d\u540d\u5355\u3001`partial` \u4f4d\u7f6e\u3001`stream_options.include_usage`\u3001`max_completion_tokens` \u9ed8\u8ba4\u503c\u7b49\uff09 |\n| `Skill: anthropic-skills:skill-creator` | \u52a0\u8f7d frontmatter \u89c4\u8303\u4e0e `references/schemas.md`\uff08evals.json \u5b57\u6bb5\u540d\uff09 |\n| `Agent` \u00d7 6\uff08general-purpose\uff0c\u5e76\u884c\uff09 | \u5404\u5199\u4e00\u4e2a reference \u6587\u4ef6\uff1b\u8f93\u5165\u53ea\u7ed9 `auth.md` + \u5bf9\u5e94\u7684 openapi-summary + \u6e90\u9875\uff0c\u7981\u6b62\u7528\u8bb0\u5fc6\uff0c\u8981\u6c42\u6807 `\u26a0` |\n| `Bash` heredoc | \u5199 `auth.md`\u3001SKILL.md\u3001evals.json\u3001verification-plan.md\u3001\u672c\u65e5\u5fd7 |\n| `python3` | \u6821\u9a8c evals.json \u53ef\u89e3\u6790\u3001description \u65e0\u5c16\u62ec\u53f7\u4e14 \u22641024 \u5b57\u7b26\uff1b\u6700\u7ec8\u7528 `package_skill.py`/`quick_validate.py` \u6821\u9a8c frontmatter |\n\n\u672a\u4f7f\u7528\uff1a\u6d4f\u89c8\u5668\uff08Chrome / \u5185\u7f6e Browser\uff09\u3001ego-browser\u3001WebFetch\u3001\u4efb\u4f55 Moonshot API \u8c03\u7528\uff08\u65e0 key\uff0c\u6309\u7ea6\u675f\u4e0d\u8c03\u7528\uff09\u3002\n\n## 3. \u6309 create-doc-skill \u7684\u6b65\u9aa4\uff1a\u505a\u4e86\u4ec0\u4e48\u3001\u8df3\u8fc7\u4ec0\u4e48\u3001\u4e3a\u4ec0\u4e48\n\n### \u52a8\u624b\u524d\"\u5148\u548c\u7528\u6237\u786e\u8ba4\u4e09\u4ef6\u4e8b\"\n- \u6709\u65e0 key\uff1a\u4efb\u52a1\u5df2\u8bf4\u660e\u65e0 key \u2192 \u4e0d\u95ee\uff0c\u6309 verify.md \u7684\u964d\u7ea7\u65b9\u6848\u6267\u884c\u3002\n- \u8bed\u8a00\uff1a\u4efb\u52a1\u6307\u5b9a Python \u2192 \u793a\u4f8b curl + Python\uff08`openai` SDK \u4f18\u5148\uff0c\u88f8 HTTP \u7528 `requests`\uff09\u3002\n- \u8f93\u51fa\u4f4d\u7f6e\uff1a\u4efb\u52a1\u6307\u5b9a \u2192 skill \u653e `outputs/kimi-api/`\uff0c\u8bc4\u6d4b/\u9a8c\u8bc1\u4ea7\u7269\u653e\u5144\u5f1f\u76ee\u5f55 `outputs/kimi-api-workspace/`\uff08\u6cbf\u7528 skill \u7684 `<skill>-workspace/` \u7ea6\u5b9a\uff09\u3002\n- \u987a\u5e26\u68c0\u67e5\u5b98\u65b9 MCP / llms-full.txt\uff1a`llms-full.txt` 404\uff1b\u672a\u89c1\u5b98\u65b9 MCP server \u63d0\u53ca\uff08Playground \u91cc\u6709 ModelScope MCP \u914d\u7f6e\u9875\uff0c\u4e0e API \u63a5\u5165\u65e0\u5173\uff09\u3002\n\n### \u7b2c 1 \u6b65 \u6293\u53d6\u4e0e\u52d8\u63a2 \u2014 \u5df2\u6267\u884c\uff08\u6709\u504f\u79bb\uff09\n- \u6309 explore.md \u5148\u8bd5 `https://platform.moonshot.cn/llms.txt` \u2192 **404**\u3002skill \u53ea\u7ed9\u4e86\u6839\u8def\u5f84\u8fd9\u4e00\u79cd\u5199\u6cd5\uff1b\u6211\u989d\u5916\u8bd5\u4e86 `/docs/llms.txt` \u2192 200\uff0c\u662f\u771f\u5b9e\u7d22\u5f15\uff08199 \u6761\uff09\u3002**\u8fd9\u4e00\u70b9 explore.md \u6ca1\u6709\u63d0\u793a**\uff08Mintlify \u7c7b\u7ad9\u70b9 llms.txt \u5e38\u6302\u5728\u6587\u6863\u5b50\u8def\u5f84\u4e0b\uff09\uff0c\u89c1\"\u95ee\u9898\u53cd\u9988\"\u3002\n- \u540c\u7406 `/openapi.json` 404\u3001`/docs/openapi.json` 200\u3002explore.md \u7684\u5e38\u89c1\u8def\u5f84\u6e05\u5355\u91cc\u6ca1\u6709 `/docs/openapi.json`\u3002\n- \u56e0\u4e3a `/docs/llms.txt` \u548c `/docs/openapi.json` \u90fd\u62ff\u5230\u4e86\uff0c**\u6ca1\u6709\u8fdb\u5165\u7b2c 4 \u8282\u7684 fallback**\uff08sitemap / DOM \u6e32\u67d3 / \u624b\u5de5\u6e05\u5355\uff09\u3002sitemap.xml \u987a\u624b\u770b\u4e86\uff1a\u53ea\u6709 2 \u6761 URL\uff0c\u5bf9\u672c\u4efb\u52a1\u65e0\u7528\uff1brobots.txt \u6307\u51fa\u53e6\u6709 `/docs/sitemap.xml`\uff08\u672a\u6293\uff0c\u9884\u7b97\u539f\u56e0\uff09\u3002\n- \u57df\u540d\u53d1\u73b0\uff1allms.txt\u3001sitemap\u3001robots \u5168\u90e8\u6307\u5411 **platform.kimi.com** \u4e3a canonical\uff0c`platform.moonshot.cn` \u53ea\u662f\u4ecd\u53ef\u8bbf\u95ee\u7684\u65e7\u57df\u540d\uff1bAPI \u57df\u540d\u4ecd\u662f `api.moonshot.cn`\u3002\u5199\u8fdb SKILL.md \u4e0e auth.md\u3002\n- `openapi_summary.py` \u6b63\u5e38\u5de5\u4f5c\uff08\u9700 python3.12\uff0c\u4e0e skill \u8bf4\u660e\u4e00\u81f4\uff09\u3002\n- `fetch_docs.sh` \u4ee5\u672c\u5730\u6587\u4ef6\u4e3a\u8f93\u5165\u6b63\u5e38\u5de5\u4f5c\uff1b\u56e0\u9884\u7b97 60 \u6b21\u53ea\u62c9\u4e86 40/199 \u9875\uff08\u6838\u5fc3 API + guide\uff09\uff0c\u6258\u7ba1\u667a\u80fd\u4f53\uff08Hosted Agents\uff0c\u72ec\u7acb\u4ea7\u54c1\uff0c64 \u4e2a endpoint\uff09\u53ea\u6293\u4e86\u5176 OpenAPI YAML \u548c quickstart\uff0c\u5728 SKILL.md \u91cc\u505a\"\u4e0d\u5728\u8303\u56f4\u5185 + \u53bb\u54ea\u627e\u89c4\u8303\"\u7684\u8def\u7531\u8bf4\u660e\u3002\n- \u4ea7\u51fa\uff1a`auth.md`\uff08\u9274\u6743\u7cbe\u786e\u683c\u5f0f\u3001\u4e09\u4e2a base_url\u3001\u6a21\u578b\u540d\u5355\uff09\u3002\n\n### \u7b2c 2 \u6b65 \u7ed3\u6784\u5316\u64b0\u5199 \u2014 \u5df2\u6267\u884c\n- \u5148\u52a0\u8f7d `anthropic-skills:skill-creator`\uff0c\u8bfb\u4e86 `references/schemas.md`\u3002\n- \u6309 write.md \u7684\u9aa8\u67b6\u5199 SKILL.md\uff08\u9a8c\u8bc1\u72b6\u6001 \u2192 \u5148\u786e\u8ba4 4 \u4ef6\u4e8b \u2192 30 \u79d2\u8bf7\u6c42 \u2192 \u5bfc\u822a\u8868 \u2192 \u901a\u7528\u89c4\u5219 \u2192 \u76ee\u5f55\uff09\u3002\n- \u6309\u5f00\u53d1\u8005\u610f\u56fe\u5206 6 \u4e2a reference\uff08\u4e0d\u7167\u6284\u6587\u6863\u76ee\u5f55\uff1a\u6587\u6863\u628a\"\u6587\u4ef6\u95ee\u7b54\"\u62c6\u5728 files-upload / file-based-qa / vision \u4e09\u5904\uff0cskill \u5408\u5e76\u8fdb files-and-batch.md + chat-completions.md \u7684\u89c6\u89c9\u5c0f\u8282\u5e76\u4e92\u76f8\u5f15\u7528\uff09\u3002\n- 6 \u4e2a\u5b50 Agent \u5e76\u884c\uff0cprompt \u7528 write.md \u7684\u6a21\u677f\uff08\u8f93\u5165\u6e05\u5355\u3001endpoint \u7edf\u4e00\u683c\u5f0f\u3001\u7981\u6b62\u7f16\u9020\u3001`\u26a0` \u6807\u8bb0\u3001\u884c\u6570\u533a\u95f4\u3001\u56de\u590d\u672b\u5c3e\u5217\u51fa \u26a0 \u6e05\u5355\uff09\u3002\n- **\u504f\u79bb**\uff1awrite.md \u5efa\u8bae\"models.md \u8fd9\u7c7b\u9700\u8981\u5168\u5c40\u89c6\u91ce\u7684\u6587\u4ef6\u81ea\u5df1\u5199\"\uff0c\u6211\u56e0 25 \u5206\u949f\u65f6\u9650\u4e5f\u59d4\u6d3e\u4e86\uff08`models-and-thinking.md`\uff09\uff0c\u6536\u56de\u540e\u7531\u6211\u901a\u8bfb\u6821\u5bf9\u3002\n\n### \u7b2c 3 \u6b65 \u771f\u5b9e API \u9a8c\u8bc1 \u2014 \u6309\u964d\u7ea7\u65b9\u6848\u6267\u884c\uff0c\u672a\u505a\u771f\u5b9e\u8c03\u7528\n- \u65e0 key\uff0c\u4e14\u4efb\u52a1\u660e\u4ee4\u7981\u6b62\u8c03\u7528\u3002\u6309 verify.md \"\u6ca1\u6709 key \u65f6\"\uff1a\n  - SKILL.md \u9876\u90e8\u52a0\"\u9a8c\u8bc1\u72b6\u6001\"\u4e00\u8282\uff0c\u58f0\u660e\u5168\u90e8\u4e3a\u6587\u6863\u8f6c\u5f55\uff1b\u6bcf\u4e2a reference \u9996\u884c\u540c\u6837\u58f0\u660e\u3002\n  - \u5199 `kimi-api-workspace/verification-plan.md`\uff1aP0\uff08\u9274\u6743 / \u6a21\u578b\u540d / \u4f59\u989d\uff09\u2192 P1\uff08SKILL.md \u6bcf\u6761\u901a\u7528\u89c4\u5219\u5404\u4e00\u6b21\u6700\u5c0f\u8c03\u7528\uff09\u2192 P2\uff08\u6587\u4ef6 / Batch\uff0c\u542b\u6e05\u7406\uff09\u2192 P3\uff08Responses / Messages / \u5de5\u5177\u63a5\u53e3\uff09\u2192 P4\uff08\u5404 reference \u7684 \u26a0 \u6e05\u5355\u6c47\u603b\uff09\u3002\u6bcf\u6761\u542b endpoint\u3001\u6d4b\u6cd5\u3001\u5224\u5b9a\u6807\u51c6\u3001\u6210\u672c\u3002\n  - \u5b50 Agent \u62a5\u4e0a\u6765\u7684 `\u26a0 \u6587\u6863\u81ea\u76f8\u77db\u76fe`\uff08504 \u8d85\u65f6 900 \u79d2 vs 2 \u5c0f\u65f6\uff1b\u9650\u901f\"\u7528\u6237\u7ea7\"vs\"\u7ec4\u7ec7\u7ea7\"\u7b49\uff09\u5df2\u4f5c\u4e3a\u5f85\u9a8c\u8bc1\u9879\u5217\u5165\uff0c\u800c\u4e0d\u662f\u66ff\u6587\u6863\u88c1\u51b3\u3002\n- \u672a\u505a\uff1averification-log.md\uff08\u6ca1\u6709\u53ef\u8bb0\u5f55\u7684\u8c03\u7528\uff09\u3001key \u6cc4\u6f0f grep\uff08\u6ca1\u6709 key\uff1b\u4f46\u4ecd grep \u4e86 `sk-` \u786e\u8ba4\u793a\u4f8b\u91cc\u6ca1\u6709\u5f62\u4f3c key \u7684\u5b57\u7b26\u4e32\uff09\u3002\n\n### \u7b2c 4 \u6b65 \u5bf9\u7167\u5b9e\u9a8c \u2014 \u53ea\u505a\u4e86\u573a\u666f\u8bbe\u8ba1\uff0c\u672a\u8dd1\u5bf9\u7167\n- \u5199\u4e86 `evals/evals.json`\uff1a7 \u4e2a\u573a\u666f\u300125 \u6761 expectations\uff0c\u5168\u90e8\u662f\"\u51ed OpenAI \u76f4\u89c9\u4f1a\u5199\u9519\"\u578b\uff08\u56fa\u5b9a temperature\u3001thinking \u8d70 extra_body\u3001tool_choice required \u4ec5 K3\u3001file-extract \u6d41\u7a0b\u3001Batch \u4e0d\u652f\u6301 K3\u3001stream_options \u53d6 usage\u3001$web_search\u3001partial \u4f4d\u7f6e\uff09\uff0cprompt \u5199\u6210\u666e\u901a\u9700\u6c42\u4e0d\u6697\u793a\u5751\u3002\n- \u672a spawn with/without \u5bf9\u7167\u5b50 Agent\u3001\u672a\u6253\u5206\u3001\u672a\u5199 comparison-report.md\uff1aevaluate.md \u8981\u6c42\"\u6253\u5206\u4f9d\u636e\u771f\u5b9e\u8c03\u7528\u7ed3\u679c\"\uff0c\u65e0 key \u65f6\u53ea\u80fd\u505a\"\u6587\u6863\u4fdd\u771f\u5ea6\u5bf9\u7167\"\uff0c\u4e14\u672c\u6b21\u4efb\u52a1\u8303\u56f4\u662f\"\u8349\u7a3f + \u9a8c\u8bc1\u8ba1\u5212 + \u8bc4\u6d4b\u573a\u666f\"\u3002\u8bc4\u6d4b\u573a\u666f\u5df2\u6309 schemas.md \u683c\u5f0f\u5c31\u7eea\uff0c\u62ff\u5230 key \u540e\u5148\u8dd1 verification-plan \u518d\u8dd1\u5bf9\u7167\uff0c\u8fd9\u6837\u6253\u5206\u624d\u6709\u771f\u5b9e\u62a5\u9519\u53ef\u4f9d\u636e\u3002\n\n### \u7b2c 5 \u6b65 \u6253\u5305\u53d1\u5e03 \u2014 \u90e8\u5206\u6267\u884c\n- \u505a\u4e86\uff1a`description` \u6309 skill-creator \u7684\"pushy\"\u98ce\u683c\u624b\u5199\uff08\u542b\u4ea7\u54c1\u540d\u3001\u4e24\u4e2a\u57df\u540d\u3001API \u57df\u540d\u3001env \u53d8\u91cf\u540d\u3001\u6a21\u578b\u540d\u3001\u5e38\u89c1\u522b\u79f0\"\u6708\u4e4b\u6697\u9762\"\uff09\uff0c\u65e0\u5c16\u62ec\u53f7\u3001\u22641024 \u5b57\u7b26\uff1b\u7528 `package_skill.py` \u6821\u9a8c frontmatter\uff08\u7ed3\u679c\u89c1\u7b2c 4 \u8282\uff09\u3002\n- \u672a\u505a\uff1a`run_loop.py` \u63cf\u8ff0\u4f18\u5316\uff08\u9700\u8981 `claude -p` \u8dd1 20 \u6761\u89e6\u53d1\u67e5\u8be2 \u00d7 3 \u6b21 \u00d7 5 \u8f6e\uff0c\u8fdc\u8d85 25 \u5206\u949f\u65f6\u9650\uff0c\u4e14 skill \u81ea\u5df1\u4e5f\u8bf4\"\u7b49 skill \u5b9a\u7a3f\u540e\u518d\u505a\"\uff09\uff1b\u672a\u5b89\u88c5\u5230 `~/.claude/skills/`\uff08\u8349\u7a3f\u9636\u6bb5\uff0c\u4e14\u4efb\u52a1\u53ea\u8981\u6c42\u653e\u5230 outputs\uff09\u3002\n\n## 4. \u4ea4\u4ed8\u7269\u4e0e\u6821\u9a8c\u7ed3\u679c\n\n| \u6587\u4ef6 | \u884c\u6570 |\n|---|---|\n| `kimi-api-workspace/verification-plan.md` | 202 |\n| `kimi-api/SKILL.md` | 96 |\n| `kimi-api/evals/evals.json` | 86 |\n| `kimi-api/references/chat-completions.md` | 650 |\n| `kimi-api/references/errors-and-limits.md` | 303 |\n| `kimi-api/references/files-and-batch.md` | 599 |\n| `kimi-api/references/models-and-thinking.md` | 541 |\n| `kimi-api/references/responses-messages-and-utilities.md` | 598 |\n| `kimi-api/references/tool-calling.md` | 623 |\n| `process-log.md` | \u672c\u6587 |\n\n\u6821\u9a8c\uff08\u5747\u5728\u672c\u6b21\u4f1a\u8bdd\u6267\u884c\uff09\uff1a\n- `quick_validate.py`\uff08skill-creator\uff0c`uv run --python 3.12 --with pyyaml`\uff09\uff1a`Skill is valid!`\uff1bdescription 563 \u5b57\u7b26\u3001\u65e0\u5c16\u62ec\u53f7\uff1bname `kimi-api` kebab-case\u3002\n- `package_skill.py`\uff08\u9700 `python -m scripts.package_skill`\uff0c\u76f4\u63a5\u8dd1\u811a\u672c\u4f1a `ModuleNotFoundError: scripts`\uff09\uff1a\u6253\u5305\u6210\u529f\uff0c\u4ea7\u7269 `kimi-api.skill` \u653e\u5728 scratch\uff0c\u672a\u653e\u8fdb outputs\uff1b\u6253\u5305\u5185\u5bb9 = SKILL.md + 6 \u4e2a references\uff0c`evals/` \u5df2\u6392\u9664\u3002\n- `evals/evals.json`\uff1a\u53ef\u89e3\u6790\uff0c7 \u4e2a\u573a\u666f / 25 \u6761 expectations\uff0c\u5b57\u6bb5\u6309 skill-creator `references/schemas.md`\u3002\n- \u6cc4\u6f0f\u68c0\u67e5\uff1a`grep -rnE 'sk-[A-Za-z0-9]{10,}|MOONSHOT_API_KEY=\\S{10,}'` outputs \u2192 \u65e0\u5339\u914d\u3002\n- \u8bf7\u6c42\u65e5\u5fd7\u590d\u6838\uff1a`probes.tsv` \u4e0e `docs/index.tsv` \u4e2d `api.moonshot.cn` \u51fa\u73b0 0 \u6b21\uff1b\u5168\u90e8 52 \u6b21\u8bf7\u6c42\u90fd\u662f\u6587\u6863\u7ad9\u3002\n- \u6240\u6709\u8f93\u51fa\u6587\u4ef6\u5747\u4e3a\u5408\u6cd5 UTF-8\uff08\u7b2c\u4e00\u7248 verification-plan.md \u56e0 macOS `cut -c` \u6309\u5b57\u8282\u622a\u65ad\u4ea7\u751f\u4e86\u975e\u6cd5\u5b57\u8282\uff0c\u5df2\u7528 Python \u91cd\u5efa\uff09\u3002\n- verification-plan.md \u7684 P4 \u9644\u5f55\uff1a\u4ece 6 \u4e2a reference \u81ea\u52a8\u6c47\u603b 127 \u6761 \u26a0\uff08models-and-thinking 25\u3001chat-completions 15\u3001tool-calling 20\u3001files-and-batch 30\u3001responses-messages-and-utilities 17\u3001errors-and-limits 20\uff09\u3002\n\n## 5. \u5bf9 create-doc-skill \u672c\u8eab\u7684\u53cd\u9988\uff08\u4e0d\u6e05\u695a / \u4e0d\u5bf9 / \u8dd1\u4e0d\u901a\u7684\u5730\u65b9\uff09\n\n1. **explore.md \u53ea\u8bf4\u8bd5 `https://<docs-domain>/llms.txt`**\u3002\u672c\u7ad9\u6839\u8def\u5f84 404\uff0c\u771f\u6b63\u7684\u7d22\u5f15\u5728 `/docs/llms.txt`\uff08OpenAPI \u540c\u7406\u5728 `/docs/openapi.json`\uff09\u3002\u5efa\u8bae\u628a `/docs/llms.txt`\u3001`/<docs-prefix>/llms.txt` \u548c `/docs/openapi.json` \u52a0\u8fdb\u5019\u9009\u8def\u5f84\u6e05\u5355\uff0c\u5e76\u63d0\u793a\u5148\u770b `robots.txt`\uff08\u672c\u7ad9 robots \u76f4\u63a5\u7ed9\u51fa\u4e86 `/docs/sitemap.xml` \u548c canonical host\uff09\u3002\n2. **\u57df\u540d\u8fc1\u79fb\u6ca1\u6709\u5bf9\u5e94\u6307\u5f15**\uff1a\u7528\u6237\u7ed9\u7684\u662f `platform.moonshot.cn`\uff0c\u6240\u6709\u7d22\u5f15\u90fd\u6307\u5411 `platform.kimi.com`\u3002explore.md \u5e94\u52a0\u4e00\u53e5\"llms.txt / sitemap \u91cc\u7684\u94fe\u63a5\u57df\u540d\u548c\u7528\u6237\u7ed9\u7684\u4e0d\u4e00\u81f4\u65f6\uff0c\u4ee5\u7d22\u5f15\u91cc\u7684\u4e3a canonical\uff0c\u5e76\u5728 SKILL.md \u91cc\u4e24\u4e2a\u57df\u540d\u90fd\u5217\u51fa\u6765\"\u3002\n3. **fetch \u9884\u7b97\u4e0e 199 \u6761\u94fe\u63a5\u51b2\u7a81\u65f6\u6ca1\u6709\u7b5b\u9009\u6307\u5f15**\u3002\u6211\u6309\"\u6838\u5fc3 API + guide \u4f18\u5148\u3001\u72ec\u7acb\u5b50\u4ea7\u54c1\u53ea\u6293\u89c4\u8303 + \u5feb\u901f\u5f00\u59cb\"\u53d6\u820d\uff1b\u5efa\u8bae\u5728 explore.md \u52a0\"\u591a\u4ea7\u54c1\u6587\u6863\u7ad9\u6309\u4ea7\u54c1\u5207\u5206\uff0c\u4e00\u6b21\u53ea\u505a\u4e00\u4e2a\u4ea7\u54c1\uff0c\u5176\u4ed6\u4ea7\u54c1\u5728 SKILL.md \u505a\u8def\u7531\"\uff0c\u5e76\u660e\u793a fetch_docs.sh \u63a5\u53d7\u672c\u5730\u622a\u53d6\u8fc7\u7684 llms.txt \u5b50\u96c6\uff08\u6211\u662f\u8bfb\u811a\u672c\u6e90\u7801\u624d\u786e\u5b9a\u7684\uff09\u3002\n4. **skill-creator \u811a\u672c\u4f9d\u8d56\u6ca1\u5199\u5168**\uff1aSKILL.md \u53ea\u8bf4\u9700\u8981 Python \u2265 3.10\uff0c\u5b9e\u9645 `quick_validate.py` / `package_skill.py` \u8fd8\u9700\u8981 `pyyaml`\uff0c\u4e14 `package_skill.py` \u5fc5\u987b\u4ee5 `python -m scripts.package_skill` \u65b9\u5f0f\u5728 skill-creator \u76ee\u5f55\u4e0b\u8fd0\u884c\uff0c\u76f4\u63a5 `python scripts/package_skill.py` \u4f1a `ModuleNotFoundError`\u3002\u5efa\u8bae\u628a `uv run --with pyyaml python -m scripts.package_skill` \u5199\u6210\u6807\u51c6\u547d\u4ee4\u3002\n5. **write.md \u7684\u5b50 Agent \u6a21\u677f\u7f3a\u4e00\u6761**\uff1a\u5e94\u8981\u6c42\u5b50 Agent \u5728\u6587\u4ef6\u91cc\u663e\u5f0f\u5199\u660e\"\u62a5\u9519\u539f\u6587\u5f15\u81ea\u6587\u6863\uff0c\u975e\u5b9e\u6d4b\"\u3002\u672c\u6b21\u6709\u5b50 Agent\uff08\u53ca\u6211\u81ea\u5df1\u7b2c\u4e00\u7248 SKILL.md\uff09\u628a\u6587\u6863\u91cc\u7684\u62a5\u9519 message \u5199\u5f97\u50cf\u5b9e\u6d4b\u7ed3\u8bba\uff0c\u88ab\u534f\u8c03\u65b9\u8ffd\u95ee\u540e\u624d\u8865\u6807\u6ce8\u3002verify.md \u7684\u964d\u7ea7\u65b9\u6848\u4e5f\u5e94\u628a\u8fd9\u6761\u5217\u4e3a\u5fc5\u505a\u3002\n6. **write.md \u5efa\u8bae models.md \u81ea\u5df1\u5199**\uff0c\u4f46 25 \u5206\u949f\u65f6\u9650\u4e0b\u4e0d\u73b0\u5b9e\uff1b\u5b9e\u9645\u59d4\u6d3e\u540e\u8d28\u91cf\u53ef\u63a5\u53d7\u3002\u5efa\u8bae\u6539\u6210\"\u53ef\u59d4\u6d3e\uff0c\u4f46 SKILL.md \u7684'\u5148\u786e\u8ba4 N \u4ef6\u4e8b'\u5fc5\u987b\u7531\u4e3b Agent \u4ece auth.md + \u6a21\u578b\u9875\u4eb2\u81ea\u6838\u5bf9\"\uff08\u6211\u786e\u5b9e\u8fd9\u4e48\u505a\u4e86\uff0c\u5e76\u7ea0\u6b63\u4e86\u81ea\u5df1\u7b2c\u4e00\u7248 SKILL.md \u91cc\u5173\u4e8e\u6307\u5b9a\u51fd\u6570 tool_choice \u7684\u9519\u8bef\uff09\u3002\n7. **\u5b50 Agent \u5b8c\u6210\u901a\u77e5\u4e0d\u53ef\u9760**\uff1a6 \u4e2a\u5e76\u884c\u5b50 Agent \u4e2d\u6709 2 \u4e2a\u7684\u5b8c\u6210\u901a\u77e5\u6211\u6ca1\u6709\u53ca\u65f6\u6536\u5230\uff08\u88ab\u534f\u8c03\u65b9\u5524\u9192\u65f6\u624d\u53d1\u73b0\u6587\u4ef6\u5df2\u5728\u76d8\u4e0a\u3001\u4e14\u884c\u6570\u5df2\u53d8\uff09\uff0c\u53e6\u6709 1 \u4e2a\uff08tool-calling\uff09\u5728\u534f\u8c03\u65b9\u544a\u77e5\"\u6ca1\u6709\u5b50 Agent \u5728\u8fd0\u884c\"\u65f6\u6587\u4ef6\u5c1a\u4e0d\u5b58\u5728\uff0c\u6211\u6309\u6307\u793a\u81ea\u5df1\u5199\u4e86 502 \u884c\u7248\u672c\uff1b\u8be5\u5b50 Agent \u5b9e\u9645\u4ecd\u5728\u8fd0\u884c\uff0c\u968f\u540e\u4ee5\u6211\u7684\u7248\u672c\u4e3a\u57fa\u5e95\u5408\u5e76\u4e86\u5b83\u7684\u8865\u5145\uff08\u6700\u7ec8 623 \u884c\uff09\uff0c\u5e76\u5728\u56de\u590d\u91cc\u8bf4\u660e\u4e86\u8fd9\u6b21\u5408\u5e76\u3002evaluate.md \u8bf4\"timing.json \u6570\u636e\u53ea\u5728\u901a\u77e5\u91cc\u6709\"\uff0c\u8fd9\u79cd\u60c5\u51b5\u4e0b\u5c31\u62ff\u4e0d\u5230\uff1b\u5efa\u8bae\u8ba9\u5b50 Agent \u628a\u884c\u6570 / \u26a0 \u6e05\u5355\u540c\u65f6\u5199\u5230 `<scratch>/reports/<domain>.md`\uff0c\u4e3b Agent \u4ee5\u6587\u4ef6\u4e3a\u51c6\u3002\n8. **evaluate.md \u4e0e\"\u65e0 key \u53ea\u505a\u8349\u7a3f\"\u4efb\u52a1\u7684\u8854\u63a5\u4e0d\u6e05**\uff1a\u4efb\u52a1\u53ea\u8981\"\u8349\u7a3f + \u9a8c\u8bc1\u8ba1\u5212 + \u8bc4\u6d4b\u573a\u666f\"\uff0cskill \u6ca1\u6709\u8bf4\u660e\u8fd9\u79cd\u4ea4\u4ed8\u91cc\u7b2c 4 \u6b65\u505a\u5230\u54ea\u4e00\u6b65\uff08\u53ea\u5199 evals.json\uff1f\u8fd8\u662f\u4e5f\u8dd1\u6587\u6863\u4fdd\u771f\u5ea6\u5bf9\u7167\uff1f\uff09\u3002\u6211\u9009\u62e9\u53ea\u5199 evals.json\u3002\u5efa\u8bae verify.md \u7684\u964d\u7ea7\u65b9\u6848\u660e\u786e\"\u65e0 key \u65f6\u7b2c 4 \u6b65\u662f\u5426\u8981\u8dd1\u3001\u8dd1\u4e86\u600e\u4e48\u6807\u6ce8\"\u3002\n9. **\u89c4\u8303\u4e4b\u5916\u7684 endpoint \u6ca1\u6709\u5904\u7406\u6307\u5f15**\uff1aFormula \u5b98\u65b9\u5de5\u5177\u63a5\u53e3\uff08`/v1/formulas/{uri}/tools`\u3001`/fibers`\uff09\u53ea\u5728\u6587\u6863\u9875\u51fa\u73b0\u3001\u4e0d\u5728 openapi.json \u91cc\u3002skill \u5e94\u63d0\u793a\"\u6587\u6863\u9875\u91cc\u51fa\u73b0\u800c\u89c4\u8303\u91cc\u6ca1\u6709\u7684 endpoint \u8981\u5355\u72ec\u6807\u51fa\u5e76\u4f18\u5148\u9a8c\u8bc1\"\u2014\u2014\u6211\u5728 tool-calling.md \u91cc\u6807\u4e86\u3002\n10. **\u591a\u5b57\u8282\u6587\u672c\u5de5\u5177\u5751**\uff1awrite.md / evaluate.md \u7684\u793a\u4f8b\u547d\u4ee4\u82e5\u7528 `cut -c` \u5904\u7406\u4e2d\u6587\u4f1a\u4ea7\u751f\u975e\u6cd5 UTF-8\uff08\u672c\u6b21\u8e29\u5230\uff09\u3002\u5efa\u8bae\u5728 skill \u91cc\u63d0\u9192\u622a\u65ad/\u6c47\u603b\u4e2d\u6587\u6587\u672c\u7528 Python \u800c\u4e0d\u662f `cut`\u3002\n"}], "grading": {"expectations": [{"text": "Transcript shows the agent probed for llms.txt / an OpenAPI spec first, and on failure fell back to sitemap.xml, rendered pages, or a manually built page list rather than writing from memory", "passed": true, "evidence": "probed_llms_txt_or_openapi: //platform.kimi.com/docs/openapi-hosted-agents.yaml; //platform.moonshot.cn/api-reference/openapi.json; //platform.moonshot.cn/docs/llms.txt; fallback_when_no_index: Browser; browser; sitemap; sitemap.xml; \u624b\u5de5; \u6e32\u67d3"}, {"text": "SKILL.md states the base URL and exact auth header format with the source page cited", "passed": true, "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: \u6587\u6863\u8f6c\u5f55\uff0c\u5c1a\u672a\u7528\u771f\u5b9e API Key \u8c03\u7528\u9a8c\u8bc1\u3002** \u6765\u6e90\u662f `platform.kimi.com/docs/openapi.json`\uff08OpenAPI 3.1.0\uff0c16 \u4e2a endpoint\uff09\u548c 40 \u7bc7\u5b98\u65b9\u6587\u6863\u9875\uff08\u6293\u53d6\u4e8e 2026-09-03\uff09\u3002\u6bcf\u4e2a reference \u6587\u4ef6"}, {"text": "SKILL.md is a routing layer under 200 lines with a navigation table (intent -> reference file -> endpoints) and cross-cutting rules, without full parameter tables", "passed": true, "evidence": "skill_md_under_200_lines: 97 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"}, {"text": "references/ has at least 3 files grouped by developer intent, and places where the docs were unclear are marked (e.g. '\u26a0 \u6587\u6863\u672a\u8bf4\u660e') instead of guessed", "passed": true, "evidence": "references_at_least_3: chat-completions.md(651L), errors-and-limits.md(304L), files-and-batch.md(600L), models-and-thinking.md(542L), responses-messages-and-utilit | reviewer: 6 refs by intent; 102 '\u6587\u6863\u672a\u8bf4\u660e/\u5f85\u9a8c\u8bc1' markers at endpoint level"}, {"text": "Every reference file and SKILL.md explicitly states content is unverified against the live API", "passed": true, "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"}, {"text": "A verification plan exists listing specific claims to test cheap-first with endpoint and judging criteria", "passed": true, "evidence": "verification_plan_exists: kimi-api-workspace/verification-plan.md; endpoints mentioned: 11; verification_plan_cheap_first: priority/cost ordering words present"}, {"text": "evals/evals.json contains at least 3 trap-style scenarios (e.g. OpenAI-compatibility gaps, model-name pitfalls, context caching/file semantics) rather than hello-world chat", "passed": true, "evidence": "evals_json_at_least_3: 7 evals; prompts: \u7528 Kimi \u5f00\u653e\u5e73\u53f0\u5199\u4e00\u4e2a Python \u547d\u4ee4\u884c\u804a\u5929\u7a0b\u5e8f chat.py\uff1a\u652f\u6301\u591a\u8f6e\u5bf9\u8bdd\uff0c\u56de\u590d\u8981\u5c3d\u91cf\u7a33\u5b9a\u3001\u5c11\u53d1\u6563\uff0c\u7528 kimi-k2.6 \u5e76\u4e14\u4e0d\u8981\u8ba9\u5b83\u505a\u6df1\u5ea6\u601d\u8003 || \u6211\u8981\u505a\u4e00\u4e2a\u7535\u5546\u5ba2\u670d\u673a\u5668\u4eba\uff08Python\uff0cKimi API\uff09\u3002\u4e1a\u52a1\u89c4\u5219\uff1a\u7528\u6237\u53d1 | reviewer: 7 scenarios: fixed sampling params on k2.6, forced tool call before answer, PDF file-extract flow, 200k-review batch (K3 excluded), stream usage, $web_search builtin, partial mode \u2014 analogy traps"}, {"text": "Python examples read the key from an environment variable; no real-looking secret appears in outputs", "passed": true, "evidence": "examples_read_key_from_env: 74 env-var reads in examples; no_real_looking_secrets: none | reviewer: Python, os.environ; no secrets"}, {"text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) when structuring the skill directory", "passed": true, "evidence": "used_skill_creator: skill-creator referenced"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}, "total_tokens": 240398, "tokens": 240398, "execution_metrics": {"total_tokens": 240398}, "process_observations": {"used_bundled_scripts": {"passed": true, "evidence": "fetch_docs.sh; openapi_summary.py"}}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}}}, {"id": "eval-resend-mintlify-llms-txt-old_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "process-log.md", "type": "text", "content": "# Process log \u2014 Resend skill draft (old_skill / skill-snapshot run)\n\nDate: 2026-09-03. Skill followed: `create-doc-skill-workspace/skill-snapshot/SKILL.md` (generate-skill-from-api-docs). Constraints: no live API calls, \u226460 fetches, ~25 min, TypeScript examples.\n\n## 1. URLs probed, in order (HTTP status)\n\n| # | URL | Status | Purpose |\n|---|---|---|---|\n| 1 | https://resend.com/docs/llms.txt | 200 | step 1.1 llms.txt index (probe) |\n| 2 | https://resend.com/llms.txt | 200 | same file at site root |\n| 3 | https://resend.com/docs/llms-full.txt | 200 | full-corpus export (probe) |\n| 4 | https://resend.com/docs/openapi.json | 404 | step 1.2 OpenAPI guess |\n| 5 | https://resend.com/docs/api-reference/openapi.json | 404 | OpenAPI guess |\n| 6 | https://resend.com/docs/openapi/openapi.json | 404 | OpenAPI guess |\n| 7 | https://resend.com/docs/introduction.md | 200 | confirm `.md` suffix trick works |\n| 8 | https://resend.com/docs/api-reference/introduction.md | 200 | same |\n| 9 | https://resend.com/docs/llms.txt | 200 | download (372 lines, 362 links) |\n| 10 | https://resend.com/docs/llms-full.txt | 200 | download (62,748 lines, 2.1 MB, all 360 pages inline) |\n| 11 | https://api.github.com/repos/resend/resend-openapi/contents/ | 200 | locate real OpenAPI file (linked from docs/sdks) |\n| 12 | https://raw.githubusercontent.com/resend/resend-openapi/main/resend.yaml | 200 | (not used) |\n| 13 | https://raw.githubusercontent.com/resend/resend-openapi/main/resend.json | 200 | **OpenAPI 3.1.2, info.version 1.5.1, 67 paths / 108 operations** \u2014 primary schema source |\n| 14 | https://raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml | 404 | guess |\n\nTotal fetches: 14 (limit 60). No request was made to `api.resend.com`. No API key was used or written anywhere (grep for `re_[A-Za-z0-9]{20,}` over the outputs dir is empty; examples use `process.env.RESEND_API_KEY` / `$RESEND_API_KEY`).\n\n## 2. Tools and scripts used\n\n| Tool | What for |\n|---|---|\n| `curl -s -o \u2026 -w \"%{http_code}\"` | all probes/downloads above |\n| Python 3 (stdlib only, inline heredocs) | (a) parse `resend.json`: list operations, `securitySchemes` (bearerAuth only), servers; (b) recursive `$ref` expansion \u2192 `openapi-summary.txt` (1,719 lines) with params/request/response per operation; (c) split `llms-full.txt` into 360 per-page files by `# Title\\nSource: URL` markers (`pages/<slug>.md`, `pages-index.txt`) |\n| `strip.py` (small Python filter) | drop non-TS/curl code fences and Mintlify `theme={\u2026}` attrs from pages before reading, to stay inside the time-box |\n| `grep`/`sed`/`awk` | targeted extraction from pages |\n| `Skill` tool \u2192 `anthropic-skills:skill-creator` | loaded as the snapshot skill requires (step 2); used its `references/schemas.md` for `evals/evals.json` format and `scripts/quick_validate.py` for validation |\n| `Agent` tool \u00d7 3 (general-purpose, parallel) | assigned `references/sending.md`, `references/audiences-and-broadcasts.md`, `references/webhooks-and-receiving.md` + `references/domains-and-account.md` from a shared writing spec (`writing-spec.md`) \u2014 step 2.4 of the skill. Only `sending.md` and `webhooks-and-receiving.md` were delivered; the other two agents ended without writing, so I wrote `audiences-and-broadcasts.md` and `domains-and-account.md` myself from the same sources |\n| Post-write review script (Python) | extracted every backticked snake_case identifier from the four reference files and checked it exists in `openapi-summary.txt` or `llms-full.txt` \u2014 0 unknown identifiers (only the word `snake_case` itself); `grep -rE 're_[A-Za-z0-9_]{8,}'` over outputs \u2014 0 hits |\n| `Write`/`Edit` | SKILL.md, errors-and-limits.md, evals.json, verification-plan.md, this log |\n| `quick_validate.py` (skill-creator) | frontmatter/structure validation \u2014 \"Skill is valid!\" |\n\nScratch dir: `/private/tmp/claude-501/-Users-chopinfeng-Workspace-Skillify/5ec28aad-b335-43f0-bc64-9891f0727768/scratchpad/eval1-old/` (llms.txt, llms-full.txt, resend-openapi.json, openapi-summary.txt, pages/, writing-spec.md, url-log.txt).\n\n## 3. Skill steps followed / skipped\n\n| Skill step | Done? | Notes |\n|---|---|---|\n| 1.1 Find `llms.txt` | \u2705 | Found at both `/docs/llms.txt` and `/llms.txt`. Bonus: `llms-full.txt` exists and contains every page, so a single fetch replaced the \"batch download with `xargs -P 8`\" sub-step. |\n| 1.2 Find OpenAPI | \u2705 (detour) | Not at any of the three paths the skill suggests. The `llms.txt` \"OpenAPI Specs\" section is **bogus** \u2014 it lists `package.json`, `pnpm-lock.yaml`, `renovate.json` (a Mintlify export artefact). The real spec is on GitHub (`resend/resend-openapi`), linked from the docs/sdks page. Parsed and `$ref`-expanded with Python as instructed. |\n| 1.3 Batch-download Markdown | \u2705 (variant) | Confirmed `.md` suffix works (2 probes) but used `llms-full.txt` split locally instead of 360 individual fetches \u2014 same content, 1 fetch instead of 360. **Caveat discovered:** the Mintlify export strips the `name` attribute from `<ParamField>` / `<ResponseField>` tags, so parameter *names* are missing from the Markdown; the OpenAPI spec had to be the source of truth for names. |\n| 1.4 Auth format | \u2705 | `securitySchemes.bearerAuth` (http/bearer); docs add the mandatory `User-Agent` header (403/1010 otherwise) \u2014 not in the OpenAPI spec. |\n| 2 Load skill-creator, init structure | \u2705 | Loaded via `Skill` tool; structure per its anatomy (SKILL.md + references/ + evals/). SKILL.md is 67 lines (routing + cross-cutting rules only). |\n| 2 Endpoint block format | \u2705 | Spec'd in `writing-spec.md` (Endpoint / Purpose / Key params table / TS example / curl / Response / Gotchas). |\n| 2.4 Parallel sub-agents | \u2705 | 3 agents, one message, shared spec, explicit \"do not invent fields\" rule. I wrote SKILL.md and errors-and-limits.md myself (needs global view), as the skill suggests. |\n| 3 Real API verification | \u23ed\ufe0f **skipped by constraint** | No key. Replaced by `verification-plan.md`: 23 concrete checks (V1\u2013V23), 8 of which are doc self-contradictions found during reading, each mapped to the reference section to update and to the eval scenario it would re-grade. Every unverified claim in the skill carries a header note; contradictions carry `\u26a0 VERIFY:`. |\n| 4 Comparison experiment | \u23ed\ufe0f partially | Scenarios written to `evals/evals.json` (8 evals, 4\u20135 expectations each) targeting \"experienced dev guesses wrong\" traps per the skill's guidance; runs **not** executed (task said draft only). Grading would use `run_eval.py`/`aggregate_benchmark.py` per the skill. |\n| 5.1 `improve_description.py` | \u23ed\ufe0f skipped | Needs `claude -p` runs and user review of trigger queries \u2014 out of scope for a draft; description written \"pushy\" by hand per skill-creator guidance. |\n| 5.2 `package_skill.py` | \u23ed\ufe0f partially | Ran `quick_validate.py` only (it is what package_skill calls first); did not produce a `.skill` archive since the deliverable is the directory. |\n| 5.3 Split oversized references | n/a | Files are 150\u2013320 lines each. |\n\n## 4. Doc-vs-reality discrepancies recorded (for the eval writer)\n\n1. `llms.txt` \"OpenAPI Specs\" section points at package/lockfile JSON, not a spec.\n2. `llms-full.txt` / `.md` pages drop `ParamField` names \u2192 Markdown alone cannot tell you field names.\n3. Idempotency key: 2nd SDK argument (idempotency guide) vs inside payload (Node quickstart AI-prompt block).\n4. `scheduled_at`: natural language (docs) vs ISO-8601-only (OpenAPI description).\n5. `restricted_api_key` listed under both 401 and 403.\n6. Webhook retry schedule differs between `webhooks/introduction` and `webhooks/retries-and-replays`.\n7. `resend.webhooks.verify()` example indexes `req.headers['svix-id']` on a `NextRequest`.\n8. Chained `templates.create({...}).publish()` snippet is unlikely to type-check against a `{data,error}` promise.\n9. Attachments guide's local-file example puts HTML in the `text` field.\n10. Pagination errors are documented as 422 while the intro table maps bad params to 400.\n11. OpenAPI lists **no request body** for `PATCH /emails/{email_id}` although the docs send `{ \"scheduled_at\": ... }` (found by the sending.md writer).\n12. Received-email response fields `raw.download_url` / `html_format` (and the `html_format` query param) exist in the docs but not in the OpenAPI spec (found by the webhooks writer).\n13. `GET /emails/{id}` docs sample includes `scheduled_at` and `tags[]`, absent from the OpenAPI response schema.\n\n## 5. Output files (all under `\u2026/old_skill/outputs/`)\n\n| File | Lines | Author |\n|---|---|---|\n| `resend/SKILL.md` | 67 | me |\n| `resend/references/sending.md` | 359 | sub-agent |\n| `resend/references/webhooks-and-receiving.md` | 314 | sub-agent |\n| `resend/references/audiences-and-broadcasts.md` | 206 | me (fallback) |\n| `resend/references/domains-and-account.md` | 134 | me (fallback) |\n| `resend/references/errors-and-limits.md` | 120 | me |\n| `resend/evals/evals.json` | 114 (8 scenarios) | me |\n| `verification-plan.md` | 65 (23 checks) | me |\n| `process-log.md` | this file | me |\n\n`\u26a0 VERIFY` markers across references: 26. `quick_validate.py`: \"Skill is valid!\".\n\n## 6. Where the snapshot skill's instructions were unclear or did not fit\n\n- Step 1.2 assumes the OpenAPI file lives on the docs host and that `llms.txt` \"often lists it at the end\" \u2014 here the `llms.txt` OpenAPI section was garbage (package/lockfile JSON) and the real spec was only discoverable via the docs' SDK page \u2192 GitHub. The skill should say \"also check the vendor's GitHub org and the SDKs/OpenAPI docs page\".\n- Step 1.3 (`xargs -P 8` per-page download) is redundant when `llms-full.txt` exists; the skill should tell readers to try `llms-full.txt` first. It should also warn that Mintlify exports drop `ParamField` names, so Markdown alone is not enough for field tables.\n- The skill hard-requires steps 3\u20134 (real key, real runs) with no guidance for the \"no key yet\" case; I improvised a verification plan + unverified-status banners. A sanctioned \"draft mode\" checklist would help.\n- Step 2 says to load skill-creator and \"init the skill directory per its spec\" \u2014 skill-creator has no init script; only `quick_validate.py`/`package_skill.py`. The reference to `skills/bigmodel-cn/SKILL.md` as the model was off-limits per task constraints, so the SKILL.md layout was derived from the skill text alone.\n- Step 5 (`improve_description.py`, `package_skill.py`) needs `claude -p` runs and user review; not runnable in a draft-only, time-boxed pass \u2014 the skill could mark it optional for drafts.\n- Delegation guidance (2.4) does not mention that sub-agents may silently fail to write; a \"verify each delegated file exists and passes a field-name cross-check\" step would have saved a round-trip.\n"}, {"name": "verification-plan.md", "type": "text", "content": "# Resend skill \u2014 real-API verification plan\n\nStatus: **not executed** (no `RESEND_API_KEY` at draft time, 2026-09-03). Run this before treating the skill as verified. Estimated cost: free tier is enough (all sends go to `*@resend.dev` test addresses; ~20 emails total).\n\n## Setup\n\n1. Create a **full_access** API key in the Resend dashboard and export it only in the shell: `export RESEND_API_KEY=\u2026` (never write it to a file in the repo).\n2. Optional but strongly recommended: verify a throwaway subdomain (e.g. `test.<yourdomain>`) so domain-related checks (V9\u2013V11, V14) are meaningful. Without it, all sends must use `from: onboarding@resend.dev` and `to:` = the account owner's address, which limits the test-address checks.\n3. Use `uv run --with httpx python \u2026` or a scratch Node project with `npm i resend` \u2014 do not install globally.\n4. After the run: `grep -r \"re_[A-Za-z0-9]\\{20,\\}\" <skill dir>` must return nothing before committing.\n\nEach item below says what to call, what the docs claim, and which reference file/line to update with `(verified 2026-MM, <observed>)` or to correct.\n\n## A. Blocking contradictions found while reading the docs (`\u26a0 VERIFY` markers)\n\n| # | Check | Docs claim(s) | How to test | Update |\n|---|---|---|---|---|\n| V1 | Idempotency key placement in Node SDK | `dashboard/emails/idempotency-keys`: 2nd arg `{ idempotencyKey }`. `send-with-nodejs` AI-prompt block: `idempotencyKey` **inside** the payload. | Send twice with the same key using each form; the correct form returns the **same** `id` twice and only one email in the dashboard. Also check the SDK's TypeScript types. | `SKILL.md` cross-cutting rules; `sending.md` \u00a7 Idempotency |\n| V2 | `scheduled_at` natural language | Docs: `\"in 1 min\"`, `\"tomorrow at 9am\"` accepted. OpenAPI: ISO 8601 only. | `POST /emails` with `scheduled_at: \"in 2 min\"` and with ISO; confirm 200 + `last_event: scheduled`; then `PATCH` with natural language. | `sending.md` \u00a7 Scheduling |\n| V3 | `resend.webhooks.verify()` signature & header access | Example reads `req.headers['svix-id']` on a `NextRequest` (which has `.get()`); return value described as parsed payload. | Create a webhook via API, trigger `email.sent`, capture headers+raw body, call `verify()` with `headers.get(...)` values; confirm it returns the parsed object and throws on a tampered body. | `webhooks-and-receiving.md` \u00a7 Verify |\n| V4 | Webhook retry schedule | `webhooks/introduction` FAQ: 5 s, 5 m, 30 m, 2 h, 5 h, 10 h. `webhooks/retries-and-replays`: Immediately, 5 s, 5 m, 30 m, 2 h, 5 h, 10 h, 10 h. | Point a webhook at an endpoint returning 500; read attempts from `GET /webhooks/{id}/events/{event_id}/attempts` over ~1 h (first four steps) and note timestamps. | `webhooks-and-receiving.md` \u00a7 Retries; `errors-and-limits.md` table |\n| V5 | Chained `resend.templates.create({...}).publish()` | Shown on `dashboard/templates/create-template`. | Check the SDK return type; if `create()` returns a Promise of `{data,error}`, chaining is impossible \u2014 replace with a two-call example. | `audiences-and-broadcasts.md` \u00a7 Templates |\n| V6 | React `react:` param \u2014 function call vs JSX | `send-with-nodejs`: pass `WelcomeEmail({ name })` (not JSX). `template-emails-with-react-email`: `react: <Email url=\u2026 />`. | Send both forms from a `.tsx` file; both should work if `react` accepts `ReactNode`; record which the types accept. | `sending.md` \u00a7 React |\n| V7 | `restricted_api_key` status code | Listed under both 401 and 403 with different messages. | Create a `sending_access` key and call `GET /domains`; record status + body. | `errors-and-limits.md` |\n| V8 | Missing `User-Agent` behaviour | Docs: 403, error code 1010, non-API error page. | Python `httpx` with `headers={\"User-Agent\": \"\"}` (or raw socket) to `GET /domains`; record exact status/body. Also confirm a `fetch()` from Node 20 (which sends `undici` UA) succeeds. | `SKILL.md`, `sending.md` raw-fetch example |\n\n## B. \"Required\" and \"response-field\" claims to confirm\n\n| # | Check | How |\n|---|---|---|\n| V9 | `POST /emails` truly requires `subject` (OpenAPI: required) and at least one of `html`/`text`/`react`/`template` (docs, not in OpenAPI `required`) | Omit each in turn; expect 422 `missing_required_field` / `validation_error`; record the message text. |\n| V10 | `text: \"\"` opts out of auto-generated plain text | Send with `html` + `text: \"\"`, then `GET /emails/{id}` and check `text`. |\n| V11 | `to` max 50 \u2014 per field or combined with cc/bcc? | Send with 51 in `to` (expect 422); then 30 to + 30 cc (does it pass?). Use `delivered+N@resend.dev` labels. |\n| V12 | Batch: attachments rejected (not silently dropped); whole batch fails on one invalid item; `data[]` index-aligned | `POST /emails/batch` with one attachment \u2192 expect 4xx. Batch of 3 with the 2nd invalid \u2192 expect no ids at all. Batch of 3 valid \u2192 ids order matches. |\n| V13 | `GET /emails` shape: `has_more`, `last_event` enum values, whether `html`/`text` are included in list items (OpenAPI says yes \u2014 surprising for a list) | Call with `limit=2`; diff the JSON against `sending.md` response table. |\n| V14 | `POST /domains` response contains `records[]` with `priority` on MX and `TrackingCAA`; `status` initial value (`pending` vs `not_started`) | Create `test-verify.<domain>`, print records, delete afterwards. |\n| V15 | `POST /webhooks` returns `signing_secret` in the create response (OpenAPI yes) and whether `GET /webhooks/{id}` also returns it (docs say yes) | Create, get, list; then delete. |\n| V16 | Received-email webhook carries no body; `GET /emails/receiving/{id}` returns `html`, `text`, `headers`; attachments endpoint returns `download_url` that expires | Requires receiving enabled on a domain or the `<id>.resend.app` address; send an email with an attachment to it. |\n| V17 | Rate-limit headers present on every response (`ratelimit-limit`, `ratelimit-remaining`, `ratelimit-reset`) and `retry-after` on 429; quota headers `x-resend-daily-quota` | Fire 15 `GET /domains` in <1 s with `httpx`; capture headers of the first 200 and the first 429. |\n| V18 | Pagination: `limit` omitted on `GET /contacts` returns **all**; `GET /emails` always paginates (default 20); `after`+`before` together \u2192 422 `validation_error` | Three calls; record statuses and `has_more`. |\n| V19 | Test addresses: `bounced@resend.dev` produces `email.bounced` webhook; `+label` works; `suppressed@resend.dev` rejects labels; `user@example.com` \u2192 422 | Send four emails, watch dashboard/webhook. Requires a verified domain (`onboarding@resend.dev` can only send to the owner's address). |\n| V20 | Template variable rules: reserved names rejected on create; missing variable without fallback \u2192 validation error on send; alias accepted in `template.id` and in `/templates/{id}/publish` | Create template with `FIRST_NAME` var (expect error), then a valid one with alias; publish by alias; send with and without the variable. Delete afterwards. |\n| V21 | Contacts: `PATCH /contacts/{email}` works with an email address as the path id; `audience_id` optional (legacy) | Create contact, update by email, delete. |\n| V22 | Broadcast `send: true` + `scheduled_at`; `POST /broadcasts/{id}/send` rejects dashboard-created broadcasts | Only if a segment with test contacts exists; otherwise skip and leave the marker. |\n| V23 | SDK exposes response headers? | Inspect `resend` package source/types for `headers` on the result; if absent, keep the \"use fetch for retry-after\" note. |\n\n## C. Cleanup checklist after the run\n\n- Delete: test domain(s), test webhook(s), test template(s), test contact(s)/segment(s), any sending-only API key created for V7.\n- Cancel any scheduled email left from V2.\n- `grep` the skill directory and shell history file for key material.\n\n## D. Recording format\n\nIn the reference file, replace the `\u26a0 VERIFY:` line with:\n\n```\n\u2705 Verified 2026-MM-DD against api.resend.com (SDK resend@x.y.z): <one-line observed behaviour>. Evidence: <status code + first 120 chars of response body>.\n```\n\nKeep the original docs claim in the same bullet if it turned out to be wrong, tagged `DOC-DISCREPANCY:` so future readers know the docs cannot be trusted on that point.\n\n## E. Comparison-eval linkage\n\n`resend/evals/evals.json` scenarios 1\u20138 are graded from the generated code. Items V1 (scenario 2), V2/V9 (scenario 3), V3 (scenario 4), V5/V20 (scenario 5), V14 (scenario 6), V18 (scenario 7) and V16 (scenario 8) determine whether the \"skill-recommended\" answer is actually the *correct* one \u2014 re-grade those scenarios after the verification run using the observed responses as ground truth, per the methodology's rule \"score by real API behaviour, not by how the code reads\".\n"}], "grading": {"expectations": [{"text": "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one", "passed": true, "evidence": "probed_llms_txt_or_openapi: //api.github.com/repos/resend/resend-openapi/contents/; //raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml; //raw.githubuse"}, {"text": "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory", "passed": true, "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: llms.txt"}, {"text": "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables", "passed": true, "evidence": "skill_md_under_200_lines: 68 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"}, {"text": "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page", "passed": true, "evidence": "references_at_least_3: audiences-and-broadcasts.md(207L), domains-and-account.md(135L), errors-and-limits.md(121L), sending.md(326L), webhooks-and-receiving.md(260 | reviewer: 5 refs grouped by intent (sending, domains+account, webhooks+receiving, audiences+broadcasts, errors); 26 \u26a0 VERIFY markers"}, {"text": "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '\u5df2\u9a8c\u8bc1' claims)", "passed": true, "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"}, {"text": "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each", "passed": true, "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 17; verification_plan_cheap_first: priority/cost ordering words present"}, {"text": "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email", "passed": true, "evidence": "evals_json_at_least_3: 8 evals; prompts: I'm on Cloudflare Workers and don't want to add the resend npm package. Write a  || We generate 300 monthly invoices as PD | reviewer: 8 scenarios: Workers without SDK, 300 PDF invoices, schedule/cancel, webhook handler, template alias, EU-region domain, pagination generator, inbound \u2014 trap-style"}, {"text": "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs", "passed": true, "evidence": "examples_read_key_from_env: 17 env-var reads in examples; no_real_looking_secrets: none | reviewer: TypeScript, env var; no secrets"}, {"text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory", "passed": true, "evidence": "used_skill_creator: skill-creator referenced"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}, "total_tokens": 228399, "tokens": 228399, "execution_metrics": {"total_tokens": 228399}, "process_observations": {"used_bundled_scripts": {"passed": false, "evidence": "bundled scripts not used"}}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}}}, {"id": "eval-resend-mintlify-llms-txt-with_skill-run-1", "prompt": "(No prompt found)", "eval_id": null, "outputs": [{"name": "process-log.md", "type": "text", "content": "# process-log \u00b7 Resend skill\uff08create-doc-skill \u8bc4\u6d4b run\uff0cwith_skill\uff09\n\n\u65e5\u671f\uff1a2026-09-03\u3002\u6267\u884c\u8005\uff1aClaude\uff08Fable 5.1\uff09\u3002\u7ea6\u675f\uff1a\u65e0 API key\u3001\u4e0d\u505a\u771f\u5b9e\u8c03\u7528\u3001\u226460 \u6b21\u9875\u9762\u6293\u53d6\u3001\u224825 \u5206\u949f\u3002\n\n## 1. \u6309\u987a\u5e8f\u63a2\u6d4b\u8fc7\u7684 URL\uff08HTTP \u72b6\u6001\uff09\n\n| # | URL | \u72b6\u6001 | \u5927\u5c0f | \u7528\u9014 / \u7ed3\u8bba |\n|---|---|---|---|---|\n| 1 | https://resend.com/docs/llms.txt | 200 | 52.8 KB | \u9875\u9762\u7d22\u5f15\uff0c365 \u4e2a\u94fe\u63a5\uff1b\u672b\u5c3e `## OpenAPI Specs` \u6bb5\u5217\u51fa\u7684\u662f `package.json` / `pnpm-lock.yaml` / `renovate.json`\u2014\u2014**\u9519\u8bef\u7684\u89c4\u8303\u94fe\u63a5**\uff08explore.md \u9884\u8b66\u7684\u60c5\u51b5\uff09 |\n| 2 | https://resend.com/llms.txt | 200 | 7.3 KB | \u4e3b\u7ad9\u7684 llms.txt\uff0c\u4e0d\u662f\u6587\u6863\u7ad9\u7684\uff0c\u672a\u4f7f\u7528 |\n| 3 | https://resend.com/docs/llms-full.txt | 200 | 2.17 MB | \u5168\u6587\u62fc\u63a5\uff0c360 \u9875\uff1b**\u4f5c\u4e3a\u5168\u90e8 Markdown \u6e90\u9875\u7684\u6765\u6e90**\uff08\u672c\u5730\u62c6\u5206\uff0c\u66ff\u4ee3 fetch_docs.sh \u7684 365 \u6b21\u6293\u53d6\uff09 |\n| 4 | https://resend.com/docs/openapi.json | 404 | \u2014 | \u5e38\u89c1\u8def\u5f84\u63a2\u6d4b |\n| 5 | https://resend.com/docs/api-reference/openapi.json | 404 | \u2014 | \u5e38\u89c1\u8def\u5f84\u63a2\u6d4b |\n| 6 | https://resend.com/docs/openapi.yaml | 404 | \u2014 | \u5e38\u89c1\u8def\u5f84\u63a2\u6d4b |\n| 7 | https://resend.com/openapi.json | 200 | 200 KB | OpenAPI 3.0.3, info.version 1.5.0, 47 paths / 83 ops\uff08\u8f83\u65e7\uff09 |\n| 8 | https://raw.githubusercontent.com/resend/resend-openapi/main/resend.yaml | 200 | 228 KB | \u5b98\u65b9\u89c4\u8303\u4ed3\u5e93 YAML |\n| 9 | https://raw.githubusercontent.com/resend/resend-openapi/main/resend.json | 200 | 315 KB | **OpenAPI 3.1.2, info.version 1.5.1, 67 paths / 108 ops\u2014\u2014\u91c7\u7528\u4e3a\u6743\u5a01\u89c4\u8303**\uff08\u662f #7 \u7684\u4e25\u683c\u8d85\u96c6\uff1a\u591a\u51fa suppressions\u3001oauth\u3001metrics\u3001share\u3001claim\u3001broadcast recipients/clicked-links\u3001webhook events/attempts\u3001contact imports \u7b49 20 \u6761\u8def\u5f84\uff09 |\n| 10 | https://raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml | 404 | \u2014 | \u8def\u5f84\u731c\u6d4b |\n| 11 | https://api.github.com/repos/resend/resend-openapi/contents | 200 | 4.2 KB | \u786e\u8ba4\u4ed3\u5e93\u53ea\u6709 resend.json / resend.yaml \u4e24\u4efd\u89c4\u8303 |\n\n\u5408\u8ba1 11 \u6b21\u7f51\u7edc\u8bf7\u6c42\uff08\u8fdc\u4f4e\u4e8e 60 \u4e0a\u9650\uff09\u3002**\u6ca1\u6709\u5bf9 api.resend.com \u53d1\u8d77\u4efb\u4f55\u8bf7\u6c42\u3002**\n\n## 2. \u4f7f\u7528\u7684\u5de5\u5177 / \u811a\u672c\n\n| \u5de5\u5177 | \u7528\u9014 |\n|---|---|\n| `curl` | \u4e0a\u8868\u5168\u90e8\u63a2\u6d4b\u4e0e\u4e0b\u8f7d |\n| `create-doc-skill/scripts/openapi_summary.py` | \u5c55\u5f00 resend.json \u2192 `openapi-summary/index.md` + 17 \u4e2a `<tag>.md`\uff08108 endpoints\uff0c3781 \u884c\uff09 |\n| \u81ea\u5199 Python \u7247\u6bb5\uff08scratch\uff09 | \u628a `llms-full.txt` \u6309 `# Title\\nSource: URL` \u62c6\u6210 `pages/<slug>.md`\uff08360 \u9875\uff09+ `index.tsv`\uff1b\u5bf9\u6bd4\u4e24\u4efd OpenAPI \u7684 paths \u5dee\u96c6 |\n| `create-doc-skill/scripts/fetch_docs.sh` | **\u672a\u4f7f\u7528**\uff08\u89c1\u7b2c 3 \u8282\uff09 |\n| `/anthropic-skills:skill-creator`\uff08Skill \u5de5\u5177\u52a0\u8f7d\uff09 | \u53d6 SKILL.md \u89c4\u8303\u3001`references/schemas.md` \u7684 evals.json \u5b57\u6bb5\u540d |\n| Agent \u5de5\u5177 \u00d7 5\uff08general-purpose\uff0c\u5e76\u884c\uff09 | \u5404\u5199\u4e00\u4e2a reference \u6587\u4ef6\uff08sending / domains-and-api-keys / webhooks-and-receiving / audiences-and-broadcasts / templates-automations-events\uff09 |\n| `skill-creator/scripts/package_skill.py` | \u89c1\u7b2c 4 \u8282 |\n\n## 3. create-doc-skill \u5404\u6b65\u9aa4\uff1a\u9075\u5faa / \u8df3\u8fc7\u53ca\u539f\u56e0\n\n| \u6b65\u9aa4 | \u505a\u4e86\u4ec0\u4e48 | \u504f\u79bb\u4e0e\u539f\u56e0 |\n|---|---|---|\n| \u52a8\u624b\u524d\u786e\u8ba4\u4e09\u4ef6\u4e8b | \u4efb\u52a1 prompt \u5df2\u7ed9\u51fa\uff1a\u65e0 key\u3001TypeScript\u3001\u8f93\u51fa\u76ee\u5f55\u3002\u672a\u518d\u5411\u7528\u6237\u63d0\u95ee | \u6309 prompt \u76f4\u63a5\u6267\u884c |\n| \u7b2c 1 \u6b65 \u00b7 \u6293\u53d6\u4e0e\u52d8\u63a2 | \u5148\u8bd5 llms.txt \u2714\uff1b\u53d1\u73b0\u5176 OpenAPI \u6bb5\u9519\u8bef\uff0c\u81ea\u884c\u6838\u5b9e\u89c4\u8303\u4f4d\u7f6e\uff08\u5e38\u89c1\u8def\u5f84 + GitHub \u4ed3\u5e93\uff09\u2714\uff1b`openapi_summary.py` \u2714\uff1b\u4ece `securitySchemes` \u9501\u5b9a\u9274\u6743 \u2714\uff0c\u5199 `auth.md` \u2714 | **\u8df3\u8fc7 `fetch_docs.sh`**\uff1a\u5b83\u4f1a\u6293 365 \u9875\uff0c\u8d85\u51fa 60 \u6b21\u6293\u53d6\u7684\u7ea6\u675f\uff1b`llms-full.txt` \u4e00\u6b21\u4e0b\u8f7d\u5373\u542b\u5168\u90e8\u9875\u9762\uff0c\u672c\u5730\u62c6\u5206\u7b49\u4ef7\u4e14\u66f4\u7701\u3002skill \u7684 explore.md \u6ca1\u6709\u63d0\u5230\"\u6709 llms-full.txt \u65f6\u53ef\u4ee5\u76f4\u63a5\u62c6\u5206\u66ff\u4ee3\u6293\u53d6\"\uff0c\u8fd9\u662f\u4e00\u4e2a\u53ef\u8865\u5145\u7684\u63d0\u793a |\n| \u7b2c 2 \u6b65 \u00b7 \u7ed3\u6784\u5316\u64b0\u5199 | \u52a0\u8f7d skill-creator \u2714\uff1bSKILL.md \u53ea\u505a\u8def\u7531\uff0892 \u884c\uff09\u2714\uff1b\u6309\u5f00\u53d1\u8005\u610f\u56fe\u5206 6 \u4e2a reference\uff08\u4e0d\u6309\u6587\u6863 17 \u4e2a tag\uff09\u2714\uff1b4-6 \u7ec4\u5e76\u884c\u5b50 Agent \u2714\uff085 \u4e2a\uff09\uff1b\u7edf\u4e00\u5199\u4f5c\u89c4\u8303 + `\u26a0` \u89c4\u5219 \u2714\uff1b`errors-and-limits.md` \u4e0e SKILL.md \u81ea\u5df1\u5199 \u2714 | \u2014 |\n| \u7b2c 3 \u6b65 \u00b7 \u771f\u5b9e API \u9a8c\u8bc1 | **\u672a\u6267\u884c**\uff08\u65e0 key\uff0c\u4e14\u4efb\u52a1\u660e\u786e\u7981\u6b62\uff09\u3002\u6309 verify.md \u7684\u964d\u7ea7\u65b9\u6848\uff1a\u6bcf\u4e2a\u6587\u4ef6\u9876\u90e8\u6709\u9a8c\u8bc1\u72b6\u6001\u58f0\u660e\uff1b\u5199\u4e86 `verification-plan.md`\uff08cheap-first\uff0c\u542b endpoint \u4e0e\u5224\u5b9a\u6807\u51c6\uff09\uff1b\u6587\u6863\u81ea\u76f8\u77db\u76fe\u6761\u76ee\u5df2\u5347\u5230 SKILL.md \u901a\u7528\u89c4\u5219\u5e76\u6807 \u26a0 | \u964d\u7ea7\u65b9\u6848\u7167\u505a |\n| \u7b2c 4 \u6b65 \u00b7 \u5bf9\u7167\u5b9e\u9a8c | \u5199\u4e86 `evals/evals.json`\uff086 \u4e2a\"\u76f4\u89c9\u4f1a\u5199\u9519\"\u578b\u573a\u666f\uff0cschemas.md \u683c\u5f0f\uff09\u3002**\u672a spawn with/without \u5b50 Agent\u3001\u672a\u6253\u5206\u3001\u672a\u5199 comparison-report.md** | \u4efb\u52a1\u8303\u56f4\u662f\"\u8349\u7a3f + \u9a8c\u8bc1\u6e05\u5355 + \u8bc4\u6d4b\u573a\u666f\"\uff1b\u4e14 verify.md \u8bf4\u65e0 key \u65f6\u6253\u5206\u53ea\u80fd\u662f\"\u6587\u6863\u4fdd\u771f\u5ea6\"\uff0c\u7559\u5f85\u62ff\u5230 key \u540e\u4e00\u8d77\u505a |\n| \u7b2c 5 \u6b65 \u00b7 \u6253\u5305\u53d1\u5e03 | \u53ea\u8dd1 `package_skill.py` \u505a frontmatter \u6821\u9a8c\uff08\u89c1\u4e0b\uff09\u3002**\u672a\u8dd1 `run_loop.py` \u63cf\u8ff0\u4f18\u5316\u3001\u672a\u5b89\u88c5\u5230 ~/.claude/skills** | \u63cf\u8ff0\u4f18\u5316\u4f9d\u8d56 `claude -p` \u591a\u8f6e\u8c03\u7528\uff0c\u8d85\u51fa\u65f6\u95f4\u76d2\uff1b\u4e14 skill-creator \u5efa\u8bae\u5728 skill \u5b9a\u7a3f\u540e\u518d\u505a |\n\n## 4. \u6821\u9a8c\u7ed3\u679c\uff08\u6700\u7ec8\u6811\uff09\n\n| \u68c0\u67e5 | \u7ed3\u679c |\n|---|---|\n| `skill-creator/scripts/quick_validate.py`\uff08`uv run --python 3.12 --with pyyaml`\uff09 | Skill is valid! |\n| `python -m scripts.package_skill <skill> <scratch>` | \u2705 \u6253\u5305\u6210\u529f\uff08`resend.skill`\uff0c\u6392\u9664\u4e86 `evals/`\uff09\uff1b**\u53ea\u80fd\u4ee5\u6a21\u5757\u65b9\u5f0f\u8fd0\u884c**\uff0c\u6309\u8def\u5f84 `python scripts/package_skill.py` \u4f1a\u62a5 `No module named 'scripts'` |\n| \u6cc4\u6f0f grep\uff1a`re_[A-Za-z0-9_]{8,}` / `whsec_\u2026` / `new Resend('\u2026')` \u5b57\u9762\u91cf | \u5168\u90e8 clean\uff1bkey \u53ea\u4ee5 `process.env.RESEND_API_KEY` / `$RESEND_API_KEY` \u51fa\u73b0 |\n| \u6bcf\u4e2a reference \u9876\u90e8\u9a8c\u8bc1\u72b6\u6001\u58f0\u660e | 6/6 \u6709 |\n| `\u26a0` \u6807\u8bb0\u6570 | sending 20 \u00b7 domains-and-api-keys 17 \u00b7 webhooks-and-receiving 22 \u00b7 audiences-and-broadcasts 38 \u00b7 templates-automations-events 23 \u00b7 errors-and-limits 4 \u00b7 SKILL.md 5 |\n| `evals/evals.json` | 6 \u4e2a\u573a\u666f\uff0c\u5b57\u6bb5\u6309 schemas.md\uff08id/prompt/expected_output/files/expectations\uff09 |\n| \u884c\u6570 | SKILL.md 94\uff1breferences 448/307/400/422/407/144\uff1bevals.json 82\uff1bverification-plan.md 94 |\n\n## 5. \u6267\u884c\u4e2d\u7684\u4e8b\u6545\u4e0e\u504f\u79bb\uff08\u5982\u5b9e\u8bb0\u5f55\uff09\n\n- **\u5e76\u53d1\u5199\u51b2\u7a81**\uff1a5 \u4e2a\u5b50 Agent \u4e4b\u4e00\uff08domains\uff09\u5148\u5b8c\u6210\uff1b\u4e3b Agent \u5728\u88ab\u534f\u8c03\u8005\u63d0\u793a\"\u5199\u8005\u5e94\u5df2\u5b8c\u6210\"\u65f6\u53d1\u73b0 4 \u4e2a\u6587\u4ef6\u4e0d\u5728\u76d8\u4e0a\uff0c\u4e8e\u662f\u81ea\u5df1\u5199\u4e86 4 \u4efd\u7cbe\u7b80\u7248\uff08118\u2013185 \u884c\uff09\u3002\u5b9e\u9645\u4e0a\u53e6\u5916 4 \u4e2a\u5199\u8005\u4ecd\u5728\u8fd0\u884c\u5e76\u5728\u540c\u4e00\u5206\u949f\u5185\u5b8c\u6210\uff0c\u53cc\u65b9\u4e92\u76f8\u8986\u76d6\u4e86\u4e24\u8f6e\uff08sending / audiences / templates \u5404\u88ab\u8986\u76d6\u4e00\u6b21\uff09\u3002\u6700\u7ec8\u901a\u8fc7 SendMessage \u8ba9 audiences\u3001templates \u5199\u8005\u91cd\u53d1\uff0csending \u5199\u8005\u81ea\u884c\u6062\u590d\u4e86\u5b83\u7684\u7248\u672c\uff1b\u76d8\u4e0a\u6700\u7ec8\u5168\u90e8\u662f\u5199\u8005\u7684\u5b8c\u6574\u7248\u3002\u4e3b Agent \u7684\u7cbe\u7b80\u7248\u7559\u5728 scratch\uff08`sending.md.other-writer-185lines` \u7b49\uff09\u3002\u6559\u8bad\uff1awrite.md \u5e94\u660e\u786e\"\u5b50 Agent \u672a\u56de\u62a5\u524d\u4e0d\u8981\u81ea\u5df1\u5199\u540c\u4e00\u8def\u5f84\uff1b\u7528 ls -l \u65f6\u95f4\u6233\u5224\u65ad\uff0c\u800c\u4e0d\u662f\u9760'\u5e94\u8be5\u5b8c\u6210\u4e86'\"\u3002\n- \u65f6\u95f4\u76d2\uff1a\u7ea6 25 \u5206\u949f\u7684\u9884\u7b97\u88ab\u5e76\u53d1\u51b2\u7a81\u5904\u7406\u62c9\u957f\u5230\u7ea6 35 \u5206\u949f\u3002\n- \u4e00\u5904\u4e8b\u5b9e\u9519\u8bef\u88ab\u5b50 Agent \u7ea0\u6b63\uff1a\u4e3b Agent \u6700\u521d\u628a broadcast \u5408\u5e76\u53d8\u91cf\u5199\u6210\u5927\u5199 `{{{FIRST_NAME|there}}}`\uff08\u5176\u4ed6\u5e73\u53f0\u7684\u76f4\u89c9\uff09\uff0c\u6587\u6863\u5b9e\u9645\u662f `{{{contact.first_name|there}}}`\uff1b\u5df2\u6539\u6b63 SKILL.md \u89c4\u5219 13\u3001audiences \u6587\u4ef6\u4e0e evals.json \u573a\u666f 6\u3002\u8fd9\u6b63\u662f\"\u51ed\u8bb0\u5fc6\u5199\u4f1a\u9519\"\u7684\u5b9e\u4f8b\u3002\n"}, {"name": "verification-plan.md", "type": "text", "content": "# Resend skill \u00b7 \u771f\u5b9e API \u9a8c\u8bc1\u8ba1\u5212\n\n\u72b6\u6001\uff1a**\u5c1a\u672a\u6267\u884c**\uff08\u672c\u8f6e\u6ca1\u6709 API key\uff09\u3002\u62ff\u5230 key \u540e\u6309\u4e0b\u9762\u987a\u5e8f\u8dd1\uff0c\u6bcf\u9879\u9a8c\u8bc1\u5b8c\u7acb\u523b\u628a\u7ed3\u8bba\u56de\u5199\u5230\u5bf9\u5e94 reference\uff08\u683c\u5f0f\uff1a`**\u5df2\u7528\u771f\u5b9e API \u9a8c\u8bc1\uff08YYYY-MM\uff09**\uff1a\u505a\u4e86\u4ec0\u4e48 \u2192 \u539f\u59cb\u54cd\u5e94\u7247\u6bb5`\uff09\uff0c\u6587\u6863\u672c\u8eab\u9519\u4e86\u7684\u6761\u76ee\u5347\u5230 SKILL.md \"\u8de8\u9886\u57df\u901a\u7528\u89c4\u5219\"\u3002\n\n## \u524d\u7f6e\n- \u73af\u5883\u53d8\u91cf `RESEND_API_KEY`\uff08full_access\uff09\uff1b**\u53ea\u4f5c\u4e3a\u73af\u5883\u53d8\u91cf\u4f20\u7ed9\u547d\u4ee4\uff0c\u4e0d\u5199\u8fdb\u4efb\u4f55\u6587\u4ef6**\u3002\u8dd1\u5b8c `grep -rn \"re_\" <skill-dir>` \u786e\u8ba4\u65e0\u6cc4\u6f0f\u3002\n- \u4e00\u4e2a\u5df2\u9a8c\u8bc1\u57df\u540d\u6700\u597d\u6709\uff08\u5426\u5219\u53ea\u80fd\u6d4b `onboarding@resend.dev` \u2192 \u81ea\u5df1\u90ae\u7bb1\u7684\u8def\u5f84\uff0c\u4e14\u7b2c 2 \u7ec4\u5927\u90e8\u5206\u6d4b\u4e0d\u4e86\uff09\u3002\n- \u6536\u4ef6\u5730\u5740\u5168\u90e8\u7528 `delivered@` / `bounced@` / `complained@` / `suppressed@resend.dev`\uff0c\u907f\u514d\u4f24\u5bb3\u57df\u540d\u4fe1\u8a89\u3002\n- \u514d\u8d39\u8ba1\u5212\u6709\u65e5\u914d\u989d\uff08100 \u5c01/\u5929\uff0c\u26a0 \u6570\u5b57\u5f85\u5728 Settings\u2192Usage \u6838\u5bf9\uff09\uff0c\u5168\u8ba1\u5212\u9884\u8ba1\u6d88\u8017 < 40 \u5c01\u3002\n- \u6d4b\u8bd5\u521b\u5efa\u7684 webhook / template / contact / segment / api key \u7528\u5b8c\u5168\u90e8\u5220\u9664\uff1b\u5728 `verification-log.md` \u8bb0\u65e5\u671f\u3001endpoint\u3001\u8bf7\u6c42\u8981\u70b9\u3001\u7ed3\u679c\u3001\u82b1\u8d39\u3002\n\n## \u4f18\u5148\u7ea7 P0\uff1a\u5168\u76d8\u7686\u9519\u578b\uff08\u53ea\u8bfb\u3001\u96f6\u6210\u672c\u5148\u8dd1\uff09\n\n| # | \u8981\u9a8c\u8bc1\u7684\u7ed3\u8bba | \u600e\u4e48\u6d4b | \u5224\u5b9a |\n|---|---|---|---|\n| 0.1 | \u9274\u6743 `Authorization: Bearer` + `User-Agent` \u7f3a\u4e00\u4e0d\u53ef | `GET /domains` \u4e09\u6b21\uff1a\u6b63\u5e38\uff1b\u53bb\u6389 `User-Agent`\uff1b`Authorization` \u4e0d\u5e26 `Bearer` \u524d\u7f00 | \u671f\u671b\uff1a200 / 403(1010\uff0c\u770b\u662f\u5426\u4e3a Cloudflare HTML \u800c\u975e JSON) / 401 `missing_api_key`\u3002\u8bb0\u4e0b\u7f3a UA \u65f6\u54cd\u5e94\u4f53\u5230\u5e95\u957f\u4ec0\u4e48\u6837 |\n| 0.2 | \u9519\u8bef\u4f53\u7ed3\u6784 `{statusCode, name, message}` | `GET /emails/not-a-uuid` | \u671f\u671b 422 `invalid_parameter`\uff1b\u786e\u8ba4\u5b57\u6bb5\u540d |\n| 0.3 | `validation_error` \u662f 400 \u8fd8\u662f 422\uff08\u26a0 errors \u9875 vs pagination \u9875\u77db\u76fe\uff09 | `GET /contacts?limit=500`\uff1b`GET /contacts?after=x&before=y` | \u8bb0\u5f55\u5404\u81ea statusCode |\n| 0.4 | \u5206\u9875\uff1a`has_more` / cursor \u8bed\u4e49\uff1b\u8001\u63a5\u53e3\u4e0d\u4f20 limit \u8fd4\u56de\u5168\u90e8 | `GET /api-keys`\uff08\u65e0 limit\uff09 vs `GET /emails`\uff08\u65e0 limit\uff09 | \u8001\u63a5\u53e3\u65e0 `has_more`\uff1f\u65b0\u63a5\u53e3\u9ed8\u8ba4 20\uff1f |\n| 0.5 | `sending_access` key \u8c03\u5176\u4ed6\u63a5\u53e3\u662f 401 \u8fd8\u662f 403 `restricted_api_key` | \u521b\u5efa\u4e00\u4e2a sending key\uff0c\u7528\u5b83 `GET /domains` | \u8bb0\u5f55 status + name |\n\n## \u4f18\u5148\u7ea7 P1\uff1a\u53d1\u9001\u6838\u5fc3\uff08\u6bcf\u9879 1\u20133 \u5c01\uff09\n\n| # | \u8981\u9a8c\u8bc1\u7684\u7ed3\u8bba | \u600e\u4e48\u6d4b | \u5224\u5b9a |\n|---|---|---|---|\n| 1.1 | **Node SDK \u91cc `idempotencyKey` \u7684\u4f4d\u7f6e**\uff08\u26a0 \u6587\u6863\u81ea\u76f8\u77db\u76fe\uff1a\u7b2c\u4e00\u4e2a\u53c2\u6570 vs \u7b2c\u4e8c\u4e2a options \u53c2\u6570\uff09 | \u540c\u4e00 key \u8fde\u53d1\u4e24\u6b21\uff0c\u5206\u522b\u7528\u4e24\u79cd\u5199\u6cd5\uff1b\u518d\u770b\u7b2c\u4e8c\u6b21\u662f\u5426\u8fd4\u56de\u540c\u4e00\u4e2a `id` | \u54ea\u79cd\u5199\u6cd5\u771f\u6b63\u751f\u6548\uff08\u8fd4\u56de\u76f8\u540c id \u4e14\u53ea\u53d1\u4e00\u5c01\uff09\uff1b\u53e6\u4e00\u79cd\u662f\u88ab\u9759\u9ed8\u5ffd\u7565\u8fd8\u662f\u62a5\u9519 |\n| 1.2 | \u5e42\u7b49\u51b2\u7a81\uff1a\u540c key \u4e0d\u540c body \u2192 409 `invalid_idempotent_request`\uff1bkey \u957f\u5ea6 257 \u2192 400 `invalid_idempotency_key` | \u76f4\u63a5 fetch \u5e26 `Idempotency-Key` header | \u8bb0\u5f55\u539f\u59cb\u54cd\u5e94 |\n| 1.3 | **SDK \u4f20 snake_case\uff08`reply_to`\u3001`scheduled_at`\uff09\u662f\u9759\u9ed8\u5ffd\u7565\u8fd8\u662f\u62a5\u9519** | `resend.emails.send({..., reply_to: 'x'} as any)`\uff0c\u7136\u540e `GET /emails/{id}` \u770b `reply_to` \u5b57\u6bb5 | \u9759\u9ed8\u5931\u6548\u6700\u5371\u9669\uff0c\u5fc5\u987b\u5199\u8fdb SKILL.md \u89c4\u5219 2 |\n| 1.4 | `POST /emails` \u6210\u529f\u72b6\u6001\u7801\u662f 200 \u8fd8\u662f 201\uff08\u26a0 OpenAPI vs \u9875\u9762\uff09 | curl `-i` | \u8bb0\u5f55 |\n| 1.5 | \u7701\u7565 `html`/`text`/`template` \u5168\u90e8\u4e09\u8005\u662f\u5426\u62a5\u9519\uff1b\u540c\u65f6\u7ed9 `html` \u548c `template` \u662f\u5426\u62a5\u9519 | \u4e24\u6b21\u8bf7\u6c42 | \u671f\u671b 422 `missing_required_field` / \u4e92\u65a5\u9519\u8bef\uff1b\u8bb0\u5f55 message |\n| 1.6 | `text` \u7701\u7565\u65f6\u662f\u5426\u81ea\u52a8\u4ece `html` \u751f\u6210\uff08Node \u9875\u8bf4\u4f1a\uff09 | \u53d1\u4e00\u5c01\u53ea\u6709 html \u7684\uff0c`GET /emails/{id}` \u770b `text` | \u2014 |\n| 1.7 | `to` \u7b2c 51 \u4e2a\u5730\u5740\uff1b`tags.name` \u542b\u7a7a\u683c/\u4e2d\u6587 | \u5404\u4e00\u6b21 | \u671f\u671b 422\uff0c\u8bb0\u5f55 message |\n| 1.8 | `scheduled_at` \u81ea\u7136\u8bed\u8a00\uff08\"in 1 hour\"\uff09\u5728 REST \u4e0a\u662f\u5426\u4e5f\u63a5\u53d7\uff1b\u4e0a\u9650\u662f\u5426 30 \u5929 | REST \u53d1 `\"scheduled_at\":\"in 1 hour\"`\u3001`\"+31 days\"` | \u8bb0\u5f55\uff1b\u968f\u540e `POST /emails/{id}/cancel` \u6e05\u7406 |\n| 1.9 | `PATCH /emails/{id}` / `cancel` \u5bf9\u5df2\u53d1\u9001\uff08\u975e scheduled\uff09\u90ae\u4ef6\u8fd4\u56de\u4ec0\u4e48 | \u5bf9 1.6 \u7684\u90ae\u4ef6\u8c03 cancel | \u8bb0\u5f55 status/name |\n\n## \u4f18\u5148\u7ea7 P2\uff1a\u6279\u91cf\uff08\u26a0 \u6587\u6863\u81ea\u76f8\u77db\u76fe\uff0c\u6700\u9ad8\u4ef7\u503c\uff09\n\n| # | \u8981\u9a8c\u8bc1\u7684\u7ed3\u8bba | \u600e\u4e48\u6d4b | \u5224\u5b9a |\n|---|---|---|---|\n| 2.1 | **batch \u5143\u7d20\u5e26 `attachments` \u662f\u62a5\u9519\u3001\u9759\u9ed8\u4e22\u5f03\u3001\u8fd8\u662f\u5b9e\u9645\u80fd\u53d1**\uff08OpenAPI \u6709\u8be5\u5b57\u6bb5\uff0cai-onboarding \u8bf4\u4e0d\u652f\u6301\uff09 | 2 \u5c01\u7684 batch\uff0c\u5176\u4e2d\u4e00\u5c01\u5e26 1KB \u6587\u672c\u9644\u4ef6 | `GET /emails/{id}/attachments` \u770b\u9644\u4ef6\u662f\u5426\u5b58\u5728 |\n| 2.2 | batch \u5143\u7d20\u5e26 `scheduled_at` \u540c\u4e0a | \u540c\u4e0a | `GET /emails/{id}` \u770b `scheduled_at` |\n| 2.3 | \u539f\u5b50\u6027\uff1a\u7b2c 2 \u5c01\u7f3a `subject` \u65f6\u7b2c 1 \u5c01\u662f\u5426\u4e5f\u4e0d\u53d1 | 2 \u5c01 batch | \u671f\u671b\u6574\u6279 422\uff1b\u786e\u8ba4\u7b2c 1 \u5c01\u6ca1\u6709 id |\n| 2.4 | 101 \u5c01 \u2192 \u62a5\u9519\u7c7b\u578b | \u6784\u9020 101 \u5c01\uff08\u90fd\u53d1 delivered@resend.dev\uff1b\u82e5\u914d\u989d\u7d27\u5f20\u8df3\u8fc7\u5e76\u6807\u6ce8\uff09 | \u8bb0\u5f55 |\n| 2.5 | batch \u7684 `Idempotency-Key` \u751f\u6548 | \u540c key \u4e24\u6b21 | \u7b2c\u4e8c\u6b21\u8fd4\u56de\u76f8\u540c id \u5217\u8868 |\n\n## \u4f18\u5148\u7ea7 P3\uff1a\u57df\u540d / key\uff08\u53ea\u8bfb\u4e3a\u4e3b\uff0c\u521b\u5efa\u540e\u5373\u5220\uff09\n\n| # | \u8981\u9a8c\u8bc1\u7684\u7ed3\u8bba | \u600e\u4e48\u6d4b | \u5224\u5b9a |\n|---|---|---|---|\n| 3.1 | `POST /domains` \u54cd\u5e94 `records[]` \u5b57\u6bb5\u540d\uff08record/name/type/value/ttl/priority/status\uff1f\uff09\u4e0e `region` \u679a\u4e3e/\u9ed8\u8ba4\u503c | \u521b\u5efa `test-<rand>.example.com` \u540e `DELETE` | \u8bb0\u5f55\u5b8c\u6574\u54cd\u5e94 |\n| 3.2 | `POST /domains/{id}/verify` \u8fd4\u56de\u4ec0\u4e48\uff1b`status` \u679a\u4e3e\u5b9e\u9645\u53d6\u503c | verify \u4e00\u4e2a DNS \u672a\u914d\u7f6e\u7684\u57df\u540d\uff0c\u518d `GET` | \u671f\u671b `pending`/`failed`\u2026\u8bb0\u5f55 |\n| 3.3 | `POST /api-keys` \u54cd\u5e94\u5b57\u6bb5\uff08`token` \u53ea\u5728\u521b\u5efa\u65f6\u8fd4\u56de\uff1f\uff09\uff1b`permission` \u62fc\u5199\uff1b`domain_id` \u914d `full_access` \u662f\u5426\u62a5\u9519 | \u521b\u5efa\u540e `GET /api-keys` \u770b\u662f\u5426\u518d\u6709 token\uff1b\u5220\u9664 | \u8bb0\u5f55 |\n| 3.4 | \u672a\u9a8c\u8bc1\u57df\u540d\u7684 `from` \u2192 403 message \u539f\u6587 | \u7528 `nobody@unverified-example.com` \u53d1 | \u8bb0\u5f55 |\n\n## \u4f18\u5148\u7ea7 P4\uff1aWebhook\uff08\u9700\u8981\u4e00\u4e2a\u516c\u7f51 URL\uff0c\u53ef\u7528 Resend CLI \u7684\u672c\u5730 webhook \u6216 requestbin\uff09\n\n| # | \u8981\u9a8c\u8bc1\u7684\u7ed3\u8bba | \u600e\u4e48\u6d4b | \u5224\u5b9a |\n|---|---|---|---|\n| 4.1 | `POST /webhooks` \u7684 `events[]` \u62fc\u5199\uff08`email.bounced` \u7b49\uff09\uff1b\u4e0d\u5408\u6cd5\u503c\u62a5\u9519 | \u521b\u5efa\u542b\u4e00\u4e2a\u9519\u62fc\u4e8b\u4ef6\u7684 webhook | \u671f\u671b 422\uff0c\u8bb0\u5f55\u5408\u6cd5\u5217\u8868\uff08\u82e5 message \u5217\u51fa\uff09 |\n| 4.2 | \u7b7e\u540d header \u540d\uff08`svix-*` \u8fd8\u662f `resend-*`\uff09\u4e0e secret \u683c\u5f0f\uff1b`svix` \u5305 `Webhook.verify` \u901a\u8fc7 | \u53d1\u4e00\u5c01\u5230 `bounced@resend.dev`\uff0c\u6355\u83b7\u8bf7\u6c42 | \u7528 raw body \u9a8c\u8bc1\u901a\u8fc7\uff1b\u7528 JSON.stringify(parsed) \u9a8c\u8bc1\u5931\u8d25 |\n| 4.3 | `email.bounced` payload\uff1a`data.to` \u662f\u6570\u7ec4\uff1f`data.bounce` \u5b50\u5bf9\u8c61\u5b57\u6bb5 | \u540c\u4e0a | \u8bb0\u5f55\u5b8c\u6574 payload |\n| 4.4 | `GET /webhooks/{id}/events` \u4e0e `/attempts` \u54cd\u5e94\u7ed3\u6784 | \u53ea\u8bfb | \u8bb0\u5f55 |\n\n## \u4f18\u5148\u7ea7 P5\uff1a\u8425\u9500\u5bf9\u8c61\u6a21\u578b\uff08\u514d\u8d39\u8ba1\u5212\u53ef\u80fd\u53d7\u9650\uff0c\u80fd\u6d4b\u591a\u5c11\u6d4b\u591a\u5c11\uff09\n\n| # | \u8981\u9a8c\u8bc1\u7684\u7ed3\u8bba | \u600e\u4e48\u6d4b | \u5224\u5b9a |\n|---|---|---|---|\n| 5.1 | Audiences \u662f\u5426\u4ecd\u53ef\u7528 / \u662f\u5426 deprecated\uff1b`POST /contacts` \u662f\u5426\u8fd8\u9700\u8981 audience_id | \u76f4\u63a5 `POST /contacts {email}` | \u8bb0\u5f55 |\n| 5.2 | `GET /contacts/{id}` \u4f20 email \u4ee3\u66ff uuid \u662f\u5426\u53ef\u884c | \u4e00\u6b21 | \u8bb0\u5f55 |\n| 5.3 | `POST /broadcasts` \u6700\u5c0f\u5fc5\u586b\u96c6\uff08segment_id? audience_id?\uff09\uff1b\u521b\u5efa\u540e\u4e0d send \u662f\u5426 draft | \u521b\u5efa\u540e `DELETE` | \u8bb0\u5f55 |\n| 5.4 | `POST /templates` \u672a publish \u65f6\u7528\u4e8e `POST /emails` \u662f\u5426\u62a5\u9519\uff1bvariables \u7f3a\u5931\u662f fallback \u8fd8\u662f\u62a5\u9519 | \u521b\u5efa\u2192\u53d1\u9001\u2192publish\u2192\u53d1\u9001\u2192\u5220\u9664 | \u8bb0\u5f55 |\n| 5.5 | `POST /events/send` body \u7ed3\u6784\u4e0e identifier \u8bed\u4e49 | \u4e00\u6b21 | \u8bb0\u5f55 |\n\n## \u4f18\u5148\u7ea7 P6\uff1a\u5b50 Agent \u64b0\u5199\u65f6\u53d1\u73b0\u7684\u6587\u6863\u81ea\u76f8\u77db\u76fe\uff08\u5404 1 \u6b21\u8bf7\u6c42\u5373\u53ef\u5224\u5b9a\uff09\n\n| # | \u77db\u76fe\u70b9\uff08\u4e24\u4efd\u6765\u6e90\u5404\u8bf4\u4ec0\u4e48\uff09 | \u600e\u4e48\u6d4b | \u5224\u5b9a |\n|---|---|---|---|\n| 6.1 | \u57df\u540d `status` \u679a\u4e3e\uff1aOpenAPI 6 \u4e2a\u503c\uff0c`dashboard/domains/manage-domains` \u9875\u591a\u51fa `temporary_failure` | \u5bf9 DNS \u672a\u914d\u7f6e\u57df\u540d verify \u540e\u8f6e\u8be2 `GET /domains/{id}` \u6570\u6b21 | \u8bb0\u5f55\u51fa\u73b0\u8fc7\u7684\u5168\u90e8 status \u503c |\n| 6.2 | `custom_return_path` \u80fd\u5426\u901a\u8fc7 `PATCH /domains/{id}` \u4fee\u6539\uff1adashboard \u9875\u8bf4\u53ef\u4ee5\uff0cOpenAPI/update \u9875\u672a\u5217 | PATCH \u4e00\u6b21 | 200 \u4e14\u751f\u6548 / \u5b57\u6bb5\u88ab\u5ffd\u7565 / 4xx |\n| 6.3 | \u8054\u7cfb\u4eba CSV \u5bfc\u5165\u4e0a\u9650\uff1aOpenAPI 50MB vs \u9875\u9762 200MB\uff1b`on_conflict` \u9ed8\u8ba4\u503c\uff1aOpenAPI `skip` vs \u9875\u9762 `upsert` | \u5bfc\u5165 2 \u884c CSV\uff08\u5176\u4e2d 1 \u884c\u5df2\u5b58\u5728\uff09\uff0c**\u4e0d\u4f20** `on_conflict`\uff0c\u770b `counts.updated/skipped` | \u8bb0\u5f55\u9ed8\u8ba4\u884c\u4e3a\uff1b\u5927\u5c0f\u4e0a\u9650\u53ef\u8df3\u8fc7\u5e76\u6807\u6ce8 |\n| 6.4 | \u6a21\u677f `variables[].type` \u679a\u4e3e\uff1a\u9875\u9762 `string|number` vs OpenAPI \u52a0 `boolean|object|list` | `POST /templates` \u5efa\u4e00\u4e2a `boolean` \u53d8\u91cf | 201 / 422 |\n| 6.5 | \u6a21\u677f\u53d1\u9001\u65f6\u7f3a\u53d8\u91cf\u4e14\u65e0 fallback\uff1a\u9875\u9762\u8bf4\u6574\u5c01\u62d2\u7edd\u5e76\u8fd4\u56de validation error\uff08`name` \u672a\u8bf4\u660e\uff09 | \u7528\u7f3a\u53d8\u91cf\u7684 `template.variables` \u8c03 `POST /emails` | \u8bb0\u5f55 statusCode / name / message |\n| 6.6 | `POST /events/send` \u7528\u672a\u6ce8\u518c\u8054\u7cfb\u4eba\u7684 `email`\uff1a\u9875\u9762\u8bf4\u4f1a\u5728 run \u5f00\u59cb\u65f6\u81ea\u52a8\u521b\u5efa\u8054\u7cfb\u4eba | \u53d1\u4e00\u4e2a\u4e8b\u4ef6\u540e `GET /contacts/{email}` | \u662f\u5426\u88ab\u521b\u5efa |\n| 6.7 | Contact \u5168\u5c40 `unsubscribed: true` \u662f\u5426\u4e5f\u62e6\u622a `POST /emails` \u4e8b\u52a1\u90ae\u4ef6\uff08\u6587\u6863\u672a\u8bf4\u660e\uff09 | \u5bf9\u4e00\u4e2a unsubscribed \u7684\u6d4b\u8bd5\u8054\u7cfb\u4eba\u5730\u5740\uff08`delivered+unsub@resend.dev`\uff09\u5355\u53d1\u4e00\u5c01 | `last_event` \u662f delivered \u8fd8\u662f suppressed/failed |\n| 6.8 | Broadcast \u5408\u5e76\u53d8\u91cf\uff1a\u6750\u6599\u91cc\u53ea\u6709 `{{{contact.first_name|fb}}}` \u5f62\u5f0f\uff0c\u5927\u5199 `{{{FIRST_NAME}}}` \u4e0d\u5b58\u5728\uff1b\u81ea\u5b9a\u4e49 property \u5360\u4f4d\u7b26\u8bed\u6cd5\u672a\u8bf4\u660e | \u5efa\u4e00\u4e2a draft broadcast\uff0c`GET` \u56de\u6765\u770b html \u662f\u5426\u539f\u6837\u4fdd\u5b58\uff1b\u5982\u53ef\u53d1\u5230\u6d4b\u8bd5\u5730\u5740\u5219\u770b\u6e32\u67d3\u7ed3\u679c | \u8bb0\u5f55\u88ab\u6e32\u67d3 / \u539f\u6837\u8f93\u51fa\u7684\u5199\u6cd5 |\n| 6.9 | `POST /broadcasts/{id}/send` \u4ec5\u5bf9 API \u521b\u5efa\u7684 broadcast \u6709\u6548\uff08\u9875\u9762\u8bf4\u6cd5\uff09 | \u5bf9 dashboard \u521b\u5efa\u7684 draft \u8c03 send | \u8bb0\u5f55\u62a5\u9519 |\n| 6.10 | Webhook \u91cd\u8bd5\u8ba1\u5212\uff1a\u4e09\u5904\u6587\u6863\u4e0d\u4e00\u81f4\uff088 \u6b21\u542b\"\u7acb\u5373\" / 6 \u4e2a\u95f4\u9694 / \"\u6700\u957f 24 \u5c0f\u65f6\"\uff09 | \u5efa\u4e00\u4e2a\u6307\u5411\u6c38\u8fdc 500 \u7684 endpoint \u7684 webhook\uff0c\u53d1\u4e00\u5c01\u5230 `delivered@resend.dev`\uff0c\u7528 `GET /webhooks/{id}/events/{event_id}/attempts` \u770b\u65f6\u95f4\u6233 | \u8bb0\u5f55\u5b9e\u9645\u6b21\u6570\u4e0e\u95f4\u9694\uff1b\u6d4b\u5b8c\u5220\u9664 webhook |\n| 6.11 | `GET /webhooks`\uff08\u5217\u8868\uff09\u54cd\u5e94\u662f\u5426\u542b `signing_secret`\uff08\u6587\u6863\u81ea\u76f8\u77db\u76fe\uff09 | \u53ea\u8bfb\u4e00\u6b21 | \u8bb0\u5f55 |\n| 6.12 | `data.tags` \u5728 webhook payload \u91cc\u662f\u5bf9\u8c61\u8fd8\u662f\u6570\u7ec4\uff1b`PATCH /webhooks` \u7684 `events` \u662f\u6574\u7ec4\u66ff\u6362\u8fd8\u662f\u8ffd\u52a0 | \u53d1\u5e26 2 \u4e2a tag \u7684\u90ae\u4ef6\u770b payload\uff1bPATCH \u53ea\u4f20 1 \u4e2a\u4e8b\u4ef6\u540e GET | \u8bb0\u5f55 |\n\n## \u9a8c\u8bc1\u540e\u8981\u66f4\u65b0\u7684\u5730\u65b9\n- \u6bcf\u4e2a reference \u9876\u90e8\u7684\"\u26a0 \u9a8c\u8bc1\u72b6\u6001\"\u6bb5\u6539\u4e3a\u5206\u533a\u8bf4\u660e\uff08\u54ea\u4e9b\u5df2\u9a8c\u8bc1\u3001\u65e5\u671f\u3001\u82b1\u8d39\uff09\u3002\n- SKILL.md \"\u9a8c\u8bc1\u72b6\u6001\"\u4e00\u8282\uff1b\u89c4\u5219 2/4/5 \u6839\u636e 1.3\u30011.1\u30012.1\u20132.2 \u7684\u7ed3\u679c\u6539\u5199\u3002\n- \u628a \u26a0 \u9879\u7684\u7ed3\u8bba\u5199\u8fdb `evals/evals.json` \u5bf9\u5e94\u573a\u666f\u7684 expectations\uff0c\u7b2c 4 \u6b65\u7684\u6253\u5206\u624d\u6709\u5b9e\u6d4b\u4f9d\u636e\u3002\n"}], "grading": {"expectations": [{"text": "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one", "passed": true, "evidence": "probed_llms_txt_or_openapi: //api.github.com/repos/resend/resend-openapi/contents; //raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml; //raw.githubuser"}, {"text": "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory", "passed": true, "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: OpenAPI"}, {"text": "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables", "passed": true, "evidence": "skill_md_under_200_lines: 95 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"}, {"text": "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page", "passed": true, "evidence": "references_at_least_3: audiences-and-broadcasts.md(423L), domains-and-api-keys.md(308L), errors-and-limits.md(145L), sending.md(449L), templates-automations-events | reviewer: 6 refs grouped by intent (sending, domains+api-keys, webhooks+receiving, audiences+broadcasts, templates+automations+events, errors); 132 \u26a0 markers"}, {"text": "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '\u5df2\u9a8c\u8bc1' claims)", "passed": true, "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"}, {"text": "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each", "passed": true, "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 38; verification_plan_cheap_first: priority/cost ordering words present"}, {"text": "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email", "passed": true, "evidence": "evals_json_at_least_3: 6 evals; prompts: \u6211\u4eec\u7528 BullMQ \u8dd1\u4e00\u4e2a worker \u5904\u7406 `order.paid` \u4e8b\u4ef6\uff0c\u7ed9\u4e70\u5bb6\u53d1\u4e00\u5c01 HTML \u6536\u636e\u90ae\u4ef6\uff08TypeScript\uff0cNode 20\uff09\u3002jo || \u6bcf\u5929\u65e9\u4e0a 9 \u70b9\uff08Asia/Shanghai\uff09\u8981\u7ed9\u5927\u7ea6 600 \u4e2a\u5ba2\u6237\u5404\u53d1\u4e00 | reviewer: 6 scenarios: BullMQ retry idempotency, 600 PDF batch limits, Next.js webhook signature, raw-fetch on Workers, multi-tenant domains+scoped keys, segment newsletter \u2014 all analogy traps"}, {"text": "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs", "passed": true, "evidence": "examples_read_key_from_env: 28 env-var reads in examples; no_real_looking_secrets: none | reviewer: TypeScript (SDK + fetch), process.env.RESEND_API_KEY"}, {"text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory", "passed": true, "evidence": "used_skill_creator: skill-creator referenced"}], "summary": {"passed": 9, "failed": 0, "total": 9, "pass_rate": 1.0}, "total_tokens": 249000, "tokens": 249000, "execution_metrics": {"total_tokens": 249000}, "process_observations": {"used_bundled_scripts": {"passed": true, "evidence": "fetch_docs.sh; openapi_summary.py"}}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "create-doc-skill", "skill_path": "/Users/chopinfeng/Workspace/Skillify/create-doc-skill", "executor_model": "claude-fable-5-1", "analyzer_model": "<model-name>", "timestamp": "2026-09-03T11:07:30Z", "evals_run": [1, 2], "runs_per_configuration": 1, "baseline": "old_skill = generate-skill-from-api-docs snapshot (pre-rewrite)"}, "runs": [{"eval_id": 2, "configuration": "old_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 1085.9, "tokens": 220839, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Transcript shows the agent probed for llms.txt / an OpenAPI spec first, and on failure fell back to sitemap.xml, rendered pages, or a manually built page list rather than writing from memory", "passed": true, "evidence": "probed_llms_txt_or_openapi: //platform.kimi.com/docs/llms.txt; //platform.moonshot.cn/docs/llms.txt; //platform.moonshot.cn/docs/openapi.json; //platform.moonshot.cn/ll; fallback_when_no_index: sitemap.xml; sitemap/llms.txt"}, {"text": "SKILL.md states the base URL and exact auth header format with the source page cited", "passed": true, "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: OpenAPI"}, {"text": "SKILL.md is a routing layer under 200 lines with a navigation table (intent -> reference file -> endpoints) and cross-cutting rules, without full parameter tables", "passed": true, "evidence": "skill_md_under_200_lines: 82 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"}, {"text": "references/ has at least 3 files grouped by developer intent, and places where the docs were unclear are marked (e.g. '\u26a0 \u6587\u6863\u672a\u8bf4\u660e') instead of guessed", "passed": true, "evidence": "references_at_least_3: batch.md(196L), chat-completions.md(349L), errors-and-limits.md(146L), models.md(70L), responses-and-messages.md(223L), tools.md(321L), visi | reviewer: 7 refs by intent; unclear places collected in a '\u5f85\u9a8c\u8bc1\u7591\u70b9' section per file (13 markers) rather than inline"}, {"text": "Every reference file and SKILL.md explicitly states content is unverified against the live API", "passed": true, "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"}, {"text": "A verification plan exists listing specific claims to test cheap-first with endpoint and judging criteria", "passed": true, "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 6; verification_plan_cheap_first: priority/cost ordering words present"}, {"text": "evals/evals.json contains at least 3 trap-style scenarios (e.g. OpenAI-compatibility gaps, model-name pitfalls, context caching/file semantics) rather than hello-world chat", "passed": true, "evidence": "evals_json_at_least_3: 8 evals; prompts: \u6211\u6709\u4e00\u6bb5\u7528 openai \u5e93\u8c03 gpt-4o \u7684 Python \u4ee3\u7801\uff1aclient.chat.completions.create(model='gpt-4o' || \u7528 Python \u8c03 Kimi API\uff0c\u8ba9\u6a21\u578b\u63cf\u8ff0\u8fd9\u5f20\u7f51\u7edc\u56fe\u7247\u7684\u5185\u5bb9\uff1ahtt | reviewer: 8 scenarios: gpt-4o migration with temperature, image URL (unsupported), PDF upload, k3 tool loop, batch on strongest model, stream thinking+usage, disable thinking+JSON, anthropic SDK migration \u2014 analogy traps"}, {"text": "Python examples read the key from an environment variable; no real-looking secret appears in outputs", "passed": true, "evidence": "examples_read_key_from_env: 31 env-var reads in examples; no_real_looking_secrets: none | reviewer: Python, env var; no secrets"}, {"text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) when structuring the skill directory", "passed": true, "evidence": "used_skill_creator: skill-creator referenced"}], "notes": []}, {"eval_id": 1, "configuration": "old_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 864.8, "tokens": 228399, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one", "passed": true, "evidence": "probed_llms_txt_or_openapi: //api.github.com/repos/resend/resend-openapi/contents/; //raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml; //raw.githubuse"}, {"text": "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory", "passed": true, "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: llms.txt"}, {"text": "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables", "passed": true, "evidence": "skill_md_under_200_lines: 68 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"}, {"text": "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page", "passed": true, "evidence": "references_at_least_3: audiences-and-broadcasts.md(207L), domains-and-account.md(135L), errors-and-limits.md(121L), sending.md(326L), webhooks-and-receiving.md(260 | reviewer: 5 refs grouped by intent (sending, domains+account, webhooks+receiving, audiences+broadcasts, errors); 26 \u26a0 VERIFY markers"}, {"text": "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '\u5df2\u9a8c\u8bc1' claims)", "passed": true, "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"}, {"text": "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each", "passed": true, "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 17; verification_plan_cheap_first: priority/cost ordering words present"}, {"text": "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email", "passed": true, "evidence": "evals_json_at_least_3: 8 evals; prompts: I'm on Cloudflare Workers and don't want to add the resend npm package. Write a  || We generate 300 monthly invoices as PD | reviewer: 8 scenarios: Workers without SDK, 300 PDF invoices, schedule/cancel, webhook handler, template alias, EU-region domain, pagination generator, inbound \u2014 trap-style"}, {"text": "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs", "passed": true, "evidence": "examples_read_key_from_env: 17 env-var reads in examples; no_real_looking_secrets: none | reviewer: TypeScript, env var; no secrets"}, {"text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory", "passed": true, "evidence": "used_skill_creator: skill-creator referenced"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 1351.8, "tokens": 240398, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Transcript shows the agent probed for llms.txt / an OpenAPI spec first, and on failure fell back to sitemap.xml, rendered pages, or a manually built page list rather than writing from memory", "passed": true, "evidence": "probed_llms_txt_or_openapi: //platform.kimi.com/docs/openapi-hosted-agents.yaml; //platform.moonshot.cn/api-reference/openapi.json; //platform.moonshot.cn/docs/llms.txt; fallback_when_no_index: Browser; browser; sitemap; sitemap.xml; \u624b\u5de5; \u6e32\u67d3"}, {"text": "SKILL.md states the base URL and exact auth header format with the source page cited", "passed": true, "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: \u6587\u6863\u8f6c\u5f55\uff0c\u5c1a\u672a\u7528\u771f\u5b9e API Key \u8c03\u7528\u9a8c\u8bc1\u3002** \u6765\u6e90\u662f `platform.kimi.com/docs/openapi.json`\uff08OpenAPI 3.1.0\uff0c16 \u4e2a endpoint\uff09\u548c 40 \u7bc7\u5b98\u65b9\u6587\u6863\u9875\uff08\u6293\u53d6\u4e8e 2026-09-03\uff09\u3002\u6bcf\u4e2a reference \u6587\u4ef6"}, {"text": "SKILL.md is a routing layer under 200 lines with a navigation table (intent -> reference file -> endpoints) and cross-cutting rules, without full parameter tables", "passed": true, "evidence": "skill_md_under_200_lines: 97 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"}, {"text": "references/ has at least 3 files grouped by developer intent, and places where the docs were unclear are marked (e.g. '\u26a0 \u6587\u6863\u672a\u8bf4\u660e') instead of guessed", "passed": true, "evidence": "references_at_least_3: chat-completions.md(651L), errors-and-limits.md(304L), files-and-batch.md(600L), models-and-thinking.md(542L), responses-messages-and-utilit | reviewer: 6 refs by intent; 102 '\u6587\u6863\u672a\u8bf4\u660e/\u5f85\u9a8c\u8bc1' markers at endpoint level"}, {"text": "Every reference file and SKILL.md explicitly states content is unverified against the live API", "passed": true, "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"}, {"text": "A verification plan exists listing specific claims to test cheap-first with endpoint and judging criteria", "passed": true, "evidence": "verification_plan_exists: kimi-api-workspace/verification-plan.md; endpoints mentioned: 11; verification_plan_cheap_first: priority/cost ordering words present"}, {"text": "evals/evals.json contains at least 3 trap-style scenarios (e.g. OpenAI-compatibility gaps, model-name pitfalls, context caching/file semantics) rather than hello-world chat", "passed": true, "evidence": "evals_json_at_least_3: 7 evals; prompts: \u7528 Kimi \u5f00\u653e\u5e73\u53f0\u5199\u4e00\u4e2a Python \u547d\u4ee4\u884c\u804a\u5929\u7a0b\u5e8f chat.py\uff1a\u652f\u6301\u591a\u8f6e\u5bf9\u8bdd\uff0c\u56de\u590d\u8981\u5c3d\u91cf\u7a33\u5b9a\u3001\u5c11\u53d1\u6563\uff0c\u7528 kimi-k2.6 \u5e76\u4e14\u4e0d\u8981\u8ba9\u5b83\u505a\u6df1\u5ea6\u601d\u8003 || \u6211\u8981\u505a\u4e00\u4e2a\u7535\u5546\u5ba2\u670d\u673a\u5668\u4eba\uff08Python\uff0cKimi API\uff09\u3002\u4e1a\u52a1\u89c4\u5219\uff1a\u7528\u6237\u53d1 | reviewer: 7 scenarios: fixed sampling params on k2.6, forced tool call before answer, PDF file-extract flow, 200k-review batch (K3 excluded), stream usage, $web_search builtin, partial mode \u2014 analogy traps"}, {"text": "Python examples read the key from an environment variable; no real-looking secret appears in outputs", "passed": true, "evidence": "examples_read_key_from_env: 74 env-var reads in examples; no_real_looking_secrets: none | reviewer: Python, os.environ; no secrets"}, {"text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) when structuring the skill directory", "passed": true, "evidence": "used_skill_creator: skill-creator referenced"}], "notes": []}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 9, "failed": 0, "total": 9, "time_seconds": 1244.8, "tokens": 249000, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one", "passed": true, "evidence": "probed_llms_txt_or_openapi: //api.github.com/repos/resend/resend-openapi/contents; //raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml; //raw.githubuser"}, {"text": "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory", "passed": true, "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: OpenAPI"}, {"text": "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables", "passed": true, "evidence": "skill_md_under_200_lines: 95 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"}, {"text": "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page", "passed": true, "evidence": "references_at_least_3: audiences-and-broadcasts.md(423L), domains-and-api-keys.md(308L), errors-and-limits.md(145L), sending.md(449L), templates-automations-events | reviewer: 6 refs grouped by intent (sending, domains+api-keys, webhooks+receiving, audiences+broadcasts, templates+automations+events, errors); 132 \u26a0 markers"}, {"text": "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '\u5df2\u9a8c\u8bc1' claims)", "passed": true, "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"}, {"text": "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each", "passed": true, "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 38; verification_plan_cheap_first: priority/cost ordering words present"}, {"text": "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email", "passed": true, "evidence": "evals_json_at_least_3: 6 evals; prompts: \u6211\u4eec\u7528 BullMQ \u8dd1\u4e00\u4e2a worker \u5904\u7406 `order.paid` \u4e8b\u4ef6\uff0c\u7ed9\u4e70\u5bb6\u53d1\u4e00\u5c01 HTML \u6536\u636e\u90ae\u4ef6\uff08TypeScript\uff0cNode 20\uff09\u3002jo || \u6bcf\u5929\u65e9\u4e0a 9 \u70b9\uff08Asia/Shanghai\uff09\u8981\u7ed9\u5927\u7ea6 600 \u4e2a\u5ba2\u6237\u5404\u53d1\u4e00 | reviewer: 6 scenarios: BullMQ retry idempotency, 600 PDF batch limits, Next.js webhook signature, raw-fetch on Workers, multi-tenant domains+scoped keys, segment newsletter \u2014 all analogy traps"}, {"text": "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs", "passed": true, "evidence": "examples_read_key_from_env: 28 env-var reads in examples; no_real_looking_secrets: none | reviewer: TypeScript (SDK + fetch), process.env.RESEND_API_KEY"}, {"text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory", "passed": true, "evidence": "used_skill_creator: skill-creator referenced"}], "notes": []}], "run_summary": {"old_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 975.35, "stddev": 156.3413, "min": 864.8, "max": 1085.9}, "tokens": {"mean": 224619.0, "stddev": 5345.7273, "min": 220839, "max": 228399}}, "with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 1298.3, "stddev": 75.6604, "min": 1244.8, "max": 1351.8}, "tokens": {"mean": 244699.0, "stddev": 6082.5325, "min": 240398, "max": 249000}}, "delta": {"pass_rate": "+0.00", "time_seconds": "-322.9", "tokens": "-20080"}}, "notes": ["All 9 assertions pass in both configurations for both evals (18/18 vs 18/18): the assertion set is non-discriminating for a capable executor \u2014 the old skill already produced structurally equivalent drafts (router SKILL.md, intent-grouped references, unverified banners, verification plan, trap-style evals).", "Process differences favor the new skill: both with_skill runs used the bundled scripts (fetch_docs.sh, openapi_summary.py) instead of hand-parsing; fewer fetches (Resend 11 vs 14, Kimi 52 vs 57); far denser endpoint-level uncertainty markers (Resend 132 vs 26 \u26a0, Kimi 102 vs 13).", "Both old_skill runs independently reported the same gaps \u2014 no 'no API key' mode, llms-full.txt not mentioned, OpenAPI only on vendor GitHub, relative link to ../bigmodel-cn, run_eval.py misdescribed \u2014 all of which the rewrite already addresses. New-skill feedback is refinement-level: llms-full.txt shortcut, delegation race safeguard, `python -m scripts.package_skill` invocation + pyyaml, what step 4 means in draft-only scope, /docs/llms.txt path variant, multi-product scoping. All applied to the skill after this iteration.", "Time/tokens are not apples-to-apples: with_skill runs were +323s and ~+20k tokens, but produced 2-2.3x more reference content (Resend 2,222 vs 1,049 lines; Kimi 3,410 vs 1,505) and each needed two coordinator resumes while waiting on writer sub-agents.", "Delegation races (coordinator writing a sub-agent's assigned file, sub-agents overwriting each other) occurred in 3 of 4 runs regardless of version \u2014 the strongest signal for a concrete change to write.md (now added: .done markers, never write an assigned path before completion).", "Eval feedback for iteration 2: add discriminating assertions (bundled scripts or equivalent used; \u26a0 markers at endpoint level \u2265 N; verification-status banner at top of SKILL.md; no sub-agent file overwritten), since structure-only assertions saturate."]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

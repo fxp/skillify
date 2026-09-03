@@ -1,0 +1,324 @@
+{
+  "metadata": {
+    "skill_name": "create-doc-skill",
+    "skill_path": "/Users/chopinfeng/Workspace/Skillify/create-doc-skill",
+    "executor_model": "claude-fable-5-1",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-09-03T11:07:30Z",
+    "evals_run": [
+      1,
+      2
+    ],
+    "runs_per_configuration": 1,
+    "baseline": "old_skill = generate-skill-from-api-docs snapshot (pre-rewrite)"
+  },
+  "runs": [
+    {
+      "eval_id": 2,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 1085.9,
+        "tokens": 220839,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Transcript shows the agent probed for llms.txt / an OpenAPI spec first, and on failure fell back to sitemap.xml, rendered pages, or a manually built page list rather than writing from memory",
+          "passed": true,
+          "evidence": "probed_llms_txt_or_openapi: //platform.kimi.com/docs/llms.txt; //platform.moonshot.cn/docs/llms.txt; //platform.moonshot.cn/docs/openapi.json; //platform.moonshot.cn/ll; fallback_when_no_index: sitemap.xml; sitemap/llms.txt"
+        },
+        {
+          "text": "SKILL.md states the base URL and exact auth header format with the source page cited",
+          "passed": true,
+          "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: OpenAPI"
+        },
+        {
+          "text": "SKILL.md is a routing layer under 200 lines with a navigation table (intent -> reference file -> endpoints) and cross-cutting rules, without full parameter tables",
+          "passed": true,
+          "evidence": "skill_md_under_200_lines: 82 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"
+        },
+        {
+          "text": "references/ has at least 3 files grouped by developer intent, and places where the docs were unclear are marked (e.g. '⚠ 文档未说明') instead of guessed",
+          "passed": true,
+          "evidence": "references_at_least_3: batch.md(196L), chat-completions.md(349L), errors-and-limits.md(146L), models.md(70L), responses-and-messages.md(223L), tools.md(321L), visi | reviewer: 7 refs by intent; unclear places collected in a '待验证疑点' section per file (13 markers) rather than inline"
+        },
+        {
+          "text": "Every reference file and SKILL.md explicitly states content is unverified against the live API",
+          "passed": true,
+          "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"
+        },
+        {
+          "text": "A verification plan exists listing specific claims to test cheap-first with endpoint and judging criteria",
+          "passed": true,
+          "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 6; verification_plan_cheap_first: priority/cost ordering words present"
+        },
+        {
+          "text": "evals/evals.json contains at least 3 trap-style scenarios (e.g. OpenAI-compatibility gaps, model-name pitfalls, context caching/file semantics) rather than hello-world chat",
+          "passed": true,
+          "evidence": "evals_json_at_least_3: 8 evals; prompts: 我有一段用 openai 库调 gpt-4o 的 Python 代码：client.chat.completions.create(model='gpt-4o' || 用 Python 调 Kimi API，让模型描述这张网络图片的内容：htt | reviewer: 8 scenarios: gpt-4o migration with temperature, image URL (unsupported), PDF upload, k3 tool loop, batch on strongest model, stream thinking+usage, disable thinking+JSON, anthropic SDK migration — analogy traps"
+        },
+        {
+          "text": "Python examples read the key from an environment variable; no real-looking secret appears in outputs",
+          "passed": true,
+          "evidence": "examples_read_key_from_env: 31 env-var reads in examples; no_real_looking_secrets: none | reviewer: Python, env var; no secrets"
+        },
+        {
+          "text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) when structuring the skill directory",
+          "passed": true,
+          "evidence": "used_skill_creator: skill-creator referenced"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 864.8,
+        "tokens": 228399,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one",
+          "passed": true,
+          "evidence": "probed_llms_txt_or_openapi: //api.github.com/repos/resend/resend-openapi/contents/; //raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml; //raw.githubuse"
+        },
+        {
+          "text": "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory",
+          "passed": true,
+          "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: llms.txt"
+        },
+        {
+          "text": "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables",
+          "passed": true,
+          "evidence": "skill_md_under_200_lines: 68 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"
+        },
+        {
+          "text": "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page",
+          "passed": true,
+          "evidence": "references_at_least_3: audiences-and-broadcasts.md(207L), domains-and-account.md(135L), errors-and-limits.md(121L), sending.md(326L), webhooks-and-receiving.md(260 | reviewer: 5 refs grouped by intent (sending, domains+account, webhooks+receiving, audiences+broadcasts, errors); 26 ⚠ VERIFY markers"
+        },
+        {
+          "text": "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '已验证' claims)",
+          "passed": true,
+          "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"
+        },
+        {
+          "text": "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each",
+          "passed": true,
+          "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 17; verification_plan_cheap_first: priority/cost ordering words present"
+        },
+        {
+          "text": "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email",
+          "passed": true,
+          "evidence": "evals_json_at_least_3: 8 evals; prompts: I'm on Cloudflare Workers and don't want to add the resend npm package. Write a  || We generate 300 monthly invoices as PD | reviewer: 8 scenarios: Workers without SDK, 300 PDF invoices, schedule/cancel, webhook handler, template alias, EU-region domain, pagination generator, inbound — trap-style"
+        },
+        {
+          "text": "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs",
+          "passed": true,
+          "evidence": "examples_read_key_from_env: 17 env-var reads in examples; no_real_looking_secrets: none | reviewer: TypeScript, env var; no secrets"
+        },
+        {
+          "text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory",
+          "passed": true,
+          "evidence": "used_skill_creator: skill-creator referenced"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 1351.8,
+        "tokens": 240398,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Transcript shows the agent probed for llms.txt / an OpenAPI spec first, and on failure fell back to sitemap.xml, rendered pages, or a manually built page list rather than writing from memory",
+          "passed": true,
+          "evidence": "probed_llms_txt_or_openapi: //platform.kimi.com/docs/openapi-hosted-agents.yaml; //platform.moonshot.cn/api-reference/openapi.json; //platform.moonshot.cn/docs/llms.txt; fallback_when_no_index: Browser; browser; sitemap; sitemap.xml; 手工; 渲染"
+        },
+        {
+          "text": "SKILL.md states the base URL and exact auth header format with the source page cited",
+          "passed": true,
+          "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: 文档转录，尚未用真实 API Key 调用验证。** 来源是 `platform.kimi.com/docs/openapi.json`（OpenAPI 3.1.0，16 个 endpoint）和 40 篇官方文档页（抓取于 2026-09-03）。每个 reference 文件"
+        },
+        {
+          "text": "SKILL.md is a routing layer under 200 lines with a navigation table (intent -> reference file -> endpoints) and cross-cutting rules, without full parameter tables",
+          "passed": true,
+          "evidence": "skill_md_under_200_lines: 97 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"
+        },
+        {
+          "text": "references/ has at least 3 files grouped by developer intent, and places where the docs were unclear are marked (e.g. '⚠ 文档未说明') instead of guessed",
+          "passed": true,
+          "evidence": "references_at_least_3: chat-completions.md(651L), errors-and-limits.md(304L), files-and-batch.md(600L), models-and-thinking.md(542L), responses-messages-and-utilit | reviewer: 6 refs by intent; 102 '文档未说明/待验证' markers at endpoint level"
+        },
+        {
+          "text": "Every reference file and SKILL.md explicitly states content is unverified against the live API",
+          "passed": true,
+          "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"
+        },
+        {
+          "text": "A verification plan exists listing specific claims to test cheap-first with endpoint and judging criteria",
+          "passed": true,
+          "evidence": "verification_plan_exists: kimi-api-workspace/verification-plan.md; endpoints mentioned: 11; verification_plan_cheap_first: priority/cost ordering words present"
+        },
+        {
+          "text": "evals/evals.json contains at least 3 trap-style scenarios (e.g. OpenAI-compatibility gaps, model-name pitfalls, context caching/file semantics) rather than hello-world chat",
+          "passed": true,
+          "evidence": "evals_json_at_least_3: 7 evals; prompts: 用 Kimi 开放平台写一个 Python 命令行聊天程序 chat.py：支持多轮对话，回复要尽量稳定、少发散，用 kimi-k2.6 并且不要让它做深度思考 || 我要做一个电商客服机器人（Python，Kimi API）。业务规则：用户发 | reviewer: 7 scenarios: fixed sampling params on k2.6, forced tool call before answer, PDF file-extract flow, 200k-review batch (K3 excluded), stream usage, $web_search builtin, partial mode — analogy traps"
+        },
+        {
+          "text": "Python examples read the key from an environment variable; no real-looking secret appears in outputs",
+          "passed": true,
+          "evidence": "examples_read_key_from_env: 74 env-var reads in examples; no_real_looking_secrets: none | reviewer: Python, os.environ; no secrets"
+        },
+        {
+          "text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) when structuring the skill directory",
+          "passed": true,
+          "evidence": "used_skill_creator: skill-creator referenced"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 9,
+        "failed": 0,
+        "total": 9,
+        "time_seconds": 1244.8,
+        "tokens": 249000,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one",
+          "passed": true,
+          "evidence": "probed_llms_txt_or_openapi: //api.github.com/repos/resend/resend-openapi/contents; //raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml; //raw.githubuser"
+        },
+        {
+          "text": "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory",
+          "passed": true,
+          "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: OpenAPI"
+        },
+        {
+          "text": "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables",
+          "passed": true,
+          "evidence": "skill_md_under_200_lines: 95 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"
+        },
+        {
+          "text": "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page",
+          "passed": true,
+          "evidence": "references_at_least_3: audiences-and-broadcasts.md(423L), domains-and-api-keys.md(308L), errors-and-limits.md(145L), sending.md(449L), templates-automations-events | reviewer: 6 refs grouped by intent (sending, domains+api-keys, webhooks+receiving, audiences+broadcasts, templates+automations+events, errors); 132 ⚠ markers"
+        },
+        {
+          "text": "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '已验证' claims)",
+          "passed": true,
+          "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"
+        },
+        {
+          "text": "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each",
+          "passed": true,
+          "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 38; verification_plan_cheap_first: priority/cost ordering words present"
+        },
+        {
+          "text": "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email",
+          "passed": true,
+          "evidence": "evals_json_at_least_3: 6 evals; prompts: 我们用 BullMQ 跑一个 worker 处理 `order.paid` 事件，给买家发一封 HTML 收据邮件（TypeScript，Node 20）。jo || 每天早上 9 点（Asia/Shanghai）要给大约 600 个客户各发一 | reviewer: 6 scenarios: BullMQ retry idempotency, 600 PDF batch limits, Next.js webhook signature, raw-fetch on Workers, multi-tenant domains+scoped keys, segment newsletter — all analogy traps"
+        },
+        {
+          "text": "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs",
+          "passed": true,
+          "evidence": "examples_read_key_from_env: 28 env-var reads in examples; no_real_looking_secrets: none | reviewer: TypeScript (SDK + fetch), process.env.RESEND_API_KEY"
+        },
+        {
+          "text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory",
+          "passed": true,
+          "evidence": "used_skill_creator: skill-creator referenced"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "old_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 975.35,
+        "stddev": 156.3413,
+        "min": 864.8,
+        "max": 1085.9
+      },
+      "tokens": {
+        "mean": 224619.0,
+        "stddev": 5345.7273,
+        "min": 220839,
+        "max": 228399
+      }
+    },
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 1298.3,
+        "stddev": 75.6604,
+        "min": 1244.8,
+        "max": 1351.8
+      },
+      "tokens": {
+        "mean": 244699.0,
+        "stddev": 6082.5325,
+        "min": 240398,
+        "max": 249000
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "-322.9",
+      "tokens": "-20080"
+    }
+  },
+  "notes": [
+    "All 9 assertions pass in both configurations for both evals (18/18 vs 18/18): the assertion set is non-discriminating for a capable executor — the old skill already produced structurally equivalent drafts (router SKILL.md, intent-grouped references, unverified banners, verification plan, trap-style evals).",
+    "Process differences favor the new skill: both with_skill runs used the bundled scripts (fetch_docs.sh, openapi_summary.py) instead of hand-parsing; fewer fetches (Resend 11 vs 14, Kimi 52 vs 57); far denser endpoint-level uncertainty markers (Resend 132 vs 26 ⚠, Kimi 102 vs 13).",
+    "Both old_skill runs independently reported the same gaps — no 'no API key' mode, llms-full.txt not mentioned, OpenAPI only on vendor GitHub, relative link to ../bigmodel-cn, run_eval.py misdescribed — all of which the rewrite already addresses. New-skill feedback is refinement-level: llms-full.txt shortcut, delegation race safeguard, `python -m scripts.package_skill` invocation + pyyaml, what step 4 means in draft-only scope, /docs/llms.txt path variant, multi-product scoping. All applied to the skill after this iteration.",
+    "Time/tokens are not apples-to-apples: with_skill runs were +323s and ~+20k tokens, but produced 2-2.3x more reference content (Resend 2,222 vs 1,049 lines; Kimi 3,410 vs 1,505) and each needed two coordinator resumes while waiting on writer sub-agents.",
+    "Delegation races (coordinator writing a sub-agent's assigned file, sub-agents overwriting each other) occurred in 3 of 4 runs regardless of version — the strongest signal for a concrete change to write.md (now added: .done markers, never write an assigned path before completion).",
+    "Eval feedback for iteration 2: add discriminating assertions (bundled scripts or equivalent used; ⚠ markers at endpoint level ≥ N; verification-status banner at top of SKILL.md; no sub-agent file overwritten), since structure-only assertions saturate."
+  ]
+}

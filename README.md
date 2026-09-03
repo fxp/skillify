@@ -36,6 +36,10 @@
 
 三轮测试合起来正好说明为什么方法论坚持要走完真实验证这一步——静态测试能测出"有没有编造内容"，测不出"文档本身写没写对、写没写全"；而消融测试的价值也不在于"每次都赢很多"，越到后面 baseline 越聪明、差距越小甚至局部打平，这本身就是诚实的信号，不应该被刻意放大成夸张的胜率。完整的分场景对比表格和逐条"为什么"，见 [`skills/autodl/data/comparison-report.md`](skills/autodl/data/comparison-report.md)。
 
+**create-doc-skill**（方法论本身的重写版，对照对象是重写前的旧版快照）：
+
+- 2 个"没有 key 的草稿模式"场景（Resend：有 llms.txt 但 OpenAPI 链接写错；Kimi 开放平台：根路径没有 llms.txt，测 fallback），新旧两版按断言都是 18/18，**平局**。差异在过程而不是终态：新版用自带的 `fetch_docs.sh` / `openapi_summary.py`，抓取次数更少，references 里 endpoint 级的"未验证"标记密度高得多（132 处 vs 26 处），代价是更多 token 和内容量。评测中顺手修正了 9 条 skill 指引。另外用 skill-creator 的描述优化循环跑了 3 轮触发准确率评测（`data/description-opt/`）。详见 [`skills/create-doc-skill/data/comparison-report.md`](skills/create-doc-skill/data/comparison-report.md)。
+
 ## 用法
 
 把某个 skill 目录整份复制到你的 Claude Skills 目录（或用 `skill-creator` 的 `package_skill.py` 打包成 `.skill` 文件安装），Agent 会在检测到相关任务时自动读取。

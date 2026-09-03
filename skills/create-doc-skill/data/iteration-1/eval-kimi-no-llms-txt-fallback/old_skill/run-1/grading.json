@@ -1,0 +1,72 @@
+{
+  "expectations": [
+    {
+      "text": "Transcript shows the agent probed for llms.txt / an OpenAPI spec first, and on failure fell back to sitemap.xml, rendered pages, or a manually built page list rather than writing from memory",
+      "passed": true,
+      "evidence": "probed_llms_txt_or_openapi: //platform.kimi.com/docs/llms.txt; //platform.moonshot.cn/docs/llms.txt; //platform.moonshot.cn/docs/openapi.json; //platform.moonshot.cn/ll; fallback_when_no_index: sitemap.xml; sitemap/llms.txt"
+    },
+    {
+      "text": "SKILL.md states the base URL and exact auth header format with the source page cited",
+      "passed": true,
+      "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: OpenAPI"
+    },
+    {
+      "text": "SKILL.md is a routing layer under 200 lines with a navigation table (intent -> reference file -> endpoints) and cross-cutting rules, without full parameter tables",
+      "passed": true,
+      "evidence": "skill_md_under_200_lines: 82 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"
+    },
+    {
+      "text": "references/ has at least 3 files grouped by developer intent, and places where the docs were unclear are marked (e.g. '⚠ 文档未说明') instead of guessed",
+      "passed": true,
+      "evidence": "references_at_least_3: batch.md(196L), chat-completions.md(349L), errors-and-limits.md(146L), models.md(70L), responses-and-messages.md(223L), tools.md(321L), visi | reviewer: 7 refs by intent; unclear places collected in a '待验证疑点' section per file (13 markers) rather than inline"
+    },
+    {
+      "text": "Every reference file and SKILL.md explicitly states content is unverified against the live API",
+      "passed": true,
+      "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"
+    },
+    {
+      "text": "A verification plan exists listing specific claims to test cheap-first with endpoint and judging criteria",
+      "passed": true,
+      "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 6; verification_plan_cheap_first: priority/cost ordering words present"
+    },
+    {
+      "text": "evals/evals.json contains at least 3 trap-style scenarios (e.g. OpenAI-compatibility gaps, model-name pitfalls, context caching/file semantics) rather than hello-world chat",
+      "passed": true,
+      "evidence": "evals_json_at_least_3: 8 evals; prompts: 我有一段用 openai 库调 gpt-4o 的 Python 代码：client.chat.completions.create(model='gpt-4o' || 用 Python 调 Kimi API，让模型描述这张网络图片的内容：htt | reviewer: 8 scenarios: gpt-4o migration with temperature, image URL (unsupported), PDF upload, k3 tool loop, batch on strongest model, stream thinking+usage, disable thinking+JSON, anthropic SDK migration — analogy traps"
+    },
+    {
+      "text": "Python examples read the key from an environment variable; no real-looking secret appears in outputs",
+      "passed": true,
+      "evidence": "examples_read_key_from_env: 31 env-var reads in examples; no_real_looking_secrets: none | reviewer: Python, env var; no secrets"
+    },
+    {
+      "text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) when structuring the skill directory",
+      "passed": true,
+      "evidence": "used_skill_creator: skill-creator referenced"
+    }
+  ],
+  "summary": {
+    "passed": 9,
+    "failed": 0,
+    "total": 9,
+    "pass_rate": 1.0
+  },
+  "total_tokens": 220839,
+  "tokens": 220839,
+  "execution_metrics": {
+    "total_tokens": 220839
+  },
+  "process_observations": {
+    "used_bundled_scripts": {
+      "passed": false,
+      "evidence": "bundled scripts not used"
+    }
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "skill_name": "kimi-api",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "用 Kimi 开放平台写一个 Python 命令行聊天程序 chat.py：支持多轮对话，回复要尽量稳定、少发散，用 kimi-k2.6 并且不要让它做深度思考以节省时间和费用。用 openai SDK。",
+      "expected_output": "能在真实 API 上跑通的 chat.py：base_url https://api.moonshot.cn/v1，model kimi-k2.6，thinking disabled 通过 extra_body 传，不传 temperature/top_p，多轮把完整 assistant 消息回传。",
+      "files": [],
+      "expectations": [
+        "代码没有显式传 temperature、top_p、n、presence_penalty、frequency_penalty 任何一个（Kimi 这些参数固定，传了报错）",
+        "关闭思考用的是 thinking: {\"type\": \"disabled\"} 且在 openai SDK 中通过 extra_body 传递，而不是顶层参数或 reasoning_effort",
+        "base_url 为 https://api.moonshot.cn/v1，鉴权用 Authorization: Bearer 形式（SDK api_key），key 从环境变量读取",
+        "model 使用当前在线模型 kimi-k2.6，而不是 moonshot-v1-* 或 kimi-k2.5 等已下线名称"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "我要做一个电商客服机器人（Python，Kimi API）。业务规则：用户发来任何消息，机器人在回答之前必须先调用 get_order(order_id) 查一次订单（order_id 从用户消息里提取），拿到结果后再回答。请写完整的工具调用循环。",
+      "expected_output": "能跑通的工具调用循环：用 kimi-k3 + tool_choice \"required\"（或明确说明只有 K3 支持 required），后续轮次恢复 auto；把返回的完整 assistant message（含 reasoning_content 和 tool_calls）原样追加回 messages；tool 消息带 tool_call_id。",
+      "files": [],
+      "expectations": [
+        "强制首轮调用工具时使用了 tool_choice: \"required\" 并且模型是 kimi-k3，或者代码/注释明确指出 kimi-k2.6 / kimi-k2.7-code 不支持 required",
+        "没有使用 OpenAI 风格的 tool_choice: {\"type\":\"function\",\"function\":{\"name\":\"get_order\"}} 指定单个工具的写法作为主要方案",
+        "工具循环把 API 返回的完整 assistant 消息（包含 reasoning_content 字段，而不是只挑 role/content/tool_calls）追加回 messages",
+        "工具结果以 role=tool 消息回传且带 tool_call_id，且每轮请求都带完整 tools 声明"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "写一个 Python 脚本，让用户上传一份本地 PDF（比如财报）后，可以针对这份 PDF 反复提问。用 Kimi 开放平台和 openai SDK。",
+      "expected_output": "使用 files.create(purpose=\"file-extract\") 上传，用 files.content(file_id).text 取抽取文本，作为 system 消息放进 messages 后多轮问答。",
+      "files": [],
+      "expectations": [
+        "上传使用 client.files.create(file=..., purpose=\"file-extract\")，purpose 不是 assistants / user_data 等 OpenAI 取值",
+        "通过 client.files.content(file_id).text（GET /v1/files/{file_id}/content）取回抽取后的文本并作为一条 system 消息放入 messages，而不是使用 OpenAI 的 file 附件 content part、Assistants API、vector store 或 input_file",
+        "model 使用当前在线模型（kimi-k3 / kimi-k2.6 / kimi-k2.7-code），base_url 为 https://api.moonshot.cn/v1"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我有 20 万条用户评论要做情感分类（正面/负面/中性），不着急要结果，希望尽量便宜。请用 Kimi 开放平台的批处理能力写一个 Python 脚本：生成任务、提交、轮询、把结果解析成 CSV。",
+      "expected_output": "JSONL 每行 custom_id/method/url/body，body.model 为 kimi-k2.6 或 kimi-k2.7-code（不是 kimi-k3），purpose=\"batch\" 上传，batches.create(input_file_id, endpoint=\"/v1/chat/completions\", completion_window=\"24h\")，轮询 status，取 output_file_id 内容解析。",
+      "files": [],
+      "expectations": [
+        "批处理请求 body 里的 model 是 kimi-k2.6 或 kimi-k2.7-code，没有使用 kimi-k3（Batch 不支持 K3）",
+        "输入文件以 purpose=\"batch\" 上传，JSONL 每行包含 custom_id、method、url、body 字段",
+        "创建任务时传了 completion_window（如 \"24h\"）和 endpoint \"/v1/chat/completions\"，并轮询 batch 状态后通过 output_file_id 取回结果",
+        "批处理 body 里没有显式设置 temperature / top_p 等固定参数"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "用 Kimi 开放平台写一个 Python 函数 generate_report(topic)，生成一篇约 5000 字的深度分析报告，要求边生成边打印到终端，函数结束时返回本次调用的 prompt/completion token 用量以便计费。用最强的模型，但推理强度调低一点以控制延迟。",
+      "expected_output": "kimi-k3 + reasoning_effort=\"low\"，stream=True + stream_options include_usage，逐 chunk 打印 delta.content（可选打印 delta.reasoning_content），从最后带 usage 的 chunk 取用量。",
+      "files": [],
+      "expectations": [
+        "模型为 kimi-k3 且推理强度通过顶层 reasoning_effort（取值 low/high/max 之一）设置，而不是通过 thinking 参数",
+        "使用 stream=True 且传了 stream_options={\"include_usage\": True}，并从最后一个带 usage 的 chunk 读取 token 用量，而不是假设每个 chunk 都有 usage 或在非流式请求里生成长文本",
+        "流式处理时对 delta.reasoning_content 做了区分处理或至少不会因为该字段存在而崩溃（用 getattr / 判空）",
+        "没有显式传 temperature"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "帮我用 Kimi API 写一个 Python 的\"今日资讯助手\"：用户问最近的新闻或某个实时信息时，模型能联网搜索后回答；我不想自己接搜索引擎。",
+      "expected_output": "在 tools 中声明 {\"type\": \"builtin_function\", \"function\": {\"name\": \"$web_search\"}}，tool_calls 循环里对 $web_search 把 arguments 原样作为 tool 消息回传，每次请求带完整 tools。",
+      "files": [],
+      "expectations": [
+        "tools 中声明了 type 为 builtin_function、function.name 为 $web_search 的内置工具，而不是 web_search / web_search_preview 或自定义 function",
+        "处理 $web_search 的 tool_calls 时把模型返回的 arguments 原样（或原样 JSON）作为 role=tool 消息回传，而不是自己实现搜索",
+        "每一轮请求都完整带上 tools 声明，并把完整 assistant 消息（含 reasoning_content）回传"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "用 Kimi 开放平台写一个 Python 小说续写工具：用户给一段开头，模型必须严格从这段文字之后接着写（输出里不要重复开头、不要加任何前言），用 openai SDK。",
+      "expected_output": "使用 Partial Mode：messages 最后一条是 {\"role\": \"assistant\", \"content\": prefix, \"partial\": True}（思考模型下附 reasoning_content），模型输出为紧接 prefix 的续写。",
+      "files": [],
+      "expectations": [
+        "使用了 Partial Mode，即 messages 最后一条 assistant 消息上带 partial: True，而不是把 partial 作为顶层请求参数或仅靠 prompt 约束",
+        "partial 的 assistant 消息 content 为用户给的开头文本，并且代码把 prefix 和续写正确拼接（或说明输出不包含前缀）",
+        "没有显式传 temperature / top_p 等固定参数，模型使用当前在线模型名"
+      ]
+    }
+  ]
+}

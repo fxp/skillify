@@ -1,0 +1,114 @@
+{
+  "skill_name": "kimi-api",
+  "notes": "场景专挑'有 OpenAI 经验的开发者会凭直觉写错'的点。assertions 目前依据官方文档；拿到 Key 后按 verification-plan.md 实测，把 grader 依据换成真实报错原文。",
+  "evals": [
+    {
+      "id": 1,
+      "name": "migrate-openai-chat-to-kimi",
+      "prompt": "我有一段用 openai 库调 gpt-4o 的 Python 代码：client.chat.completions.create(model='gpt-4o', messages=msgs, temperature=0.3, top_p=0.9, max_tokens=2000)。帮我改成用 Moonshot Kimi 的 API，要求用 Kimi 最强的模型，API Key 从环境变量读。只给我改好的代码。",
+      "expected_output": "指向 https://api.moonshot.cn/v1，model 用 kimi-k3（不是 moonshot-v1-* / kimi-latest），删除 temperature/top_p，用 max_completion_tokens 而非 max_tokens，Key 用 os.environ['MOONSHOT_API_KEY']。",
+      "files": [],
+      "assertions": [
+        {"text": "base_url 是 https://api.moonshot.cn/v1", "type": "code"},
+        {"text": "model 是 kimi-k3、kimi-k2.7-code、kimi-k2.7-code-highspeed 或 kimi-k2.6 之一，且不是 moonshot-v1-*、kimi-latest、kimi-k2.5", "type": "code"},
+        {"text": "代码里没有传 temperature 或 top_p（这些是固定值，文档说不要传/会报错）", "type": "code"},
+        {"text": "用 max_completion_tokens 而不是已弃用的 max_tokens", "type": "code"},
+        {"text": "没有硬编码 API Key，从环境变量读取", "type": "code"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "vision-image-from-url",
+      "prompt": "用 Python 调 Kimi API，让模型描述这张网络图片的内容：https://example.com/photo.jpg 。用 openai 库。",
+      "expected_output": "指出 Kimi 不支持公网图片 URL，代码先把图片下载再转 base64 data URL（或上传后用 ms://file_id），content 是对象数组，模型用支持视觉的在线模型。",
+      "files": [],
+      "assertions": [
+        {"text": "没有把 https://example.com/photo.jpg 直接作为 image_url.url 传给模型；而是下载后 base64 编码成 data:image/...;base64 或上传后用 ms://<file_id>", "type": "code"},
+        {"text": "user message 的 content 是数组（包含 image_url 与 text 两个 part），不是字符串", "type": "code"},
+        {"text": "model 是在线且支持视觉的模型（kimi-k3 / kimi-k2.6 / kimi-k2.7-code 系列），不是 moonshot-v1-*-vision-preview", "type": "code"},
+        {"text": "说明或注释中提到 Kimi 不支持 URL 形式的图片输入", "type": "text"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "pdf-qa-via-files-api",
+      "prompt": "写个 Python 脚本，把本地 report.pdf 上传到 Moonshot Kimi，然后问模型'这份报告的核心结论是什么'。用 openai 库。",
+      "expected_output": "files.create(purpose='file-extract') → files.content(file_id).text → 把文本作为 system 消息放进 messages → chat.completions.create；不把 file_id 放进 messages。",
+      "files": [],
+      "assertions": [
+        {"text": "上传时 purpose 为 file-extract", "type": "code"},
+        {"text": "调用了 files.content(file_id)（或 GET /v1/files/{id}/content）取抽取后的文本", "type": "code"},
+        {"text": "把抽取出来的文本内容放进 messages（system 消息），而不是把 file_id 或文件对象放进 messages / 用 OpenAI 的 file 类型 content part", "type": "code"},
+        {"text": "model 是在线模型（kimi-k3 等），不是已下线模型", "type": "code"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "tool-calling-loop-with-thinking",
+      "prompt": "用 Python + openai 库，基于 Kimi kimi-k3 写一个完整的 function calling 循环：定义一个 get_weather(city) 工具，用户问'北京和上海今天天气'，模型调用工具后把结果回传，最后打印最终回答。要能处理模型一次返回多个 tool_calls 的情况。",
+      "expected_output": "循环中把模型返回的完整 assistant message（含 reasoning_content）原样 append 回 messages，每个 tool_call 对应一条 role=tool 消息且 tool_call_id 匹配，不传 temperature，tools 每轮都传。",
+      "files": [],
+      "assertions": [
+        {"text": "把模型返回的 assistant message 整体回传（例如 messages.append(choice.message) 或 model_dump()），而不是手工构造只含 role/content/tool_calls 的字典而丢掉 reasoning_content", "type": "code"},
+        {"text": "对每个 tool_call 各生成一条 role='tool' 消息，tool_call_id 与 tool_calls[i].id 对应", "type": "code"},
+        {"text": "每次请求都传了 tools 参数（不是只第一次传）", "type": "code"},
+        {"text": "没有传 temperature / top_p / n", "type": "code"},
+        {"text": "循环终止条件基于 finish_reason == 'tool_calls'（或 message.tool_calls 非空）而非固定次数", "type": "code"}
+      ]
+    },
+    {
+      "id": 5,
+      "name": "batch-classification-job",
+      "prompt": "我有 5000 条用户评论要做情感分类，不着急，想用 Moonshot Kimi 的批处理接口省钱。用 Python 写完整流程：生成请求文件、提交、等结果、解析。模型用最强的那个。",
+      "expected_output": "JSONL 每行含 custom_id/method/url/body；purpose='batch' 上传；batches.create(endpoint='/v1/chat/completions', completion_window>=12h)；轮询 status；files.content(output_file_id) 解析。关键：Batch 不支持 kimi-k3，应用 kimi-k2.6 或 kimi-k2.7-code 并说明原因；body 里不带 temperature。",
+      "files": [],
+      "assertions": [
+        {"text": "JSONL 里 body.model 是 kimi-k2.6 或 kimi-k2.7-code（系列），不是 kimi-k3，并说明 Batch 不支持 K3", "type": "code"},
+        {"text": "上传文件 purpose='batch'", "type": "code"},
+        {"text": "每行包含 custom_id、method='POST'、url='/v1/chat/completions'、body 四个字段", "type": "code"},
+        {"text": "completion_window 不小于 12h（例如 24h），不是 OpenAI 常见但此处也合法的其他值以外的、小于 12h 的值", "type": "code"},
+        {"text": "body 里没有 temperature / top_p", "type": "code"},
+        {"text": "通过 output_file_id 用 files.content 下载结果并按 custom_id 对齐", "type": "code"}
+      ]
+    },
+    {
+      "id": 6,
+      "name": "streaming-with-reasoning-and-usage",
+      "prompt": "用 Python 流式调用 Kimi kimi-k3，实时打印模型的思考过程和正式回答（两者要区分开），结束后打印本次消耗的 token 数（包括缓存命中数）。",
+      "expected_output": "stream=True + stream_options={'include_usage': True}；循环里分别读 delta.reasoning_content（用 getattr）与 delta.content；最后从 chunk.usage 取 prompt_tokens/completion_tokens/cached_tokens。",
+      "files": [],
+      "assertions": [
+        {"text": "请求带 stream=True 且 stream_options={'include_usage': True}", "type": "code"},
+        {"text": "从 delta 中读取 reasoning_content（用 getattr 或 model_extra，因为 SDK 类型里没有该字段）并与 content 分开输出", "type": "code"},
+        {"text": "对 choices 为空的末尾 usage chunk 做了保护（不直接索引 chunk.choices[0]）", "type": "code"},
+        {"text": "打印了 usage 中的 cached_tokens（或说明该字段）", "type": "code"}
+      ]
+    },
+    {
+      "id": 7,
+      "name": "k26-disable-thinking-low-latency",
+      "prompt": "我要用 Kimi 做一个低延迟的客服自动回复，不需要模型思考太久。用 Python openai 库，选合适的 Kimi 模型并关闭思考模式，输出 JSON 格式 {\"reply\": str, \"escalate\": bool}。",
+      "expected_output": "选 kimi-k2.6（唯一可关思考的在线模型），extra_body={'thinking': {'type': 'disabled'}}；response_format 用 json_schema（或 json_object 且 prompt 中说明结构）；不传 temperature；不对 K3 传 thinking。",
+      "files": [],
+      "assertions": [
+        {"text": "model 是 kimi-k2.6（K3 与 K2.7 Code 无法关闭思考）", "type": "code"},
+        {"text": "通过 extra_body 传 thinking={'type': 'disabled'}", "type": "code"},
+        {"text": "使用 response_format（json_schema 或 json_object）；若用 json_object 则 prompt 中说明了 JSON 结构", "type": "code"},
+        {"text": "没有传 temperature（K2.6 非思考模式温度固定 0.6，传其他值报错）", "type": "code"}
+      ]
+    },
+    {
+      "id": 8,
+      "name": "anthropic-sdk-to-kimi",
+      "prompt": "我现在的服务用 anthropic Python SDK 调 Claude，代码里有 client.messages.create(model='claude-sonnet-4-5', max_tokens=2048, thinking={'type':'enabled','budget_tokens':4096}, messages=[...])。想切到 Kimi 做灰度，尽量少改代码。给我改后的初始化和调用代码。",
+      "expected_output": "Anthropic(base_url='https://api.moonshot.cn/anthropic', api_key=env)；model='kimi-k3'；去掉 thinking/budget_tokens，改用 output_config={'effort': ...}（或说明 K3 始终思考）；保留 max_tokens（此入口必填）。",
+      "files": [],
+      "assertions": [
+        {"text": "base_url 是 https://api.moonshot.cn/anthropic（不是 /v1）", "type": "code"},
+        {"text": "model 改为 kimi-k3", "type": "code"},
+        {"text": "去掉了 Anthropic 的 thinking/budget_tokens 参数，若要调推理强度用 output_config.effort（low/high/max）", "type": "code"},
+        {"text": "保留了 max_tokens（Messages 入口必填）", "type": "code"}
+      ]
+    }
+  ]
+}

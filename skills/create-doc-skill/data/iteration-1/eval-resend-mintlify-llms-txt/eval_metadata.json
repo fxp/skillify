@@ -1,0 +1,16 @@
+{
+  "eval_id": 1,
+  "eval_name": "eval-resend-mintlify-llms-txt",
+  "prompt": "帮我做一个 Resend（邮件 API，文档在 https://resend.com/docs）的接入 skill，以后让 Agent 能直接写对调用它的代码。我手上现在没有 Resend 的 API key，所以先做到 skill 草稿写完就行，不要做真实调用；但要把后面需要真实验证的清单和对照评测的场景一起准备好。示例代码用 TypeScript。所有产出放到 __OUT__ 下。",
+  "assertions": [
+    "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one",
+    "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory",
+    "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables",
+    "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page",
+    "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '已验证' claims)",
+    "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each",
+    "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email",
+    "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs",
+    "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory"
+  ]
+}

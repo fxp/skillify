@@ -1,0 +1,72 @@
+{
+  "expectations": [
+    {
+      "text": "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one",
+      "passed": true,
+      "evidence": "probed_llms_txt_or_openapi: //api.github.com/repos/resend/resend-openapi/contents; //raw.githubusercontent.com/resend/resend-openapi/main/openapi.yaml; //raw.githubuser"
+    },
+    {
+      "text": "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory",
+      "passed": true,
+      "evidence": "skill_md_states_auth_header: API_KEY; skill_md_cites_source_for_auth: OpenAPI"
+    },
+    {
+      "text": "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables",
+      "passed": true,
+      "evidence": "skill_md_under_200_lines: 95 lines; skill_md_has_nav_table: navigation table found; skill_md_no_full_param_tables: 0 parameter-table headers in SKILL.md"
+    },
+    {
+      "text": "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page",
+      "passed": true,
+      "evidence": "references_at_least_3: audiences-and-broadcasts.md(423L), domains-and-api-keys.md(308L), errors-and-limits.md(145L), sending.md(449L), templates-automations-events | reviewer: 6 refs grouped by intent (sending, domains+api-keys, webhooks+receiving, audiences+broadcasts, templates+automations+events, errors); 132 ⚠ markers"
+    },
+    {
+      "text": "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '已验证' claims)",
+      "passed": true,
+      "evidence": "every_file_marks_unverified: all files carry an unverified statement; no_fabricated_verified_claims: none"
+    },
+    {
+      "text": "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each",
+      "passed": true,
+      "evidence": "verification_plan_exists: verification-plan.md; endpoints mentioned: 38; verification_plan_cheap_first: priority/cost ordering words present"
+    },
+    {
+      "text": "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email",
+      "passed": true,
+      "evidence": "evals_json_at_least_3: 6 evals; prompts: 我们用 BullMQ 跑一个 worker 处理 `order.paid` 事件，给买家发一封 HTML 收据邮件（TypeScript，Node 20）。jo || 每天早上 9 点（Asia/Shanghai）要给大约 600 个客户各发一 | reviewer: 6 scenarios: BullMQ retry idempotency, 600 PDF batch limits, Next.js webhook signature, raw-fetch on Workers, multi-tenant domains+scoped keys, segment newsletter — all analogy traps"
+    },
+    {
+      "text": "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs",
+      "passed": true,
+      "evidence": "examples_read_key_from_env: 28 env-var reads in examples; no_real_looking_secrets: none | reviewer: TypeScript (SDK + fetch), process.env.RESEND_API_KEY"
+    },
+    {
+      "text": "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory",
+      "passed": true,
+      "evidence": "used_skill_creator: skill-creator referenced"
+    }
+  ],
+  "summary": {
+    "passed": 9,
+    "failed": 0,
+    "total": 9,
+    "pass_rate": 1.0
+  },
+  "total_tokens": 249000,
+  "tokens": 249000,
+  "execution_metrics": {
+    "total_tokens": 249000
+  },
+  "process_observations": {
+    "used_bundled_scripts": {
+      "passed": true,
+      "evidence": "fetch_docs.sh; openapi_summary.py"
+    }
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  }
+}

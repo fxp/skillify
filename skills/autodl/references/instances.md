@@ -56,6 +56,10 @@ print(resp.json())
 
 `data` 字段直接就是新建实例的 `instance_uuid` 字符串（不是对象）。
 
+**✅ 已用真实 API 调用验证完整生命周期（2026-09，实名认证账号，`gpu_spec_uuid=v-48g`）**：`create` → 立即查状态就是 `"running"`（**实例创建成功后会自动开机，不需要额外调用"开机实例"接口**——"开机实例"接口是用来重新启动一台已经关机的实例，不是创建后的必经步骤）→ `power_off` → 状态先变 `"shutting_down"`、几秒后变 `"shutdown"`（这两个中间状态文档没有单独列出）→ `release` 成功。全程实际花费约 **0.03 元**（几分钟的 4090-48G 按量计费）。`gpu_spec_uuid` 库存会实时变化，某个规格暂时没货会返回 `{"code":"InternalError","msg":"当前算力规格暂无库存, 请修改配置或稍等再试"}`，这种情况下换一个规格或稍等重试即可，不是代码写错了。
+
+同一次真实调用里，`snapshot` 接口返回的字段比文档示例更多：`jupyter_port`/`service_6006_port`/`service_6008_port` 是独立的数字端口字段（配合已经文档化的 `jupyter_domain`/`service_6006_domain`/`service_6008_domain` 使用），另外还有一个目前用途不明、始终为空的 `cg_application_info` 对象——照抄文档示例字段的解析代码，遇到额外字段不要报错，做宽松解析。
+
 ---
 
 ## 获取实例详情
@@ -114,7 +118,7 @@ resp = requests.get(
 print(resp.json())
 ```
 
-**示例响应**：`data` 直接是状态字符串，如 `"running"`。
+**示例响应**：`data` 直接是状态字符串，如 `"running"`。已用真实调用观察到的完整状态流转：`running` → 调用 `power_off` 后先变 `shutting_down` → 几秒后变 `shutdown`（关机完成，可以释放了）——`shutting_down` 这个中间态文档没提，轮询代码如果只判断"是否等于 shutdown"、忽略中间态，逻辑上是安全的，但如果错误地把 `shutting_down` 当成异常状态处理就会误报。
 
 ---
 
@@ -131,6 +135,8 @@ print(resp.json())
 ## 开机实例
 
 **Endpoint**: `POST /api/v1/dev/instance/pro/power_on`
+
+**用途**：重新启动一台**已经关机**的实例。**不要在创建实例之后再调用一次这个接口**——已用真实调用验证：`create` 成功后实例会自动开机，创建请求返回时/返回后立刻查状态就已经是 `running`，`power_on` 只在"实例之前被关过机、现在要再开起来"这个场景下才需要调用。
 
 **关键参数**
 

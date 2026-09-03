@@ -20,7 +20,7 @@
 - 14 个场景，7 个打平（预训练知识本身已经覆盖到）
 - 7 个场景没装技能包的版本会在真实调用下失败——典型如：OpenAI 风格的强制 `tool_choice` 被静默降级成 `auto`；`response_format: json_schema` 不报错但被静默忽略；GLM-5.3 无法关闭深度思考（换成 GLM-5.2 又完全没这个限制）；Batch 只认一份和主力模型清单不重合的白名单；PDF 传进对话消息时 `purpose=agent`/`code-interpreter` 上传的文件会静默解析失败，只有 `purpose=user_data` 才行
 
-详见 [`skills/bigmodel-cn/data/comparison-report.html`](skills/bigmodel-cn/data/comparison-report.html)。
+详见 [`skills/bigmodel-cn/data/comparison-report.md`](skills/bigmodel-cn/data/comparison-report.md)。
 
 **autodl**：
 

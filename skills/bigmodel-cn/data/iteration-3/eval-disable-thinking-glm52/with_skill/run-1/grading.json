@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "不错误声称 glm-5.2 也无法关闭思考", "passed": true, "evidence": "notes.md/代码注释明确区分 glm-5.2（可显式 disabled）与 glm-5.3（强制思考，disabled 会报 1210），认知准确"},
+    {"text": "理想实现直接用 thinking:{type:disabled}", "passed": true, "evidence": "代码里 \"thinking\": {\"type\": \"disabled\"}，精准命中'关掉'这个字面需求"},
+    {"text": "基础格式正确，model 用 glm-5.2", "passed": true, "evidence": "model 字段正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已 mock 验证"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "已用真实 API 在 glm-5.2 上复测确认 thinking.type=disabled 完全生效（无报错，reasoning_content 为空/reasoning_tokens=0）。这版代码正确识别出 glm-5.2 与 glm-5.3 的行为差异，没有把上一轮学到的'glm-5.3 不能关闭思考'过度泛化到所有模型上——这正是这道'反向验证'题想测的东西：技能包不应该让 agent 变得盲目保守。"
+}

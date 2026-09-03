@@ -1,0 +1,15 @@
+{
+  "eval_id": 1,
+  "eval_name": "chat-function-calling",
+  "prompt": "帮我写一个 Python 脚本，用智谱 GLM-5.3 模型（bigmodel.cn）实现一个支持工具调用（function calling）的命令行助手：定义一个查询指定城市实时天气的函数工具，当模型决定调用它时，脚本要执行这个函数（可以返回mock数据）并把结果传回模型，最终打印模型综合工具结果后的最终回答。要求直接用标准库 requests 调用 HTTP 接口，不要用官方 SDK。",
+  "assertions": [
+    "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions (base https://open.bigmodel.cn/api/ + path /paas/v4/chat/completions)",
+    "Authorization header is exactly 'Bearer <API_KEY>' (not 'ApiKey', not a query param), and the key is read from an environment variable rather than hardcoded",
+    "model field is a real GLM chat model code (e.g. glm-5.3), not an invented or OpenAI model name",
+    "tools array uses the documented shape: [{'type': 'function', 'function': {'name', 'description', 'parameters'}}] rather than the legacy OpenAI 'functions' top-level field",
+    "Code reads tool_calls from response['choices'][0]['message']['tool_calls'], each with id/type/function.name/function.arguments (arguments parsed as a JSON string)",
+    "Code appends a message with role='tool' and tool_call_id matching the original tool_calls[].id before making the follow-up request",
+    "Code makes a second call to chat/completions with the updated messages list to obtain the model's final natural-language answer, and prints it",
+    "Script is syntactically valid Python (no syntax errors) and runnable given a valid API key"
+  ]
+}

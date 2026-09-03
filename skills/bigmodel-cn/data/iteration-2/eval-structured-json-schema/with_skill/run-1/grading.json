@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不依赖 response_format:json_schema 来保证输出合法且符合 schema", "passed": true, "evidence": "文件头注释明确写'智谱开放平台目前没有类似 OpenAI 的 response_format.type = json_schema 的原生强约束模式'，代码里 response_format 固定传 {\"type\": \"json_object\"}"},
+    {"text": "用 json_object + prompt 里描述结构的方式实现", "passed": true, "evidence": "第209行 response_format json_object；system prompt 里写入完整 schema 描述"},
+    {"text": "不对 json_object 的合法性过度自信，有防御性解析/重试", "passed": true, "evidence": "本地 schema 校验 + 校验失败把错误信息喂回模型要求修正、重试 N 次，超限抛出明确异常"},
+    {"text": "基础格式正确", "passed": true, "evidence": "BASE_URL、Authorization、model 均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告 py_compile 通过，且做了 mock 测试覆盖happy path/repair/exhausted-retry 三种情形"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "已用真实 API 验证 json_object + system prompt 描述 schema 的方式确实能拿到干净可直接 json.loads 的 JSON（测试输入'张三，电话13800001111'，输出恰好是 {\"name\":\"张三\",\"phone\":\"13800001111\"}）。这个方案是真正可行的。"
+}

@@ -1,0 +1,13 @@
+{
+  "eval_id": 7,
+  "eval_name": "batch-flagship-model",
+  "prompt": "我有 2000 条客户评论要做情感分类，想要最好的分类质量，预算允许。因为不需要实时返回结果，我想用智谱的 Batch 批量处理接口来节省成本、避免占用实时并发额度。麻烦帮我写一个完整的批处理脚本：准备请求文件、上传、创建批处理任务、轮询状态、下载结果。模型选最新最强的就行。",
+  "assertions": [
+    "代码不能在 Batch 的 .jsonl 请求体里使用 glm-5.3、glm-5.2 等旗舰模型（想当然地认为'最新最强'就该用这些）——已用真实 API 验证：把 body.model 写成不在 Batch 白名单里的模型（比如 glm-4-flash-250414，一个真实存在但不在名单里的模型），文件在上传阶段（POST /paas/v4/files，purpose=batch）就会被直接拒绝，报错码 1210，整个 batch 流程还没开始就失败",
+    "代码应该选用一个已确认在 Batch 白名单里的模型（如 glm-4-plus、glm-4-air、glm-4-air-250414、glm-4-air-0111、glm-4、glm-4-flash、glm-4-flashx-250414、glm-4-long、glm-5.1、glm-5-turbo 等），或者代码/注释里明确提到'先确认目标模型是否在 Batch 支持列表里，不是所有同步接口能用的模型 Batch 都支持'这个约束，而不是无条件套用旗舰模型",
+    "代码正确实现了完整流程：上传文件（purpose=batch）→ 创建批处理任务（引用 input_file_id）→ 轮询任务状态直到终态 → 下载 output_file_id/error_file_id 对应的结果",
+    "轮询/状态处理逻辑要能识别真实的终态集合（completed/failed/expired/cancelled），不能只判断一个 status=='done' 之类不存在的值",
+    "读取批处理任务对象时用的是真实字段结构 request_counts.{total,completed,failed}（嵌套对象），而不是想当然地假设 total/completed/failed 是顶层字段",
+    "脚本语法正确、可运行"
+  ]
+}

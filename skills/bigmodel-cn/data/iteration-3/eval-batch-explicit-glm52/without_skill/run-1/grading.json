@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "识别出 glm-5.2 不在 Batch 白名单里这个冲突", "passed": false, "evidence": "agent 明确回复'我用 glm-5.2，完全按用户要求'，完全不知道 Batch 有独立于普通接口的模型白名单限制；已用真实 API 复测确认用 glm-5.2 上传 batch 文件会被拒（错误码1210）"},
+    {"text": "不静默按用户要求的模型跑、导致任务整体失败", "passed": false, "evidence": "DEFAULT_MODEL 直接设为 glm-5.2，脚本原样运行会在文件上传阶段（第一步）就整体失败，2000 条评论一条都处理不了"},
+    {"text": "对冲突有清晰交代", "passed": false, "evidence": "唯一的'保留意见'是'我不确定 glm-5.2 是不是真实存在的模型'（对模型本身是否存在的怀疑），完全没有涉及'即使模型存在，Batch 也可能不支持它'这个真正的冲突点——这是两个不同层面的问题，代码/文档里没有对后者做任何提示"},
+    {"text": "完整实现上传→创建→轮询→下载流程，正确处理终态和 request_counts", "passed": true, "evidence": "agent 报告实现了完整流程，还额外加了 --resume 断点续跑，工程质量本身不差"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已语法检查通过"}
+  ],
+  "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4},
+  "notes": "与上一轮（eval7，用户没指定模型、agent 自己选了 glm-4.6）性质相同，但这次更直接：用户明确点名要 glm-5.2，baseline 完全没有能力/知识去判断'这个模型是否被 Batch 支持'，只能全盘照做，最终整个批处理任务在第一步就会失败。这恰恰是 with-skill 版本最有价值的地方：即使用户的要求本身有问题，也能提前发现并妥善处理，而不是把错误留到生产环境里才暴露。"
+}

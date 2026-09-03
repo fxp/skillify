@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"text": "Image generation call targets /paas/v4/images/generations with a real image model", "passed": true, "evidence": "IMAGE_GENERATIONS_URL = f\"{BASE_URL}/images/generations\"; IMAGE_MODEL = \"glm-image\""},
+    {"text": "Script extracts the generated image URL and feeds it into the video generation call", "passed": true, "evidence": "first_frame_image_url=image_result.url"},
+    {"text": "Video generation call targets /paas/v4/videos/generations with model=cogvideox-3", "passed": true, "evidence": "VIDEO_GENERATIONS_URL = f\"{BASE_URL}/videos/generations\"; VIDEO_MODEL = \"cogvideox-3\""},
+    {"text": "First-frame parameter name is a real documented field, not invented", "passed": true, "evidence": "\"image_url\": first_frame_image_url, with comment '用于传入首帧图片，实现图生视频' — correct field name, though no discussion of single-vs-array nuance"},
+    {"text": "Video generation treated as async: captures task id from response", "passed": true, "evidence": "submission response parsed for an id, passed to polling function"},
+    {"text": "Polls GET /paas/v4/async-result/{id} with backoff and exit condition", "passed": true, "evidence": "ASYNC_RESULT_URL template; status = data.get('task_status') checked in a loop"},
+    {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}
+  ],
+  "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0},
+  "notes": "Also fully correct on the core mechanics — bigmodel.cn's image/video generation shape is apparently well represented in general pretraining data. No discussion of the single-string-vs-[first,last]-array nuance for image_url, and no flagged uncertainty (vs. the with-skill run's explicit notes.md caveat), so a user reading only the code would not know this was an inference rather than a confirmed fact."
+}

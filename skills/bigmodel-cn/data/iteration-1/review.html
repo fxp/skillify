@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "bigmodel-cn", "runs": [{"id": "eval-chat-function-calling-with_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4e00\u4e2a Python \u811a\u672c\uff0c\u7528\u667a\u8c31 GLM-5.3 \u6a21\u578b\uff08bigmodel.cn\uff09\u5b9e\u73b0\u4e00\u4e2a\u652f\u6301\u5de5\u5177\u8c03\u7528\uff08function calling\uff09\u7684\u547d\u4ee4\u884c\u52a9\u624b\uff1a\u5b9a\u4e49\u4e00\u4e2a\u67e5\u8be2\u6307\u5b9a\u57ce\u5e02\u5b9e\u65f6\u5929\u6c14\u7684\u51fd\u6570\u5de5\u5177\uff0c\u5f53\u6a21\u578b\u51b3\u5b9a\u8c03\u7528\u5b83\u65f6\uff0c\u811a\u672c\u8981\u6267\u884c\u8fd9\u4e2a\u51fd\u6570\uff08\u53ef\u4ee5\u8fd4\u56demock\u6570\u636e\uff09\u5e76\u628a\u7ed3\u679c\u4f20\u56de\u6a21\u578b\uff0c\u6700\u7ec8\u6253\u5370\u6a21\u578b\u7efc\u5408\u5de5\u5177\u7ed3\u679c\u540e\u7684\u6700\u7ec8\u56de\u7b54\u3002\u8981\u6c42\u76f4\u63a5\u7528\u6807\u51c6\u5e93 requests \u8c03\u7528 HTTP \u63a5\u53e3\uff0c\u4e0d\u8981\u7528\u5b98\u65b9 SDK\u3002", "eval_id": 1, "outputs": [{"name": "notes.md", "type": "text", "content": "# notes.md \u2014 weather_agent.py\n\n## \u505a\u4e86\u4ec0\u4e48\n\n`weather_agent.py` \u662f\u4e00\u4e2a\u547d\u4ee4\u884c\u5929\u6c14\u52a9\u624b\uff0c\u76f4\u63a5\u7528\u6807\u51c6\u5e93 `requests` \u8c03\u7528\u667a\u8c31\u5f00\u653e\u5e73\u53f0\n`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`\uff0c\u6a21\u578b\u7528 `glm-5.3`\uff0c\n\u5b9e\u73b0\u4e86\u5b8c\u6574\u7684 Function Calling \u95ed\u73af\uff1a\n\n1. \u6ce8\u518c\u4e00\u4e2a `get_weather(city)` \u5de5\u5177\uff08`type: \"function\"`\uff09\uff0c\u968f\u8bf7\u6c42\u4f20\u7ed9\u6a21\u578b\u3002\n2. \u6a21\u578b\u5224\u65ad\u9700\u8981\u67e5\u5929\u6c14\u65f6\u8fd4\u56de `finish_reason == \"tool_calls\"` \u4e14 `message.tool_calls` \u975e\u7a7a\u3002\n3. \u811a\u672c\u628a assistant \u6d88\u606f\uff08\u542b `tool_calls`\uff09\u539f\u6837\u8ffd\u52a0\u56de `messages`\uff0c\u672c\u5730\u6267\u884c\n   `get_weather`\uff08\u8fd4\u56de mock \u6570\u636e\uff09\uff0c\u518d\u628a\u7ed3\u679c\u5305\u6210 `role: \"tool\"` \u6d88\u606f\uff08\u5e26\u4e0a\u5bf9\u5e94\u7684\n   `tool_call_id`\uff09\u8ffd\u52a0\u8fdb\u53bb\u3002\n4. \u518d\u6b21\u8c03\u7528 `chat/completions`\uff0c\u76f4\u5230\u6a21\u578b\u7ed9\u51fa `finish_reason != \"tool_calls\"` \u7684\u6700\u7ec8\n   \u81ea\u7136\u8bed\u8a00\u56de\u7b54\u4e3a\u6b62\uff08\u7528 `MAX_TOOL_CALL_ROUNDS` \u9632\u6b62\u6b7b\u5faa\u73af\uff09\u3002\n\n\u672a\u4f7f\u7528\u5b98\u65b9 `zhipuai`/`zai-sdk`\uff0c\u672a\u4f7f\u7528\u6d41\u5f0f\uff08`stream=false`\uff09\uff0c\u56e0\u4e3a\u4efb\u52a1\u91cd\u70b9\u662f\u628a\n\"\u5de5\u5177\u8c03\u7528\u534f\u8bae\"\u7684\u8bf7\u6c42/\u54cd\u5e94\u7ed3\u6784\u505a\u5bf9\uff0c\u6d41\u5f0f\u518d\u53e0\u52a0 `tool_stream` \u62fc\u63a5\u903b\u8f91\u4f1a\u8ba9\u6838\u5fc3\u903b\u8f91\u66f4\u96be\n\u5ba1\u67e5\u3002API Key \u4ece\u73af\u5883\u53d8\u91cf `ZHIPUAI_API_KEY` \u8bfb\u53d6\uff0c\u672a\u786c\u7f16\u7801\u3002\n\n## \u505a\u51fa\u7684\u5047\u8bbe\n\n- **\u6a21\u578b\u9009\u62e9 `glm-5.3`**\uff1a\u4efb\u52a1\u91cc\u7528\u6237\u660e\u786e\u70b9\u540d\"GLM-5.3\"\uff0c`references/models.md` \u786e\u8ba4\n  \u8be5\u6a21\u578b\u4ee3\u7801\u5b58\u5728\u4e14\u662f\u5f53\u524d\u65d7\u8230\u901a\u7528\u5bf9\u8bdd/\u957f\u7a0b Agent \u6a21\u578b\uff0c\u539f\u751f\u652f\u6301 `tools`\uff08function \u7c7b\u578b\uff09\u3002\n- **`tool_choice: \"auto\"`**\uff1a`chat.md` \u91cc\u660e\u786e\u8bf4\u8fd9\u662f\u76ee\u524d\u552f\u4e00\u652f\u6301\u7684\u53d6\u503c\uff0c\u6240\u4ee5\u663e\u5f0f\u4f20\u4e86\n  `\"auto\"` \u800c\u4e0d\u662f\u7559\u7a7a\uff0c\u884c\u4e3a\u4e0a\u7b49\u4ef7\uff0c\u4f46\u663e\u5f0f\u5199\u51fa\u66f4\u5229\u4e8e\u9605\u8bfb\u4ee3\u7801\u7684\u4eba\u7406\u89e3\u534f\u8bae\u7ea6\u675f\u3002\n- **`thinking`/`reasoning_effort` \u663e\u5f0f\u4f20\u53c2**\uff1a`glm-5.3` \u5f3a\u5236\u5f00\u542f\u6df1\u5ea6\u601d\u8003\u3001\u65e0\u6cd5\u5173\u95ed\uff0c\n  \u53ea\u80fd\u8c03 `reasoning_effort`\uff08\u4ec5\u63a5\u53d7 `low`/`high`/`max`\uff09\u3002\u4e3a\u4e86\u907f\u514d\u9ed8\u8ba4 `max` \u6863\u4f4d\u8ba9\u4e00\u6b21\n  \u7b80\u5355\u7684\u5929\u6c14\u95ee\u7b54\u4ea7\u751f\u8fc7\u591a\u601d\u8003 token/\u5ef6\u8fdf\uff0c\u811a\u672c\u91cc\u9009\u62e9\u4e86 `\"high\"`\u3002\u8fd9\u662f\u6211\u7684\u4e3b\u89c2\u9009\u62e9\uff0c\n  \u6362\u6210 `\"max\"` \u6216\u5e72\u8106\u4e0d\u4f20\uff08\u8d70\u9ed8\u8ba4 `max`\uff09\u4e5f\u5b8c\u5168\u5408\u89c4\u3002\n- **mock \u5929\u6c14\u6570\u636e\u7684\u5f62\u72b6**\uff1a\u6587\u6863\u53ea\u8981\u6c42\"\u53ef\u4ee5\u8fd4\u56de mock \u6570\u636e\"\uff0c\u6ca1\u6709\u7ea6\u675f\u5b57\u6bb5\u540d\u3002\u6211\u53c2\u8003\u4e86\n  `chat.md` \u793a\u4f8b\u91cc\u7684 `{\"city\", \"temperature\", \"condition\"}` \u7ed3\u6784\u505a\u4e86\u6269\u5c55\uff08\u52a0\u4e86\n  `humidity_pct`\u3001`wind`\u3001`source: \"mock-data\"`\uff09\uff0c\u5b57\u6bb5\u540d\u662f\u6211\u81ea\u5df1\u8bbe\u8ba1\u7684\uff0c\u4e0d\u662f\u5e73\u53f0\u5f3a\u5236\n  \u7684 schema\u2014\u2014\u5de5\u5177\u8fd4\u56de\u503c\u7684\u5b57\u6bb5\u5b8c\u5168\u7531\u4e1a\u52a1\u65b9\u81ea\u5b9a\u4e49\uff0c\u6a21\u578b\u53ea\u662f\u628a\u5b83\u5f53\u6587\u672c\u8bfb\u3002\n- **`get_weather` \u5bf9\u672a\u77e5\u57ce\u5e02\u7684\u515c\u5e95**\uff1a\u6ca1\u6709\u8ba9\u811a\u672c\u5bf9\u964c\u751f\u57ce\u5e02\u62a5\u9519\uff0c\u800c\u662f\u8fd4\u56de\u4e00\u4e2a\u901a\u7528\u515c\u5e95\n  mock \u503c\uff0c\u8fd9\u6837\u53ef\u4ee5\u4fdd\u8bc1\"\u5de5\u5177\u6267\u884c \u2192 \u4f20\u56de\u6a21\u578b \u2192 \u6a21\u578b\u7ed9\u51fa\u6700\u7ec8\u56de\u7b54\"\u8fd9\u6761\u94fe\u8def\u603b\u80fd\u8dd1\u901a\uff0c\u4fbf\u4e8e\n  \u6f14\u793a/\u6d4b\u8bd5\u3002\u771f\u5b9e\u4e1a\u52a1\u91cc\u8fd9\u91cc\u5e94\u8be5\u662f\u8c03\u7528\u771f\u5b9e\u5929\u6c14 API \u5e76\u5904\u7406\"\u57ce\u5e02\u4e0d\u5b58\u5728\"\u4e4b\u7c7b\u7684\u9519\u8bef\u3002\n- **\u628a `reasoning_content` \u4e00\u5e76\u5b58\u56de\u5386\u53f2\uff08Preserved/Interleaved Thinking\uff09**\uff1a\n  `chat.md` \u7b2c\u516d\u8282\u63d0\u5230 GLM-4.5 \u8d77\u9ed8\u8ba4\u652f\u6301\"\u4ea4\u9519\u5f0f\u601d\u8003\"\uff0c\u5de5\u5177\u8c03\u7528\u573a\u666f\u4e0b\"\u5fc5\u987b\u663e\u5f0f\u4fdd\u7559\n  `reasoning_content` \u5e76\u5728\u628a\u5de5\u5177\u7ed3\u679c\u4f20\u56de\u65f6\u4e00\u5e76\u5e26\u4e0a\"\uff0c\u6240\u4ee5 `build_assistant_message`\n  \u91cc\u52a0\u4e86\u8fd9\u4e00\u6bb5\u3002\u8fd9\u662f\u6309\u6587\u6863\u5b57\u9762\u8981\u6c42\u505a\u7684\uff0c\u4f46\u6ca1\u6709\u7528\u771f\u5b9e API Key \u5b9e\u6d4b\u9a8c\u8bc1\u8fc7\u6548\u679c\u5dee\u5f02\uff08\u89c1\u4e0b\uff09\u3002\n\n## \u4e0d\u786e\u5b9a / \u6ca1\u6709\u628a\u63e1\u7684\u5730\u65b9\n\n- **`reasoning_content` \u7f3a\u5931\u65f6\u7684\u5177\u4f53\u540e\u679c\u6ca1\u6709\u5b9e\u6d4b**\uff1a\u6587\u6863\u8bf4\u4ea4\u9519\u5f0f\u601d\u8003\u4e0b\u4e0d\u5e26\n  `reasoning_content` \u4f1a\"\u964d\u4f4e\u6548\u679c\u751a\u81f3\u5931\u6548\"\uff0c\u4f46\u6ca1\u8bf4\u6e05\u695a\"\u5931\u6548\"\u662f\u62a5\u9519\u8fd8\u662f\u53ea\u662f\u6548\u679c\u53d8\u5dee\u3002\n  \u811a\u672c\u91cc\u505a\u6cd5\u662f\"\u6709\u5c31\u5e26\u4e0a\uff0c\u6ca1\u6709\uff08`None`\uff09\u5c31\u4e0d\u52a0\u8fd9\u4e2a\u5b57\u6bb5\"\uff08`if message.get(\"reasoning_content\")\n  is not None`\uff09\uff0c\u8fd9\u662f\u6211\u8ba4\u4e3a\u6700\u5b89\u5168\u7684\u5199\u6cd5\uff0c\u4f46\u6ca1\u6709\u7528\u771f\u5b9e\u8bf7\u6c42\u9a8c\u8bc1\u8fc7 `glm-5.3` \u5728\u5de5\u5177\u8c03\u7528\u54cd\u5e94\n  \u91cc\u662f\u5426\u603b\u4f1a\u5e26 `reasoning_content`\uff0c\u6216\u8005\u53ea\u5728\u67d0\u4e9b\u60c5\u51b5\u4e0b\u624d\u6709\u3002\n- **`thinking`/`reasoning_effort` \u662f\u5426\u4f1a\u5f71\u54cd `tool_calls` \u7684\u4ea7\u751f\u65b9\u5f0f**\uff1a\u6587\u6863\u6ca1\u6709\u660e\u786e\u8bf4\n  \u6df1\u5ea6\u601d\u8003\u5f3a\u5ea6\u4f1a\u4e0d\u4f1a\u6539\u53d8\u6a21\u578b\u9009\u62e9\u662f\u5426\u8c03\u7528\u5de5\u5177\u3001\u6216\u6539\u53d8 `tool_calls` \u7684\u7ed3\u6784\uff0c\u6211\u5047\u8bbe\u4e0d\u4f1a\n  \uff08\u53ea\u5f71\u54cd `reasoning_content` \u7684\u957f\u5ea6/\u8d28\u91cf\uff09\uff0c\u4f46\u8fd9\u4e00\u70b9\u6ca1\u6709\u5b98\u65b9\u6587\u6863\u9010\u5b57\u786e\u8ba4\uff0c\u4e5f\u6ca1\u6cd5\u7528\n  \u771f\u5b9e API \u9a8c\u8bc1\u3002\n- **\u89c6\u89c9/\u5de5\u5177\u6df7\u5408\u573a\u666f\u4e0d\u9002\u7528**\uff1a`chat.md` \u63d0\u5230\u89c6\u89c9\u6a21\u578b\u7684 `tools` \u53ea\u652f\u6301 `function` \u7c7b\u578b\n  \u4e14\u4ec5 `glm-5.3-flash`/`glm-4.6v`/`autoglm-phone` \u652f\u6301\uff0c\u672c\u811a\u672c\u7528\u7684\u662f\u7eaf\u6587\u672c\u6a21\u578b\n  `glm-5.3`\uff0c\u8fd9\u6761\u9650\u5236\u4e0d\u9002\u7528\uff0c\u4f46\u5982\u679c\u4e4b\u540e\u6709\u4eba\u628a `MODEL` \u6539\u6210\u89c6\u89c9\u6a21\u578b\uff0c\u9700\u8981\u91cd\u65b0\u6838\u5bf9\n  `tools`/`tool_choice` \u7684\u652f\u6301\u8303\u56f4\u3002\n- **\u672a\u505a\u771f\u5b9e\u7f51\u7edc\u8c03\u7528\u9a8c\u8bc1**\uff1a\u6309\u4efb\u52a1\u8981\u6c42\u6ca1\u6709\u7528\u771f\u5b9e API Key \u8c03\u7528 bigmodel.cn\uff0c\u6240\u4ee5\u8bf7\u6c42\u4f53\n  \u5b57\u6bb5\u540d\u3001\u54cd\u5e94\u4f53\u89e3\u6790\u8def\u5f84\uff08`choices[0].message.tool_calls`\u3001`.finish_reason` \u7b49\uff09\u90fd\u662f\u4e25\u683c\n  \u7167\u6284 `references/chat.md` \u91cc\u7684\u793a\u4f8b\u548c\u5b57\u6bb5\u8868\u5199\u7684\uff0c\u903b\u8f91\u4e0a\u5e94\u8be5\u6b63\u786e\uff0c\u4f46\u6ca1\u6709\u5b9e\u9645 HTTP \u5f80\u8fd4\n  \u9a8c\u8bc1\u8fc7\uff08\u6bd4\u5982\u5e73\u53f0\u662f\u5426\u4f1a\u5728\u67d0\u4e9b\u60c5\u51b5\u4e0b\u8fd4\u56de\u548c\u6587\u6863\u63cf\u8ff0\u4e0d\u5b8c\u5168\u4e00\u81f4\u7684\u5b57\u6bb5\uff09\u3002\n"}, {"name": "weather_agent.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\nweather_agent.py\n\n\u4e00\u4e2a\u57fa\u4e8e\u667a\u8c31 GLM-5.3 \u6a21\u578b\uff08bigmodel.cn\uff09\u7684\u547d\u4ee4\u884c\u5929\u6c14\u52a9\u624b\uff0c\u6f14\u793a Function Calling\n\uff08\u5de5\u5177\u8c03\u7528\uff09\u7684\u5b8c\u6574\u95ed\u73af\uff1a\n\n    1. \u628a\u4e00\u4e2a\"\u67e5\u8be2\u6307\u5b9a\u57ce\u5e02\u5b9e\u65f6\u5929\u6c14\"\u7684\u51fd\u6570\u5de5\u5177\u63cf\u8ff0\u4f20\u7ed9\u6a21\u578b\uff1b\n    2. \u6a21\u578b\u5224\u65ad\u9700\u8981\u8c03\u7528\u5de5\u5177\u65f6\u8fd4\u56de `tool_calls`\uff08\u4e0d\u4f1a\u771f\u7684\u5e2e\u4f60\u6267\u884c\uff09\uff1b\n    3. \u672c\u811a\u672c\u89e3\u6790 `tool_calls`\uff0c\u5728\u672c\u5730\u6267\u884c\u771f\u6b63\u7684\uff08\u8fd9\u91cc\u662f mock \u7684\uff09\u5929\u6c14\u67e5\u8be2\u51fd\u6570\uff1b\n    4. \u628a\u51fd\u6570\u6267\u884c\u7ed3\u679c\u901a\u8fc7 `role: \"tool\"` \u6d88\u606f\u56de\u4f20\u7ed9\u6a21\u578b\uff1b\n    5. \u6a21\u578b\u57fa\u4e8e\u5de5\u5177\u7ed3\u679c\u7ed9\u51fa\u6700\u7ec8\u7684\u81ea\u7136\u8bed\u8a00\u56de\u7b54\uff0c\u811a\u672c\u6253\u5370\u8fd9\u4e2a\u56de\u7b54\u3002\n\n\u4e25\u683c\u4f7f\u7528\u6807\u51c6\u5e93 `requests` \u76f4\u63a5\u8c03\u7528 `POST /paas/v4/chat/completions`\uff0c\u4e0d\u4f9d\u8d56\u5b98\u65b9\n`zhipuai` / `zai-sdk` SDK\u3002\n\n\u7528\u6cd5\uff1a\n    export ZHIPUAI_API_KEY=your_api_key_here\n    python weather_agent.py \"\u5317\u4eac\u4eca\u5929\u5929\u6c14\u600e\u4e48\u6837\uff1f\"\n    python weather_agent.py                     # \u4e0d\u4f20\u53c2\u6570\u5219\u8fdb\u5165\u4ea4\u4e92\u5f0f\u8f93\u5165\n\n\u53c2\u8003\u6587\u6863\uff1a\u667a\u8c31\u5f00\u653e\u5e73\u53f0 bigmodel.cn\uff0c`references/chat.md`\uff08Function Calling \u4e00\u8282\uff09\u3001\n`references/models.md`\uff08\u6a21\u578b\u9009\u578b\uff09\u3002\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport json\nimport os\nimport sys\nfrom typing import Any\n\nimport requests\n\n# ---------------------------------------------------------------------------\n# \u57fa\u672c\u914d\u7f6e\n# ---------------------------------------------------------------------------\n\nBASE_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\"\n\n# \u6a21\u578b\u9009\u578b\uff1aglm-5.3 \u662f\u5f53\u524d\u7684\u65d7\u8230\u901a\u7528\u5bf9\u8bdd/\u957f\u7a0b Agent \u6a21\u578b\uff0c\u539f\u751f\u652f\u6301\u5de5\u5177\u8c03\u7528\u3002\n# \u6ce8\u610f\uff1aglm-5.3 \u5f3a\u5236\u5f00\u542f\u6df1\u5ea6\u601d\u8003\uff08thinking\uff09\uff0c\u65e0\u6cd5\u901a\u8fc7 thinking.type=disabled \u5173\u95ed\uff0c\n# \u53ea\u80fd\u7528 reasoning_effort \u8c03\u8282\u601d\u8003\u5f3a\u5ea6\uff08max/high/low\uff09\u3002\u89c1 references/models.md\u3002\nMODEL = \"glm-5.3\"\n\n# API Key \u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6\uff0c\u7edd\u4e0d\u786c\u7f16\u7801\u8fdb\u4ee3\u7801\u3002\n# \u667a\u8c31\u63a7\u5236\u53f0\u7533\u8bf7\u5730\u5740\uff1ahttps://bigmodel.cn/usercenter/proj-mgmt/apikeys\nAPI_KEY_ENV_VAR = \"ZHIPUAI_API_KEY\"\n\nREQUEST_TIMEOUT_SECONDS = 60\n\n# \u5355\u6b21\u201c\u6a21\u578b -> \u5de5\u5177 -> \u6a21\u578b\u201d\u95ed\u73af\u6700\u591a\u5141\u8bb8\u7684\u5f80\u8fd4\u8f6e\u6570\uff0c\u907f\u514d\u6a21\u578b\u9677\u5165\u6b7b\u5faa\u73af\u8fde\u7eed\u8c03\u7528\u5de5\u5177\u3002\nMAX_TOOL_CALL_ROUNDS = 5\n\n\n# ---------------------------------------------------------------------------\n# \u5de5\u5177\uff08\u51fd\u6570\uff09\u5b9a\u4e49\uff1a\u67e5\u8be2\u6307\u5b9a\u57ce\u5e02\u7684\u5b9e\u65f6\u5929\u6c14\n# ---------------------------------------------------------------------------\n\ndef get_weather(city: str) -> dict[str, Any]:\n    \"\"\"\u67e5\u8be2\u6307\u5b9a\u57ce\u5e02\u7684\u5b9e\u65f6\u5929\u6c14\u3002\n\n    \u771f\u5b9e\u9879\u76ee\u91cc\u8fd9\u91cc\u5e94\u8be5\u8c03\u7528\u4e00\u4e2a\u771f\u6b63\u7684\u5929\u6c14 API\uff08\u5982\u548c\u98ce\u5929\u6c14\u3001OpenWeatherMap \u7b49\uff09\u3002\n    \u672c\u793a\u4f8b\u6309\u8981\u6c42\u8fd4\u56de mock \u6570\u636e\uff0c\u53ea\u662f\u6839\u636e\u57ce\u5e02\u540d\u505a\u4e86\u4e00\u70b9\u70b9\u53d8\u5316\uff0c\u65b9\u4fbf\u89c2\u5bdf\u6548\u679c\u3002\n    \"\"\"\n    mock_weather_db: dict[str, dict[str, Any]] = {\n        \"\u5317\u4eac\": {\"temperature_c\": 22, \"condition\": \"\u6674\", \"humidity_pct\": 35, \"wind\": \"\u897f\u5317\u98ce 3 \u7ea7\"},\n        \"\u4e0a\u6d77\": {\"temperature_c\": 27, \"condition\": \"\u591a\u4e91\", \"humidity_pct\": 58, \"wind\": \"\u4e1c\u5357\u98ce 2 \u7ea7\"},\n        \"\u5e7f\u5dde\": {\"temperature_c\": 31, \"condition\": \"\u96f7\u9635\u96e8\", \"humidity_pct\": 80, \"wind\": \"\u5357\u98ce 2 \u7ea7\"},\n        \"\u6df1\u5733\": {\"temperature_c\": 30, \"condition\": \"\u591a\u4e91\u8f6c\u6674\", \"humidity_pct\": 70, \"wind\": \"\u5357\u98ce 3 \u7ea7\"},\n    }\n\n    data = mock_weather_db.get(city)\n    if data is None:\n        # \u6ca1\u6709 mock \u5230\u7684\u57ce\u5e02\uff0c\u8fd4\u56de\u4e00\u4e2a\u901a\u7528\u7684\u515c\u5e95 mock \u7ed3\u679c\uff0c\u800c\u4e0d\u662f\u62a5\u9519\uff0c\n        # \u8fd9\u6837\u6a21\u578b\u603b\u80fd\u62ff\u5230\u4e00\u4e2a\"\u5de5\u5177\u7ed3\u679c\"\u53bb\u7ec4\u7ec7\u56de\u7b54\u3002\n        data = {\"temperature_c\": 20, \"condition\": \"\u6674\", \"humidity_pct\": 50, \"wind\": \"\u5fae\u98ce\"}\n\n    return {\n        \"city\": city,\n        \"temperature_c\": data[\"temperature_c\"],\n        \"condition\": data[\"condition\"],\n        \"humidity_pct\": data[\"humidity_pct\"],\n        \"wind\": data[\"wind\"],\n        \"source\": \"mock-data\",  # \u660e\u786e\u6807\u8bb0\u8fd9\u662f mock \u6570\u636e\uff0c\u907f\u514d\u8bef\u5bfc\n    }\n\n\n# \u5de5\u5177\u7684 JSON Schema \u63cf\u8ff0\uff0c\u968f\u8bf7\u6c42\u4e00\u8d77\u4f20\u7ed9\u6a21\u578b\u3002\n# `name` \u9700\u5339\u914d ^[a-zA-Z0-9_-]+$\uff1b`description`\u3001`parameters` \u5747\u4e3a\u5fc5\u586b\u3002\nTOOLS: list[dict[str, Any]] = [\n    {\n        \"type\": \"function\",\n        \"function\": {\n            \"name\": \"get_weather\",\n            \"description\": \"\u83b7\u53d6\u6307\u5b9a\u57ce\u5e02\u5f53\u524d\u7684\u5b9e\u65f6\u5929\u6c14\u60c5\u51b5\uff0c\u5305\u62ec\u6e29\u5ea6\u3001\u5929\u6c14\u72b6\u51b5\u3001\u6e7f\u5ea6\u548c\u98ce\u529b\u4fe1\u606f\u3002\",\n            \"parameters\": {\n                \"type\": \"object\",\n                \"properties\": {\n                    \"city\": {\n                        \"type\": \"string\",\n                        \"description\": \"\u8981\u67e5\u8be2\u5929\u6c14\u7684\u57ce\u5e02\u540d\u79f0\uff0c\u4f8b\u5982\uff1a\u5317\u4eac\u3001\u4e0a\u6d77\",\n                    }\n                },\n                \"required\": [\"city\"],\n            },\n        },\n    }\n]\n\n# \u672c\u5730\"\u51fd\u6570\u540d -> \u53ef\u8c03\u7528\u5bf9\u8c61\"\u7684\u6620\u5c04\uff0c\u65b9\u4fbf\u6309 tool_calls \u91cc\u7684 name \u5206\u53d1\u6267\u884c\u3002\nAVAILABLE_FUNCTIONS: dict[str, Any] = {\n    \"get_weather\": get_weather,\n}\n\n\n# ---------------------------------------------------------------------------\n# \u8c03\u7528 GLM-5.3 chat/completions \u63a5\u53e3\n# ---------------------------------------------------------------------------\n\ndef call_chat_completions(messages: list[dict[str, Any]], api_key: str) -> dict[str, Any]:\n    \"\"\"\u8c03\u7528\u4e00\u6b21 /paas/v4/chat/completions\uff08\u975e\u6d41\u5f0f\uff09\uff0c\u8fd4\u56de\u89e3\u6790\u540e\u7684 JSON \u54cd\u5e94\u3002\"\"\"\n    headers = {\n        \"Authorization\": f\"Bearer {api_key}\",\n        \"Content-Type\": \"application/json\",\n    }\n    payload: dict[str, Any] = {\n        \"model\": MODEL,\n        \"messages\": messages,\n        \"tools\": TOOLS,\n        \"tool_choice\": \"auto\",  # \u76ee\u524d\u5e73\u53f0\u53ea\u652f\u6301 \"auto\"\uff0c\u4e0d\u652f\u6301\u5f3a\u5236\u6307\u5b9a\u67d0\u4e2a\u51fd\u6570\n        \"stream\": False,\n        # glm-5.3 \u7684\u601d\u8003\u65e0\u6cd5\u5173\u95ed\uff0c\u8fd9\u91cc\u663e\u5f0f\u58f0\u660e\u5e76\u9009\u62e9\u4e2d\u7b49\u5f3a\u5ea6\uff0c\u907f\u514d\u8fc7\u5ea6\u601d\u8003\u62d6\u6162\u4e00\u6b21\n        # \u7b80\u5355\u7684\u5de5\u5177\u8c03\u7528\u95ee\u7b54\uff1b\u5982\u9700\u66f4\u5f3a\u63a8\u7406\u53ef\u6539\u4e3a \"max\"\u3002\n        \"thinking\": {\"type\": \"enabled\"},\n        \"reasoning_effort\": \"high\",\n    }\n\n    resp = requests.post(BASE_URL, headers=headers, json=payload, timeout=REQUEST_TIMEOUT_SECONDS)\n    resp.raise_for_status()\n    return resp.json()\n\n\ndef build_assistant_message(message: dict[str, Any]) -> dict[str, Any]:\n    \"\"\"\u628a\u6a21\u578b\u8fd4\u56de\u7684 assistant \u6d88\u606f\u539f\u6837\u6784\u9020\u6210\u53ef\u4ee5\u653e\u56de messages \u5386\u53f2\u7684\u5b57\u5178\u3002\n\n    \u9700\u8981\u5e26\u4e0a content\u3001tool_calls\uff0c\u4ee5\u53ca\uff08\u82e5\u5b58\u5728\uff09reasoning_content \u2014\u2014 \u56e0\u4e3a glm-5.3\n    \u5f3a\u5236\u5f00\u542f\u601d\u8003\uff0c\u4e14\u5de5\u5177\u8c03\u7528\u573a\u666f\u4e0b\u9ed8\u8ba4\u652f\u6301\"\u4ea4\u9519\u5f0f\u601d\u8003\"\uff08Interleaved Thinking\uff09\uff0c\n    \u628a reasoning_content \u4e00\u5e76\u4fdd\u7559\u6709\u52a9\u4e8e\u6a21\u578b\u5728\u591a\u8f6e\u5de5\u5177\u8c03\u7528\u4e4b\u95f4\u4fdd\u6301\u63a8\u7406\u8fde\u8d2f\u6027\u3002\n    \"\"\"\n    assistant_message: dict[str, Any] = {\n        \"role\": \"assistant\",\n        \"content\": message.get(\"content\"),\n    }\n    if message.get(\"tool_calls\"):\n        assistant_message[\"tool_calls\"] = message[\"tool_calls\"]\n    if message.get(\"reasoning_content\") is not None:\n        assistant_message[\"reasoning_content\"] = message[\"reasoning_content\"]\n    return assistant_message\n\n\ndef execute_tool_call(tool_call: dict[str, Any]) -> str:\n    \"\"\"\u6267\u884c\u5355\u4e2a tool_call\uff0c\u8fd4\u56de\u5c06\u5199\u5165 role=\"tool\" \u6d88\u606f content \u5b57\u6bb5\u7684\u5b57\u7b26\u4e32\u3002\"\"\"\n    function_name = tool_call[\"function\"][\"name\"]\n    raw_arguments = tool_call[\"function\"].get(\"arguments\") or \"{}\"\n\n    try:\n        arguments = json.loads(raw_arguments)\n    except json.JSONDecodeError as exc:\n        return json.dumps(\n            {\"error\": f\"\u65e0\u6cd5\u89e3\u6790\u6a21\u578b\u4f20\u56de\u7684\u53c2\u6570 JSON: {exc}\", \"raw_arguments\": raw_arguments},\n            ensure_ascii=False,\n        )\n\n    func = AVAILABLE_FUNCTIONS.get(function_name)\n    if func is None:\n        return json.dumps({\"error\": f\"\u672a\u77e5\u7684\u5de5\u5177\u51fd\u6570: {function_name}\"}, ensure_ascii=False)\n\n    # \u7b80\u5355\u7684\u53c2\u6570\u6821\u9a8c\uff1a\u8c03\u7528\u524d\u786e\u8ba4\u5fc5\u586b\u5b57\u6bb5\u5b58\u5728\uff0c\u4e0d\u8981\u76f2\u76ee\u4fe1\u4efb\u6a21\u578b\u8f93\u51fa\u3002\n    if function_name == \"get_weather\" and \"city\" not in arguments:\n        return json.dumps({\"error\": \"\u7f3a\u5c11\u5fc5\u586b\u53c2\u6570 city\"}, ensure_ascii=False)\n\n    try:\n        result = func(**arguments)\n    except TypeError as exc:\n        return json.dumps({\"error\": f\"\u8c03\u7528 {function_name} \u53c2\u6570\u4e0d\u5339\u914d: {exc}\"}, ensure_ascii=False)\n\n    return json.dumps(result, ensure_ascii=False)\n\n\n# ---------------------------------------------------------------------------\n# \u4e3b\u6d41\u7a0b\uff1a\u6a21\u578b <-> \u5de5\u5177 \u7684\u591a\u8f6e\u95ed\u73af\n# ---------------------------------------------------------------------------\n\ndef run_agent(user_query: str, api_key: str) -> str:\n    messages: list[dict[str, Any]] = [\n        {\n            \"role\": \"system\",\n            \"content\": \"\u4f60\u662f\u4e00\u4e2a\u4e50\u4e8e\u52a9\u4eba\u7684\u5929\u6c14\u52a9\u624b\u3002\u5f53\u7528\u6237\u8be2\u95ee\u67d0\u4e2a\u57ce\u5e02\u7684\u5929\u6c14\u65f6\uff0c\"\n            \"\u5fc5\u987b\u8c03\u7528 get_weather \u5de5\u5177\u83b7\u53d6\u771f\u5b9e\u6570\u636e\uff0c\u4e0d\u8981\u51ed\u7a7a\u7f16\u9020\u5929\u6c14\u4fe1\u606f\uff1b\"\n            \"\u62ff\u5230\u5de5\u5177\u7ed3\u679c\u540e\uff0c\u7528\u7b80\u6d01\u81ea\u7136\u7684\u4e2d\u6587\u5411\u7528\u6237\u603b\u7ed3\u5929\u6c14\u60c5\u51b5\u3002\",\n        },\n        {\"role\": \"user\", \"content\": user_query},\n    ]\n\n    for round_index in range(1, MAX_TOOL_CALL_ROUNDS + 1):\n        response = call_chat_completions(messages, api_key)\n\n        choice = response[\"choices\"][0]\n        message = choice[\"message\"]\n        finish_reason = choice.get(\"finish_reason\")\n\n        # \u5224\u65ad\u662f\u5426\u547d\u4e2d\u51fd\u6570\u8c03\u7528\uff1a\u4f18\u5148\u770b finish_reason / tool_calls \u662f\u5426\u975e\u7a7a\uff0c\n        # \u800c\u4e0d\u662f content \u662f\u5426\u4e3a\u7a7a\uff08\u547d\u4e2d tool_calls \u65f6 content \u5e38\u4e3a null\uff09\u3002\n        tool_calls = message.get(\"tool_calls\")\n        if finish_reason != \"tool_calls\" or not tool_calls:\n            # \u6a21\u578b\u5df2\u7ecf\u7ed9\u51fa\u6700\u7ec8\u81ea\u7136\u8bed\u8a00\u56de\u7b54\uff0c\u7ed3\u675f\u5faa\u73af\u3002\n            return message.get(\"content\") or \"\"\n\n        print(\n            f\"[round {round_index}] \u6a21\u578b\u8bf7\u6c42\u8c03\u7528 {len(tool_calls)} \u4e2a\u5de5\u5177: \"\n            f\"{[tc['function']['name'] for tc in tool_calls]}\",\n            file=sys.stderr,\n        )\n\n        # \u628a assistant \u6d88\u606f\uff08\u542b tool_calls\uff09\u539f\u6837\u52a0\u56de\u5386\u53f2\uff0c\u987a\u5e8f\u5fc5\u987b\u7d27\u8ddf\u5728\n        # \u5bf9\u5e94\u7684 user/tool \u6d88\u606f\u4e4b\u540e\uff0c\u518d\u63a5\u5bf9\u5e94\u7684 tool \u6d88\u606f\u3002\n        messages.append(build_assistant_message(message))\n\n        # \u4e00\u6b21\u54cd\u5e94\u53ef\u80fd\u5305\u542b\u591a\u4e2a\u5e76\u884c\u7684 tool_calls\uff0c\u9700\u8981\u9010\u4e2a\u6267\u884c\u5e76\u5404\u81ea\u8ffd\u52a0\u4e00\u6761\n        # role=\"tool\" \u6d88\u606f\uff0ctool_call_id \u5fc5\u987b\u5bf9\u5e94 tool_calls[].id\u3002\n        for tool_call in tool_calls:\n            if tool_call.get(\"type\") != \"function\":\n                # \u672c\u793a\u4f8b\u53ea\u6ce8\u518c\u4e86 function \u7c7b\u578b\u5de5\u5177\uff0c\u5176\u4ed6\u7c7b\u578b\uff08\u5982 mcp\uff09\u8df3\u8fc7\u5904\u7406\u3002\n                continue\n            tool_result_content = execute_tool_call(tool_call)\n            print(\n                f\"[round {round_index}] {tool_call['function']['name']}\"\n                f\"({tool_call['function'].get('arguments')}) -> {tool_result_content}\",\n                file=sys.stderr,\n            )\n            messages.append(\n                {\n                    \"role\": \"tool\",\n                    \"tool_call_id\": tool_call[\"id\"],\n                    \"content\": tool_result_content,\n                }\n            )\n\n        # \u7ee7\u7eed\u4e0b\u4e00\u8f6e\u5faa\u73af\uff0c\u628a\u5de5\u5177\u7ed3\u679c\u4f20\u56de\u6a21\u578b\uff0c\u770b\u6a21\u578b\u662f\u5426\u5df2\u7ecf\u53ef\u4ee5\u7ed9\u51fa\u6700\u7ec8\u56de\u7b54\uff0c\n        # \u6216\u8005\u8fd8\u9700\u8981\u518d\u8c03\u7528\u4e00\u6b21\u5de5\u5177\u3002\n\n    raise RuntimeError(\n        f\"\u8d85\u8fc7\u6700\u5927\u5de5\u5177\u8c03\u7528\u8f6e\u6570\uff08{MAX_TOOL_CALL_ROUNDS}\uff09\uff0c\u53ef\u80fd\u662f\u6a21\u578b\u9677\u5165\u4e86\u91cd\u590d\u8c03\u7528\u5de5\u5177\u7684\u5faa\u73af\u3002\"\n    )\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"\u57fa\u4e8e\u667a\u8c31 GLM-5.3\uff08bigmodel.cn\uff09\u7684\u547d\u4ee4\u884c\u5929\u6c14\u52a9\u624b\uff0c\u6f14\u793a Function Calling\u3002\"\n    )\n    parser.add_argument(\n        \"query\",\n        nargs=\"?\",\n        help=\"\u8981\u95ee\u6a21\u578b\u7684\u95ee\u9898\uff0c\u4f8b\u5982\uff1a'\u5317\u4eac\u4eca\u5929\u5929\u6c14\u600e\u4e48\u6837\uff1f'\u3002\u4e0d\u4f20\u5219\u8fdb\u5165\u4ea4\u4e92\u5f0f\u8f93\u5165\u3002\",\n    )\n    args = parser.parse_args()\n\n    api_key = os.environ.get(API_KEY_ENV_VAR)\n    if not api_key:\n        print(\n            f\"\u9519\u8bef\uff1a\u672a\u627e\u5230\u73af\u5883\u53d8\u91cf {API_KEY_ENV_VAR}\u3002\\n\"\n            f\"\u8bf7\u5148\u6267\u884c\uff1aexport {API_KEY_ENV_VAR}=your_api_key_here\\n\"\n            \"\uff08API Key \u83b7\u53d6\u5730\u5740\uff1ahttps://bigmodel.cn/usercenter/proj-mgmt/apikeys\uff09\",\n            file=sys.stderr,\n        )\n        sys.exit(1)\n\n    user_query = args.query\n    if not user_query:\n        try:\n            user_query = input(\"\u8bf7\u8f93\u5165\u4f60\u7684\u95ee\u9898\uff08\u4f8b\u5982\uff1a\u5317\u4eac\u4eca\u5929\u5929\u6c14\u600e\u4e48\u6837\uff1f\uff09: \").strip()\n        except (EOFError, KeyboardInterrupt):\n            print()\n            sys.exit(0)\n\n    if not user_query:\n        print(\"\u9519\u8bef\uff1a\u95ee\u9898\u4e0d\u80fd\u4e3a\u7a7a\u3002\", file=sys.stderr)\n        sys.exit(1)\n\n    try:\n        final_answer = run_agent(user_query, api_key)\n    except requests.exceptions.HTTPError as exc:\n        # \u6253\u5370\u54cd\u5e94\u4f53\u4fbf\u4e8e\u6392\u67e5\uff08\u5982\u53c2\u6570\u975e\u6cd5\u3001\u6a21\u578b\u4e0d\u5b58\u5728\u7b49\u9519\u8bef\u4fe1\u606f\u901a\u5e38\u5728 body \u91cc\uff09\u3002\n        body = exc.response.text if exc.response is not None else \"\"\n        print(f\"HTTP \u8bf7\u6c42\u5931\u8d25: {exc}\\n\u54cd\u5e94\u5185\u5bb9: {body}\", file=sys.stderr)\n        sys.exit(1)\n    except requests.exceptions.RequestException as exc:\n        print(f\"\u7f51\u7edc\u8bf7\u6c42\u5f02\u5e38: {exc}\", file=sys.stderr)\n        sys.exit(1)\n\n    print(\"\\n=== \u6700\u7ec8\u56de\u7b54 ===\")\n    print(final_answer)\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"expectations": [{"text": "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions", "passed": true, "evidence": "BASE_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\""}, {"text": "Authorization header is exactly 'Bearer <API_KEY>', key read from env var", "passed": true, "evidence": "headers = {\"Authorization\": f\"Bearer {api_key}\", ...}; api_key = os.environ.get(API_KEY_ENV_VAR)"}, {"text": "model field is a real GLM chat model code", "passed": true, "evidence": "MODEL = \"glm-5.3\", with an inline comment correctly noting glm-5.3 forces thinking on"}, {"text": "tools array uses documented {'type':'function','function':{...}} shape, not legacy 'functions'", "passed": true, "evidence": "TOOLS = [{\"type\": \"function\", \"function\": {\"name\":..., \"description\":..., \"parameters\":...}}]"}, {"text": "Code reads tool_calls with id/type/function.name/function.arguments", "passed": true, "evidence": "execute_tool_call() reads tool_call['function']['name'] and ['arguments'], parses arguments via json.loads"}, {"text": "Appends role='tool' message with matching tool_call_id", "passed": true, "evidence": "messages.append({'role':'tool','tool_call_id': tool_call['id'], 'content': tool_result_content})"}, {"text": "Makes follow-up call to get and print final answer", "passed": true, "evidence": "run_agent loops calling call_chat_completions again; main() prints under '=== \u6700\u7ec8\u56de\u7b54 ==='"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}], "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0}, "notes": "Beyond the assertions, this run also correctly encoded a non-obvious fact only available in the docs: glm-5.3 cannot disable thinking, only tune reasoning_effort, and it preserves reasoning_content across tool-call turns for interleaved thinking continuity \u2014 details the baseline run does not mention at all."}}, {"id": "eval-chat-function-calling-without_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4e00\u4e2a Python \u811a\u672c\uff0c\u7528\u667a\u8c31 GLM-5.3 \u6a21\u578b\uff08bigmodel.cn\uff09\u5b9e\u73b0\u4e00\u4e2a\u652f\u6301\u5de5\u5177\u8c03\u7528\uff08function calling\uff09\u7684\u547d\u4ee4\u884c\u52a9\u624b\uff1a\u5b9a\u4e49\u4e00\u4e2a\u67e5\u8be2\u6307\u5b9a\u57ce\u5e02\u5b9e\u65f6\u5929\u6c14\u7684\u51fd\u6570\u5de5\u5177\uff0c\u5f53\u6a21\u578b\u51b3\u5b9a\u8c03\u7528\u5b83\u65f6\uff0c\u811a\u672c\u8981\u6267\u884c\u8fd9\u4e2a\u51fd\u6570\uff08\u53ef\u4ee5\u8fd4\u56demock\u6570\u636e\uff09\u5e76\u628a\u7ed3\u679c\u4f20\u56de\u6a21\u578b\uff0c\u6700\u7ec8\u6253\u5370\u6a21\u578b\u7efc\u5408\u5de5\u5177\u7ed3\u679c\u540e\u7684\u6700\u7ec8\u56de\u7b54\u3002\u8981\u6c42\u76f4\u63a5\u7528\u6807\u51c6\u5e93 requests \u8c03\u7528 HTTP \u63a5\u53e3\uff0c\u4e0d\u8981\u7528\u5b98\u65b9 SDK\u3002", "eval_id": 1, "outputs": [{"name": "weather_agent.py", "type": "text", "content": "#!/usr/bin/env python3\n# -*- coding: utf-8 -*-\n\"\"\"\nweather_agent.py\n\n\u4e00\u4e2a\u57fa\u4e8e\u667a\u8c31 GLM-5.3\uff08bigmodel.cn\uff09\u7684\u547d\u4ee4\u884c\u52a9\u624b\u793a\u4f8b\uff0c\u6f14\u793a\u5982\u4f55\u901a\u8fc7\n\u6807\u51c6\u5e93 `requests` \u76f4\u63a5\u8c03\u7528 bigmodel.cn \u7684 Chat Completions HTTP \u63a5\u53e3\uff0c\n\u5b9e\u73b0\u5de5\u5177\u8c03\u7528\uff08function calling\uff09\u3002\n\n\u6d41\u7a0b\uff1a\n1. \u5b9a\u4e49\u4e00\u4e2a\"\u67e5\u8be2\u6307\u5b9a\u57ce\u5e02\u5b9e\u65f6\u5929\u6c14\"\u7684\u5de5\u5177\uff08\u51fd\u6570\uff09\u63cf\u8ff0\uff0c\u968f\u5bf9\u8bdd\u4e00\u8d77\u53d1\u7ed9\u6a21\u578b\u3002\n2. \u6a21\u578b\u8ba4\u4e3a\u9700\u8981\u8c03\u7528\u5de5\u5177\u65f6\uff0c\u4f1a\u5728\u54cd\u5e94\u4e2d\u8fd4\u56de `tool_calls`\uff08\u4e0d\u76f4\u63a5\u7ed9\u51fa\u6700\u7ec8\u7b54\u6848\uff09\u3002\n3. \u811a\u672c\u672c\u5730\u6267\u884c\u5bf9\u5e94\u7684 Python \u51fd\u6570\uff08\u8fd9\u91cc\u8fd4\u56de mock \u6570\u636e\uff0c\u4e0d\u8bbf\u95ee\u771f\u5b9e\u5929\u6c14 API\uff09\uff0c\n   \u5e76\u628a\u51fd\u6570\u7684\u8fd4\u56de\u7ed3\u679c\u4ee5 role=\"tool\" \u7684\u6d88\u606f\u8ffd\u52a0\u56de\u5bf9\u8bdd\u5386\u53f2\u3002\n4. \u628a\u5305\u542b\u5de5\u5177\u7ed3\u679c\u7684\u5b8c\u6574\u5bf9\u8bdd\u5386\u53f2\u518d\u6b21\u53d1\u7ed9\u6a21\u578b\uff0c\u6a21\u578b\u57fa\u4e8e\u5de5\u5177\u7ed3\u679c\u751f\u6210\n   \u6700\u7ec8\u7684\u81ea\u7136\u8bed\u8a00\u56de\u7b54\u5e76\u6253\u5370\u51fa\u6765\u3002\n\n\u4f7f\u7528\u65b9\u6cd5\uff1a\n    export BIGMODEL_API_KEY=\"\u4f60\u7684\u771f\u5b9e API Key\"   # \u672a\u8bbe\u7f6e\u65f6\u4f7f\u7528\u5360\u4f4d\u7b26\uff0c\u65e0\u6cd5\u771f\u5b9e\u8c03\u7528\n    python weather_agent.py \"\u5317\u4eac\u4eca\u5929\u5929\u6c14\u600e\u4e48\u6837\uff1f\"\n\n\u6ce8\u610f\uff1a\n- \u672c\u811a\u672c\u4e0d\u4f7f\u7528\u667a\u8c31\u5b98\u65b9 SDK\uff08zhipuai\uff09\uff0c\u53ea\u7528 `requests` \u76f4\u63a5\u8c03\u7528 HTTP \u63a5\u53e3\u3002\n- API Key \u4ece\u73af\u5883\u53d8\u91cf BIGMODEL_API_KEY \u8bfb\u53d6\uff0c\u907f\u514d\u628a\u5bc6\u94a5\u786c\u7f16\u7801\u5728\u4ee3\u7801\u91cc\u3002\n- \u5929\u6c14\u67e5\u8be2\u51fd\u6570 `get_current_weather` \u8fd4\u56de\u7684\u662f mock\uff08\u6a21\u62df\uff09\u6570\u636e\uff0c\n  \u6ca1\u6709\u771f\u5b9e\u8054\u7f51\u67e5\u8be2\u5929\u6c14\uff0c\u4ec5\u7528\u4e8e\u6f14\u793a function calling \u7684\u5b8c\u6574\u95ed\u73af\u3002\n\"\"\"\n\nimport json\nimport os\nimport sys\nimport uuid\nimport random\nfrom typing import Any, Dict, List, Optional\n\nimport requests\n\n# --------------------------------------------------------------------------\n# \u57fa\u672c\u914d\u7f6e\n# --------------------------------------------------------------------------\n\n# \u667a\u8c31\u5f00\u653e\u5e73\u53f0\uff08bigmodel.cn\uff09\u7684 Chat Completions \u63a5\u53e3\u5730\u5740\u3002\n# \u8be5\u63a5\u53e3\u4e0e OpenAI \u7684 Chat Completions \u534f\u8bae\u57fa\u672c\u517c\u5bb9\uff0c\u652f\u6301 tools / tool_calls\u3002\nBIGMODEL_API_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\"\n\n# \u4f7f\u7528\u7684\u6a21\u578b\u540d\u79f0\uff0c\u6309\u4efb\u52a1\u8981\u6c42\u5199\u6b7b\u4e3a glm-5.3\uff08\u5982\u540e\u7eed\u8be5\u578b\u53f7\u540d\u79f0\u6709\u53d8\u5316\uff0c\u6309\u5b98\u65b9\u6587\u6863\u8c03\u6574\u5373\u53ef\uff09\u3002\nMODEL_NAME = \"glm-5.3\"\n\n# API Key \u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6\uff1b\u672a\u8bbe\u7f6e\u65f6\u4f7f\u7528\u5360\u4f4d\u7b26\uff0c\u811a\u672c\u4ecd\u53ef\u8fd0\u884c\u5230\"\u7ec4\u88c5\u8bf7\u6c42\"\u8fd9\u4e00\u6b65\uff0c\n# \u4f46\u771f\u6b63\u53d1\u8d77 HTTP \u8bf7\u6c42\u4f1a\u56e0\u4e3a\u9274\u6743\u5931\u8d25\u800c\u62a5\u9519\uff08\u56e0\u4e3a\u6211\u4eec\u6ca1\u6709\u771f\u5b9e\u7684 Key\uff09\u3002\nAPI_KEY = os.environ.get(\"BIGMODEL_API_KEY\", \"YOUR_BIGMODEL_API_KEY_PLACEHOLDER\")\n\nREQUEST_TIMEOUT_SECONDS = 60\nMAX_TOOL_CALL_ROUNDS = 5  # \u9632\u6b62\u6a21\u578b\u9677\u5165\u6b7b\u5faa\u73af\u53cd\u590d\u8c03\u7528\u5de5\u5177\uff0c\u8bbe\u7f6e\u4e00\u4e2a\u5b89\u5168\u4e0a\u9650\n\n\n# --------------------------------------------------------------------------\n# \u5de5\u5177\uff08\u51fd\u6570\uff09\u5b9a\u4e49\u4e0e\u5b9e\u73b0\n# --------------------------------------------------------------------------\n\ndef get_current_weather(city: str, unit: str = \"celsius\") -> Dict[str, Any]:\n    \"\"\"\n    \u67e5\u8be2\u6307\u5b9a\u57ce\u5e02\u7684\u5b9e\u65f6\u5929\u6c14\u3002\n\n    \u8fd9\u91cc\u6ca1\u6709\u63a5\u5165\u771f\u5b9e\u7684\u5929\u6c14\u670d\u52a1\uff0c\u800c\u662f\u8fd4\u56de\u4e00\u4efd\u7ed3\u6784\u56fa\u5b9a\u3001\u5185\u5bb9\u968f\u673a\u7684 mock \u6570\u636e\uff0c\n    \u7528\u6765\u6f14\u793a\"\u6a21\u578b\u51b3\u5b9a\u8c03\u7528\u5de5\u5177 -> \u811a\u672c\u672c\u5730\u6267\u884c -> \u7ed3\u679c\u56de\u4f20\u7ed9\u6a21\u578b\"\u7684\u5b8c\u6574\u94fe\u8def\u3002\n\n    Args:\n        city: \u57ce\u5e02\u540d\u79f0\uff0c\u4f8b\u5982 \"\u5317\u4eac\"\u3001\"\u4e0a\u6d77\"\u3001\"San Francisco\"\u3002\n        unit: \u6e29\u5ea6\u5355\u4f4d\uff0c\"celsius\"\uff08\u6444\u6c0f\u5ea6\uff09\u6216 \"fahrenheit\"\uff08\u534e\u6c0f\u5ea6\uff09\uff0c\u9ed8\u8ba4\u6444\u6c0f\u5ea6\u3002\n\n    Returns:\n        \u4e00\u4e2a\u5b57\u5178\uff0c\u5305\u542b\u57ce\u5e02\u3001\u6e29\u5ea6\u3001\u5929\u6c14\u72b6\u51b5\u3001\u6e7f\u5ea6\u3001\u98ce\u901f\u7b49\u5b57\u6bb5\u3002\n    \"\"\"\n    conditions = [\"\u6674\", \"\u591a\u4e91\", \"\u9634\", \"\u5c0f\u96e8\", \"\u96f7\u9635\u96e8\", \"\u5927\u98ce\"]\n\n    if unit == \"fahrenheit\":\n        temperature = random.randint(50, 95)\n    else:\n        unit = \"celsius\"\n        temperature = random.randint(10, 35)\n\n    mock_result = {\n        \"city\": city,\n        \"temperature\": temperature,\n        \"unit\": unit,\n        \"condition\": random.choice(conditions),\n        \"humidity_percent\": random.randint(30, 90),\n        \"wind_speed_kmh\": round(random.uniform(0, 40), 1),\n        \"note\": \"\u8fd9\u662f mock \u6570\u636e\uff0c\u4ec5\u7528\u4e8e\u6f14\u793a function calling\uff0c\u975e\u771f\u5b9e\u5929\u6c14\u3002\",\n    }\n    return mock_result\n\n\n# \u63d0\u4f9b\u7ed9\u6a21\u578b\u7684\u5de5\u5177\uff08\u51fd\u6570\uff09JSON Schema \u63cf\u8ff0\u3002\n# \u7ed3\u6784\u9075\u5faa OpenAI / \u667a\u8c31\u517c\u5bb9\u7684 \"tools\" \u683c\u5f0f\uff1a\n# {\"type\": \"function\", \"function\": {\"name\", \"description\", \"parameters\": <JSON Schema>}}\nTOOLS_SCHEMA: List[Dict[str, Any]] = [\n    {\n        \"type\": \"function\",\n        \"function\": {\n            \"name\": \"get_current_weather\",\n            \"description\": \"\u67e5\u8be2\u6307\u5b9a\u57ce\u5e02\u5f53\u524d\u7684\u5b9e\u65f6\u5929\u6c14\u60c5\u51b5\uff0c\u5305\u62ec\u6e29\u5ea6\u3001\u5929\u6c14\u72b6\u51b5\u3001\u6e7f\u5ea6\u548c\u98ce\u901f\u3002\",\n            \"parameters\": {\n                \"type\": \"object\",\n                \"properties\": {\n                    \"city\": {\n                        \"type\": \"string\",\n                        \"description\": \"\u8981\u67e5\u8be2\u5929\u6c14\u7684\u57ce\u5e02\u540d\u79f0\uff0c\u4f8b\u5982\uff1a\u5317\u4eac\u3001\u4e0a\u6d77\u3001San Francisco\u3002\",\n                    },\n                    \"unit\": {\n                        \"type\": \"string\",\n                        \"enum\": [\"celsius\", \"fahrenheit\"],\n                        \"description\": \"\u8fd4\u56de\u7684\u6e29\u5ea6\u5355\u4f4d\uff0c\u9ed8\u8ba4\u4e3a celsius\uff08\u6444\u6c0f\u5ea6\uff09\u3002\",\n                    },\n                },\n                \"required\": [\"city\"],\n            },\n        },\n    }\n]\n\n# \u51fd\u6570\u540d -> \u672c\u5730\u53ef\u8c03\u7528\u5b9e\u73b0\u7684\u6620\u5c04\u8868\uff0c\u65b9\u4fbf\u6839\u636e\u6a21\u578b\u8fd4\u56de\u7684 tool_call.function.name \u5206\u53d1\u6267\u884c\u3002\nAVAILABLE_FUNCTIONS = {\n    \"get_current_weather\": get_current_weather,\n}\n\n\n# --------------------------------------------------------------------------\n# \u4e0e bigmodel.cn \u7684 HTTP \u4ea4\u4e92\n# --------------------------------------------------------------------------\n\ndef call_bigmodel_chat_completions(\n    messages: List[Dict[str, Any]],\n    tools: Optional[List[Dict[str, Any]]] = None,\n) -> Dict[str, Any]:\n    \"\"\"\n    \u76f4\u63a5\u7528 requests \u8c03\u7528 bigmodel.cn \u7684 Chat Completions HTTP \u63a5\u53e3\u3002\n\n    Args:\n        messages: \u5bf9\u8bdd\u6d88\u606f\u5217\u8868\uff08OpenAI \u98ce\u683c\u7684 messages \u6570\u7ec4\uff09\u3002\n        tools: \u5de5\u5177\uff08\u51fd\u6570\uff09\u63cf\u8ff0\u5217\u8868\uff1b\u4e0d\u9700\u8981\u5de5\u5177\u8c03\u7528\u65f6\u53ef\u4f20 None\u3002\n\n    Returns:\n        \u63a5\u53e3\u8fd4\u56de\u7684 JSON\uff08\u5df2\u53cd\u5e8f\u5217\u5316\u4e3a dict\uff09\u3002\n\n    Raises:\n        requests.HTTPError: \u5f53 HTTP \u72b6\u6001\u7801\u975e 2xx \u65f6\u629b\u51fa\u3002\n    \"\"\"\n    headers = {\n        \"Authorization\": f\"Bearer {API_KEY}\",\n        \"Content-Type\": \"application/json\",\n    }\n\n    payload: Dict[str, Any] = {\n        \"model\": MODEL_NAME,\n        \"messages\": messages,\n        \"temperature\": 0.7,\n    }\n    if tools:\n        payload[\"tools\"] = tools\n        # \"auto\" \u8868\u793a\u7531\u6a21\u578b\u81ea\u884c\u5224\u65ad\u662f\u5426\u9700\u8981\u8c03\u7528\u5de5\u5177\uff08\u4e5f\u53ef\u4ee5\u5f3a\u5236\u6307\u5b9a\u67d0\u4e2a\u5de5\u5177\uff09\u3002\n        payload[\"tool_choice\"] = \"auto\"\n\n    response = requests.post(\n        BIGMODEL_API_URL,\n        headers=headers,\n        data=json.dumps(payload, ensure_ascii=False).encode(\"utf-8\"),\n        timeout=REQUEST_TIMEOUT_SECONDS,\n    )\n    response.raise_for_status()\n    return response.json()\n\n\n# --------------------------------------------------------------------------\n# \u5de5\u5177\u8c03\u7528\u5faa\u73af\uff08core agent loop\uff09\n# --------------------------------------------------------------------------\n\ndef run_agent(user_question: str) -> str:\n    \"\"\"\n    \u6267\u884c\u4e00\u6b21\u5b8c\u6574\u7684\"\u7528\u6237\u63d0\u95ee -> \u6a21\u578b\u51b3\u7b56 -> \uff08\u53ef\u80fd\uff09\u672c\u5730\u6267\u884c\u5de5\u5177 -> \u6a21\u578b\u7ed9\u51fa\u6700\u7ec8\u7b54\u6848\"\u6d41\u7a0b\u3002\n\n    Args:\n        user_question: \u7528\u6237\u5728\u547d\u4ee4\u884c\u8f93\u5165\u7684\u95ee\u9898\u3002\n\n    Returns:\n        \u6a21\u578b\u7efc\u5408\u5de5\u5177\u7ed3\u679c\u540e\u7ed9\u51fa\u7684\u6700\u7ec8\u81ea\u7136\u8bed\u8a00\u56de\u7b54\u3002\n    \"\"\"\n    messages: List[Dict[str, Any]] = [\n        {\n            \"role\": \"system\",\n            \"content\": (\n                \"\u4f60\u662f\u4e00\u4e2a\u53ef\u4ee5\u8c03\u7528\u5de5\u5177\u7684\u5929\u6c14\u52a9\u624b\u3002\u5f53\u7528\u6237\u8be2\u95ee\u67d0\u4e2a\u57ce\u5e02\u7684\u5b9e\u65f6\u5929\u6c14\u65f6\uff0c\"\n                \"\u5fc5\u987b\u8c03\u7528 get_current_weather \u5de5\u5177\u83b7\u53d6\u6570\u636e\uff0c\u518d\u57fa\u4e8e\u5de5\u5177\u8fd4\u56de\u7684\u7ed3\u679c\uff0c\"\n                \"\u7528\u7b80\u6d01\u81ea\u7136\u7684\u4e2d\u6587\u56de\u7b54\u7528\u6237\u3002\u4e0d\u8981\u5728\u6ca1\u6709\u8c03\u7528\u5de5\u5177\u7684\u60c5\u51b5\u4e0b\u51ed\u7a7a\u7f16\u9020\u5929\u6c14\u6570\u636e\u3002\"\n            ),\n        },\n        {\"role\": \"user\", \"content\": user_question},\n    ]\n\n    for round_index in range(MAX_TOOL_CALL_ROUNDS):\n        response_json = call_bigmodel_chat_completions(messages, tools=TOOLS_SCHEMA)\n\n        choice = response_json[\"choices\"][0]\n        finish_reason = choice.get(\"finish_reason\")\n        assistant_message = choice[\"message\"]\n\n        # \u628a\u6a21\u578b\u8fd9\u4e00\u8f6e\u7684\u56de\u590d\uff08\u53ef\u80fd\u5305\u542b tool_calls\uff0c\u4e5f\u53ef\u80fd\u662f\u6700\u7ec8\u7b54\u6848\uff09\u52a0\u5165\u5386\u53f2\uff0c\n        # \u4fdd\u6301\u5bf9\u8bdd\u4e0a\u4e0b\u6587\u5b8c\u6574\uff0c\u4f9b\u4e0b\u4e00\u8f6e\u8bf7\u6c42\u4f7f\u7528\u3002\n        messages.append(assistant_message)\n\n        tool_calls = assistant_message.get(\"tool_calls\")\n\n        if finish_reason == \"tool_calls\" and tool_calls:\n            # \u6a21\u578b\u51b3\u5b9a\u8c03\u7528\u4e00\u4e2a\u6216\u591a\u4e2a\u5de5\u5177\uff1a\u9010\u4e2a\u5728\u672c\u5730\u6267\u884c\uff0c\u5e76\u628a\u7ed3\u679c\u56de\u4f20\u3002\n            for tool_call in tool_calls:\n                function_name = tool_call[\"function\"][\"name\"]\n                raw_arguments = tool_call[\"function\"].get(\"arguments\") or \"{}\"\n\n                try:\n                    arguments = json.loads(raw_arguments)\n                except json.JSONDecodeError:\n                    arguments = {}\n\n                print(\n                    f\"[\u8c03\u8bd5] \u6a21\u578b\u8bf7\u6c42\u8c03\u7528\u5de5\u5177: {function_name}\uff0c\u53c2\u6570: {arguments}\",\n                    file=sys.stderr,\n                )\n\n                function_to_call = AVAILABLE_FUNCTIONS.get(function_name)\n                if function_to_call is None:\n                    function_result: Dict[str, Any] = {\n                        \"error\": f\"\u672a\u77e5\u5de5\u5177: {function_name}\"\n                    }\n                else:\n                    function_result = function_to_call(**arguments)\n\n                # \u5de5\u5177\u8c03\u7528\u7ed3\u679c\u9700\u4ee5 role=\"tool\" \u7684\u6d88\u606f\u5f62\u5f0f\u56de\u4f20\uff0c\n                # \u4e14\u5fc5\u987b\u643a\u5e26\u5bf9\u5e94\u7684 tool_call_id\uff0c\u6a21\u578b\u624d\u80fd\u5bf9\u4e0a\u53f7\u3002\n                tool_call_id = tool_call.get(\"id\") or f\"call_{uuid.uuid4().hex[:12]}\"\n                messages.append(\n                    {\n                        \"role\": \"tool\",\n                        \"tool_call_id\": tool_call_id,\n                        \"content\": json.dumps(function_result, ensure_ascii=False),\n                    }\n                )\n\n            # \u5e26\u7740\u5de5\u5177\u7ed3\u679c\u7ee7\u7eed\u4e0b\u4e00\u8f6e\u8bf7\u6c42\uff0c\u8ba9\u6a21\u578b\u751f\u6210\u6700\u7ec8\u56de\u7b54\uff08\u6216\u518d\u6b21\u8c03\u7528\u5de5\u5177\uff09\u3002\n            continue\n\n        # finish_reason \u4e0d\u662f tool_calls\uff0c\u8bf4\u660e\u6a21\u578b\u5df2\u7ecf\u7ed9\u51fa\u6700\u7ec8\u7b54\u6848\u3002\n        final_answer = assistant_message.get(\"content\") or \"\"\n        return final_answer\n\n    return \"\uff08\u5df2\u8fbe\u5230\u6700\u5927\u5de5\u5177\u8c03\u7528\u8f6e\u6570\uff0c\u672a\u80fd\u83b7\u5f97\u6700\u7ec8\u7b54\u6848\u3002\uff09\"\n\n\n# --------------------------------------------------------------------------\n# \u547d\u4ee4\u884c\u5165\u53e3\n# --------------------------------------------------------------------------\n\ndef main() -> None:\n    if len(sys.argv) > 1:\n        user_question = \" \".join(sys.argv[1:])\n    else:\n        user_question = \"\u8bf7\u95ee\u5317\u4eac\u73b0\u5728\u7684\u5929\u6c14\u600e\u4e48\u6837\uff1f\"\n\n    if API_KEY == \"YOUR_BIGMODEL_API_KEY_PLACEHOLDER\":\n        print(\n            \"[\u8b66\u544a] \u672a\u68c0\u6d4b\u5230\u73af\u5883\u53d8\u91cf BIGMODEL_API_KEY\uff0c\u5f53\u524d\u4f7f\u7528\u5360\u4f4d\u7b26 Key\uff0c\"\n            \"\u771f\u5b9e\u8bf7\u6c42\u4f1a\u56e0\u9274\u6743\u5931\u8d25\u800c\u62a5\u9519\u3002\u8bf7\u5148\u6267\u884c:\\n\"\n            '    export BIGMODEL_API_KEY=\"\u4f60\u7684\u771f\u5b9e API Key\"\\n',\n            file=sys.stderr,\n        )\n\n    print(f\"\u7528\u6237\u63d0\u95ee: {user_question}\\n\")\n\n    try:\n        final_answer = run_agent(user_question)\n    except requests.HTTPError as exc:\n        print(f\"\u8c03\u7528 bigmodel.cn \u63a5\u53e3\u5931\u8d25: {exc}\", file=sys.stderr)\n        if exc.response is not None:\n            print(f\"\u54cd\u5e94\u5185\u5bb9: {exc.response.text}\", file=sys.stderr)\n        sys.exit(1)\n    except requests.RequestException as exc:\n        print(f\"\u7f51\u7edc\u8bf7\u6c42\u5f02\u5e38: {exc}\", file=sys.stderr)\n        sys.exit(1)\n\n    print(\"\u6a21\u578b\u6700\u7ec8\u56de\u7b54:\")\n    print(final_answer)\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"expectations": [{"text": "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions", "passed": true, "evidence": "BIGMODEL_API_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\""}, {"text": "Authorization header is exactly 'Bearer <API_KEY>', key read from env var", "passed": true, "evidence": "headers = {\"Authorization\": f\"Bearer {API_KEY}\", ...}; API_KEY = os.environ.get('BIGMODEL_API_KEY', ...)"}, {"text": "model field is a real GLM chat model code", "passed": true, "evidence": "MODEL_NAME = \"glm-5.3\""}, {"text": "tools array uses documented {'type':'function','function':{...}} shape, not legacy 'functions'", "passed": true, "evidence": "TOOLS_SCHEMA = [{\"type\": \"function\", \"function\": {...}}]"}, {"text": "Code reads tool_calls with id/type/function.name/function.arguments", "passed": true, "evidence": "reads tool_call['function']['name'] / ['arguments'], parses via json.loads"}, {"text": "Appends role='tool' message with matching tool_call_id", "passed": true, "evidence": "messages.append({'role':'tool','tool_call_id': tool_call_id, 'content': ...})"}, {"text": "Makes follow-up call to get and print final answer", "passed": true, "evidence": "loop continues until finish_reason != 'tool_calls'; main() prints '\u6a21\u578b\u6700\u7ec8\u56de\u7b54:' + answer"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}], "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0}, "notes": "The baseline also gets the core function-calling protocol right, likely because bigmodel.cn's OpenAI-compatible tool-calling shape is common knowledge. It sends 'temperature': 0.7 without knowing glm-5.3's thinking is forced-on and reasoning_effort exists, and doesn't mention reasoning_content preservation \u2014 not incorrect, just less informed than the with-skill version, and would miss an opportunity to tune reasoning depth for latency/cost."}}, {"id": "eval-media-image-to-video-with_skill-run-1", "prompt": "\u6211\u8981\u505a\u4e00\u4e2a\u5185\u5bb9\u751f\u6210\u5c0f\u5de5\u5177\uff1a\u5148\u7528\u667a\u8c31\u7684 GLM-Image \u6a21\u578b\u6839\u636e\u4e00\u6bb5\u6587\u5b57\u63cf\u8ff0\u751f\u6210\u4e00\u5f20\u56fe\u7247\uff0c\u518d\u628a\u8fd9\u5f20\u56fe\u4f5c\u4e3a\u9996\u5e27\uff0c\u7528 CogVideoX-3 \u751f\u6210\u4e00\u6bb5\u89c6\u9891\u3002\u89c6\u9891\u751f\u6210\u662f\u5f02\u6b65\u7684\uff0c\u9700\u8981\u8f6e\u8be2\u7ed3\u679c\u3002\u9ebb\u70e6\u5199\u51fa\u5b8c\u6574\u53ef\u8fd0\u884c\u7684 Python \u811a\u672c\u3002", "eval_id": 2, "outputs": [{"name": "image_to_video.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\nimage_to_video.py\n==================\n\n\u5185\u5bb9\u751f\u6210\u5c0f\u5de5\u5177\uff1a\n  1. \u7528\u667a\u8c31 GLM-Image \u6a21\u578b\uff08`POST /paas/v4/images/generations`\uff0c\u540c\u6b65\u63a5\u53e3\uff09\u6839\u636e\u4e00\u6bb5\n     \u6587\u5b57\u63cf\u8ff0\u751f\u6210\u4e00\u5f20\u56fe\u7247\uff1b\n  2. \u628a\u8fd9\u5f20\u56fe\u7247\u7684 URL \u4f5c\u4e3a\u9996\u5e27\uff0c\u7528 CogVideoX-3 \u6a21\u578b\uff08`POST /paas/v4/videos/generations`\uff0c\n     \u53ea\u6709\u5f02\u6b65\u63a5\u53e3\uff09\u751f\u6210\u4e00\u6bb5\u89c6\u9891\uff1b\n  3. \u89c6\u9891\u751f\u6210\u662f\u5f02\u6b65\u4efb\u52a1\uff0c\u8f6e\u8be2\u901a\u7528\u5f02\u6b65\u7ed3\u679c\u63a5\u53e3\n     `GET /paas/v4/async-result/{id}` \u76f4\u5230 `task_status` \u53d8\u4e3a `SUCCESS`/`FAIL`\uff1b\n  4. \u628a\u751f\u6210\u7684\u56fe\u7247\u548c\u89c6\u9891\u4e0b\u8f7d\u5230\u672c\u5730\u3002\n\n\u4f9d\u8d56\uff1a\n    pip install requests\n\n\u7528\u6cd5\u793a\u4f8b\uff1a\n    export ZHIPUAI_API_KEY=\"\u4f60\u7684 API Key\"\n    python image_to_video.py \\\n        --image-prompt \"\u4e00\u53ea\u67ef\u57fa\u72ac\u5728\u6a31\u82b1\u6811\u4e0b\u5954\u8dd1\uff0c\u9633\u5149\u900f\u8fc7\u82b1\u74e3\uff0c\u63d2\u753b\u98ce\u683c\" \\\n        --video-prompt \"\u955c\u5934\u7f13\u6162\u63a8\u8fd1\uff0c\u6a31\u82b1\u82b1\u74e3\u968f\u98ce\u98d8\u843d\uff0c\u67ef\u57fa\u72ac\u8f6c\u5934\u770b\u5411\u955c\u5934\" \\\n        --output-dir ./output\n\n\u53c2\u8003\u8d44\u6599\uff1aSkillify `bigmodel-cn` \u6280\u80fd\u5305\n  - references/media.md\uff08\u56fe\u50cf\u751f\u6210 / \u89c6\u9891\u751f\u6210 / \u5f02\u6b65\u8f6e\u8be2\uff09\n  - references/models.md\uff08\u6a21\u578b\u9009\u578b\uff09\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport dataclasses\nimport os\nimport sys\nimport time\nfrom typing import Any, Optional\nfrom urllib.parse import urlparse\n\nimport requests\n\n# --------------------------------------------------------------------------\n# \u5e38\u91cf\n# --------------------------------------------------------------------------\n\n# Base URL \u56fa\u5b9a\u4e3a https://open.bigmodel.cn/api/\uff0c\u6240\u6709\u63a5\u53e3\u8def\u5f84\u62fc\u5728\u5b83\u540e\u9762\u3002\nBASE_URL = \"https://open.bigmodel.cn/api\"\n\nIMAGE_GENERATIONS_PATH = \"/paas/v4/images/generations\"\nVIDEO_GENERATIONS_PATH = \"/paas/v4/videos/generations\"\nASYNC_RESULT_PATH = \"/paas/v4/async-result/{task_id}\"\n\n# API Key \u901a\u8fc7\u73af\u5883\u53d8\u91cf\u8bfb\u53d6\uff0c\u7edd\u4e0d\u8981\u786c\u7f16\u7801\u8fdb\u4ee3\u7801\u3002\n# \u4ece\u63a7\u5236\u53f0\u83b7\u53d6\uff1ahttps://bigmodel.cn/usercenter/proj-mgmt/apikeys\nAPI_KEY_ENV_VAR = \"ZHIPUAI_API_KEY\"\n\nDEFAULT_TIMEOUT_SECONDS = 60  # \u5355\u6b21 HTTP \u8bf7\u6c42\u8d85\u65f6\uff08\u63d0\u4ea4\u4efb\u52a1\u7528\uff0c\u4e0d\u662f\u8f6e\u8be2\u8d85\u65f6\uff09\n\n\n# --------------------------------------------------------------------------\n# \u5f02\u5e38 & \u6570\u636e\u7ed3\u6784\n# --------------------------------------------------------------------------\n\n\nclass BigModelAPIError(RuntimeError):\n    \"\"\"\u667a\u8c31\u5f00\u653e\u5e73\u53f0\u63a5\u53e3\u8fd4\u56de\u9519\u8bef\u65f6\u629b\u51fa\u3002\"\"\"\n\n\n@dataclasses.dataclass\nclass ImageResult:\n    url: str\n\n\n@dataclasses.dataclass\nclass VideoResult:\n    url: str\n    cover_image_url: Optional[str] = None\n\n\n# --------------------------------------------------------------------------\n# \u57fa\u7840\u5de5\u5177\u51fd\u6570\n# --------------------------------------------------------------------------\n\n\ndef _get_api_key() -> str:\n    api_key = os.environ.get(API_KEY_ENV_VAR)\n    if not api_key:\n        raise RuntimeError(\n            f\"\u672a\u627e\u5230 API Key\uff0c\u8bf7\u5148\u8bbe\u7f6e\u73af\u5883\u53d8\u91cf {API_KEY_ENV_VAR}\uff0c\"\n            f\"\u4f8b\u5982\uff1aexport {API_KEY_ENV_VAR}=your_api_key_here\"\n        )\n    return api_key\n\n\ndef _headers() -> dict[str, str]:\n    # \u9274\u6743\u7edf\u4e00\u662f HTTP Bearer\uff1aAuthorization: Bearer <API_KEY>\n    return {\n        \"Authorization\": f\"Bearer {_get_api_key()}\",\n        \"Content-Type\": \"application/json\",\n    }\n\n\ndef _post_json(path: str, payload: dict[str, Any]) -> dict[str, Any]:\n    url = f\"{BASE_URL}{path}\"\n    resp = requests.post(\n        url, headers=_headers(), json=payload, timeout=DEFAULT_TIMEOUT_SECONDS\n    )\n    return _parse_response(resp, url)\n\n\ndef _get_json(path: str) -> dict[str, Any]:\n    url = f\"{BASE_URL}{path}\"\n    resp = requests.get(url, headers=_headers(), timeout=DEFAULT_TIMEOUT_SECONDS)\n    return _parse_response(resp, url)\n\n\ndef _parse_response(resp: requests.Response, url: str) -> dict[str, Any]:\n    try:\n        data = resp.json()\n    except ValueError:\n        resp.raise_for_status()\n        raise BigModelAPIError(f\"\u8bf7\u6c42 {url} \u8fd4\u56de\u4e86\u975e JSON \u54cd\u5e94\uff1a{resp.text[:500]}\")\n\n    if not resp.ok:\n        # \u667a\u8c31\u9519\u8bef\u54cd\u5e94\u4e00\u822c\u5f62\u5982 {\"error\": {\"code\": \"...\", \"message\": \"...\"}}\n        err = data.get(\"error\") if isinstance(data, dict) else None\n        message = err.get(\"message\") if isinstance(err, dict) else data\n        raise BigModelAPIError(\n            f\"\u8bf7\u6c42 {url} \u5931\u8d25\uff0cHTTP {resp.status_code}\uff1a{message}\"\n        )\n    return data\n\n\ndef _download_file(url: str, dest_path: str) -> None:\n    \"\"\"\u4e0b\u8f7d\u56fe\u7247/\u89c6\u9891\u7ed3\u679c\u6587\u4ef6\u5230\u672c\u5730\uff08\u7ed3\u679c URL \u4e00\u822c\u662f\u6709\u6709\u6548\u671f\u7684\u4e34\u65f6\u94fe\u63a5\uff0c\u9700\u53ca\u65f6\u8f6c\u5b58\uff09\u3002\"\"\"\n    with requests.get(url, stream=True, timeout=120) as resp:\n        resp.raise_for_status()\n        with open(dest_path, \"wb\") as f:\n            for chunk in resp.iter_content(chunk_size=1024 * 256):\n                if chunk:\n                    f.write(chunk)\n\n\ndef _filename_from_url(url: str, fallback: str) -> str:\n    path = urlparse(url).path\n    name = os.path.basename(path)\n    return name if name else fallback\n\n\n# --------------------------------------------------------------------------\n# \u7b2c\u4e00\u6b65\uff1aGLM-Image \u6587\u751f\u56fe\uff08\u540c\u6b65\u63a5\u53e3\uff09\n# --------------------------------------------------------------------------\n\n\ndef generate_image(\n    prompt: str,\n    size: str = \"1728x960\",\n    quality: str = \"hd\",\n    watermark_enabled: bool = True,\n) -> ImageResult:\n    \"\"\"\n    \u8c03\u7528 GLM-Image \u540c\u6b65\u6587\u751f\u56fe\u63a5\u53e3\uff1aPOST /paas/v4/images/generations\n\n    \u6ce8\u610f\uff1a\n      - `model` \u56fa\u5b9a\u4f20 \"glm-image\"\u3002\n      - `glm-image` \u4ec5\u652f\u6301 quality=\"hd\"\uff08\u8017\u65f6\u7ea6 20 \u79d2\uff09\uff0c\u8fd9\u662f\u540c\u6b65\u963b\u585e\u8c03\u7528\u3002\n      - \u8fd4\u56de\u7684\u56fe\u7247 URL \u662f\u4e34\u65f6\u94fe\u63a5\uff0c\u6709\u6548\u671f 30 \u5929\uff0c\u672c\u811a\u672c\u4f1a\u7acb\u5373\u4e0b\u8f7d\u8f6c\u5b58\u5230\u672c\u5730\u3002\n    \"\"\"\n    payload = {\n        \"model\": \"glm-image\",\n        \"prompt\": prompt,\n        \"quality\": quality,\n        \"size\": size,\n        \"watermark_enabled\": watermark_enabled,\n    }\n    data = _post_json(IMAGE_GENERATIONS_PATH, payload)\n\n    images = data.get(\"data\") or []\n    if not images or \"url\" not in images[0]:\n        raise BigModelAPIError(f\"\u56fe\u50cf\u751f\u6210\u63a5\u53e3\u8fd4\u56de\u4e86\u610f\u5916\u7684\u54cd\u5e94\u7ed3\u6784\uff1a{data}\")\n\n    return ImageResult(url=images[0][\"url\"])\n\n\n# --------------------------------------------------------------------------\n# \u7b2c\u4e8c\u6b65\uff1aCogVideoX-3 \u56fe\u751f\u89c6\u9891\uff08\u9996\u5e27\u9a71\u52a8\uff0c\u5f02\u6b65\u63a5\u53e3\uff09\n# --------------------------------------------------------------------------\n\n\ndef create_video_task(\n    first_frame_image_url: str,\n    prompt: Optional[str] = None,\n    model: str = \"cogvideox-3\",\n    quality: str = \"quality\",\n    size: str = \"1920x1080\",\n    fps: int = 30,\n    duration: int = 5,\n    with_audio: bool = False,\n    watermark_enabled: bool = True,\n) -> str:\n    \"\"\"\n    \u8c03\u7528\u89c6\u9891\u751f\u6210\u63a5\u53e3\u63d0\u4ea4\u4efb\u52a1\uff1aPOST /paas/v4/videos/generations\n\n    \u9996\u5e27\u56fe\u7247\u7684\u4f20\u6cd5\uff1a`image_url` \u4f20\u4e00\u4e2a\u5355\u72ec\u7684\u5b57\u7b26\u4e32\uff08\u56fe\u7247 URL \u6216 Base64\uff09\uff0c\n    CogVideoX-3 \u4f1a\u628a\u5b83\u5f53\u4f5c\u89c6\u9891\u7684\u7b2c\u4e00\u5e27\u6765\u751f\u6210\u540e\u7eed\u753b\u9762\u3002\n    \uff08\u5982\u679c\u8981\u540c\u65f6\u6307\u5b9a\u9996\u5e27 + \u5c3e\u5e27\uff0c\u5219\u628a image_url \u4f20\u6210 [\u9996\u5e27URL, \u5c3e\u5e27URL] \u7684\n    \u4e24\u5143\u7d20\u6570\u7ec4\uff1b\u672c\u811a\u672c\u53ea\u505a\u9996\u5e27\u9a71\u52a8\uff0c\u6240\u4ee5\u4f20\u5355\u4e2a URL \u5b57\u7b26\u4e32\u3002\uff09\n\n    \u8be5\u63a5\u53e3\u6c38\u8fdc\u662f\u5f02\u6b65\u7684\uff1a\u63d0\u4ea4\u540e\u7acb\u5373\u8fd4\u56de {\"id\": ..., \"task_status\": \"PROCESSING\"}\uff0c\n    \u771f\u6b63\u7684\u89c6\u9891\u7ed3\u679c\u9700\u8981\u8f6e\u8be2 poll_async_result() \u83b7\u53d6\u3002\n    \"\"\"\n    payload: dict[str, Any] = {\n        \"model\": model,\n        \"image_url\": first_frame_image_url,  # \u5355\u4e2a URL = \u9996\u5e27\u9a71\u52a8\n        \"quality\": quality,\n        \"size\": size,\n        \"fps\": fps,\n        \"duration\": duration,\n        \"with_audio\": with_audio,\n        \"watermark_enabled\": watermark_enabled,\n    }\n    if prompt:\n        payload[\"prompt\"] = prompt\n\n    data = _post_json(VIDEO_GENERATIONS_PATH, payload)\n\n    task_id = data.get(\"id\")\n    if not task_id:\n        raise BigModelAPIError(f\"\u89c6\u9891\u751f\u6210\u4efb\u52a1\u63d0\u4ea4\u540e\u672a\u8fd4\u56de\u4efb\u52a1 id\uff1a{data}\")\n    return task_id\n\n\n# --------------------------------------------------------------------------\n# \u7b2c\u4e09\u6b65\uff1a\u8f6e\u8be2\u901a\u7528\u5f02\u6b65\u7ed3\u679c\u63a5\u53e3\n# --------------------------------------------------------------------------\n\n\ndef poll_async_result(\n    task_id: str,\n    interval_seconds: float = 5.0,\n    timeout_seconds: float = 300.0,\n    on_poll: Optional[Any] = None,\n) -> dict[str, Any]:\n    \"\"\"\n    \u8f6e\u8be2 GET /paas/v4/async-result/{id}\uff0c\u76f4\u5230 task_status \u53d8\u4e3a SUCCESS \u6216 FAIL\u3002\n\n    \u8fd9\u662f\u56fe\u50cf\u5f02\u6b65\u63a5\u53e3\u548c\u89c6\u9891\u751f\u6210\u63a5\u53e3\u5171\u7528\u7684\u901a\u7528\u67e5\u8be2\u63a5\u53e3\u2014\u2014\u672c\u811a\u672c\u91cc\u89c6\u9891\u751f\u6210\n    \u53ea\u6709\u5f02\u6b65\u63a5\u53e3\uff0c\u6240\u4ee5\u5fc5\u987b\u8d70\u8fd9\u6761\u8f6e\u8be2\u903b\u8f91\u3002\n    \"\"\"\n    path = ASYNC_RESULT_PATH.format(task_id=task_id)\n    deadline = time.monotonic() + timeout_seconds\n\n    while True:\n        data = _get_json(path)\n        status = data.get(\"task_status\")\n\n        if on_poll:\n            on_poll(status, data)\n\n        if status == \"SUCCESS\":\n            return data\n        if status == \"FAIL\":\n            raise BigModelAPIError(f\"\u4efb\u52a1 {task_id} \u751f\u6210\u5931\u8d25\uff1a{data}\")\n\n        if time.monotonic() >= deadline:\n            raise TimeoutError(\n                f\"\u8f6e\u8be2\u4efb\u52a1 {task_id} \u8d85\u65f6\uff08{timeout_seconds} \u79d2\uff09\uff0c\"\n                f\"\u6700\u540e\u4e00\u6b21\u72b6\u6001\uff1a{status}\"\n            )\n        time.sleep(interval_seconds)\n\n\ndef extract_video_result(async_result: dict[str, Any]) -> VideoResult:\n    video_results = async_result.get(\"video_result\") or []\n    if not video_results or \"url\" not in video_results[0]:\n        raise BigModelAPIError(f\"\u5f02\u6b65\u7ed3\u679c\u91cc\u6ca1\u6709\u627e\u5230 video_result\uff1a{async_result}\")\n    first = video_results[0]\n    return VideoResult(url=first[\"url\"], cover_image_url=first.get(\"cover_image_url\"))\n\n\n# --------------------------------------------------------------------------\n# \u7f16\u6392\uff1a\u6587\u751f\u56fe -> \u56fe\u751f\u89c6\u9891\uff08\u9996\u5e27\uff09-> \u8f6e\u8be2 -> \u4e0b\u8f7d\n# --------------------------------------------------------------------------\n\n\ndef run_pipeline(\n    image_prompt: str,\n    video_prompt: Optional[str],\n    output_dir: str,\n    image_size: str = \"1728x960\",\n    video_size: str = \"1920x1080\",\n    video_model: str = \"cogvideox-3\",\n    video_quality: str = \"quality\",\n    fps: int = 30,\n    duration: int = 5,\n    with_audio: bool = False,\n    watermark_enabled: bool = True,\n    poll_interval: float = 5.0,\n    poll_timeout: float = 300.0,\n) -> tuple[str, str]:\n    os.makedirs(output_dir, exist_ok=True)\n\n    # ---- 1. \u6587\u751f\u56fe\uff08GLM-Image\uff0c\u540c\u6b65\uff09 ----\n    print(f\"[1/4] \u8c03\u7528 GLM-Image \u751f\u6210\u56fe\u7247\uff0cprompt: {image_prompt!r}\")\n    image_result = generate_image(prompt=image_prompt, size=image_size)\n    print(f\"      \u56fe\u7247\u751f\u6210\u6210\u529f: {image_result.url}\")\n\n    image_local_path = os.path.join(\n        output_dir, _filename_from_url(image_result.url, \"first_frame.png\")\n    )\n    _download_file(image_result.url, image_local_path)\n    print(f\"      \u5df2\u4e0b\u8f7d\u5230\u672c\u5730: {image_local_path}\")\n\n    # ---- 2. \u63d0\u4ea4\u89c6\u9891\u751f\u6210\u4efb\u52a1\uff08CogVideoX-3\uff0c\u56fe\u751f\u89c6\u9891\uff0c\u9996\u5e27\u9a71\u52a8\uff0c\u5f02\u6b65\uff09 ----\n    print(\n        f\"[2/4] \u63d0\u4ea4 CogVideoX-3 \u89c6\u9891\u751f\u6210\u4efb\u52a1\uff0c\u9996\u5e27\u56fe\u7247: {image_result.url}\"\n        f\"{'\uff0c\u52a8\u4f5c\u63cf\u8ff0: ' + video_prompt if video_prompt else ''}\"\n    )\n    task_id = create_video_task(\n        first_frame_image_url=image_result.url,\n        prompt=video_prompt,\n        model=video_model,\n        quality=video_quality,\n        size=video_size,\n        fps=fps,\n        duration=duration,\n        with_audio=with_audio,\n        watermark_enabled=watermark_enabled,\n    )\n    print(f\"      \u4efb\u52a1\u5df2\u63d0\u4ea4\uff0ctask_id = {task_id}\")\n\n    # ---- 3. \u8f6e\u8be2\u5f02\u6b65\u7ed3\u679c ----\n    print(f\"[3/4] \u8f6e\u8be2\u4efb\u52a1\u7ed3\u679c\uff08\u6bcf {poll_interval} \u79d2\u4e00\u6b21\uff0c\u8d85\u65f6 {poll_timeout} \u79d2\uff09...\")\n\n    def _on_poll(status: str, _data: dict[str, Any]) -> None:\n        print(f\"      \u5f53\u524d\u72b6\u6001: {status}\")\n\n    async_result = poll_async_result(\n        task_id,\n        interval_seconds=poll_interval,\n        timeout_seconds=poll_timeout,\n        on_poll=_on_poll,\n    )\n    video_result = extract_video_result(async_result)\n    print(f\"      \u89c6\u9891\u751f\u6210\u6210\u529f: {video_result.url}\")\n\n    # ---- 4. \u4e0b\u8f7d\u89c6\u9891\uff08\u53ca\u5c01\u9762\u56fe\uff09 ----\n    print(\"[4/4] \u4e0b\u8f7d\u89c6\u9891\u5230\u672c\u5730...\")\n    video_local_path = os.path.join(\n        output_dir, _filename_from_url(video_result.url, \"output_video.mp4\")\n    )\n    _download_file(video_result.url, video_local_path)\n    print(f\"      \u89c6\u9891\u5df2\u4e0b\u8f7d\u5230: {video_local_path}\")\n\n    if video_result.cover_image_url:\n        cover_local_path = os.path.join(\n            output_dir,\n            _filename_from_url(video_result.cover_image_url, \"cover.jpg\"),\n        )\n        _download_file(video_result.cover_image_url, cover_local_path)\n        print(f\"      \u5c01\u9762\u56fe\u5df2\u4e0b\u8f7d\u5230: {cover_local_path}\")\n\n    return image_local_path, video_local_path\n\n\n# --------------------------------------------------------------------------\n# CLI\n# --------------------------------------------------------------------------\n\n\ndef build_arg_parser() -> argparse.ArgumentParser:\n    parser = argparse.ArgumentParser(\n        description=\"\u7528 GLM-Image \u751f\u6210\u9996\u5e27\u56fe\u7247\uff0c\u518d\u7528 CogVideoX-3 \u751f\u6210\u9996\u5e27\u9a71\u52a8\u7684\u89c6\u9891\u3002\"\n    )\n    parser.add_argument(\n        \"--image-prompt\",\n        required=True,\n        help=\"\u6587\u751f\u56fe\u7684\u6587\u5b57\u63cf\u8ff0\uff0c\u4f8b\u5982\uff1a'\u4e00\u53ea\u67ef\u57fa\u72ac\u5728\u6a31\u82b1\u6811\u4e0b\u5954\u8dd1\uff0c\u9633\u5149\u900f\u8fc7\u82b1\u74e3\uff0c\u63d2\u753b\u98ce\u683c'\",\n    )\n    parser.add_argument(\n        \"--video-prompt\",\n        default=None,\n        help=\"\u89c6\u9891\u7684\u52a8\u4f5c/\u8fd0\u955c\u63cf\u8ff0\uff08\u53ef\u9009\uff09\uff0c\u4f8b\u5982\uff1a'\u955c\u5934\u7f13\u6162\u63a8\u8fd1\uff0c\u6a31\u82b1\u82b1\u74e3\u968f\u98ce\u98d8\u843d'\",\n    )\n    parser.add_argument(\n        \"--output-dir\",\n        default=\"./output\",\n        help=\"\u751f\u6210\u7684\u56fe\u7247\u548c\u89c6\u9891\u4fdd\u5b58\u76ee\u5f55\uff0c\u9ed8\u8ba4 ./output\",\n    )\n    parser.add_argument(\n        \"--image-size\",\n        default=\"1728x960\",\n        help=\"GLM-Image \u8f93\u51fa\u5c3a\u5bf8\uff0c\u9ed8\u8ba4 1728x960\uff0816:9 \u9644\u8fd1\uff0c\u4fbf\u4e8e\u548c\u89c6\u9891\u753b\u5e45\u63a5\u8fd1\uff09\",\n    )\n    parser.add_argument(\n        \"--video-size\",\n        default=\"1920x1080\",\n        choices=[\n            \"1280x720\",\n            \"720x1280\",\n            \"1024x1024\",\n            \"1920x1080\",\n            \"1080x1920\",\n            \"2048x1080\",\n            \"3840x2160\",\n        ],\n        help=\"CogVideoX-3 \u8f93\u51fa\u5c3a\u5bf8\uff0c\u9ed8\u8ba4 1920x1080\",\n    )\n    parser.add_argument(\n        \"--video-model\",\n        default=\"cogvideox-3\",\n        help=\"\u89c6\u9891\u751f\u6210\u6a21\u578b\uff0c\u9ed8\u8ba4 cogvideox-3\",\n    )\n    parser.add_argument(\n        \"--video-quality\",\n        default=\"quality\",\n        choices=[\"quality\", \"speed\"],\n        help=\"\u89c6\u9891\u751f\u6210\u8d28\u91cf/\u901f\u5ea6\u504f\u597d\uff0c\u9ed8\u8ba4 quality\",\n    )\n    parser.add_argument(\n        \"--fps\", type=int, default=30, choices=[30, 60], help=\"\u89c6\u9891\u5e27\u7387\uff0c\u9ed8\u8ba4 30\"\n    )\n    parser.add_argument(\n        \"--duration\",\n        type=int,\n        default=5,\n        choices=[5, 10],\n        help=\"\u89c6\u9891\u65f6\u957f\uff08\u79d2\uff09\uff0ccogvideox-3 \u652f\u6301 5 \u6216 10\uff0c\u9ed8\u8ba4 5\",\n    )\n    parser.add_argument(\n        \"--with-audio\", action=\"store_true\", help=\"\u662f\u5426\u751f\u6210 AI \u97f3\u6548\uff0c\u9ed8\u8ba4\u4e0d\u751f\u6210\"\n    )\n    parser.add_argument(\n        \"--no-watermark\",\n        action=\"store_true\",\n        help=\"\u5173\u95ed\u6c34\u5370\uff08\u9700\u8981\u8d26\u53f7\u5df2\u5728\u63a7\u5236\u53f0\u7b7e\u7f72\u53bb\u6c34\u5370\u514d\u8d23\u58f0\u660e\uff0c\u5426\u5219\u63a5\u53e3\u4f1a\u62a5\u9519\uff09\",\n    )\n    parser.add_argument(\n        \"--poll-interval\", type=float, default=5.0, help=\"\u8f6e\u8be2\u95f4\u9694\u79d2\u6570\uff0c\u9ed8\u8ba4 5 \u79d2\"\n    )\n    parser.add_argument(\n        \"--poll-timeout\",\n        type=float,\n        default=300.0,\n        help=\"\u8f6e\u8be2\u603b\u8d85\u65f6\u79d2\u6570\uff0c\u9ed8\u8ba4 300 \u79d2\",\n    )\n    return parser\n\n\ndef main(argv: Optional[list[str]] = None) -> int:\n    args = build_arg_parser().parse_args(argv)\n\n    try:\n        image_path, video_path = run_pipeline(\n            image_prompt=args.image_prompt,\n            video_prompt=args.video_prompt,\n            output_dir=args.output_dir,\n            image_size=args.image_size,\n            video_size=args.video_size,\n            video_model=args.video_model,\n            video_quality=args.video_quality,\n            fps=args.fps,\n            duration=args.duration,\n            with_audio=args.with_audio,\n            watermark_enabled=not args.no_watermark,\n            poll_interval=args.poll_interval,\n            poll_timeout=args.poll_timeout,\n        )\n    except (BigModelAPIError, TimeoutError, RuntimeError) as exc:\n        print(f\"\u751f\u6210\u5931\u8d25: {exc}\", file=sys.stderr)\n        return 1\n\n    print(\"\\n\u5b8c\u6210\uff01\")\n    print(f\"  \u9996\u5e27\u56fe\u7247: {image_path}\")\n    print(f\"  \u751f\u6210\u89c6\u9891: {video_path}\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"}, {"name": "notes.md", "type": "text", "content": "# notes.md \u2014 image_to_video.py\n\n## \u4f9d\u636e\n\n\u6309\u7167 `bigmodel-cn` \u6280\u80fd\u7684 `SKILL.md` \u5bfc\u822a\u5230 `references/media.md`\uff08\u56fe\u50cf/\u89c6\u9891\u751f\u6210 + \u5f02\u6b65\u8f6e\u8be2\uff09\n\u548c `references/models.md`\uff08\u6a21\u578b\u9009\u578b\uff09\uff0c\u5b57\u6bb5\u540d\u548c endpoint \u5747\u7167\u6284\u53c2\u8003\u6587\u6863\u91cc\u7684\u8868\u683c\u548c\u793a\u4f8b\uff0c\n\u6ca1\u6709\u51ed\u8bb0\u5fc6\u7f16\u9020\u3002\n\n## \u505a\u51fa\u7684\u5047\u8bbe\uff08assumptions\uff09\n\n1. **\u56fe\u7247\u751f\u6210\u7528\u540c\u6b65\u63a5\u53e3\uff0c\u4e0d\u662f\u5f02\u6b65\u63a5\u53e3\u3002** \u7528\u6237\u63cf\u8ff0\u91cc\u53ea\u660e\u786e\u8bf4\"\u89c6\u9891\u751f\u6210\u662f\u5f02\u6b65\u7684\uff0c\u9700\u8981\u8f6e\u8be2\"\uff0c\n   \u6ca1\u6709\u8981\u6c42\u56fe\u7247\u4e5f\u8d70\u5f02\u6b65\u3002`references/media.md` \u91cc `glm-image` \u540c\u6b65\u63a5\u53e3\n   \uff08`POST /paas/v4/images/generations`\uff09\u672c\u8eab\u5c31\u652f\u6301 `glm-image` \u6a21\u578b\uff08\u867d\u4ec5\u652f\u6301\n   `quality=hd`\uff0c\u8017\u65f6\u7ea6 20 \u79d2\uff0c\u4f46\u4f9d\u7136\u662f\u540c\u6b65\u963b\u585e\u8c03\u7528\uff09\uff0c\u6bd4\u5f02\u6b65\u7248\u672c\n   \uff08`POST /paas/v4/async/images/generations`\uff09\u4ee3\u7801\u66f4\u7b80\u5355\uff0c\u6240\u4ee5\u9009\u4e86\u540c\u6b65\u7248\u672c\u3002\u5982\u679c\u7528\u6237\u5176\u5b9e\n   \u4e5f\u60f3\u8ba9\u56fe\u7247\u751f\u6210\u8d70\u5f02\u6b65+\u8f6e\u8be2\uff0c\u9700\u8981\u6362\u6210 `async/images/generations` + \u590d\u7528\u540c\u4e00\u4e2a\n   `poll_async_result()`\u3002\n\n2. **\u9996\u5e27\u56fe\u7247\u76f4\u63a5\u7528 GLM-Image \u8fd4\u56de\u7684\u4e34\u65f6 URL \u5582\u7ed9\u89c6\u9891\u63a5\u53e3\u7684 `image_url`**\uff0c\u6ca1\u6709\u5148\u4e0b\u8f7d\n   \u5230\u672c\u5730\u518d\u8f6c Base64 \u4e0a\u4f20\u3002\u6587\u6863\u8bf4\u56fe\u7247\u7ed3\u679c URL\"\u6709\u6548\u671f 30 \u5929\"\uff0c\u4e14\u89c6\u9891\u63a5\u53e3\u7684 `image_url`\n   \u672c\u6765\u5c31\u63a5\u53d7 URL \u6216 Base64\uff0c\u76f4\u63a5\u4f20 URL \u662f\u6700\u7701\u4e8b\u7684\u8def\u5f84\u3002\u811a\u672c\u4ecd\u7136\u628a\u56fe\u7247\u4e0b\u8f7d\u5230\u672c\u5730\u4e00\u4efd\n   \uff08\u65b9\u4fbf\u7528\u6237\u7559\u5b58/\u8c03\u8bd5\uff09\uff0c\u4f46\u4f20\u7ed9\u89c6\u9891\u63a5\u53e3\u7684\u662f\u539f\u59cb URL\uff0c\u4e0d\u662f\u672c\u5730\u6587\u4ef6\u3002\n\n3. **\u9996\u5e27\u9a71\u52a8\u7528\u5355\u4e2a URL \u5b57\u7b26\u4e32\uff0c\u800c\u4e0d\u662f `[\u9996\u5e27, \u5c3e\u5e27]` \u4e24\u5143\u7d20\u6570\u7ec4\u3002** \u7528\u6237\u53ea\u8981\u6c42\"\u7528\u8fd9\u5f20\u56fe\u4f5c\u4e3a\n   \u9996\u5e27\"\uff0c\u6ca1\u6709\u63d0\u4f9b\u5c3e\u5e27\u56fe\uff0c\u6240\u4ee5 `image_url` \u4f20\u5355\u4e2a\u5b57\u7b26\u4e32\u3002\u6587\u6863\u91cc `cogvideox-3` \u7684\n   `image_url` \u652f\u6301\"\u5355\u4e2a URL/Base64\uff0c\u6216 `[\u9996\u5e27,\u5c3e\u5e27]` \u4e24\u5f20\u56fe\u6570\u7ec4\"\u2014\u2014\u53ea\u4f20\u9996\u5e27\u65f6\u7528\u5355\u4e2a\u5b57\u7b26\u4e32\n   \u662f\u5408\u7406\u8bfb\u6cd5\uff0c\u4f46\u6587\u6863\u6ca1\u6709\u975e\u5e38\u660e\u786e\u5730\u5199\"\u53ea\u4f20\u9996\u5e27\u65f6\u8be5\u600e\u4e48\u4f20\"\uff0c\u5c5e\u4e8e\u6309\u6700\u81ea\u7136\u7684\u65b9\u5f0f\u63a8\u65ad\uff08\u89c1\u4e0b\u65b9\n   \"\u4e0d\u786e\u5b9a\"\u7b2c 1 \u6761\uff09\u3002\n\n4. **`image-size` \u9ed8\u8ba4\u53d6 `1728x960`\uff08glm-image \u652f\u6301\u7684\u679a\u4e3e\u503c\u4e4b\u4e00\uff09\uff0c`video-size` \u9ed8\u8ba4\u53d6\n   `1920x1080`**\uff0c\u4e24\u8005\u5bbd\u9ad8\u6bd4\u63a5\u8fd1\uff081.8 vs 1.778\uff09\u4f46\u4e0d\u662f\u7cbe\u786e\u4e00\u81f4\u3002\u6587\u6863\u53ea\u5bf9 Vidu \u7cfb\u5217\u7684\n   \"\u9996\u5c3e\u5e27\u6a21\u5f0f\"\u660e\u786e\u5199\u4e86\"\u4e24\u56fe\u5206\u8fa8\u7387\u6bd4\u4f8b\u9700\u5728 0.8-1.25\"\u8fd9\u7c7b\u786c\u6027\u7ea6\u675f\uff0c\u5bf9 `cogvideox-3` \u7684\n   \u56fe\u751f\u89c6\u9891/\u9996\u5e27\u6a21\u5f0f\u6ca1\u6709\u5199\u7c7b\u4f3c\u7684\u56fe\u7247-\u89c6\u9891\u5206\u8fa8\u7387\u5339\u914d\u7ea6\u675f\uff0c\u6240\u4ee5\u6ca1\u6709\u5728\u4ee3\u7801\u91cc\u505a\u5f3a\u6821\u9a8c\uff0c\u53ea\u662f\n   \u5728\u9ed8\u8ba4\u503c\u9009\u62e9\u4e0a\u5c3d\u91cf\u8ba9\u4e24\u8005\u6bd4\u4f8b\u63a5\u8fd1\uff0c\u907f\u514d\u731c\u6d4b\u7684\u7ea6\u675f\u9020\u6210\u8bef\u5bfc\u3002\n\n5. **`video-prompt` \u8bbe\u4e3a\u53ef\u9009**\uff0c\u56e0\u4e3a\u6587\u6863\u5199\"`image_url` \u4e0e `prompt` \u4e0d\u80fd\u540c\u65f6\u4e3a\u7a7a\"\uff0c\u5373\u53ea\u4f20\n   `image_url` \u4e0d\u4f20 `prompt` \u4e5f\u662f\u5408\u6cd5\u8bf7\u6c42\uff1b\u4f46\u4e3a\u4e86\u5f15\u5bfc\u751f\u6210\u6548\u679c\uff0cCLI \u5efa\u8bae\u7528\u6237\u4f20\u5165\u52a8\u4f5c/\u8fd0\u955c\u63cf\u8ff0\u3002\n\n6. **API Key \u73af\u5883\u53d8\u91cf\u540d\u7528 `ZHIPUAI_API_KEY`**\uff0c\u4e0e SKILL.md \u91cc\"30 \u79d2\u8dd1\u901a\"\u793a\u4f8b\u4fdd\u6301\u4e00\u81f4\u3002\n\n7. **\u8f6e\u8be2\u9ed8\u8ba4\u53c2\u6570**\uff1a\u95f4\u9694 5 \u79d2\u3001\u603b\u8d85\u65f6 300 \u79d2\u3002\u6587\u6863\u53ea\u8bf4\"\u5efa\u8bae\u51e0\u79d2\u4e00\u6b21\"\uff0c\u6ca1\u7ed9\u51fa\u5177\u4f53\u63a8\u8350\u503c\u548c\n   \u8d85\u65f6\u4e0a\u9650\uff0c\u8fd9\u4e24\u4e2a\u6570\u5b57\u662f\u81ea\u5df1\u6309\u5e38\u8bc6\u5b9a\u7684\uff0c\u4e0d\u662f\u6587\u6863\u89c4\u5b9a\u503c\uff0c\u751f\u4ea7\u73af\u5883\u53ef\u80fd\u9700\u8981\u6309\u89c6\u9891\u65f6\u957f/\u6e05\u6670\u5ea6\n   \u8c03\u6574\uff08`quality=quality` \u66f4\u6162\uff09\u3002\n\n8. **\u4e0b\u8f7d\u89c6\u9891/\u56fe\u7247\u7528\u6d41\u5f0f `requests.get(..., stream=True)` \u5199\u672c\u5730\u6587\u4ef6**\uff0c\u6587\u6863\u6ca1\u6709\u4e13\u95e8\u8bb2\n   \"\u5982\u4f55\u8f6c\u5b58\u751f\u6210\u7ed3\u679c\"\uff0c\u8fd9\u662f\u5e38\u89c4\u5de5\u7a0b\u5b9e\u8df5\uff0c\u4e0d\u662f\u63a5\u53e3\u89c4\u5b9a\u7684\u884c\u4e3a\u3002\n\n## \u4e0d\u786e\u5b9a / \u9700\u8981\u7528\u6237\u6216\u771f\u5b9e\u8c03\u7528\u9a8c\u8bc1\u7684\u5730\u65b9\n\n1. **`image_url` \u53ea\u4f20\u9996\u5e27\u65f6\u7684\u5199\u6cd5**\uff1a\u6587\u6863\u539f\u6587\u662f\"\u5355\u4e2a URL/Base64\uff0c\u6216 `[\u9996\u5e27,\u5c3e\u5e27]` \u4e24\u5f20\u56fe\n   \u6570\u7ec4\"\uff0c\u6ca1\u6709\u5355\u72ec\u7ed9\u51fa\"\u53ea\u6709\u9996\u5e27\u3001\u6ca1\u6709\u5c3e\u5e27\"\u7684\u793a\u4f8b\u8bf7\u6c42\u3002\u6211\u6309\u6700\u76f4\u63a5\u7684\u7406\u89e3\u5904\u7406\u6210\u5355\u4e2a\u5b57\u7b26\u4e32\uff0c\n   \u4f46\u4e0d\u80fd 100% \u6392\u9664\u63a5\u53e3\u5b9e\u9645\u4e0a\u8981\u6c42\u5373\u4f7f\u53ea\u6709\u9996\u5e27\u4e5f\u8981\u5305\u4e00\u5c42\u6570\u7ec4\uff08\u5982 `[\"url\"]`\uff09\u3002\u5efa\u8bae\u7b2c\u4e00\u6b21\n   \u771f\u5b9e\u8c03\u7528\u65f6\u7559\u610f\u62a5\u9519\u4fe1\u606f\uff0c\u5982\u679c\u63d0\u793a\u53c2\u6570\u683c\u5f0f\u4e0d\u5bf9\uff0c\u5c1d\u8bd5\u6539\u6210\u5355\u5143\u7d20\u6570\u7ec4\u3002\n\n2. **`fps`/`duration`/`size` \u7b49\u53c2\u6570\u662f\u5426\u5bf9 `quality=speed` \u6a21\u5f0f\u6709\u9690\u85cf\u9650\u5236**\uff1a\u6587\u6863\u8868\u683c\u5217\u51fa\u4e86\n   \u53d6\u503c\u8303\u56f4\uff0c\u4f46\u6ca1\u6709\u8bf4\u660e\"quality \u4f18\u5148\"\u548c\"speed \u4f18\u5148\"\u4e24\u79cd\u6a21\u5f0f\u4e0b\u8fd9\u4e9b\u53c2\u6570\u7ec4\u5408\u662f\u5426\u6709\u4ea4\u53c9\u9650\u5236\n   \uff08\u4f8b\u5982 speed \u6a21\u5f0f\u4e0b\u662f\u5426\u5f3a\u5236 30fps\uff09\u3002\u811a\u672c\u6309\u6587\u6863\u5b57\u9762\u8868\u683c\u66b4\u9732\u4e86\u5b8c\u6574\u7684 CLI \u9009\u9879\uff0c\u5982\u679c\u5b9e\u9645\n   \u8c03\u7528\u4e2d\u67d0\u4e9b\u7ec4\u5408\u88ab\u62d2\u7edd\uff0c\u9700\u8981\u4ee5 API \u5b9e\u9645\u62a5\u9519\u4e3a\u51c6\u8c03\u6574\u3002\n\n3. **\u89c6\u9891\u7ed3\u679c URL \u7684\u6709\u6548\u671f**\uff1a`media.md` \u53ea\u5199\u4e86\u56fe\u50cf\u7ed3\u679c URL\"\u6709\u6548\u671f 30 \u5929\"\uff0c\u6ca1\u6709\u660e\u786e\u5199\u89c6\u9891\n   \u7ed3\u679c URL \u7684\u6709\u6548\u671f\u3002\u811a\u672c\u5047\u8bbe\u4e24\u8005\u7c7b\u4f3c\uff08\u90fd\u9700\u8981\u53ca\u65f6\u4e0b\u8f7d\u8f6c\u5b58\uff09\uff0c\u5e76\u5728\u751f\u6210\u540e\u7acb\u5373\u4e0b\u8f7d\uff0c\u4f46\u6ca1\u6709\n   \u5728\u4ee3\u7801\u91cc\u5bf9\u89c6\u9891 URL \u6709\u6548\u671f\u505a\u4efb\u4f55\u786c\u7f16\u7801\u5224\u65ad\u3002\n\n4. **\u9519\u8bef\u54cd\u5e94\u4f53\u7684\u786e\u5207\u7ed3\u6784**\uff08`{\"error\": {\"code\", \"message\"}}`\uff09\u662f\u53c2\u8003\u667a\u8c31/OpenAI \u517c\u5bb9\u63a5\u53e3\u7684\n   \u901a\u7528\u7ea6\u5b9a\u5199\u7684\uff0c`media.md`/`models.md` \u672c\u8eab\u6ca1\u6709\u7ed9\u51fa\u5931\u8d25\u54cd\u5e94\u7684\u793a\u4f8b JSON\uff0c`_parse_response()`\n   \u91cc\u505a\u4e86\u9632\u5fa1\u6027\u7684 `.get()` \u515c\u5e95\uff0c\u5373\u4f7f\u5b9e\u9645\u5b57\u6bb5\u540d\u4e0d\u540c\u4e5f\u4e0d\u4f1a\u76f4\u63a5\u629b\u672a\u5904\u7406\u5f02\u5e38\uff0c\u4f46\u5177\u4f53\u9519\u8bef\u4fe1\u606f\n   \u7684\u5c55\u793a\u53ef\u80fd\u4e0d\u591f\u7cbe\u786e\uff0c\u5efa\u8bae\u63a5\u5165\u771f\u5b9e Key \u540e\u7528\u4e00\u6b21\u6545\u610f\u7684\u9519\u8bef\u8bf7\u6c42\uff08\u5982\u975e\u6cd5 `model` \u503c\uff09\u6838\u5b9e\u4e00\u4e0b\n   \u771f\u5b9e\u9519\u8bef\u4f53\u7ed3\u6784\u3002\n\n## \u672a\u505a\u7684\u4e8b\uff08\u6709\u610f\u7701\u7565\uff09\n\n- \u6ca1\u6709\u5b9e\u73b0\"\u56fe\u751f\u56fe/\u5f02\u6b65\u56fe\u7247\u751f\u6210\"\u7684\u5206\u652f\uff0c\u56e0\u4e3a\u4efb\u52a1\u63cf\u8ff0\u91cc\u660e\u786e\u53ea\u9700\u8981\u6587\u751f\u56fe + \u56fe\u751f\u89c6\u9891\u3002\n- \u6ca1\u6709\u5b9e\u73b0 Vidu \u7cfb\u5217\u7684\u5206\u652f\uff08`viduq1-*`/`vidu2-*`\uff09\uff0c\u56e0\u4e3a\u7528\u6237\u660e\u786e\u70b9\u540d CogVideoX-3\u3002\n- \u6ca1\u6709\u5904\u7406 `--no-watermark` \u573a\u666f\u4e0b\u7684\u8d26\u53f7\u6743\u9650\u62a5\u9519\u7ec6\u5316\uff08\u53ea\u662f\u628a\u53c2\u6570\u900f\u4f20\u7ed9 API\uff0c\u62a5\u9519\u4ea4\u7ed9\n  `BigModelAPIError` \u7edf\u4e00\u629b\u51fa\uff09\u3002\n"}], "grading": {"expectations": [{"text": "Image generation call targets /paas/v4/images/generations with a real image model", "passed": true, "evidence": "IMAGE_GENERATIONS_PATH = \"/paas/v4/images/generations\"; \"model\": \"glm-image\""}, {"text": "Script extracts the generated image URL and feeds it into the video generation call", "passed": true, "evidence": "first_frame_image_url=image_result.url passed into submit_video_generation()"}, {"text": "Video generation call targets /paas/v4/videos/generations with model=cogvideox-3", "passed": true, "evidence": "VIDEO_GENERATIONS_PATH = \"/paas/v4/videos/generations\"; default=\"cogvideox-3\""}, {"text": "First-frame parameter name is a real documented field, not invented", "passed": true, "evidence": "\"image_url\": first_frame_image_url \u2014 matches the field name in media.txt/media.md; code also documents the single-string-vs-[first,last]-array distinction"}, {"text": "Video generation treated as async: captures task id from response", "passed": true, "evidence": "submit returns {\"id\":..., \"task_status\": \"PROCESSING\"}; id stored and passed to polling function"}, {"text": "Polls GET /paas/v4/async-result/{id} with backoff and exit condition", "passed": true, "evidence": "ASYNC_RESULT_PATH template; poll loop checks task_status in {SUCCESS, FAIL} with a sleep interval and 300s overall timeout"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with py_compile and --help run"}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "notes": "notes.md transparently flags a genuine documentation gap: the media.md reference doesn't show an explicit 'first-frame-only' example, only 'single URL vs [first,last] array', so the agent inferred the mapping rather than copying a confirmed example. Good calibration, but signals a possible improvement: add an explicit single-image (first-frame-only) example to media.md."}}, {"id": "eval-media-image-to-video-without_skill-run-1", "prompt": "\u6211\u8981\u505a\u4e00\u4e2a\u5185\u5bb9\u751f\u6210\u5c0f\u5de5\u5177\uff1a\u5148\u7528\u667a\u8c31\u7684 GLM-Image \u6a21\u578b\u6839\u636e\u4e00\u6bb5\u6587\u5b57\u63cf\u8ff0\u751f\u6210\u4e00\u5f20\u56fe\u7247\uff0c\u518d\u628a\u8fd9\u5f20\u56fe\u4f5c\u4e3a\u9996\u5e27\uff0c\u7528 CogVideoX-3 \u751f\u6210\u4e00\u6bb5\u89c6\u9891\u3002\u89c6\u9891\u751f\u6210\u662f\u5f02\u6b65\u7684\uff0c\u9700\u8981\u8f6e\u8be2\u7ed3\u679c\u3002\u9ebb\u70e6\u5199\u51fa\u5b8c\u6574\u53ef\u8fd0\u884c\u7684 Python \u811a\u672c\u3002", "eval_id": 2, "outputs": [{"name": "image_to_video.py", "type": "text", "content": "#!/usr/bin/env python3\n# -*- coding: utf-8 -*-\n\"\"\"\nimage_to_video.py\n==================\n\n\u4e00\u4e2a\u57fa\u4e8e\u667a\u8c31\u5f00\u653e\u5e73\u53f0\uff08bigmodel.cn\uff09\u7684\"\u6587\u5b57 -> \u56fe\u7247 -> \u89c6\u9891\"\u5185\u5bb9\u751f\u6210\u5c0f\u5de5\u5177\u3002\n\n\u6d41\u7a0b\uff1a\n  1. \u8c03\u7528 GLM-Image \u6a21\u578b\uff0c\u6839\u636e\u6587\u5b57\u63cf\u8ff0\u751f\u6210\u4e00\u5f20\u56fe\u7247\uff08\u540c\u6b65\u63a5\u53e3\uff0c\u76f4\u63a5\u8fd4\u56de\u56fe\u7247 URL\uff09\u3002\n  2. \u5c06\u7b2c 1 \u6b65\u751f\u6210\u7684\u56fe\u7247\u4f5c\u4e3a\u9996\u5e27\u56fe\uff0c\u8c03\u7528 CogVideoX-3 \u6a21\u578b\u751f\u6210\u4e00\u6bb5\u89c6\u9891\u3002\n     \u89c6\u9891\u751f\u6210\u662f\u5f02\u6b65\u4efb\u52a1\uff1a\u63d0\u4ea4\u540e\u7acb\u5373\u8fd4\u56de\u4e00\u4e2a task_id\uff0c\u9700\u8981\u8f6e\u8be2\u7ed3\u679c\u63a5\u53e3\uff0c\n     \u76f4\u5230\u4efb\u52a1\u72b6\u6001\u53d8\u4e3a SUCCESS / FAIL\u3002\n  3. \u5c06\u751f\u6210\u7684\u56fe\u7247\u548c\u89c6\u9891\u4e0b\u8f7d\u5230\u672c\u5730\u3002\n\n\u4f7f\u7528\u524d\u51c6\u5907\uff1a\n  1. \u5b89\u88c5\u4f9d\u8d56\uff1a\n       pip install requests\n  2. \u8bbe\u7f6e\u73af\u5883\u53d8\u91cf ZHIPUAI_API_KEY \u4e3a\u4f60\u5728 bigmodel.cn \u63a7\u5236\u53f0\u7533\u8bf7\u7684 API Key\uff1a\n       export ZHIPUAI_API_KEY=\"your_real_api_key_here\"\n\n\u7528\u6cd5\u793a\u4f8b\uff1a\n  python image_to_video.py --prompt \"\u4e00\u53ea\u6a58\u732b\u5728\u96ea\u5730\u91cc\u5954\u8dd1\uff0c\u7535\u5f71\u611f\uff0c4K\" \\\n      --out-dir ./outputs\n\n\u6ce8\u610f\uff1a\n  - \u672c\u811a\u672c\u672a\u5185\u7f6e\u771f\u5b9e API Key\uff0c\u9700\u8981\u901a\u8fc7\u73af\u5883\u53d8\u91cf\u6ce8\u5165\uff0c\u907f\u514d\u628a\u5bc6\u94a5\u786c\u7f16\u7801\u5230\u4ee3\u7801\u91cc\u3002\n  - \u667a\u8c31\u5f00\u653e\u5e73\u53f0\u7684\u63a5\u53e3\u5b57\u6bb5/\u8def\u5f84\u53ef\u80fd\u968f\u7248\u672c\u66f4\u65b0\u800c\u8c03\u6574\uff0c\u4f7f\u7528\u524d\u5efa\u8bae\u5bf9\u7167\u5b98\u65b9\u6587\u6863\n    \uff08https://open.bigmodel.cn/dev/api\uff09\u6838\u5bf9\u6700\u65b0\u7684\u8bf7\u6c42/\u54cd\u5e94\u683c\u5f0f\u3002\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport os\nimport sys\nimport time\nfrom dataclasses import dataclass\nfrom pathlib import Path\nfrom typing import Any, Optional\n\nimport requests\n\n# --------------------------------------------------------------------------\n# \u914d\u7f6e\n# --------------------------------------------------------------------------\n\n# \u667a\u8c31\u5f00\u653e\u5e73\u53f0\u7684 API Key\uff0c\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6\uff0c\u907f\u514d\u660e\u6587\u5199\u5728\u4ee3\u7801\u4e2d\u3002\n# \u672a\u8bbe\u7f6e\u65f6\u4f7f\u7528\u5360\u4f4d\u7b26\uff0c\u811a\u672c\u4f1a\u5728\u771f\u6b63\u53d1\u8d77\u8bf7\u6c42\u524d\u7ed9\u51fa\u660e\u786e\u62a5\u9519\uff0c\u65b9\u4fbf\u5b9a\u4f4d\u95ee\u9898\u3002\nAPI_KEY = os.environ.get(\"ZHIPUAI_API_KEY\", \"YOUR_API_KEY_HERE\")\n\n# API \u6839\u5730\u5740\uff08v4\uff09\u3002\nBASE_URL = \"https://open.bigmodel.cn/api/paas/v4\"\n\n# \u5177\u4f53\u63a5\u53e3\u8def\u5f84\u3002\nIMAGE_GENERATIONS_URL = f\"{BASE_URL}/images/generations\"\nVIDEO_GENERATIONS_URL = f\"{BASE_URL}/videos/generations\"\nASYNC_RESULT_URL = f\"{BASE_URL}/async-result/{{task_id}}\"\n\n# \u6a21\u578b\u540d\u79f0\u3002\nIMAGE_MODEL = \"glm-image\"\nVIDEO_MODEL = \"cogvideox-3\"\n\n# \u8f6e\u8be2\u53c2\u6570\u3002\nPOLL_INTERVAL_SECONDS = 5\nPOLL_TIMEOUT_SECONDS = 600  # \u89c6\u9891\u751f\u6210\u901a\u5e38\u9700\u8981\u51e0\u5341\u79d2\u5230\u51e0\u5206\u949f\uff0c\u8d85\u65f6\u65f6\u95f4\u653e\u5bbd\u4e00\u4e9b\u3002\n\n# HTTP \u8bf7\u6c42\u8d85\u65f6\uff08\u8fde\u63a5\u8d85\u65f6, \u8bfb\u8d85\u65f6\uff09\u3002\nREQUEST_TIMEOUT = (10, 60)\n\n\n# --------------------------------------------------------------------------\n# \u6570\u636e\u7ed3\u6784\n# --------------------------------------------------------------------------\n\n\n@dataclass\nclass ImageResult:\n    url: str\n    raw_response: dict[str, Any]\n\n\n@dataclass\nclass VideoResult:\n    video_url: str\n    cover_image_url: Optional[str]\n    raw_response: dict[str, Any]\n\n\nclass BigModelAPIError(RuntimeError):\n    \"\"\"\u5c01\u88c5\u667a\u8c31\u5f00\u653e\u5e73\u53f0\u8fd4\u56de\u7684\u9519\u8bef\u4fe1\u606f\uff0c\u4fbf\u4e8e\u4e0a\u5c42\u7edf\u4e00\u5904\u7406\u3002\"\"\"\n\n\n# --------------------------------------------------------------------------\n# \u57fa\u7840\u5de5\u5177\u51fd\u6570\n# --------------------------------------------------------------------------\n\n\ndef _auth_headers() -> dict[str, str]:\n    if not API_KEY or API_KEY == \"YOUR_API_KEY_HERE\":\n        raise BigModelAPIError(\n            \"\u672a\u68c0\u6d4b\u5230\u6709\u6548\u7684 API Key\u3002\u8bf7\u5148\u6267\u884c\uff1a\"\n            \"\\n    export ZHIPUAI_API_KEY=\\\"\u4f60\u7684\u771f\u5b9eAPI Key\\\"\"\n            \"\\n\u7136\u540e\u518d\u8fd0\u884c\u672c\u811a\u672c\u3002\"\n        )\n    return {\n        \"Authorization\": f\"Bearer {API_KEY}\",\n        \"Content-Type\": \"application/json\",\n    }\n\n\ndef _raise_for_api_error(resp: requests.Response) -> dict[str, Any]:\n    \"\"\"\u7edf\u4e00\u5904\u7406 HTTP \u5c42\u4e0e\u4e1a\u52a1\u5c42\u7684\u9519\u8bef\u3002\"\"\"\n    try:\n        data = resp.json()\n    except ValueError as exc:\n        raise BigModelAPIError(\n            f\"\u54cd\u5e94\u4e0d\u662f\u5408\u6cd5\u7684 JSON\uff08HTTP {resp.status_code}\uff09\uff1a{resp.text[:500]}\"\n        ) from exc\n\n    if not resp.ok:\n        err = data.get(\"error\", data)\n        raise BigModelAPIError(\n            f\"\u63a5\u53e3\u8c03\u7528\u5931\u8d25\uff08HTTP {resp.status_code}\uff09\uff1a{err}\"\n        )\n\n    # \u667a\u8c31\u90e8\u5206\u63a5\u53e3\u5373\u4f7f HTTP 200\uff0c\u4e5f\u53ef\u80fd\u5728 body \u91cc\u643a\u5e26 error \u5b57\u6bb5\u3002\n    if isinstance(data, dict) and data.get(\"error\"):\n        raise BigModelAPIError(f\"\u63a5\u53e3\u8fd4\u56de\u4e1a\u52a1\u9519\u8bef\uff1a{data['error']}\")\n\n    return data\n\n\ndef download_file(url: str, dest_path: Path) -> Path:\n    \"\"\"\u4e0b\u8f7d\u8fdc\u7a0b\u6587\u4ef6\u5230\u672c\u5730\u8def\u5f84\uff0c\u8fd4\u56de\u672c\u5730\u8def\u5f84\u3002\"\"\"\n    dest_path.parent.mkdir(parents=True, exist_ok=True)\n    with requests.get(url, stream=True, timeout=REQUEST_TIMEOUT) as resp:\n        resp.raise_for_status()\n        with open(dest_path, \"wb\") as f:\n            for chunk in resp.iter_content(chunk_size=1024 * 64):\n                if chunk:\n                    f.write(chunk)\n    return dest_path\n\n\n# --------------------------------------------------------------------------\n# \u7b2c\u4e00\u6b65\uff1aGLM-Image \u6587\u751f\u56fe\uff08\u540c\u6b65\u63a5\u53e3\uff09\n# --------------------------------------------------------------------------\n\n\ndef generate_image(\n    prompt: str,\n    size: str = \"1024x1024\",\n) -> ImageResult:\n    \"\"\"\n    \u8c03\u7528 GLM-Image \u6a21\u578b\uff0c\u6839\u636e\u6587\u5b57\u63cf\u8ff0\u751f\u6210\u4e00\u5f20\u56fe\u7247\u3002\n\n    \u8be5\u63a5\u53e3\u662f\u540c\u6b65\u7684\uff1a\u8bf7\u6c42\u53d1\u51fa\u540e\u76f4\u63a5\u8fd4\u56de\u7ed3\u679c\uff0c\u4e0d\u9700\u8981\u8f6e\u8be2\u3002\n\n    Args:\n        prompt: \u56fe\u7247\u5185\u5bb9\u7684\u6587\u5b57\u63cf\u8ff0\u3002\n        size: \u751f\u6210\u56fe\u7247\u7684\u5206\u8fa8\u7387\uff0c\u5982 \"1024x1024\"\u3002\n\n    Returns:\n        ImageResult\uff0c\u5176\u4e2d url \u4e3a\u751f\u6210\u56fe\u7247\u7684\u53ef\u4e0b\u8f7d\u5730\u5740\u3002\n    \"\"\"\n    payload = {\n        \"model\": IMAGE_MODEL,\n        \"prompt\": prompt,\n        \"size\": size,\n    }\n\n    resp = requests.post(\n        IMAGE_GENERATIONS_URL,\n        headers=_auth_headers(),\n        json=payload,\n        timeout=REQUEST_TIMEOUT,\n    )\n    data = _raise_for_api_error(resp)\n\n    images = data.get(\"data\") or []\n    if not images or \"url\" not in images[0]:\n        raise BigModelAPIError(f\"\u56fe\u7247\u751f\u6210\u63a5\u53e3\u8fd4\u56de\u4e86\u975e\u9884\u671f\u7684\u7ed3\u6784\uff1a{data}\")\n\n    return ImageResult(url=images[0][\"url\"], raw_response=data)\n\n\n# --------------------------------------------------------------------------\n# \u7b2c\u4e8c\u6b65\uff1aCogVideoX-3 \u56fe\u751f\u89c6\u9891\uff08\u5f02\u6b65\u63a5\u53e3 + \u8f6e\u8be2\uff09\n# --------------------------------------------------------------------------\n\n\ndef create_video_task(\n    prompt: str,\n    first_frame_image_url: str,\n    quality: str = \"speed\",\n    with_audio: bool = False,\n    size: str = \"1920x1080\",\n    fps: int = 30,\n) -> str:\n    \"\"\"\n    \u63d0\u4ea4\u4e00\u4e2a\"\u4ee5\u7ed9\u5b9a\u56fe\u7247\u4e3a\u9996\u5e27\uff0c\u7ed3\u5408\u6587\u5b57\u63cf\u8ff0\u751f\u6210\u89c6\u9891\"\u7684\u5f02\u6b65\u4efb\u52a1\u3002\n\n    Args:\n        prompt: \u89c6\u9891\u5185\u5bb9/\u8fd0\u955c/\u98ce\u683c\u7684\u6587\u5b57\u63cf\u8ff0\u3002\n        first_frame_image_url: \u4f5c\u4e3a\u89c6\u9891\u9996\u5e27\u7684\u56fe\u7247 URL\uff08\u8fd9\u91cc\u76f4\u63a5\u590d\u7528\n            GLM-Image \u8fd4\u56de\u7684\u56fe\u7247 URL\uff1b\u4e5f\u53ef\u4ee5\u4f20\u672c\u5730\u56fe\u7247\u7684 base64\uff09\u3002\n        quality: \"speed\"\uff08\u901f\u5ea6\u4f18\u5148\uff09\u6216 \"quality\"\uff08\u8d28\u91cf\u4f18\u5148\uff09\u3002\n        with_audio: \u662f\u5426\u8ba9\u6a21\u578b\u540c\u65f6\u751f\u6210\u914d\u5957\u97f3\u6548/\u914d\u97f3\u3002\n        size: \u8f93\u51fa\u89c6\u9891\u5206\u8fa8\u7387\u3002\n        fps: \u8f93\u51fa\u89c6\u9891\u5e27\u7387\u3002\n\n    Returns:\n        task_id\uff1a\u7528\u4e8e\u540e\u7eed\u8f6e\u8be2\u4efb\u52a1\u72b6\u6001\u7684\u4efb\u52a1 ID\u3002\n    \"\"\"\n    payload = {\n        \"model\": VIDEO_MODEL,\n        \"prompt\": prompt,\n        # image_url \u5b57\u6bb5\u7528\u4e8e\u4f20\u5165\u9996\u5e27\u56fe\u7247\uff0c\u5b9e\u73b0\"\u56fe\u751f\u89c6\u9891\"\u3002\n        \"image_url\": first_frame_image_url,\n        \"quality\": quality,\n        \"with_audio\": with_audio,\n        \"size\": size,\n        \"fps\": fps,\n    }\n\n    resp = requests.post(\n        VIDEO_GENERATIONS_URL,\n        headers=_auth_headers(),\n        json=payload,\n        timeout=REQUEST_TIMEOUT,\n    )\n    data = _raise_for_api_error(resp)\n\n    task_id = data.get(\"id\")\n    if not task_id:\n        raise BigModelAPIError(f\"\u89c6\u9891\u751f\u6210\u4efb\u52a1\u63d0\u4ea4\u540e\u672a\u8fd4\u56de task id\uff1a{data}\")\n\n    return task_id\n\n\ndef poll_video_task(\n    task_id: str,\n    interval_seconds: int = POLL_INTERVAL_SECONDS,\n    timeout_seconds: int = POLL_TIMEOUT_SECONDS,\n) -> VideoResult:\n    \"\"\"\n    \u8f6e\u8be2\u5f02\u6b65\u89c6\u9891\u751f\u6210\u4efb\u52a1\uff0c\u76f4\u5230\u4efb\u52a1\u5b8c\u6210\uff08\u6210\u529f/\u5931\u8d25\uff09\u6216\u8d85\u65f6\u3002\n\n    \u667a\u8c31\u5f02\u6b65\u4efb\u52a1\u7684\u5178\u578b\u72b6\u6001\u53d6\u503c\uff1a\"PROCESSING\" -> \"SUCCESS\" / \"FAIL\"\u3002\n    \"\"\"\n    url = ASYNC_RESULT_URL.format(task_id=task_id)\n    deadline = time.monotonic() + timeout_seconds\n\n    while True:\n        resp = requests.get(url, headers=_auth_headers(), timeout=REQUEST_TIMEOUT)\n        data = _raise_for_api_error(resp)\n\n        status = data.get(\"task_status\")\n        print(f\"[\u8f6e\u8be2] task_id={task_id} \u72b6\u6001={status}\")\n\n        if status == \"SUCCESS\":\n            results = data.get(\"video_result\") or []\n            if not results or \"url\" not in results[0]:\n                raise BigModelAPIError(f\"\u4efb\u52a1\u6210\u529f\u4f46\u672a\u8fd4\u56de\u89c6\u9891\u5730\u5740\uff1a{data}\")\n            return VideoResult(\n                video_url=results[0][\"url\"],\n                cover_image_url=results[0].get(\"cover_image_url\"),\n                raw_response=data,\n            )\n\n        if status == \"FAIL\":\n            raise BigModelAPIError(f\"\u89c6\u9891\u751f\u6210\u4efb\u52a1\u5931\u8d25\uff1a{data}\")\n\n        # \u4ecd\u5728\u5904\u7406\u4e2d\uff08PROCESSING \u6216\u5176\u4ed6\u4e2d\u95f4\u72b6\u6001\uff09\uff0c\u7ee7\u7eed\u7b49\u5f85\u3002\n        if time.monotonic() >= deadline:\n            raise TimeoutError(\n                f\"\u8f6e\u8be2\u8d85\u65f6\uff08{timeout_seconds}s\uff09\uff0ctask_id={task_id} \u4ecd\u672a\u5b8c\u6210\u3002\"\n            )\n\n        time.sleep(interval_seconds)\n\n\n# --------------------------------------------------------------------------\n# \u4e3b\u6d41\u7a0b\n# --------------------------------------------------------------------------\n\n\ndef run(\n    prompt: str,\n    video_prompt: Optional[str],\n    out_dir: Path,\n    image_size: str = \"1024x1024\",\n    video_size: str = \"1920x1080\",\n) -> None:\n    out_dir.mkdir(parents=True, exist_ok=True)\n    timestamp = time.strftime(\"%Y%m%d_%H%M%S\")\n\n    print(f\"[1/4] \u8c03\u7528 {IMAGE_MODEL} \u751f\u6210\u9996\u5e27\u56fe\u7247\u2026\u2026\")\n    print(f\"      \u63d0\u793a\u8bcd\uff1a{prompt}\")\n    image_result = generate_image(prompt=prompt, size=image_size)\n    print(f\"      \u751f\u6210\u6210\u529f\uff0c\u56fe\u7247 URL\uff1a{image_result.url}\")\n\n    image_path = out_dir / f\"first_frame_{timestamp}.png\"\n    print(f\"[2/4] \u4e0b\u8f7d\u56fe\u7247\u5230\u672c\u5730\uff1a{image_path}\")\n    download_file(image_result.url, image_path)\n\n    print(f\"[3/4] \u8c03\u7528 {VIDEO_MODEL} \u63d0\u4ea4\u56fe\u751f\u89c6\u9891\u4efb\u52a1\u2026\u2026\")\n    effective_video_prompt = video_prompt or prompt\n    task_id = create_video_task(\n        prompt=effective_video_prompt,\n        first_frame_image_url=image_result.url,\n        size=video_size,\n    )\n    print(f\"      \u4efb\u52a1\u5df2\u63d0\u4ea4\uff0ctask_id={task_id}\uff0c\u5f00\u59cb\u8f6e\u8be2\u2026\u2026\")\n\n    video_result = poll_video_task(task_id)\n    print(f\"      \u89c6\u9891\u751f\u6210\u6210\u529f\uff0c\u89c6\u9891 URL\uff1a{video_result.video_url}\")\n\n    video_path = out_dir / f\"video_{timestamp}.mp4\"\n    print(f\"[4/4] \u4e0b\u8f7d\u89c6\u9891\u5230\u672c\u5730\uff1a{video_path}\")\n    download_file(video_result.video_url, video_path)\n\n    if video_result.cover_image_url:\n        cover_path = out_dir / f\"video_cover_{timestamp}.png\"\n        download_file(video_result.cover_image_url, cover_path)\n        print(f\"      \u5c01\u9762\u56fe\u5df2\u4fdd\u5b58\uff1a{cover_path}\")\n\n    print(\"\\n\u5b8c\u6210\uff01\")\n    print(f\"  \u9996\u5e27\u56fe\u7247: {image_path}\")\n    print(f\"  \u751f\u6210\u89c6\u9891: {video_path}\")\n\n\ndef parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"\u7528 GLM-Image \u751f\u6210\u9996\u5e27\u56fe\u7247\uff0c\u518d\u7528 CogVideoX-3 \u751f\u6210\u89c6\u9891\uff08\u56fe\u751f\u89c6\u9891\uff0c\u5f02\u6b65\u8f6e\u8be2\uff09\u3002\"\n    )\n    parser.add_argument(\n        \"--prompt\",\n        required=True,\n        help=\"\u7528\u4e8e\u751f\u6210\u9996\u5e27\u56fe\u7247\u7684\u6587\u5b57\u63cf\u8ff0\uff08\u4e5f\u4f1a\u4f5c\u4e3a\u89c6\u9891\u63cf\u8ff0\uff0c\u9664\u975e\u53e6\u5916\u6307\u5b9a --video-prompt\uff09\u3002\",\n    )\n    parser.add_argument(\n        \"--video-prompt\",\n        default=None,\n        help=\"\u53ef\u9009\u3002\u82e5\u89c6\u9891\u7684\u8fd0\u955c/\u52a8\u4f5c\u63cf\u8ff0\u4e0e\u56fe\u7247\u63cf\u8ff0\u4e0d\u540c\uff0c\u53ef\u5355\u72ec\u6307\u5b9a\u3002\",\n    )\n    parser.add_argument(\n        \"--out-dir\",\n        default=\"./outputs\",\n        help=\"\u8f93\u51fa\u76ee\u5f55\uff0c\u7528\u4e8e\u4fdd\u5b58\u751f\u6210\u7684\u56fe\u7247\u548c\u89c6\u9891\uff08\u9ed8\u8ba4\uff1a./outputs\uff09\u3002\",\n    )\n    parser.add_argument(\n        \"--image-size\",\n        default=\"1024x1024\",\n        help=\"\u751f\u6210\u56fe\u7247\u7684\u5206\u8fa8\u7387\uff08\u9ed8\u8ba4\uff1a1024x1024\uff09\u3002\",\n    )\n    parser.add_argument(\n        \"--video-size\",\n        default=\"1920x1080\",\n        help=\"\u751f\u6210\u89c6\u9891\u7684\u5206\u8fa8\u7387\uff08\u9ed8\u8ba4\uff1a1920x1080\uff09\u3002\",\n    )\n    return parser.parse_args(argv)\n\n\ndef main() -> None:\n    args = parse_args()\n    try:\n        run(\n            prompt=args.prompt,\n            video_prompt=args.video_prompt,\n            out_dir=Path(args.out_dir),\n            image_size=args.image_size,\n            video_size=args.video_size,\n        )\n    except (BigModelAPIError, TimeoutError, requests.RequestException) as exc:\n        print(f\"\\n[\u9519\u8bef] {exc}\", file=sys.stderr)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"expectations": [{"text": "Image generation call targets /paas/v4/images/generations with a real image model", "passed": true, "evidence": "IMAGE_GENERATIONS_URL = f\"{BASE_URL}/images/generations\"; IMAGE_MODEL = \"glm-image\""}, {"text": "Script extracts the generated image URL and feeds it into the video generation call", "passed": true, "evidence": "first_frame_image_url=image_result.url"}, {"text": "Video generation call targets /paas/v4/videos/generations with model=cogvideox-3", "passed": true, "evidence": "VIDEO_GENERATIONS_URL = f\"{BASE_URL}/videos/generations\"; VIDEO_MODEL = \"cogvideox-3\""}, {"text": "First-frame parameter name is a real documented field, not invented", "passed": true, "evidence": "\"image_url\": first_frame_image_url, with comment '\u7528\u4e8e\u4f20\u5165\u9996\u5e27\u56fe\u7247\uff0c\u5b9e\u73b0\u56fe\u751f\u89c6\u9891' \u2014 correct field name, though no discussion of single-vs-array nuance"}, {"text": "Video generation treated as async: captures task id from response", "passed": true, "evidence": "submission response parsed for an id, passed to polling function"}, {"text": "Polls GET /paas/v4/async-result/{id} with backoff and exit condition", "passed": true, "evidence": "ASYNC_RESULT_URL template; status = data.get('task_status') checked in a loop"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}], "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0}, "notes": "Also fully correct on the core mechanics \u2014 bigmodel.cn's image/video generation shape is apparently well represented in general pretraining data. No discussion of the single-string-vs-[first,last]-array nuance for image_url, and no flagged uncertainty (vs. the with-skill run's explicit notes.md caveat), so a user reading only the code would not know this was an inference rather than a confirmed fact."}}, {"id": "eval-openai-migration-with-search-with_skill-run-1", "prompt": "\u6211\u4eec\u73b0\u6709\u9879\u76ee\u662f\u7528 OpenAI \u7684 Python SDK \u5199\u7684\u804a\u5929\u529f\u80fd\uff0c\u73b0\u5728\u60f3\u5207\u6362\u6210\u667a\u8c31\u7684 GLM \u6a21\u578b\uff0c\u5c3d\u91cf\u5c11\u6539\u4ee3\u7801\uff1b\u53e6\u5916\u8fd8\u60f3\u7ed9\u5b83\u52a0\u4e0a\u8054\u7f51\u641c\u7d22\u80fd\u529b\uff0c\u8ba9\u6a21\u578b\u80fd\u67e5\u5230\u6700\u65b0\u4fe1\u606f\u518d\u56de\u7b54\u7528\u6237\u95ee\u9898\u3002\u7ed9\u51fa\u6539\u9020\u540e\u7684\u4ee3\u7801\u3002", "eval_id": 3, "outputs": [{"name": "migrated_chat.py", "type": "text", "content": "\"\"\"\n\u804a\u5929\u529f\u80fd\uff1a\u4ece OpenAI \u8fc1\u79fb\u5230\u667a\u8c31 GLM\uff08bigmodel.cn\uff09\uff0c\u5e76\u52a0\u4e0a\u8054\u7f51\u641c\u7d22\u80fd\u529b\u3002\n\n=== \u8fc1\u79fb\u524d\uff08\u5047\u8bbe\u7684\u539f\u59cb\u4ee3\u7801\uff09\u5927\u81f4\u957f\u8fd9\u6837 ===\n\n    from openai import OpenAI\n\n    client = OpenAI(api_key=os.environ[\"OPENAI_API_KEY\"])\n\n    resp = client.chat.completions.create(\n        model=\"gpt-4o\",\n        messages=[{\"role\": \"user\", \"content\": user_question}],\n    )\n    print(resp.choices[0].message.content)\n\n=== \u8fc1\u79fb\u5230\u667a\u8c31\u7684\u601d\u8def\uff08\"\u5c3d\u91cf\u5c11\u6539\u4ee3\u7801\"\uff09 ===\n\n\u667a\u8c31\u5f00\u653e\u5e73\u53f0\uff08bigmodel.cn\uff09\u63d0\u4f9b\u4e0e OpenAI SDK \u5b8c\u5168\u517c\u5bb9\u7684\u63a5\u53e3\u5c42\uff1a\u7ee7\u7eed\u7528\n`from openai import OpenAI`\uff0c\u53ea\u9700\u8981\u6539\u4e24\u4e2a\u6784\u9020\u53c2\u6570\u2014\u2014`api_key` \u6362\u6210\u667a\u8c31\n\u7684 Key\uff0c`base_url` \u6307\u5411\u667a\u8c31\u7684\u517c\u5bb9\u7aef\u70b9\u2014\u2014\u4ee5\u53ca\u628a `model` \u6362\u6210\u667a\u8c31\u7684\u6a21\u578b\n\u4ee3\u7801\u3002\u4e1a\u52a1\u4ee3\u7801\u91cc `client.chat.completions.create(...)` \u7684\u8c03\u7528\u65b9\u5f0f\u3001\n\u8fd4\u56de\u7ed3\u6784\uff08`resp.choices[0].message.content`\uff09\u5b8c\u5168\u4e0d\u53d8\u3002\n\n\u8054\u7f51\u641c\u7d22\u80fd\u529b\u4e5f\u4e0d\u9700\u8981\u8df3\u51fa OpenAI SDK \u81ea\u5df1\u642d\u4e00\u5957\u6846\u67b6\uff1a\u667a\u8c31\u5728\n`chat.completions.create()` \u7684\u6807\u51c6 `tools` \u53c2\u6570\u91cc\u539f\u751f\u652f\u6301\u4e00\u4e2a\n`type: \"web_search\"` \u7684\u5de5\u5177\u9879\uff08\u8fd9\u662f\u5b98\u65b9\u6587\u6863\u91cc\"\u4e09\u5c42\u8054\u7f51\u68c0\u7d22\u80fd\u529b\"\u4e2d\u7684\n\u7b2c\u4e8c\u5c42\uff1a\u76f4\u63a5\u5d4c\u5728 chat/completions \u91cc\uff0c\u7531\u5e73\u53f0\u81ea\u52a8\u5224\u65ad\u641c\u7d22\u610f\u56fe\u3001\u6267\u884c\u641c\u7d22\n\u5e76\u628a\u7ed3\u679c\u7cc5\u5408\u8fdb\u6a21\u578b\u56de\u7b54\uff0c\u4e0d\u9700\u8981\u50cf function calling \u90a3\u6837\u81ea\u5df1\u5199\"\u6a21\u578b\u8981\n\u53c2\u6570 -> \u6211\u65b9\u6267\u884c -> \u628a\u7ed3\u679c\u4f20\u56de\u6a21\u578b\"\u7684\u591a\u8f6e\u5faa\u73af\uff09\u3002\u547d\u4e2d\u641c\u7d22\u540e\uff0c\u54cd\u5e94\u4f53\n\u9876\u5c42\u8fd8\u4f1a\u5e26\u4e00\u4e2a `web_search` \u6570\u7ec4\uff0c\u5217\u51fa\u88ab\u5f15\u7528\u7684\u7f51\u9875\uff08\u6807\u9898/\u94fe\u63a5/\u6458\u8981\u7b49\uff09\uff0c\n\u53ef\u4ee5\u7528\u6765\u5728\u56de\u7b54\u540e\u9762\u5c55\u793a\u4fe1\u606f\u6765\u6e90\u3002\n\n\u53c2\u8003\uff1abigmodel-cn skill \u7684 references/sdk-and-compat.md\uff08OpenAI SDK \u517c\u5bb9\u5c42\uff09\n      \u4e0e references/tools.md / references/chat.md\uff08web_search \u5de5\u5177\uff09\u3002\n\"\"\"\n\nimport os\n\nfrom openai import OpenAI\n\n# --------------------------------------------------------------------------\n# 1. \u5ba2\u6237\u7aef\u521d\u59cb\u5316 \u2014\u2014 \u8fd9\u662f\u4ece OpenAI \u8fc1\u79fb\u8fc7\u6765\u65f6\u552f\u4e00\u9700\u8981\u6539\u7684\"\u7ed3\u6784\u6027\"\u4ee3\u7801\n# --------------------------------------------------------------------------\n# \u539f\u6765: OpenAI(api_key=os.environ[\"OPENAI_API_KEY\"])\n# \u73b0\u5728: base_url \u6307\u5411\u667a\u8c31\u7684 OpenAI \u517c\u5bb9\u7aef\u70b9\uff0capi_key \u6362\u6210\u667a\u8c31\u7684 API Key\u3002\n#\n# API Key \u8bf7\u5728\u667a\u8c31\u5f00\u653e\u5e73\u53f0\u63a7\u5236\u53f0\u7533\u8bf7\uff1a\n#   https://bigmodel.cn/usercenter/proj-mgmt/apikeys\n# \u5f3a\u70c8\u5efa\u8bae\u901a\u8fc7\u73af\u5883\u53d8\u91cf\u6ce8\u5165\uff0c\u4e0d\u8981\u628a Key \u786c\u7f16\u7801\u8fdb\u4ee3\u7801\u91cc\u3002\nclient = OpenAI(\n    api_key=os.environ.get(\"ZHIPU_API_KEY\", \"your-zhipu-api-key-here\"),\n    base_url=\"https://open.bigmodel.cn/api/paas/v4/\",\n)\n\n# \u667a\u8c31\u7684\u6a21\u578b\u4ee3\u7801\u548c OpenAI \u7684\u4e0d\u662f\u4e00\u56de\u4e8b\uff0c\u9700\u8981\u663e\u5f0f\u6362\u6210\u667a\u8c31\u7684\u6a21\u578b\u540d\u3002\n# glm-5.3 \u662f\u667a\u8c31\u5f53\u524d\u7684\u65d7\u8230\u5bf9\u8bdd\u6a21\u578b\uff08\u5bf9\u5e94\u65e7\u4ee3\u7801\u91cc\u53ef\u80fd\u7528\u7684 gpt-4o / gpt-4 \u4e4b\u7c7b\uff09\u3002\nMODEL_NAME = \"glm-5.3\"\n\n\n# --------------------------------------------------------------------------\n# 2. \u8054\u7f51\u641c\u7d22\u5de5\u5177\u5b9a\u4e49\n# --------------------------------------------------------------------------\n# \u52a0\u8fdb tools \u6570\u7ec4\u91cc\u7684 web_search \u5de5\u5177\u9879\u3002\u5b57\u6bb5\u6765\u81ea\u5b98\u65b9\u6587\u6863\u5bf9 chat/completions\n# \u91cc web_search \u5de5\u5177\u7c7b\u578b\u7684\u8bf4\u660e\uff08\u4e0e\u72ec\u7acb\u7684 POST /paas/v4/web_search \u63a5\u53e3\u5171\u4eab\n# \u540c\u4e00\u5957\u641c\u7d22\u53c2\u6570\uff0c\u5982 search_engine / search_recency_filter / count \u7b49\uff09\u3002\n#\n# \u4e0d\u9700\u8981\u624b\u5199 function-calling \u7684\"\u6a21\u578b\u8fd4\u56de\u8c03\u7528\u8bf7\u6c42 -> \u4f60\u6267\u884c -> \u56de\u4f20\u7ed3\u679c\"\n# \u5faa\u73af\uff1aweb_search \u662f\u5e73\u53f0\u4fa7\u76f4\u63a5\u6267\u884c\u7684\u5de5\u5177\uff0c\u547d\u4e2d\u540e\u7ed3\u679c\u4f1a\u88ab\u76f4\u63a5\u6ce8\u5165\u6a21\u578b\u7684\n# \u56de\u7b54\u91cc\uff0c\u540c\u65f6\u5728\u54cd\u5e94\u9876\u5c42\u9644\u5e26 web_search \u5f15\u7528\u5217\u8868\u3002\nWEB_SEARCH_TOOL = {\n    \"type\": \"web_search\",\n    \"web_search\": {\n        \"enable\": True,\n        # \u56db\u4e2a\u53ef\u9009\u641c\u7d22\u5f15\u64ce\uff1asearch_std\uff08\u57fa\u7840\u7248\uff0c\u6027\u4ef7\u6bd4\u9ad8\uff09/ search_pro\uff08\u9ad8\u9636\uff0c\n        # \u53ec\u56de\u7387\u66f4\u9ad8\uff0c\u9002\u5408\u5927\u591a\u6570\u573a\u666f\uff09/ search_pro_sogou\uff08\u641c\u72d7\uff0c\u9002\u5408\u793e\u4ea4/\u767e\u79d1/\n        # \u533b\u7597\u7c7b\u5782\u76f4\u5185\u5bb9\uff09/ search_pro_quark\uff08\u5938\u514b\uff0c\u9002\u5408\u5782\u76f4\u5185\u5bb9\u7cbe\u51c6\u68c0\u7d22\uff09\u3002\n        \"search_engine\": \"search_pro\",\n        # \u4f18\u5148\u8fd4\u56de\u8fd1\u671f\u5185\u5bb9\uff0c\u907f\u514d\u6a21\u578b\u5f15\u7528\u8fc7\u671f\u4fe1\u606f\uff1b\u5982\u679c\u4e0d\u9700\u8981\u9650\u5b9a\u65f6\u95f4\u8303\u56f4\uff0c\n        # \u53ef\u4ee5\u53bb\u6389\u8fd9\u4e00\u9879\uff08\u9ed8\u8ba4 noLimit\uff09\u3002\n        \"search_recency_filter\": \"oneYear\",\n        # medium=\u6458\u8981\uff08\u9ed8\u8ba4\uff0c\u6ee1\u8db3\u5e38\u89c4\u95ee\u7b54\uff09\uff1bhigh=\u66f4\u8be6\u7ec6\u7684\u7f51\u9875\u5185\u5bb9\uff0c\n        # \u9002\u5408\u9700\u8981\u6df1\u5165\u5206\u6790\u7684\u95ee\u9898\uff0c\u4f46\u4f1a\u6d88\u8017\u66f4\u591a token\u3002\n        \"content_size\": \"medium\",\n    },\n}\n\n\ndef ask(user_question: str, *, use_web_search: bool = True) -> str:\n    \"\"\"\n    \u5411\u667a\u8c31 GLM \u63d0\u95ee\uff0c\u9ed8\u8ba4\u5f00\u542f\u8054\u7f51\u641c\u7d22\uff0c\u8ba9\u6a21\u578b\u5728\u56de\u7b54\u524d\u5148\u67e5\u6700\u65b0\u4fe1\u606f\u3002\n\n    \u4e0e\u8fc1\u79fb\u524d\u7684\u8c03\u7528\u65b9\u5f0f\u51e0\u4e4e\u4e00\u6837\uff1a\u8fd8\u662f\u4e00\u6b21 client.chat.completions.create()\n    \u8c03\u7528\uff0c\u53ea\u662f\u591a\u4f20\u4e86\u4e00\u4e2a tools \u53c2\u6570\u3002tool_choice \u4e0d\u9700\u8981\u663e\u5f0f\u8bbe\u7f6e\u2014\u2014\n    web_search \u662f\u5e73\u53f0\u81ea\u52a8\u5224\u65ad\u662f\u5426\u9700\u8981\u641c\u7d22\u5e76\u6267\u884c\u7684\u5de5\u5177\uff0c\u4e0d\u662f\u9700\u8981\u4f60\u5f3a\u5236\n    \u6307\u5b9a\u7684 function\u3002\n    \"\"\"\n    messages = [\n        {\n            \"role\": \"system\",\n            \"content\": (\n                \"\u4f60\u662f\u4e00\u4e2a\u4e25\u8c28\u7684\u52a9\u624b\u3002\u5982\u679c\u95ee\u9898\u6d89\u53ca\u65f6\u6548\u6027\u4fe1\u606f\uff08\u65b0\u95fb\u3001\u4ef7\u683c\u3001\"\n                \"\u7248\u672c\u53f7\u3001\u653f\u7b56\u7b49\uff09\uff0c\u8bf7\u4f18\u5148\u4f7f\u7528\u641c\u7d22\u5230\u7684\u6700\u65b0\u7ed3\u679c\u4f5c\u7b54\uff0c\u5e76\u5728\"\n                \"\u56de\u7b54\u4e2d\u4f53\u73b0\u4fe1\u606f\u7684\u65f6\u6548\u6027\u3002\"\n            ),\n        },\n        {\"role\": \"user\", \"content\": user_question},\n    ]\n\n    response = client.chat.completions.create(\n        model=MODEL_NAME,\n        messages=messages,\n        tools=[WEB_SEARCH_TOOL] if use_web_search else None,\n    )\n\n    choice = response.choices[0]\n    answer = choice.message.content or \"\"\n\n    # \u547d\u4e2d\u641c\u7d22\u65f6\uff0c\u54cd\u5e94\u9876\u5c42\u4f1a\u5e26\u4e00\u4e2a web_search \u6570\u7ec4\uff08\u5f15\u7528\u6765\u6e90\u5217\u8868\uff09\u3002\n    # \u8fd9\u662f OpenAI \u7684 ChatCompletion \u54cd\u5e94\u7ed3\u6784\u91cc\u672c\u6765\u6ca1\u6709\u7684\u667a\u8c31\u6269\u5c55\u5b57\u6bb5\uff0c\n    # \u5b98\u65b9 openai SDK \u5bf9\u672a\u77e5\u7684\u9876\u5c42\u5b57\u6bb5\u4e00\u822c\u4f1a\u4fdd\u7559\u5728 model_extra \u91cc\uff0c\n    # \u8fd9\u91cc\u505a\u4e86\u9632\u5fa1\u6027\u8bfb\u53d6\uff0c\u8bfb\u4e0d\u5230\u5c31\u4e0d\u5c55\u793a\u6765\u6e90\uff08\u4e0d\u5f71\u54cd\u4e3b\u56de\u7b54\uff09\u3002\n    sources = getattr(response, \"web_search\", None)\n    if sources is None:\n        model_extra = getattr(response, \"model_extra\", None) or {}\n        sources = model_extra.get(\"web_search\")\n\n    if sources:\n        lines = [answer, \"\", \"\u53c2\u8003\u6765\u6e90\uff1a\"]\n        for item in sources:\n            title = item.get(\"title\") if isinstance(item, dict) else getattr(item, \"title\", None)\n            link = item.get(\"link\") if isinstance(item, dict) else getattr(item, \"link\", None)\n            if title or link:\n                lines.append(f\"- {title or '(\u65e0\u6807\u9898)'} {link or ''}\".strip())\n        answer = \"\\n\".join(lines)\n\n    return answer\n\n\nif __name__ == \"__main__\":\n    question = \"\u6700\u8fd1\u6709\u4ec0\u4e48\u503c\u5f97\u5173\u6ce8\u7684 AI \u5927\u6a21\u578b\u65b0\u53d1\u5e03\uff1f\u8bf7\u7b80\u8981\u603b\u7ed3\u3002\"\n    print(ask(question))\n"}, {"name": "notes.md", "type": "text", "content": "# \u8fc1\u79fb\u8bf4\u660e\u4e0e\u5047\u8bbe\n\n## \u91c7\u7528\u7684\u65b9\u6848\n- \u6cbf\u7528 `openai` Python SDK\uff08\u4e0d\u6362\u5e93\uff09\uff0c\u53ea\u6539 `OpenAI(...)` \u7684\u4e24\u4e2a\u6784\u9020\u53c2\u6570\uff1a\n  - `api_key`\uff1a\u6362\u6210\u667a\u8c31 API Key\uff08\u793a\u4f8b\u4e2d\u4ece\u73af\u5883\u53d8\u91cf `ZHIPU_API_KEY` \u8bfb\u53d6\uff0c\u672a\u8bbe\u7f6e\u65f6\u7528\u5360\u4f4d\u5b57\u7b26\u4e32\uff0c\u4e0d\u4f1a\u771f\u7684\u53d1\u8bf7\u6c42\uff09\u3002\n  - `base_url`\uff1a`https://open.bigmodel.cn/api/paas/v4/`\uff08\u667a\u8c31\u5b98\u65b9\u6587\u6863\u660e\u786e\u7684 OpenAI \u517c\u5bb9\u7aef\u70b9\uff09\u3002\n  - `model`\uff1a\u6362\u6210\u667a\u8c31\u6a21\u578b\u4ee3\u7801 `glm-5.3`\u3002\n- \u8054\u7f51\u641c\u7d22\u901a\u8fc7 `chat.completions.create(tools=[...])` \u91cc\u52a0\u4e00\u4e2a `{\"type\": \"web_search\", \"web_search\": {...}}` \u5de5\u5177\u9879\u5b9e\u73b0\uff0c\u8fd9\u662f\u667a\u8c31\u6587\u6863\u91cc\"\u4e09\u5c42\u8054\u7f51\u68c0\u7d22\u80fd\u529b\"\u4e2d\u7684\u7b2c\u4e8c\u5c42\uff08\u5185\u5d4c\u5728 chat/completions \u91cc\uff0c\u5e73\u53f0\u81ea\u52a8\u5224\u65ad\u662f\u5426\u8981\u641c\u7d22\u3001\u81ea\u52a8\u6267\u884c\u3001\u81ea\u52a8\u628a\u7ed3\u679c\u7cc5\u5408\u8fdb\u56de\u7b54\uff09\uff0c\u4e0d\u662f\u6211\u7f16\u9020\u7684\u53c2\u6570\uff0c\u6765\u6e90\u662f\u6280\u80fd\u5305 `references/tools.md` \u7b2c 380 \u884c\u548c `references/chat.md` \u7b2c 433 \u884c\u7684\u5de5\u5177\u7c7b\u578b\u5bf9\u7167\u8868\u3002\n\n## \u505a\u51fa\u7684\u5047\u8bbe\n1. **\u9ed8\u8ba4\u6a21\u578b\u9009 `glm-5.3`**\uff1a\u6280\u80fd\u6587\u6863\u91cc\u591a\u5904\u793a\u4f8b\uff08\u5feb\u901f\u5f00\u59cb\u3001OpenAI \u517c\u5bb9\u5c42\u793a\u4f8b\uff09\u90fd\u7528\u5b83\u4f5c\u4e3a\u9ed8\u8ba4\u65d7\u8230\u5bf9\u8bdd\u6a21\u578b\uff0c\u7528\u6765\u5bf9\u5e94\u539f\u811a\u672c\u91cc\u672a\u6307\u660e\u7684 OpenAI \u6a21\u578b\uff08\u5982 `gpt-4o`\uff09\u3002\u5982\u679c\u7528\u6237\u539f\u811a\u672c\u7528\u7684\u662f\u66f4\u8f7b\u91cf\u7684\u6a21\u578b\uff0c\u53ef\u4ee5\u6309 `references/models.md` \u6362\u6210 `glm-5.3-flash` \u7b49\u3002\n2. **\u641c\u7d22\u5f15\u64ce\u9009 `search_pro`**\uff1a\u6587\u6863\u8bf4\u5b83\"\u591a\u5f15\u64ce\u534f\u540c\u3001\u53ec\u56de\u7387\u66f4\u9ad8\"\uff0c\u4f5c\u4e3a\u901a\u7528\u573a\u666f\u7684\u5408\u7406\u9ed8\u8ba4\uff1b`search_std` \u66f4\u7701\u6210\u672c\uff0c\u53ef\u6309\u9700\u66ff\u6362\u3002\n3. **`search_recency_filter` \u8bbe\u4e3a `oneYear`**\uff1a\u4e3a\u4e86\u4f53\u73b0\"\u67e5\u6700\u65b0\u4fe1\u606f\"\u7684\u610f\u56fe\uff0c\u4f46\u6587\u6863\u9ed8\u8ba4\u503c\u662f `noLimit`\uff1b\u8fd9\u662f\u6211\u52a0\u7684\u9ed8\u8ba4\u6536\u7d27\uff0c\u4e0d\u662f\u5f3a\u5236\u8981\u6c42\uff0c\u6309\u4e1a\u52a1\u9700\u8981\u53ef\u4ee5\u53bb\u6389\u6216\u6539\u6210 `oneMonth`/`oneDay`\u3002\n4. **API Key \u73af\u5883\u53d8\u91cf\u540d\u7528 `ZHIPU_API_KEY`**\uff1a\u6280\u80fd\u6587\u6863\u91cc\u5b98\u65b9\u793a\u4f8b\u5e38\u7528 `ZAI_API_KEY`\uff08\u5bf9\u5e94 zai-sdk\uff09\u6216 `ZHIPUAI_API_KEY`\uff08\u901a\u7528\u793a\u4f8b\uff09\uff0c\u4e09\u8005\u5e76\u65e0\u5f3a\u5236\u7edf\u4e00\u547d\u540d\uff1b\u9009\u4e86\u8bed\u4e49\u4e0a\u66f4\u76f4\u89c2\u7684 `ZHIPU_API_KEY`\uff0c\u5b9e\u9645\u9879\u76ee\u91cc\u6362\u6210\u56e2\u961f\u7ea6\u5b9a\u7684\u53d8\u91cf\u540d\u5373\u53ef\u3002\n5. **`tool_choice` \u672a\u663e\u5f0f\u4f20**\uff1a\u6587\u6863\u8bf4 `tool_choice` \u76ee\u524d\u9ed8\u8ba4\u4e14\u4ec5\u652f\u6301 `\"auto\"`\uff0cweb_search \u53c8\u662f\u5e73\u53f0\u81ea\u52a8\u6267\u884c\u7684\u5de5\u5177\uff08\u4e0d\u662f\u9700\u8981\u663e\u5f0f\u6388\u6743\u8c03\u7528\u7684 function\uff09\uff0c\u6240\u4ee5\u6ca1\u6709\u4f20\u8fd9\u4e2a\u53c2\u6570\uff0c\u4fdd\u6301\u9ed8\u8ba4\u884c\u4e3a\u3002\n\n## \u4e0d\u786e\u5b9a / \u5efa\u8bae\u5b9e\u9645\u8c03\u7528\u65f6\u9a8c\u8bc1\u7684\u70b9\n1. **`web_search` \u5de5\u5177\u9879\u5728 `tools` \u6570\u7ec4\u91cc\u7684\u786e\u5207 JSON \u7ed3\u6784**\uff1a\u6280\u80fd\u5305\u7684 `references/chat.md` \u53ea\u7ed9\u51fa\u4e86\u4e00\u5f20\u5b57\u6bb5\u5bf9\u7167\u8868\uff08`web_search.enable`\u3001`search_engine`\u3001`search_query` \u7b49\u5b57\u6bb5\u540d\uff09\uff0c**\u6ca1\u6709\u7ed9\u51fa\u4e00\u6bb5\u5b8c\u6574\u53ef\u590d\u5236\u7684 JSON \u793a\u4f8b**\uff08\u4e0d\u50cf `function` \u7c7b\u578b\u548c\u72ec\u7acb\u7684 `POST /paas/v4/web_search` \u63a5\u53e3\u90a3\u6837\u6709\u73b0\u6210\u7684\u8bf7\u6c42\u4f53\u6837\u4f8b\uff09\u3002\u6211\u662f\u6309\u7167\u540c\u4e00\u5f20\u8868\u91cc `function`/`mcp` \u4e24\u79cd\u5de5\u5177\u7c7b\u578b\"\u9876\u5c42 `type` \u5b57\u6bb5 + \u4e0e type \u540c\u540d\u7684\u5d4c\u5957\u5bf9\u8c61\u88c5\u53c2\u6570\"\u7684\u4e00\u81f4\u6a21\u5f0f\uff0c\u63a8\u65ad\u51fa `{\"type\": \"web_search\", \"web_search\": {\"enable\": true, \"search_engine\": \"search_pro\", ...}}` \u8fd9\u4e2a\u7ed3\u6784\u3002**\u5efa\u8bae\u63a5\u5165\u65f6\u5148\u7528\u4e00\u6b21\u771f\u5b9e\u8bf7\u6c42\u9a8c\u8bc1\u8fd9\u4e2a\u5d4c\u5957\u7ed3\u6784\u662f\u5426\u6b63\u786e**\uff08\u6bd4\u5982 `enable` \u5b57\u6bb5\u662f\u5426\u771f\u7684\u9700\u8981\u663e\u5f0f\u4f20 `true`\uff0c\u8fd8\u662f\u53ea\u8981 `tools` \u91cc\u51fa\u73b0 `type: \"web_search\"` \u5c31\u9ed8\u8ba4\u542f\u7528\uff09\uff0c\u5982\u9047\u5230\"\u53c2\u6570\u975e\u6cd5\"\u62a5\u9519\uff0c\u4ee5 API \u5b9e\u9645\u62a5\u9519\u548c `docs.bigmodel.cn` \u6700\u65b0\u6587\u6863\u4e3a\u51c6\u3002\n2. **\u54cd\u5e94\u4f53\u91cc `web_search` \u5f15\u7528\u6570\u7ec4\u80fd\u5426\u901a\u8fc7 OpenAI Python SDK \u7684\u8fd4\u56de\u5bf9\u8c61\u76f4\u63a5\u8bfb\u5230**\uff1a\u8fd9\u662f\u667a\u8c31\u5728\u6807\u51c6 `ChatCompletion` \u54cd\u5e94\u4e4b\u5916\u9644\u52a0\u7684\u9876\u5c42\u6269\u5c55\u5b57\u6bb5\uff0cOpenAI \u5b98\u65b9 SDK \u7528 pydantic \u6a21\u578b\u89e3\u6790\u54cd\u5e94\uff0c\u6211\u4e0d\u80fd 100%\u786e\u5b9a\u5f53\u524d\u7248\u672c\u7684 `openai` \u5e93\u4f1a\u628a\u8fd9\u7c7b\u672a\u5728\u5176 schema \u4e2d\u5b9a\u4e49\u7684\u9876\u5c42\u5b57\u6bb5\u900f\u4f20\u5230 `response.model_extra`\uff08\u4e0d\u540c\u5927\u7248\u672c\u7684 `openai` SDK \u5bf9\"\u989d\u5916\u5b57\u6bb5\"\u7684\u5904\u7406\u7b56\u7565\u53ef\u80fd\u4e0d\u540c\uff09\u3002\u4ee3\u7801\u91cc\u505a\u4e86\u9632\u5fa1\u6027\u8bfb\u53d6\uff08\u5148\u5c1d\u8bd5 `response.web_search`\uff0c\u518d\u5c1d\u8bd5 `response.model_extra.get(\"web_search\")`\uff09\uff0c\u8bfb\u4e0d\u5230\u5c31\u8df3\u8fc7\u6765\u6e90\u5c55\u793a\uff0c\u4e0d\u5f71\u54cd\u4e3b\u56de\u7b54\uff0c\u4f46**\u5982\u679c\u9700\u8981\u7a33\u5b9a\u62ff\u5230\u5f15\u7528\u6765\u6e90\uff0c\u66f4\u7a33\u59a5\u7684\u505a\u6cd5\u662f\u7ed5\u8fc7 SDK \u7684\u54cd\u5e94\u89e3\u6790\uff0c\u76f4\u63a5\u7528 `requests` \u53d1\u8d77\u8be5\u8bf7\u6c42\u5e76\u89e3\u6790\u539f\u59cb JSON**\uff08\u793a\u4f8b\u53ef\u53c2\u8003 `references/tools.md` \u91cc `web_search`/`reader` \u63a5\u53e3\u7684 `requests` \u5199\u6cd5\uff09\uff0c\u6216\u6539\u7528\u667a\u8c31\u5b98\u65b9 `zai-sdk`\u3002\n3. **`temperature=0` \u7b49 OpenAI \u5e38\u89c1\u5199\u6cd5\u5728\u667a\u8c31\u8fd9\u8fb9\u4e0d\u517c\u5bb9**\uff1a\u6587\u6863\u63d0\u5230\u667a\u8c31 `temperature` \u5408\u6cd5\u533a\u95f4\u662f `(0,1)`\uff08\u4e0d\u5305\u542b 0\uff09\uff0c\u5982\u679c\u539f\u59cb OpenAI \u4ee3\u7801\u91cc\u6709 `temperature=0` \u6216 `do_sample=False` \u4e4b\u7c7b\u7684\u5199\u6cd5\u8981\u6c42\u786e\u5b9a\u6027\u8f93\u51fa\uff0c\u8fc1\u79fb\u65f6\u9700\u8981\u76f8\u5e94\u8c03\u6574\uff08\u793a\u4f8b\u811a\u672c\u672c\u8eab\u6ca1\u6709\u8bbe\u7f6e `temperature`\uff0c\u672a\u53d7\u5f71\u54cd\uff0c\u4f46\u8fd9\u662f\u5e38\u89c1\u7684\u8fc1\u79fb\u9690\u60a3\uff0c\u4e00\u5e76\u8bb0\u5f55\uff09\u3002\n\n## \u672a\u505a\u7684\u4e8b\n- \u672a\u5b9e\u9645\u8c03\u7528 bigmodel.cn API\uff08\u6ca1\u6709\u771f\u5b9e Key\uff09\uff0c\u4ec5\u505a\u4e86 `python -m py_compile` \u8bed\u6cd5\u68c0\u67e5\uff0c\u4fdd\u8bc1\u811a\u672c\u53ef\u8fd0\u884c\u3001\u65e0\u8bed\u6cd5\u9519\u8bef\u3002\n- \u672a\u5904\u7406\u6d41\u5f0f\u8f93\u51fa\uff08`stream=True`\uff09\u2014\u2014\u539f\u59cb\u4efb\u52a1\u63cf\u8ff0\u7684\u662f\"\u7b80\u5355\u7684\u73b0\u6709\u811a\u672c\"\uff0c\u5224\u65ad\u975e\u6d41\u5f0f\u8c03\u7528\u5df2\u7ecf\u8986\u76d6\"\u8fc1\u79fb + \u8054\u7f51\u641c\u7d22\"\u7684\u6838\u5fc3\u8bc9\u6c42\uff1b\u5982\u9700\u8981\u6d41\u5f0f\uff0c\u601d\u8def\u4e00\u81f4\uff08`stream=True` \u540e\u6309 SSE chunk \u89e3\u6790 `delta.content`\uff09\uff0c\u53ef\u53c2\u8003 `references/sdk-and-compat.md` \u91cc\u7684\u6d41\u5f0f\u793a\u4f8b\u3002\n"}], "grading": {"expectations": [{"text": "Code keeps using the openai package's OpenAI client class", "passed": true, "evidence": "from openai import OpenAI; client = OpenAI(...)"}, {"text": "base_url set to bigmodel.cn OpenAI-compatible endpoint under /paas/v4/", "passed": true, "evidence": "base_url=\"https://open.bigmodel.cn/api/paas/v4/\""}, {"text": "api_key sourced from an env var specific to the new provider", "passed": true, "evidence": "api_key=os.environ.get(\"ZHIPU_API_KEY\", \"your-zhipu-api-key-here\")"}, {"text": "model changed to a real GLM model code", "passed": true, "evidence": "MODEL_NAME = \"glm-5.3\""}, {"text": "Web search wired via a real, functional mechanism", "passed": true, "evidence": "WEB_SEARCH_TOOL = {'type':'web_search','web_search':{'enable':True,'search_engine':'search_pro', ...}} \u2014 includes search_engine explicitly, verified live to return real search results"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python -m py_compile"}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "notes": "UPDATED after live API verification (2026-09-03): a live call confirmed both this version (explicit search_engine) and the baseline's version (omitted search_engine) return successful search results when hitting POST /paas/v4/chat/completions \u2014 the platform silently defaults the engine when omitted, so this specific eval no longer differentiates with-skill vs baseline on pass/fail. The with-skill version is still the better engineering choice (it doesn't rely on an undocumented default, and its notes.md correctly flagged this exact field as something to verify against a live call rather than assuming), but this is a matter of robustness/best-practice, not functional correctness. A separate, unrelated finding from this same live-testing round: the STANDALONE /paas/v4/web_search endpoint (a different code path, in references/tools.md) does hard-require search_engine and returns a real 1214 error without it \u2014 so the skill's advice to always pass it explicitly remains correct and is now the more important differentiator to test if this eval is reused."}}, {"id": "eval-openai-migration-with-search-without_skill-run-1", "prompt": "\u6211\u4eec\u73b0\u6709\u9879\u76ee\u662f\u7528 OpenAI \u7684 Python SDK \u5199\u7684\u804a\u5929\u529f\u80fd\uff0c\u73b0\u5728\u60f3\u5207\u6362\u6210\u667a\u8c31\u7684 GLM \u6a21\u578b\uff0c\u5c3d\u91cf\u5c11\u6539\u4ee3\u7801\uff1b\u53e6\u5916\u8fd8\u60f3\u7ed9\u5b83\u52a0\u4e0a\u8054\u7f51\u641c\u7d22\u80fd\u529b\uff0c\u8ba9\u6a21\u578b\u80fd\u67e5\u5230\u6700\u65b0\u4fe1\u606f\u518d\u56de\u7b54\u7528\u6237\u95ee\u9898\u3002\u7ed9\u51fa\u6539\u9020\u540e\u7684\u4ee3\u7801\u3002", "eval_id": 3, "outputs": [{"name": "migrated_chat.py", "type": "text", "content": "\"\"\"\n\u8fc1\u79fb\u8bf4\u660e\n========\n\u539f\u59cb\u4ee3\u7801\u4f7f\u7528 OpenAI \u5b98\u65b9 Python SDK \u76f4\u8fde OpenAI \u7684\u804a\u5929\u8865\u5168\u63a5\u53e3\uff1a\n\n    from openai import OpenAI\n    client = OpenAI(api_key=\"sk-...\")\n    resp = client.chat.completions.create(\n        model=\"gpt-4o-mini\",\n        messages=[{\"role\": \"user\", \"content\": \"\u4f60\u597d\"}],\n    )\n\n\u667a\u8c31 AI\uff08Zhipu / BigModel\uff09\u5bf9\u5916\u63d0\u4f9b\u4e86 **OpenAI \u517c\u5bb9\u63a5\u53e3**\uff0c\u56e0\u6b64\u4e0d\u9700\u8981\u66f4\u6362 SDK\uff0c\n\u53ea\u9700\u8981\u505a\u4e24\u4ef6\u4e8b\uff1a\n\n1. \u4ecd\u7136 `from openai import OpenAI`\uff0c\u4f46\u5728\u5b9e\u4f8b\u5316\u65f6\u6539\u4f20\u667a\u8c31\u7684 `base_url` \u548c\u667a\u8c31\u7684\n   `api_key`\uff08\u5f62\u5982 `{key_id}.{key_secret}`\uff09\uff0c\u5e76\u628a `model` \u6362\u6210 GLM \u7cfb\u5217\u6a21\u578b\u540d\n   \uff08\u5982 `glm-4-plus` / `glm-4-flash` / `glm-4-air` \u7b49\uff09\u3002\n2. \u8981\u8ba9\u6a21\u578b\u5177\u5907\"\u8054\u7f51\u641c\u7d22\u6700\u65b0\u4fe1\u606f\"\u7684\u80fd\u529b\uff0c\u667a\u8c31\u5728 `chat.completions.create` \u7684\n   `tools` \u53c2\u6570\u91cc\u5185\u7f6e\u4e86\u4e00\u4e2a\u7279\u6b8a\u5de5\u5177\u7c7b\u578b `web_search`\uff08\u8fd9\u662f\u667a\u8c31\u5bf9 OpenAI \u534f\u8bae\u7684\n   \u6269\u5c55\u5b57\u6bb5\uff0c\u4e0d\u662f\u6807\u51c6 OpenAI \u7684 function-calling \u5de5\u5177\uff0c\u4f46\u56e0\u4e3a Python SDK \u53ea\u662f\u628a\n   `tools` \u539f\u6837\u5e8f\u5217\u5316\u6210 JSON \u53d1\u7ed9\u670d\u52a1\u7aef\uff0c\u6240\u4ee5\u4e0d\u9700\u8981\u4fee\u6539/\u7834\u89e3 SDK\uff0c\u76f4\u63a5\u4f20\u5373\u53ef\uff09\u3002\n   \u6a21\u578b\u4f1a\u5728\u63a8\u7406\u8fc7\u7a0b\u4e2d\u81ea\u52a8\u5224\u65ad\u662f\u5426\u9700\u8981\u68c0\u7d22\uff0c\u5e76\u628a\u68c0\u7d22\u7ed3\u679c\u878d\u5408\u8fdb\u6700\u7ec8\u56de\u7b54\u91cc\u3002\n\n\u56e0\u6b64\u6574\u4f53\u4ee3\u7801\u6539\u52a8\u975e\u5e38\u5c0f\uff1a\u6362 base_url\u3001\u6362 api_key \u6765\u6e90\u3001\u6362 model \u540d\u3001\u7ed9\ntools \u53c2\u6570\u52a0\u4e00\u4e2a web_search \u5de5\u5177\u9879\u3002\u4e1a\u52a1\u4fa7\u8c03\u7528 `chat.completions.create(...)`\n\u7684\u65b9\u5f0f\u5b8c\u5168\u4e0d\u53d8\u3002\n\"\"\"\n\nimport os\n\nfrom openai import OpenAI\n\n# ---------------------------------------------------------------------------\n# 1. \u521d\u59cb\u5316\u5ba2\u6237\u7aef\uff1a\u4ecd\u7136\u7528 OpenAI SDK\uff0c\u4f46\u6307\u5411\u667a\u8c31 BigModel \u7684 OpenAI \u517c\u5bb9\u7aef\u70b9\n# ---------------------------------------------------------------------------\n# \u667a\u8c31\u7684 API Key \u5efa\u8bae\u901a\u8fc7\u73af\u5883\u53d8\u91cf\u6ce8\u5165\uff0c\u4e0d\u8981\u786c\u7f16\u7801\u5230\u4ee3\u7801\u91cc\u3002\n# \u667a\u8c31\u63a7\u5236\u53f0\u7684 Key \u683c\u5f0f\u4e00\u822c\u662f \"{id}.{secret}\"\uff0c\u76f4\u63a5\u6574\u4f53\u4f5c\u4e3a api_key \u4f7f\u7528\u5373\u53ef\u3002\nZHIPU_API_KEY = os.environ.get(\"ZHIPUAI_API_KEY\", \"your-api-key-here\")\nZHIPU_BASE_URL = \"https://open.bigmodel.cn/api/paas/v4/\"\n\nclient = OpenAI(\n    api_key=ZHIPU_API_KEY,\n    base_url=ZHIPU_BASE_URL,\n)\n\n# \u667a\u8c31 GLM \u7cfb\u5217\u53ef\u9009\u6a21\u578b\u793a\u4f8b\uff1a\n#   glm-4-plus   \u2014\u2014 \u6548\u679c\u6700\u5f3a\uff0c\u9002\u5408\u590d\u6742\u4efb\u52a1\n#   glm-4-air    \u2014\u2014 \u6027\u4ef7\u6bd4\u5747\u8861\n#   glm-4-flash  \u2014\u2014 \u901f\u5ea6\u5feb\u3001\u514d\u8d39/\u4f4e\u6210\u672c\uff0c\u9002\u5408\u9ad8\u5e76\u53d1\u573a\u666f\nGLM_MODEL = \"glm-4-plus\"\n\n# ---------------------------------------------------------------------------\n# 2. \u8054\u7f51\u641c\u7d22\u80fd\u529b\uff1a\u901a\u8fc7 tools \u53c2\u6570\u58f0\u660e\u667a\u8c31\u5185\u7f6e\u7684 web_search \u5de5\u5177\n# ---------------------------------------------------------------------------\n# \u8bf4\u660e\uff1a\n#   - type \u56fa\u5b9a\u4e3a \"web_search\"\uff08\u667a\u8c31\u5bf9\u534f\u8bae\u7684\u6269\u5c55\uff0c\u975e\u6807\u51c6 OpenAI function tool\uff09\u3002\n#   - search_result: True \u8868\u793a\u5e0c\u671b\u5728\u8fd4\u56de\u7ed3\u679c\u4e2d\u9644\u5e26\u5f15\u7528/\u68c0\u7d22\u7247\u6bb5\uff0c\u4fbf\u4e8e\u6eaf\u6e90\u5c55\u793a\u3002\n#   - \u662f\u5426\u771f\u6b63\u89e6\u53d1\u641c\u7d22\u7531\u6a21\u578b\u81ea\u884c\u5224\u65ad\uff08\u4f8b\u5982\u95ee\u9898\u6d89\u53ca\"\u6700\u65b0\"\"\u4eca\u5929\"\"\u5b9e\u65f6\u884c\u60c5\"\u7b49\uff09\uff0c\n#     \u4e0d\u9700\u8981\u4e1a\u52a1\u4ee3\u7801\u624b\u52a8\u5206\u4e24\u6b65\u8c03\u7528\u3002\nWEB_SEARCH_TOOL = {\n    \"type\": \"web_search\",\n    \"web_search\": {\n        \"enable\": True,\n        \"search_result\": True,\n    },\n}\n\n\ndef chat_with_glm(user_message: str, enable_web_search: bool = True) -> str:\n    \"\"\"\n    \u8c03\u7528\u667a\u8c31 GLM \u6a21\u578b\u5b8c\u6210\u4e00\u6b21\u5bf9\u8bdd\uff0c\u53ef\u9009\u542f\u7528\u8054\u7f51\u641c\u7d22\u3002\n\n    \u4e0e\u539f OpenAI \u7248\u672c\u76f8\u6bd4\uff0c\u4e1a\u52a1\u4fa7\u8c03\u7528\u65b9\u5f0f\uff08\u6784\u9020 messages\u3001\u8bfb\u53d6\n    response.choices[0].message.content\uff09\u5b8c\u5168\u6ca1\u6709\u53d8\u5316\uff0c\n    \u53ea\u662f\u591a\u4f20\u4e86\u4e00\u4e2a tools \u53c2\u6570\u7528\u4e8e\u5f00\u542f\u8054\u7f51\u641c\u7d22\u3002\n    \"\"\"\n    messages = [\n        {\n            \"role\": \"system\",\n            \"content\": \"\u4f60\u662f\u4e00\u4e2a\u4e50\u4e8e\u52a9\u4eba\u7684\u52a9\u624b\u3002\u5982\u679c\u95ee\u9898\u6d89\u53ca\u6700\u65b0\u4fe1\u606f\u3001\u5b9e\u65f6\u6570\u636e\u6216\"\n            \"\u9700\u8981\u8054\u7f51\u6838\u5b9e\u7684\u5185\u5bb9\uff0c\u8bf7\u4f18\u5148\u8c03\u7528\u8054\u7f51\u641c\u7d22\u5de5\u5177\u83b7\u53d6\u51c6\u786e\u4fe1\u606f\u540e\u518d\u56de\u7b54\u3002\",\n        },\n        {\"role\": \"user\", \"content\": user_message},\n    ]\n\n    create_kwargs = dict(\n        model=GLM_MODEL,\n        messages=messages,\n        temperature=0.7,\n    )\n    if enable_web_search:\n        create_kwargs[\"tools\"] = [WEB_SEARCH_TOOL]\n\n    response = client.chat.completions.create(**create_kwargs)\n\n    choice = response.choices[0]\n    answer = choice.message.content or \"\"\n\n    # \u5982\u679c\u5f00\u542f\u4e86\u8054\u7f51\u641c\u7d22\uff0c\u667a\u8c31\u53ef\u80fd\u4f1a\u5728\u8fd4\u56de\u4e2d\u9644\u5e26\u68c0\u7d22\u5230\u7684\u53c2\u8003\u8d44\u6599\n    # \uff08\u5177\u4f53\u5b57\u6bb5\u540d\u4ee5\u5b98\u65b9\u6700\u65b0\u6587\u6863\u4e3a\u51c6\uff0c\u8fd9\u91cc\u505a\u4e86\u517c\u5bb9\u6027\u7684\u5bb9\u9519\u8bfb\u53d6\uff0c\n    # \u4e0d\u5f71\u54cd\u4e3b\u6d41\u7a0b\uff0c\u4ec5\u7528\u4e8e\u6253\u5370\u5f15\u7528\u6765\u6e90\u65b9\u4fbf\u8c03\u8bd5/\u5c55\u793a\uff09\u3002\n    search_results = _extract_search_results(response)\n    if search_results:\n        print(\"\\n[\u8054\u7f51\u641c\u7d22\u5f15\u7528\u6765\u6e90]\")\n        for i, item in enumerate(search_results, start=1):\n            title = item.get(\"title\") or item.get(\"name\") or \"(\u65e0\u6807\u9898)\"\n            link = item.get(\"link\") or item.get(\"url\") or \"\"\n            print(f\"  {i}. {title} - {link}\")\n\n    return answer\n\n\ndef _extract_search_results(response) -> list:\n    \"\"\"\n    \u5c3d\u91cf\u517c\u5bb9\u5730\u4ece\u54cd\u5e94\u4e2d\u63d0\u53d6\u8054\u7f51\u641c\u7d22\u7684\u5f15\u7528\u7ed3\u679c\u3002\n    \u667a\u8c31\u5728\u8fd4\u56de\u4e2d\u53ef\u80fd\u901a\u8fc7 message.tool_calls \u6216\u9876\u5c42\u6269\u5c55\u5b57\u6bb5\u643a\u5e26\u641c\u7d22\u7ed3\u679c\uff0c\n    \u8fd9\u91cc\u505a\u4e86\u9632\u5fa1\u6027\u89e3\u6790\uff0c\u53d6\u4e0d\u5230\u5c31\u8fd4\u56de\u7a7a\u5217\u8868\uff0c\u4e0d\u5f71\u54cd\u4e3b\u7b54\u6848\u7684\u8f93\u51fa\u3002\n    \"\"\"\n    try:\n        message = response.choices[0].message\n        # \u67d0\u4e9b\u7248\u672c\u4f1a\u628a\u641c\u7d22\u7ed3\u679c\u653e\u5728 tool_calls \u91cc\n        tool_calls = getattr(message, \"tool_calls\", None)\n        if tool_calls:\n            results = []\n            for call in tool_calls:\n                web_search = getattr(call, \"web_search\", None)\n                if web_search:\n                    results.extend(web_search)\n            if results:\n                return results\n\n        # \u67d0\u4e9b\u7248\u672c\u4f1a\u628a\u641c\u7d22\u7ed3\u679c\u653e\u5728\u54cd\u5e94\u9876\u5c42\u7684 web_search \u5b57\u6bb5\n        raw = response.model_dump() if hasattr(response, \"model_dump\") else {}\n        if isinstance(raw, dict) and raw.get(\"web_search\"):\n            return raw[\"web_search\"]\n    except Exception:\n        # \u63d0\u53d6\u5f15\u7528\u6765\u6e90\u5931\u8d25\u4e0d\u5e94\u5f71\u54cd\u4e3b\u6d41\u7a0b\n        pass\n    return []\n\n\nif __name__ == \"__main__\":\n    question = \"\u4eca\u5929\u6709\u4ec0\u4e48\u503c\u5f97\u5173\u6ce8\u7684\u79d1\u6280\u65b0\u95fb\uff1f\"\n    answer = chat_with_glm(question, enable_web_search=True)\n    print(\"\u7528\u6237\u95ee\u9898:\", question)\n    print(\"\u6a21\u578b\u56de\u7b54:\", answer)\n"}], "grading": {"expectations": [{"text": "Code keeps using the openai package's OpenAI client class", "passed": true, "evidence": "from openai import OpenAI; client = OpenAI(...)"}, {"text": "base_url set to bigmodel.cn OpenAI-compatible endpoint under /paas/v4/", "passed": true, "evidence": "ZHIPU_BASE_URL = \"https://open.bigmodel.cn/api/paas/v4/\""}, {"text": "api_key sourced from an env var specific to the new provider", "passed": true, "evidence": "ZHIPU_API_KEY = os.environ.get(\"ZHIPUAI_API_KEY\", \"your-api-key-here\")"}, {"text": "model changed to a real GLM model code", "passed": true, "evidence": "GLM_MODEL = \"glm-4-plus\" \u2014 a real, if legacy, model code"}, {"text": "Web search is wired via a real, functional mechanism (not invented, and not missing required fields)", "passed": true, "evidence": "CORRECTED after live API verification (see notes): WEB_SEARCH_TOOL omits 'search_engine', which the OpenAPI schema marks required, but a live call to POST /paas/v4/chat/completions with an identical web_search dict (enable+search_result, no search_engine) returned a normal successful response with real search results \u2014 the platform silently applies a default engine here. The earlier grading run marked this FAILED based on the OpenAPI spec alone; that was wrong about runtime behavior and has been corrected."}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with py_compile"}], "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0}, "notes": "IMPORTANT CORRECTION (post live-API verification, 2026-09-03): the initial grading pass (see grading.json.pre-live-test) failed this run's web_search wiring because it omits the 'search_engine' field, which the bigmodel.cn OpenAPI spec marks as required on WebSearchObject. A live test against the real API (using a real key) showed that omitting 'search_engine' on the chat/completions 'web_search' TOOL TYPE does not error \u2014 the platform applies a silent default and search still works. So this run's code is functionally correct as written, despite deviating from the documented schema. A SEPARATE live test confirmed the standalone POST /paas/v4/web_search ENDPOINT (a different code path, covered in references/tools.md) does hard-require 'search_engine' and returns error 1214 when it's missing. This is a case where static doc/schema-based grading gave the wrong verdict and only live testing caught it \u2014 the skill's chat.md has been updated with a callout documenting this distinction and recommending explicit search_engine regardless."}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "bigmodel-cn", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-09-03T06:57:43Z", "evals_run": [1, 2, 3], "runs_per_configuration": 3}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 105.2, "tokens": 92175, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions", "passed": true, "evidence": "BASE_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\""}, {"text": "Authorization header is exactly 'Bearer <API_KEY>', key read from env var", "passed": true, "evidence": "headers = {\"Authorization\": f\"Bearer {api_key}\", ...}; api_key = os.environ.get(API_KEY_ENV_VAR)"}, {"text": "model field is a real GLM chat model code", "passed": true, "evidence": "MODEL = \"glm-5.3\", with an inline comment correctly noting glm-5.3 forces thinking on"}, {"text": "tools array uses documented {'type':'function','function':{...}} shape, not legacy 'functions'", "passed": true, "evidence": "TOOLS = [{\"type\": \"function\", \"function\": {\"name\":..., \"description\":..., \"parameters\":...}}]"}, {"text": "Code reads tool_calls with id/type/function.name/function.arguments", "passed": true, "evidence": "execute_tool_call() reads tool_call['function']['name'] and ['arguments'], parses arguments via json.loads"}, {"text": "Appends role='tool' message with matching tool_call_id", "passed": true, "evidence": "messages.append({'role':'tool','tool_call_id': tool_call['id'], 'content': tool_result_content})"}, {"text": "Makes follow-up call to get and print final answer", "passed": true, "evidence": "run_agent loops calling call_chat_completions again; main() prints under '=== \u6700\u7ec8\u56de\u7b54 ==='"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 127.8, "tokens": 88179, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Image generation call targets /paas/v4/images/generations with a real image model", "passed": true, "evidence": "IMAGE_GENERATIONS_PATH = \"/paas/v4/images/generations\"; \"model\": \"glm-image\""}, {"text": "Script extracts the generated image URL and feeds it into the video generation call", "passed": true, "evidence": "first_frame_image_url=image_result.url passed into submit_video_generation()"}, {"text": "Video generation call targets /paas/v4/videos/generations with model=cogvideox-3", "passed": true, "evidence": "VIDEO_GENERATIONS_PATH = \"/paas/v4/videos/generations\"; default=\"cogvideox-3\""}, {"text": "First-frame parameter name is a real documented field, not invented", "passed": true, "evidence": "\"image_url\": first_frame_image_url \u2014 matches the field name in media.txt/media.md; code also documents the single-string-vs-[first,last]-array distinction"}, {"text": "Video generation treated as async: captures task id from response", "passed": true, "evidence": "submit returns {\"id\":..., \"task_status\": \"PROCESSING\"}; id stored and passed to polling function"}, {"text": "Polls GET /paas/v4/async-result/{id} with backoff and exit condition", "passed": true, "evidence": "ASYNC_RESULT_PATH template; poll loop checks task_status in {SUCCESS, FAIL} with a sleep interval and 300s overall timeout"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with py_compile and --help run"}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 146.1, "tokens": 99270, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Code keeps using the openai package's OpenAI client class", "passed": true, "evidence": "from openai import OpenAI; client = OpenAI(...)"}, {"text": "base_url set to bigmodel.cn OpenAI-compatible endpoint under /paas/v4/", "passed": true, "evidence": "base_url=\"https://open.bigmodel.cn/api/paas/v4/\""}, {"text": "api_key sourced from an env var specific to the new provider", "passed": true, "evidence": "api_key=os.environ.get(\"ZHIPU_API_KEY\", \"your-zhipu-api-key-here\")"}, {"text": "model changed to a real GLM model code", "passed": true, "evidence": "MODEL_NAME = \"glm-5.3\""}, {"text": "Web search wired via a real, functional mechanism", "passed": true, "evidence": "WEB_SEARCH_TOOL = {'type':'web_search','web_search':{'enable':True,'search_engine':'search_pro', ...}} \u2014 includes search_engine explicitly, verified live to return real search results"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python -m py_compile"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 8, "failed": 0, "total": 8, "time_seconds": 63.5, "tokens": 62551, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions", "passed": true, "evidence": "BIGMODEL_API_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\""}, {"text": "Authorization header is exactly 'Bearer <API_KEY>', key read from env var", "passed": true, "evidence": "headers = {\"Authorization\": f\"Bearer {API_KEY}\", ...}; API_KEY = os.environ.get('BIGMODEL_API_KEY', ...)"}, {"text": "model field is a real GLM chat model code", "passed": true, "evidence": "MODEL_NAME = \"glm-5.3\""}, {"text": "tools array uses documented {'type':'function','function':{...}} shape, not legacy 'functions'", "passed": true, "evidence": "TOOLS_SCHEMA = [{\"type\": \"function\", \"function\": {...}}]"}, {"text": "Code reads tool_calls with id/type/function.name/function.arguments", "passed": true, "evidence": "reads tool_call['function']['name'] / ['arguments'], parses via json.loads"}, {"text": "Appends role='tool' message with matching tool_call_id", "passed": true, "evidence": "messages.append({'role':'tool','tool_call_id': tool_call_id, 'content': ...})"}, {"text": "Makes follow-up call to get and print final answer", "passed": true, "evidence": "loop continues until finish_reason != 'tool_calls'; main() prints '\u6a21\u578b\u6700\u7ec8\u56de\u7b54:' + answer"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 7, "failed": 0, "total": 7, "time_seconds": 74.8, "tokens": 63840, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Image generation call targets /paas/v4/images/generations with a real image model", "passed": true, "evidence": "IMAGE_GENERATIONS_URL = f\"{BASE_URL}/images/generations\"; IMAGE_MODEL = \"glm-image\""}, {"text": "Script extracts the generated image URL and feeds it into the video generation call", "passed": true, "evidence": "first_frame_image_url=image_result.url"}, {"text": "Video generation call targets /paas/v4/videos/generations with model=cogvideox-3", "passed": true, "evidence": "VIDEO_GENERATIONS_URL = f\"{BASE_URL}/videos/generations\"; VIDEO_MODEL = \"cogvideox-3\""}, {"text": "First-frame parameter name is a real documented field, not invented", "passed": true, "evidence": "\"image_url\": first_frame_image_url, with comment '\u7528\u4e8e\u4f20\u5165\u9996\u5e27\u56fe\u7247\uff0c\u5b9e\u73b0\u56fe\u751f\u89c6\u9891' \u2014 correct field name, though no discussion of single-vs-array nuance"}, {"text": "Video generation treated as async: captures task id from response", "passed": true, "evidence": "submission response parsed for an id, passed to polling function"}, {"text": "Polls GET /paas/v4/async-result/{id} with backoff and exit condition", "passed": true, "evidence": "ASYNC_RESULT_URL template; status = data.get('task_status') checked in a loop"}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 6, "failed": 0, "total": 6, "time_seconds": 57.2, "tokens": 60961, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Code keeps using the openai package's OpenAI client class", "passed": true, "evidence": "from openai import OpenAI; client = OpenAI(...)"}, {"text": "base_url set to bigmodel.cn OpenAI-compatible endpoint under /paas/v4/", "passed": true, "evidence": "ZHIPU_BASE_URL = \"https://open.bigmodel.cn/api/paas/v4/\""}, {"text": "api_key sourced from an env var specific to the new provider", "passed": true, "evidence": "ZHIPU_API_KEY = os.environ.get(\"ZHIPUAI_API_KEY\", \"your-api-key-here\")"}, {"text": "model changed to a real GLM model code", "passed": true, "evidence": "GLM_MODEL = \"glm-4-plus\" \u2014 a real, if legacy, model code"}, {"text": "Web search is wired via a real, functional mechanism (not invented, and not missing required fields)", "passed": true, "evidence": "CORRECTED after live API verification (see notes): WEB_SEARCH_TOOL omits 'search_engine', which the OpenAPI schema marks required, but a live call to POST /paas/v4/chat/completions with an identical web_search dict (enable+search_result, no search_engine) returned a normal successful response with real search results \u2014 the platform silently applies a default engine here. The earlier grading run marked this FAILED based on the OpenAPI spec alone; that was wrong about runtime behavior and has been corrected."}, {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with py_compile"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 126.3667, "stddev": 20.4876, "min": 105.2, "max": 146.1}, "tokens": {"mean": 93208.0, "stddev": 5617.1957, "min": 88179, "max": 99270}}, "without_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 65.1667, "stddev": 8.9176, "min": 57.2, "max": 74.8}, "tokens": {"mean": 62450.6667, "stddev": 1442.1201, "min": 60961, "max": 63840}}, "delta": {"pass_rate": "+0.00", "time_seconds": "+61.2", "tokens": "+30757"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

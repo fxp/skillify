@@ -1,0 +1,383 @@
+{
+  "metadata": {
+    "skill_name": "bigmodel-cn",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-09-03T06:57:43Z",
+    "evals_run": [
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 105.2,
+        "tokens": 92175,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions",
+          "passed": true,
+          "evidence": "BASE_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\""
+        },
+        {
+          "text": "Authorization header is exactly 'Bearer <API_KEY>', key read from env var",
+          "passed": true,
+          "evidence": "headers = {\"Authorization\": f\"Bearer {api_key}\", ...}; api_key = os.environ.get(API_KEY_ENV_VAR)"
+        },
+        {
+          "text": "model field is a real GLM chat model code",
+          "passed": true,
+          "evidence": "MODEL = \"glm-5.3\", with an inline comment correctly noting glm-5.3 forces thinking on"
+        },
+        {
+          "text": "tools array uses documented {'type':'function','function':{...}} shape, not legacy 'functions'",
+          "passed": true,
+          "evidence": "TOOLS = [{\"type\": \"function\", \"function\": {\"name\":..., \"description\":..., \"parameters\":...}}]"
+        },
+        {
+          "text": "Code reads tool_calls with id/type/function.name/function.arguments",
+          "passed": true,
+          "evidence": "execute_tool_call() reads tool_call['function']['name'] and ['arguments'], parses arguments via json.loads"
+        },
+        {
+          "text": "Appends role='tool' message with matching tool_call_id",
+          "passed": true,
+          "evidence": "messages.append({'role':'tool','tool_call_id': tool_call['id'], 'content': tool_result_content})"
+        },
+        {
+          "text": "Makes follow-up call to get and print final answer",
+          "passed": true,
+          "evidence": "run_agent loops calling call_chat_completions again; main() prints under '=== \u6700\u7ec8\u56de\u7b54 ==='"
+        },
+        {
+          "text": "Script is syntactically valid Python",
+          "passed": true,
+          "evidence": "Agent verified with python3 -m py_compile"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 127.8,
+        "tokens": 88179,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Image generation call targets /paas/v4/images/generations with a real image model",
+          "passed": true,
+          "evidence": "IMAGE_GENERATIONS_PATH = \"/paas/v4/images/generations\"; \"model\": \"glm-image\""
+        },
+        {
+          "text": "Script extracts the generated image URL and feeds it into the video generation call",
+          "passed": true,
+          "evidence": "first_frame_image_url=image_result.url passed into submit_video_generation()"
+        },
+        {
+          "text": "Video generation call targets /paas/v4/videos/generations with model=cogvideox-3",
+          "passed": true,
+          "evidence": "VIDEO_GENERATIONS_PATH = \"/paas/v4/videos/generations\"; default=\"cogvideox-3\""
+        },
+        {
+          "text": "First-frame parameter name is a real documented field, not invented",
+          "passed": true,
+          "evidence": "\"image_url\": first_frame_image_url \u2014 matches the field name in media.txt/media.md; code also documents the single-string-vs-[first,last]-array distinction"
+        },
+        {
+          "text": "Video generation treated as async: captures task id from response",
+          "passed": true,
+          "evidence": "submit returns {\"id\":..., \"task_status\": \"PROCESSING\"}; id stored and passed to polling function"
+        },
+        {
+          "text": "Polls GET /paas/v4/async-result/{id} with backoff and exit condition",
+          "passed": true,
+          "evidence": "ASYNC_RESULT_PATH template; poll loop checks task_status in {SUCCESS, FAIL} with a sleep interval and 300s overall timeout"
+        },
+        {
+          "text": "Script is syntactically valid Python",
+          "passed": true,
+          "evidence": "Agent verified with py_compile and --help run"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 146.1,
+        "tokens": 99270,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Code keeps using the openai package's OpenAI client class",
+          "passed": true,
+          "evidence": "from openai import OpenAI; client = OpenAI(...)"
+        },
+        {
+          "text": "base_url set to bigmodel.cn OpenAI-compatible endpoint under /paas/v4/",
+          "passed": true,
+          "evidence": "base_url=\"https://open.bigmodel.cn/api/paas/v4/\""
+        },
+        {
+          "text": "api_key sourced from an env var specific to the new provider",
+          "passed": true,
+          "evidence": "api_key=os.environ.get(\"ZHIPU_API_KEY\", \"your-zhipu-api-key-here\")"
+        },
+        {
+          "text": "model changed to a real GLM model code",
+          "passed": true,
+          "evidence": "MODEL_NAME = \"glm-5.3\""
+        },
+        {
+          "text": "Web search wired via a real, functional mechanism",
+          "passed": true,
+          "evidence": "WEB_SEARCH_TOOL = {'type':'web_search','web_search':{'enable':True,'search_engine':'search_pro', ...}} \u2014 includes search_engine explicitly, verified live to return real search results"
+        },
+        {
+          "text": "Script is syntactically valid Python",
+          "passed": true,
+          "evidence": "Agent verified with python -m py_compile"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 63.5,
+        "tokens": 62551,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions",
+          "passed": true,
+          "evidence": "BIGMODEL_API_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\""
+        },
+        {
+          "text": "Authorization header is exactly 'Bearer <API_KEY>', key read from env var",
+          "passed": true,
+          "evidence": "headers = {\"Authorization\": f\"Bearer {API_KEY}\", ...}; API_KEY = os.environ.get('BIGMODEL_API_KEY', ...)"
+        },
+        {
+          "text": "model field is a real GLM chat model code",
+          "passed": true,
+          "evidence": "MODEL_NAME = \"glm-5.3\""
+        },
+        {
+          "text": "tools array uses documented {'type':'function','function':{...}} shape, not legacy 'functions'",
+          "passed": true,
+          "evidence": "TOOLS_SCHEMA = [{\"type\": \"function\", \"function\": {...}}]"
+        },
+        {
+          "text": "Code reads tool_calls with id/type/function.name/function.arguments",
+          "passed": true,
+          "evidence": "reads tool_call['function']['name'] / ['arguments'], parses via json.loads"
+        },
+        {
+          "text": "Appends role='tool' message with matching tool_call_id",
+          "passed": true,
+          "evidence": "messages.append({'role':'tool','tool_call_id': tool_call_id, 'content': ...})"
+        },
+        {
+          "text": "Makes follow-up call to get and print final answer",
+          "passed": true,
+          "evidence": "loop continues until finish_reason != 'tool_calls'; main() prints '\u6a21\u578b\u6700\u7ec8\u56de\u7b54:' + answer"
+        },
+        {
+          "text": "Script is syntactically valid Python",
+          "passed": true,
+          "evidence": "Agent verified with python3 -m py_compile"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 74.8,
+        "tokens": 63840,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Image generation call targets /paas/v4/images/generations with a real image model",
+          "passed": true,
+          "evidence": "IMAGE_GENERATIONS_URL = f\"{BASE_URL}/images/generations\"; IMAGE_MODEL = \"glm-image\""
+        },
+        {
+          "text": "Script extracts the generated image URL and feeds it into the video generation call",
+          "passed": true,
+          "evidence": "first_frame_image_url=image_result.url"
+        },
+        {
+          "text": "Video generation call targets /paas/v4/videos/generations with model=cogvideox-3",
+          "passed": true,
+          "evidence": "VIDEO_GENERATIONS_URL = f\"{BASE_URL}/videos/generations\"; VIDEO_MODEL = \"cogvideox-3\""
+        },
+        {
+          "text": "First-frame parameter name is a real documented field, not invented",
+          "passed": true,
+          "evidence": "\"image_url\": first_frame_image_url, with comment '\u7528\u4e8e\u4f20\u5165\u9996\u5e27\u56fe\u7247\uff0c\u5b9e\u73b0\u56fe\u751f\u89c6\u9891' \u2014 correct field name, though no discussion of single-vs-array nuance"
+        },
+        {
+          "text": "Video generation treated as async: captures task id from response",
+          "passed": true,
+          "evidence": "submission response parsed for an id, passed to polling function"
+        },
+        {
+          "text": "Polls GET /paas/v4/async-result/{id} with backoff and exit condition",
+          "passed": true,
+          "evidence": "ASYNC_RESULT_URL template; status = data.get('task_status') checked in a loop"
+        },
+        {
+          "text": "Script is syntactically valid Python",
+          "passed": true,
+          "evidence": "Agent verified with python3 -m py_compile"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 6,
+        "failed": 0,
+        "total": 6,
+        "time_seconds": 57.2,
+        "tokens": 60961,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Code keeps using the openai package's OpenAI client class",
+          "passed": true,
+          "evidence": "from openai import OpenAI; client = OpenAI(...)"
+        },
+        {
+          "text": "base_url set to bigmodel.cn OpenAI-compatible endpoint under /paas/v4/",
+          "passed": true,
+          "evidence": "ZHIPU_BASE_URL = \"https://open.bigmodel.cn/api/paas/v4/\""
+        },
+        {
+          "text": "api_key sourced from an env var specific to the new provider",
+          "passed": true,
+          "evidence": "ZHIPU_API_KEY = os.environ.get(\"ZHIPUAI_API_KEY\", \"your-api-key-here\")"
+        },
+        {
+          "text": "model changed to a real GLM model code",
+          "passed": true,
+          "evidence": "GLM_MODEL = \"glm-4-plus\" \u2014 a real, if legacy, model code"
+        },
+        {
+          "text": "Web search is wired via a real, functional mechanism (not invented, and not missing required fields)",
+          "passed": true,
+          "evidence": "CORRECTED after live API verification (see notes): WEB_SEARCH_TOOL omits 'search_engine', which the OpenAPI schema marks required, but a live call to POST /paas/v4/chat/completions with an identical web_search dict (enable+search_result, no search_engine) returned a normal successful response with real search results \u2014 the platform silently applies a default engine here. The earlier grading run marked this FAILED based on the OpenAPI spec alone; that was wrong about runtime behavior and has been corrected."
+        },
+        {
+          "text": "Script is syntactically valid Python",
+          "passed": true,
+          "evidence": "Agent verified with py_compile"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 126.3667,
+        "stddev": 20.4876,
+        "min": 105.2,
+        "max": 146.1
+      },
+      "tokens": {
+        "mean": 93208.0,
+        "stddev": 5617.1957,
+        "min": 88179,
+        "max": 99270
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 65.1667,
+        "stddev": 8.9176,
+        "min": 57.2,
+        "max": 74.8
+      },
+      "tokens": {
+        "mean": 62450.6667,
+        "stddev": 1442.1201,
+        "min": 60961,
+        "max": 63840
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+61.2",
+      "tokens": "+30757"
+    }
+  },
+  "notes": []
+}

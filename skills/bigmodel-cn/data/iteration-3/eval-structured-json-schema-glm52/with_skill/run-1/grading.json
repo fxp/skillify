@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不依赖 response_format:json_schema", "passed": true, "evidence": "notes.md 明确引用 chat.md 结论：'bigmodel.cn 有没有 OpenAI 风格的 json_schema 严格模式'，代码用 response_format: json_object"},
+    {"text": "用 json_object + prompt 描述结构实现", "passed": true, "evidence": "system prompt 内嵌完整 schema 描述，response_format 固定 json_object"},
+    {"text": "有防御性解析/重试", "passed": true, "evidence": "本地 schema 校验 + 失败自动喂回模型重试最多 2 次，超限抛 StructuredExtractionError"},
+    {"text": "基础格式正确，model 用 glm-5.2", "passed": true, "evidence": "model 字段正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已 mock 验证"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "已用真实 API 在 glm-5.2 上复测确认这条平台级限制与模型无关：json_schema 依然被静默忽略，json_object+prompt 方案依然有效。"
+}

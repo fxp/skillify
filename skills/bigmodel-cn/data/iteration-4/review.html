@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "bigmodel-cn", "runs": [{"id": "eval-tts-voice-name-with_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4e00\u4e2a\u6587\u672c\u8f6c\u8bed\u97f3\u7684\u811a\u672c\uff0c\u7528\u667a\u8c31 GLM-TTS\uff0c\u58f0\u97f3\u9009\u4e00\u4e2a\u6e29\u67d4\u7684\u5973\u58f0\uff0c\u628a\u7ed3\u679c\u4fdd\u5b58\u6210 wav \u6587\u4ef6\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 12, "outputs": [{"name": "tts.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\n\u6587\u672c\u8f6c\u8bed\u97f3\u811a\u672c \u2014\u2014 \u4f7f\u7528\u667a\u8c31\u5f00\u653e\u5e73\u53f0\uff08bigmodel.cn\uff09\u7684 GLM-TTS \u6a21\u578b\u3002\n\n\u76f4\u63a5\u7528\u6807\u51c6\u5e93 requests \u8c03\u7528 HTTP \u63a5\u53e3\uff1a\n    POST https://open.bigmodel.cn/api/paas/v4/audio/speech\n\n\u97f3\u8272\u9009\u62e9\uff1atongtong\uff08\u5f64\u5f64\uff09\u2014\u2014 \u667a\u8c31 GLM-TTS \u7684\u7cfb\u7edf\u97f3\u8272\u4e4b\u4e00\uff0c\u662f\u4e00\u4e2a\u6e29\u67d4\u3001\u67d4\u548c\u7684\n\u5973\u58f0\uff0c\u4e5f\u662f\u5b98\u65b9\u6587\u6863\u793a\u4f8b\u4e2d\u4f7f\u7528\u7684\u9ed8\u8ba4\u97f3\u8272\uff0c\u9002\u5408\u65c1\u767d\u3001\u8bed\u97f3\u52a9\u624b\u7b49\u9700\u8981\u4eb2\u548c\u529b\u7684\u573a\u666f\u3002\n\n\u7528\u6cd5\uff1a\n    export ZHIPUAI_API_KEY=\"\u4f60\u7684\u771f\u5b9e API Key\"\n    python tts.py \"\u4f60\u597d\uff0c\u6b22\u8fce\u4f7f\u7528\u667a\u8c31\u5f00\u653e\u5e73\u53f0\u3002\" -o speech.wav\n\n\u4e5f\u53ef\u4ee5\u4e0d\u4f20\u6587\u672c\u53c2\u6570\uff0c\u811a\u672c\u4f1a\u4f7f\u7528\u5185\u7f6e\u7684\u793a\u4f8b\u6587\u672c\u3002\n\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport os\nimport sys\n\nimport requests\n\nBASE_URL = \"https://open.bigmodel.cn/api\"\nTTS_ENDPOINT = f\"{BASE_URL}/paas/v4/audio/speech\"\n\n# GLM-TTS \u7cfb\u7edf\u97f3\u8272\uff1atongtong\uff08\u5f64\u5f64\uff09\u662f\u4e00\u4e2a\u6e29\u67d4\u7684\u5973\u58f0\uff0c\u8bed\u6c14\u67d4\u548c\u81ea\u7136\uff0c\n# \u662f\u5b98\u65b9\u6587\u6863\u91cc\u7684\u9ed8\u8ba4/\u793a\u4f8b\u97f3\u8272\u3002\u5176\u4ed6\u53ef\u9009\u7cfb\u7edf\u97f3\u8272\u5305\u62ec chuichui\uff08\u9524\u9524\uff09\u3001\n# xiaochen\uff08\u5c0f\u9648\uff09\u3001jam\u3001kazi\u3001douji\u3001luodo\uff0c\u4e5f\u53ef\u4ee5\u4f20\u81ea\u5df1\u590d\u523b\u51fa\u7684\u97f3\u8272\u540d\u3002\nVOICE_GENTLE_FEMALE = \"tongtong\"\n\nDEFAULT_TEXT = \"\u4f60\u597d\uff0c\u6b22\u8fce\u4f7f\u7528\u667a\u8c31\u5f00\u653e\u5e73\u53f0\u3002\u8fd9\u662f\u4e00\u6bb5\u7528\u4e8e\u6d4b\u8bd5\u7684\u8bed\u97f3\u5408\u6210\u6587\u672c\u3002\"\n\n\ndef synthesize_speech(\n    text: str,\n    output_path: str,\n    api_key: str,\n    voice: str = VOICE_GENTLE_FEMALE,\n    speed: float = 1.0,\n    volume: float = 1.0,\n) -> None:\n    \"\"\"\u8c03\u7528 GLM-TTS \u63a5\u53e3\uff0c\u628a\u6587\u672c\u5408\u6210\u4e3a\u8bed\u97f3\u5e76\u4fdd\u5b58\u4e3a wav \u6587\u4ef6\u3002\"\"\"\n\n    if not text:\n        raise ValueError(\"\u5f85\u5408\u6210\u6587\u672c\u4e0d\u80fd\u4e3a\u7a7a\")\n    if len(text) > 1024:\n        raise ValueError(\"\u5f85\u5408\u6210\u6587\u672c\u8d85\u8fc7 1024 \u5b57\u7b26\u9650\u5236\uff0c\u8bf7\u5148\u5206\u6bb5\")\n\n    headers = {\n        \"Authorization\": f\"Bearer {api_key}\",\n        \"Content-Type\": \"application/json\",\n    }\n    payload = {\n        \"model\": \"glm-tts\",\n        \"input\": text,\n        \"voice\": voice,\n        \"speed\": speed,\n        \"volume\": volume,\n        # \u975e\u6d41\u5f0f\u573a\u666f\u4e0b\u624d\u80fd\u62ff\u5230 wav\uff0c\u6d41\u5f0f\u6a21\u5f0f\u53ea\u652f\u6301 pcm\u3002\n        \"response_format\": \"wav\",\n        \"stream\": False,\n    }\n\n    resp = requests.post(TTS_ENDPOINT, headers=headers, json=payload, timeout=60)\n    resp.raise_for_status()\n\n    # \u6ce8\u610f\uff1aTTS \u63a5\u53e3\u6210\u529f\u65f6\u8fd4\u56de\u7684\u662f\u97f3\u9891\u4e8c\u8fdb\u5236\uff08wav\uff09\uff0c\u4e0d\u662f JSON\uff0c\n    # \u6240\u4ee5\u8fd9\u91cc\u76f4\u63a5\u7528 resp.content \u5199\u6587\u4ef6\uff0c\u4e0d\u80fd\u8c03\u7528 resp.json()\u3002\n    with open(output_path, \"wb\") as f:\n        f.write(resp.content)\n\n    print(f\"\u8bed\u97f3\u5df2\u4fdd\u5b58\u5230: {output_path}\")\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(description=\"\u7528\u667a\u8c31 GLM-TTS \u628a\u6587\u672c\u5408\u6210\u4e3a wav \u8bed\u97f3\u6587\u4ef6\")\n    parser.add_argument(\n        \"text\",\n        nargs=\"?\",\n        default=DEFAULT_TEXT,\n        help=\"\u8981\u5408\u6210\u7684\u6587\u672c\uff08\u9ed8\u8ba4\u4f7f\u7528\u5185\u7f6e\u793a\u4f8b\u6587\u672c\uff09\",\n    )\n    parser.add_argument(\n        \"-o\",\n        \"--output\",\n        default=\"speech.wav\",\n        help=\"\u8f93\u51fa wav \u6587\u4ef6\u8def\u5f84\uff08\u9ed8\u8ba4: speech.wav\uff09\",\n    )\n    parser.add_argument(\n        \"--voice\",\n        default=VOICE_GENTLE_FEMALE,\n        help=f\"\u97f3\u8272\u540d\u79f0\uff08\u9ed8\u8ba4: {VOICE_GENTLE_FEMALE}\uff0c\u4e00\u4e2a\u6e29\u67d4\u7684\u5973\u58f0\uff09\",\n    )\n    parser.add_argument(\n        \"--speed\",\n        type=float,\n        default=1.0,\n        help=\"\u8bed\u901f\uff0c\u8303\u56f4 [0.5, 2]\uff08\u9ed8\u8ba4: 1.0\uff09\",\n    )\n    parser.add_argument(\n        \"--volume\",\n        type=float,\n        default=1.0,\n        help=\"\u97f3\u91cf\uff0c\u8303\u56f4 (0, 10]\uff08\u9ed8\u8ba4: 1.0\uff09\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n\n    api_key = os.environ.get(\"ZHIPUAI_API_KEY\")\n    if not api_key:\n        print(\n            \"\u9519\u8bef: \u8bf7\u5148\u8bbe\u7f6e\u73af\u5883\u53d8\u91cf ZHIPUAI_API_KEY\uff08\u5728 \"\n            \"https://bigmodel.cn/usercenter/proj-mgmt/apikeys \u83b7\u53d6\uff09\u3002\",\n            file=sys.stderr,\n        )\n        sys.exit(1)\n\n    try:\n        synthesize_speech(\n            text=args.text,\n            output_path=args.output,\n            api_key=api_key,\n            voice=args.voice,\n            speed=args.speed,\n            volume=args.volume,\n        )\n    except requests.HTTPError as e:\n        print(f\"\u8bf7\u6c42\u5931\u8d25: {e}\\n\u54cd\u5e94\u5185\u5bb9: {e.response.text}\", file=sys.stderr)\n        sys.exit(1)\n    except requests.RequestException as e:\n        print(f\"\u7f51\u7edc\u8bf7\u6c42\u51fa\u9519: {e}\", file=sys.stderr)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"expectations": [{"text": "\u4e0d\u7528\u81c6\u9020\u7684 OpenAI \u98ce\u683c\u97f3\u8272\u540d", "passed": true, "evidence": "\u9009\u7528\u771f\u5b9e\u7cfb\u7edf\u97f3\u8272 tongtong\uff0c\u4e14\u660e\u786e\u5217\u51fa\u5176\u4f596\u4e2a\u771f\u5b9e\u97f3\u8272\u4f5c\u4e3a\u5907\u9009"}, {"text": "\u7528\u771f\u5b9e\u97f3\u8272\u540d\u6216\u67e5\u8be2 voice/list", "passed": true, "evidence": "voice=tongtong\uff0c\u6765\u81ea references/media.md \u91cc\u5df2\u9a8c\u8bc1\u7684\u771f\u5b9e\u7cfb\u7edf\u97f3\u8272\u679a\u4e3e"}, {"text": "\u6b63\u786e\u5904\u7406\u4e8c\u8fdb\u5236\u54cd\u5e94", "passed": true, "evidence": "resp.content \u5199\u6587\u4ef6\uff0c\u672a\u8bef\u7528 resp.json()"}, {"text": "\u57fa\u7840\u683c\u5f0f\u6b63\u786e", "passed": true, "evidence": "endpoint/model/auth \u5747\u6b63\u786e"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "notes": "\u7ed3\u679c\u786e\u5b9a\u3001\u6709\u636e\u53ef\u67e5\uff08\u5f15\u7528\u4e86 media.md \u91cc\u5df2\u9a8c\u8bc1\u7684\u97f3\u8272\u679a\u4e3e\uff09\uff0c\u800c\u4e0d\u662f\u78b0\u8fd0\u6c14\u3002"}}, {"id": "eval-tts-voice-name-without_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4e00\u4e2a\u6587\u672c\u8f6c\u8bed\u97f3\u7684\u811a\u672c\uff0c\u7528\u667a\u8c31 GLM-TTS\uff0c\u58f0\u97f3\u9009\u4e00\u4e2a\u6e29\u67d4\u7684\u5973\u58f0\uff0c\u628a\u7ed3\u679c\u4fdd\u5b58\u6210 wav \u6587\u4ef6\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 12, "outputs": [{"name": "tts.py", "type": "text", "content": "#!/usr/bin/env python3\n# -*- coding: utf-8 -*-\n\"\"\"\n\u6587\u672c\u8f6c\u8bed\u97f3\u811a\u672c \u2014\u2014 \u667a\u8c31 GLM-TTS (bigmodel.cn)\n\n\u53ea\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03\u7528\u667a\u8c31\u5f00\u653e\u5e73\u53f0\u7684 HTTP \u63a5\u53e3\uff0c\u628a\u4e00\u6bb5\u6587\u672c\u5408\u6210\u4e3a\n\u8bed\u97f3\u5e76\u4fdd\u5b58\u4e3a .wav \u6587\u4ef6\u3002\u58f0\u97f3\u9009\u7528\u4e00\u4e2a\u504f\u6e29\u67d4\u3001\u4eb2\u548c\u7684\u5973\u58f0\u3002\n\n\u4f7f\u7528\u524d\u51c6\u5907\uff1a\n    1. pip install requests\n    2. \u5728 bigmodel.cn \u63a7\u5236\u53f0\u7533\u8bf7 API Key\n    3. export ZHIPU_API_KEY=\"\u4f60\u7684key\"       \uff08\u811a\u672c\u4e0d\u4f1a\u628a key \u786c\u7f16\u7801\u5728\u4ee3\u7801\u91cc\uff09\n\n\u7528\u6cd5\u793a\u4f8b\uff1a\n    python tts.py \"\u4f60\u597d\uff0c\u6b22\u8fce\u4f7f\u7528\u667a\u8c31 GLM-TTS \u6587\u672c\u8f6c\u8bed\u97f3\u670d\u52a1\u3002\"\n    python tts.py \"\u4f60\u597d\" -o hello.wav -v tongtong\n\n\u6ce8\u610f\uff1a\n    - \u63a5\u53e3\u5730\u5740\u3001\u8bf7\u6c42\u5b57\u6bb5\u540d\uff08model / input / voice / response_format\uff09\u53c2\u7167\n      \u667a\u8c31\u5f00\u653e\u5e73\u53f0 audio/speech \u7cfb\u5217\u63a5\u53e3\u7684\u901a\u7528\u98ce\u683c\uff08\u4e0e\u4e1a\u754c\u4e3b\u6d41 TTS REST \u63a5\u53e3\n      \u57fa\u672c\u4e00\u81f4\uff09\u3002\u7531\u4e8e\u672c\u6b21\u4efb\u52a1\u672a\u8054\u7f51\u6838\u5bf9\u6700\u65b0\u5b98\u65b9\u6587\u6863\uff0c\u5b57\u6bb5\u540d\u5982\u6709\u53d8\u5316\uff0c\n      \u8bf7\u4ee5 bigmodel.cn \u5b98\u65b9\u6587\u6863\u4e3a\u51c6\uff0c\u6309\u9700\u5fae\u8c03 API_URL / MODEL / VOICE\u3002\n    - \u811a\u672c\u5bf9\u4e24\u79cd\u5e38\u89c1\u7684\u8fd4\u56de\u5f62\u5f0f\u90fd\u505a\u4e86\u517c\u5bb9\uff1a\n        a) \u63a5\u53e3\u76f4\u63a5\u8fd4\u56de\u4e8c\u8fdb\u5236\u97f3\u9891\uff08Content-Type \u4e3a audio/* \u6216\n           application/octet-stream\uff09\uff1b\n        b) \u63a5\u53e3\u8fd4\u56de JSON\uff0c\u97f3\u9891\u5185\u5bb9\u4ee5 base64 \u5b57\u7b26\u4e32\u653e\u5728 data/audio \u5b57\u6bb5\u91cc\u3002\n\"\"\"\n\nimport argparse\nimport base64\nimport json\nimport os\nimport sys\n\nimport requests\n\n# ---------------------------------------------------------------------------\n# \u57fa\u672c\u914d\u7f6e\n# ---------------------------------------------------------------------------\n\n# \u667a\u8c31\u5f00\u653e\u5e73\u53f0 TTS\uff08\u8bed\u97f3\u5408\u6210\uff09\u63a5\u53e3\u5730\u5740\nAPI_URL = \"https://open.bigmodel.cn/api/paas/v4/audio/speech\"\n\n# GLM-TTS \u6a21\u578b\u540d\u79f0\nDEFAULT_MODEL = \"glm-tts\"\n\n# \u97f3\u8272\uff1a\u9009\u7528\u4e00\u4e2a\u6e29\u67d4\u3001\u4eb2\u548c\u7684\u5973\u58f0\u3002\n# \"tongtong\"\uff08\u7ae5\u7ae5\uff09\u662f\u667a\u8c31\u8bed\u97f3\u793a\u4f8b\u4e2d\u5e38\u89c1\u7684\u9ed8\u8ba4\u5973\u58f0\uff0c\u97f3\u8272\u67d4\u548c\u81ea\u7136\uff0c\n# \u6bd4\u8f83\u7b26\u5408\u201c\u6e29\u67d4\u5973\u58f0\u201d\u7684\u9700\u6c42\uff1b\u5982\u679c\u8d26\u53f7\u4e0b\u7684\u53ef\u7528\u97f3\u8272\u5217\u8868\u4e0d\u540c\uff0c\n# \u53ef\u4ee5\u5728\u63a7\u5236\u53f0\u7684\u8bed\u97f3\u5408\u6210 Demo \u91cc\u8bd5\u542c\u540e\uff0c\u628a\u4e0b\u9762\u8fd9\u4e2a\u503c\u6362\u6210\u5b9e\u9645\u7684\u97f3\u8272 ID\u3002\nDEFAULT_VOICE = \"tongtong\"\n\nDEFAULT_TIMEOUT = 60  # \u79d2\n\n\ndef text_to_speech(\n    text: str,\n    output_path: str = \"output.wav\",\n    voice: str = DEFAULT_VOICE,\n    model: str = DEFAULT_MODEL,\n    api_key: str | None = None,\n    timeout: int = DEFAULT_TIMEOUT,\n) -> str:\n    \"\"\"\u8c03\u7528\u667a\u8c31 GLM-TTS \u63a5\u53e3\uff0c\u628a text \u5408\u6210\u8bed\u97f3\u5e76\u4fdd\u5b58\u4e3a wav \u6587\u4ef6\u3002\n\n    Args:\n        text: \u8981\u5408\u6210\u7684\u6587\u672c\u5185\u5bb9\u3002\n        output_path: \u8f93\u51fa wav \u6587\u4ef6\u8def\u5f84\u3002\n        voice: \u97f3\u8272\u540d\u79f0\uff0c\u9ed8\u8ba4\u4f7f\u7528\u6e29\u67d4\u5973\u58f0\u3002\n        model: GLM-TTS \u6a21\u578b\u540d\u3002\n        api_key: \u667a\u8c31 API Key\uff1b\u4e0d\u4f20\u5219\u4ece\u73af\u5883\u53d8\u91cf ZHIPU_API_KEY \u8bfb\u53d6\u3002\n        timeout: \u8bf7\u6c42\u8d85\u65f6\u65f6\u95f4\uff08\u79d2\uff09\u3002\n\n    Returns:\n        \u5b9e\u9645\u5199\u5165\u7684 wav \u6587\u4ef6\u8def\u5f84\u3002\n    \"\"\"\n    if not text or not text.strip():\n        raise ValueError(\"\u5f85\u5408\u6210\u7684\u6587\u672c\u4e0d\u80fd\u4e3a\u7a7a\")\n\n    api_key = api_key or os.environ.get(\"ZHIPU_API_KEY\")\n    if not api_key:\n        raise RuntimeError(\n            \"\u672a\u627e\u5230 API Key\uff0c\u8bf7\u5148\u8bbe\u7f6e\u73af\u5883\u53d8\u91cf ZHIPU_API_KEY\uff0c\"\n            \"\u4f8b\u5982\uff1aexport ZHIPU_API_KEY='\u4f60\u7684key'\"\n        )\n\n    headers = {\n        \"Authorization\": f\"Bearer {api_key}\",\n        \"Content-Type\": \"application/json\",\n    }\n    payload = {\n        \"model\": model,\n        \"input\": text,\n        \"voice\": voice,\n        \"response_format\": \"wav\",\n    }\n\n    try:\n        resp = requests.post(API_URL, headers=headers, json=payload, timeout=timeout)\n    except requests.exceptions.RequestException as exc:\n        raise RuntimeError(f\"\u8bf7\u6c42\u667a\u8c31 GLM-TTS \u63a5\u53e3\u5931\u8d25\uff1a{exc}\") from exc\n\n    if resp.status_code != 200:\n        # \u5c3d\u91cf\u628a\u63a5\u53e3\u8fd4\u56de\u7684\u9519\u8bef\u4fe1\u606f\u900f\u51fa\u6765\uff0c\u65b9\u4fbf\u6392\u67e5\uff08\u6bd4\u5982 key \u65e0\u6548\u3001\u4f59\u989d\u4e0d\u8db3\u7b49\uff09\u3002\n        detail = resp.text\n        try:\n            detail = json.dumps(resp.json(), ensure_ascii=False)\n        except ValueError:\n            pass\n        raise RuntimeError(\n            f\"\u63a5\u53e3\u8fd4\u56de\u9519\u8bef\uff0c\u72b6\u6001\u7801 {resp.status_code}\uff1a{detail}\"\n        )\n\n    content_type = resp.headers.get(\"Content-Type\", \"\")\n\n    if content_type.startswith(\"audio/\") or \"octet-stream\" in content_type:\n        # \u63a5\u53e3\u76f4\u63a5\u8fd4\u56de\u4e8c\u8fdb\u5236\u97f3\u9891\u6570\u636e\n        audio_bytes = resp.content\n    else:\n        # \u63a5\u53e3\u8fd4\u56de JSON\uff0c\u97f3\u9891\u4ee5 base64 \u7f16\u7801\u653e\u5728\u67d0\u4e2a\u5b57\u6bb5\u91cc\n        try:\n            data = resp.json()\n        except ValueError as exc:\n            raise RuntimeError(\n                f\"\u65e0\u6cd5\u89e3\u6790\u54cd\u5e94\u5185\u5bb9\uff08\u65e2\u4e0d\u662f\u97f3\u9891\u4e5f\u4e0d\u662f\u5408\u6cd5 JSON\uff09\uff1a{resp.text[:500]}\"\n            ) from exc\n\n        b64_audio = (\n            data.get(\"data\")\n            or data.get(\"audio\")\n            or data.get(\"audio_content\")\n            or (data.get(\"choices\") or [{}])[0].get(\"audio\", {}).get(\"data\")\n        )\n        if not b64_audio:\n            raise RuntimeError(f\"\u672a\u80fd\u4ece\u54cd\u5e94 JSON \u4e2d\u89e3\u6790\u51fa\u97f3\u9891\u6570\u636e\uff1a{data}\")\n\n        audio_bytes = base64.b64decode(b64_audio)\n\n    output_dir = os.path.dirname(os.path.abspath(output_path))\n    if output_dir:\n        os.makedirs(output_dir, exist_ok=True)\n\n    with open(output_path, \"wb\") as f:\n        f.write(audio_bytes)\n\n    print(f\"[OK] \u8bed\u97f3\u5df2\u4fdd\u5b58\u5230: {output_path}\")\n    return output_path\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"\u4f7f\u7528\u667a\u8c31 GLM-TTS \u628a\u6587\u672c\u5408\u6210\u4e3a wav \u8bed\u97f3\u6587\u4ef6\uff08\u6e29\u67d4\u5973\u58f0\uff09\"\n    )\n    parser.add_argument(\n        \"text\",\n        nargs=\"?\",\n        default=\"\u4f60\u597d\uff0c\u6b22\u8fce\u4f7f\u7528\u667a\u8c31 GLM-TTS \u6587\u672c\u8f6c\u8bed\u97f3\u670d\u52a1\u3002\",\n        help=\"\u8981\u5408\u6210\u7684\u6587\u672c\u5185\u5bb9\",\n    )\n    parser.add_argument(\n        \"-o\", \"--output\",\n        default=\"output.wav\",\n        help=\"\u8f93\u51fa wav \u6587\u4ef6\u8def\u5f84\uff0c\u9ed8\u8ba4 output.wav\",\n    )\n    parser.add_argument(\n        \"-v\", \"--voice\",\n        default=DEFAULT_VOICE,\n        help=f\"\u97f3\u8272\u540d\u79f0\uff0c\u9ed8\u8ba4 '{DEFAULT_VOICE}'\uff08\u6e29\u67d4\u5973\u58f0\uff09\",\n    )\n    parser.add_argument(\n        \"-m\", \"--model\",\n        default=DEFAULT_MODEL,\n        help=f\"GLM-TTS \u6a21\u578b\u540d\uff0c\u9ed8\u8ba4 '{DEFAULT_MODEL}'\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> int:\n    args = parse_args()\n    try:\n        text_to_speech(\n            text=args.text,\n            output_path=args.output,\n            voice=args.voice,\n            model=args.model,\n        )\n    except Exception as exc:  # noqa: BLE001 - \u9876\u5c42\u811a\u672c\uff0c\u7edf\u4e00\u515c\u5e95\u62a5\u9519\n        print(f\"[ERROR] {exc}\", file=sys.stderr)\n        return 1\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n"}], "grading": {"expectations": [{"text": "\u4e0d\u7528\u81c6\u9020\u7684 OpenAI \u98ce\u683c\u97f3\u8272\u540d", "passed": true, "evidence": "\u9009\u7528\u4e86 'tongtong'\uff0c\u6070\u597d\u662f\u771f\u5b9e\u5b58\u5728\u7684\u7cfb\u7edf\u97f3\u8272\uff08\u4e0e with_skill \u7248\u672c\u9009\u62e9\u4e00\u81f4\uff09"}, {"text": "\u7528\u771f\u5b9e\u97f3\u8272\u540d\u6216\u67e5\u8be2 voice/list", "passed": true, "evidence": "\u78b0\u5bf9\u4e86\u771f\u5b9e\u97f3\u8272\u540d\uff0c\u4f46\u4ee3\u7801\u6ce8\u91ca\u660e\u786e\u627f\u8ba4'\u672a\u8054\u7f51\u6838\u5bf9\u6700\u65b0\u5b98\u65b9\u97f3\u8272\u5217\u8868'\uff0c\u662f\u4e00\u6b21\u672a\u7ecf\u8bc1\u5b9e\u7684\u731c\u6d4b\uff0c\u4e0d\u662f\u67e5\u8bc1\u540e\u7684\u786e\u5b9a\u9009\u62e9"}, {"text": "\u6b63\u786e\u5904\u7406\u4e8c\u8fdb\u5236\u54cd\u5e94", "passed": true, "evidence": "\u4ee3\u7801\u540c\u65f6\u517c\u5bb9'\u7eaf\u4e8c\u8fdb\u5236'\u548c'JSON \u91cc\u5e26 base64 \u97f3\u9891\u5b57\u6bb5'\u4e24\u79cd\u60c5\u51b5\uff0c\u5904\u7406\u66f4\u4fdd\u5b88\u4f46\u4e5f\u6b63\u786e\u8986\u76d6\u4e86\u771f\u5b9e\u60c5\u51b5"}, {"text": "\u57fa\u7840\u683c\u5f0f\u6b63\u786e", "passed": true, "evidence": "endpoint/model/auth \u5747\u6b63\u786e"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1 py_compile \u901a\u8fc7"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "notes": "\u8bda\u5b9e\u7684'\u6253\u5e73'\u7ed3\u679c\uff1abaseline \u8499\u5bf9\u4e86 tongtong \u8fd9\u4e2a\u97f3\u8272\u540d\uff0c\u53ef\u80fd\u662f\u56e0\u4e3a\u667a\u8c31\u7684\u516c\u5f00 Demo/\u535a\u5ba2\u91cc\u8fd9\u4e2a\u97f3\u8272\u540d\u51fa\u73b0\u9891\u7387\u8f83\u9ad8\u3001\u8bad\u7ec3\u6570\u636e\u91cc\u6709\u8986\u76d6\u3002\u4f46\u8fd9\u662f\u8fd0\u6c14\u800c\u975e\u786e\u5b9a\u6027\u2014\u2014\u4ee3\u7801\u81ea\u5df1\u4e5f\u627f\u8ba4\u662f\u731c\u6d4b\uff0c\u6362\u4e00\u4e2a\u4e0d\u90a3\u4e48\u51fa\u540d\u7684\u97f3\u8272\u540d\uff08\u6bd4\u5982'kazi'/'douji'\uff09\u5927\u6982\u7387\u5c31\u8499\u4e0d\u5bf9\u4e86\u3002\u8fd9\u6b21\u4e24\u7248\u4ee3\u7801\u529f\u80fd\u4e0a\u90fd\u80fd\u8dd1\u901a\uff0c\u4e0d\u6784\u6210\u771f\u6b63\u7684\u5dee\u5f02\u70b9\uff0c\u5982\u5b9e\u62a5\u544a\u4e3a\u6253\u5e73\uff0c\u4e0d\u5938\u5927\u6280\u80fd\u5305\u7684\u4ef7\u503c\u3002"}}, {"id": "eval-websearch-citations-with_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4ee3\u7801\uff0c\u5728\u8c03\u7528\u667a\u8c31 GLM \u6a21\u578b\u5bf9\u8bdd\uff08chat/completions\uff09\u65f6\u6302\u4e0a\u8054\u7f51\u641c\u7d22\u5de5\u5177\uff0c\u8ba9\u6a21\u578b\u56de\u7b54\u95ee\u9898\u65f6\u80fd\u67e5\u6700\u65b0\u4fe1\u606f\uff0c\u5e76\u4e14\u8981\u5728\u56de\u7b54\u540e\u9762\u9644\u4e0a\u5f15\u7528\u6765\u6e90\u7684\u6807\u9898\u548c\u94fe\u63a5\u5217\u8868\uff0c\u65b9\u4fbf\u7528\u6237\u6eaf\u6e90\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 13, "outputs": [{"name": "search_chat.py", "type": "text", "content": "#!/usr/bin/env python3\n\"\"\"\n\u8c03\u7528\u667a\u8c31 GLM \u6a21\u578b\u5bf9\u8bdd\u63a5\u53e3\uff08chat/completions\uff09\u65f6\u6302\u4e0a\u5185\u7f6e\u7684 web_search \u5de5\u5177\uff0c\n\u8ba9\u6a21\u578b\u5728\u56de\u7b54\u95ee\u9898\u65f6\u53ef\u4ee5\u8054\u7f51\u68c0\u7d22\u6700\u65b0\u4fe1\u606f\uff0c\u5e76\u5728\u56de\u7b54\u6b63\u6587\u4e4b\u540e\u9644\u4e0a\u5f15\u7528\u6765\u6e90\n\uff08\u6807\u9898 + \u94fe\u63a5\uff09\u5217\u8868\uff0c\u65b9\u4fbf\u7528\u6237\u6eaf\u6e90\u3002\n\n\u4ec5\u4f7f\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\uff0c\u4e0d\u4f9d\u8d56\u5b98\u65b9 zhipuai SDK\u3002\n\n\u53c2\u8003\u6587\u6863\uff1adocs.bigmodel.cn -> chat/completions -> tools -> web_search\n- Base URL \u56fa\u5b9a\u4e3a https://open.bigmodel.cn/api/\n- \u9274\u6743\uff1aHTTP Bearer\uff0c\u8bf7\u6c42\u5934 Authorization: Bearer <API_KEY>\n- web_search \u5de5\u5177\u5fc5\u987b\u663e\u5f0f\u4f20 web_search.search_result = True\uff0c\n  \u54cd\u5e94\u4f53\u9876\u5c42\u624d\u4f1a\u5e26\u4e0a \"web_search\" \u5f15\u7528\u6765\u6e90\u6570\u7ec4\n  \uff08\u5b57\u6bb5\u5305\u542b icon/title/link/media/publish_date/content/refer\uff09\u3002\n  \u4e0d\u4f20\u8fd9\u4e2a\u5b57\u6bb5\u65f6\u641c\u7d22\u4f9d\u65e7\u4f1a\u6b63\u5e38\u6267\u884c\u3001\u7ed3\u679c\u4f9d\u65e7\u4f1a\u7528\u4e8e\u751f\u6210\u56de\u7b54\uff0c\n  \u4f46\u54cd\u5e94\u91cc\u4e0d\u4f1a\u51fa\u73b0 \"web_search\" \u5b57\u6bb5\uff0c\u4ee3\u7801\u8bfb response.get(\"web_search\")\n  \u53ea\u4f1a\u9759\u9ed8\u62ff\u5230 None\uff0c\"\u5c55\u793a\u4fe1\u606f\u6765\u6e90\" \u7684\u9700\u6c42\u4f1a\u6084\u6084\u5931\u6548\u2014\u2014\u56e0\u6b64\u4e0b\u9762\u663e\u5f0f\u4f20\u4e86\u5b83\u3002\n- search_engine \u5b98\u65b9\u6587\u6863\u6807\u8bb0\u4e3a\u5fc5\u586b\uff0c\u867d\u7136\u5b9e\u6d4b\u7701\u7565\u4e5f\u4e0d\u62a5\u9519\uff0c\u4f46\u4e3a\u4e86\u4e0d\u4f9d\u8d56\n  \u672a\u516c\u5f00\u4fdd\u8bc1\u7684\u9ed8\u8ba4\u884c\u4e3a\uff0c\u8fd9\u91cc\u59cb\u7ec8\u663e\u5f0f\u4f20 search_engine\u3002\n\n\u4f7f\u7528\u524d\uff1a\n    export ZHIPUAI_API_KEY=\"\u4f60\u7684\u771f\u5b9e API Key\"\n    python search_chat.py \"\u4eca\u5929\u6709\u4ec0\u4e48\u79d1\u6280\u65b0\u95fb\uff1f\"\n\n\u6ce8\u610f\uff1a\u672c\u811a\u672c\u4e2d\u7684 API Key \u53ea\u662f\u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6\u7684\u5360\u4f4d\u7b26\uff0c\u4e0d\u5305\u542b\u771f\u5b9e\u5bc6\u94a5\uff0c\n\u4e5f\u6ca1\u6709\u5b9e\u9645\u53d1\u8d77\u8fc7\u7f51\u7edc\u8bf7\u6c42\u9a8c\u8bc1\u2014\u2014\u8bf7\u5728\u4f60\u81ea\u5df1\u7684\u73af\u5883\u91cc\u914d\u7f6e\u597d Key \u540e\u518d\u8fd0\u884c\u3002\n\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport os\nimport sys\nfrom typing import Any\n\nimport requests\n\nBASE_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\"\n\n# API Key \u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6\uff0c\u7edd\u4e0d\u8981\u628a\u771f\u5b9e Key \u786c\u7f16\u7801\u8fdb\u4ee3\u7801\u3002\n# \u8fd9\u91cc\u7684\u9ed8\u8ba4\u503c\u53ea\u662f\u4e00\u4e2a\u5360\u4f4d\u7b26\uff0c\u7528\u4e8e\u8ba9\u811a\u672c\u5728\u6ca1\u6709\u914d\u7f6e\u73af\u5883\u53d8\u91cf\u65f6\u4e5f\u80fd\u88ab\n# \u9759\u6001\u68c0\u67e5/\u76f4\u63a5\u8fd0\u884c\u5230\"\u53d1\u8d77 HTTP \u8bf7\u6c42\"\u8fd9\u4e00\u6b65\uff08\u4f1a\u56e0\u4e3a Key \u65e0\u6548\u800c\u88ab\u670d\u52a1\u7aef\u62d2\u7edd\uff09\u3002\nAPI_KEY = os.environ.get(\"ZHIPUAI_API_KEY\", \"YOUR_API_KEY_PLACEHOLDER\")\n\nDEFAULT_MODEL = \"glm-5.3\"\n\n\ndef build_payload(\n    question: str,\n    model: str = DEFAULT_MODEL,\n    search_engine: str = \"search_pro\",\n    count: int = 5,\n) -> dict[str, Any]:\n    \"\"\"\u6784\u9020\u5e26 web_search \u5de5\u5177\u7684 chat/completions \u8bf7\u6c42\u4f53\u3002\n\n    - web_search.search_result \u5fc5\u987b\u663e\u5f0f\u8bbe\u4e3a True\uff0c\u5426\u5219\u54cd\u5e94\u4f53\u91cc\u4e0d\u4f1a\u5e26\n      \u9876\u5c42 \"web_search\" \u5f15\u7528\u6765\u6e90\u6570\u7ec4\uff08\u8be6\u89c1\u6587\u4ef6\u5934\u90e8\u8bf4\u660e\uff09\u3002\n    - search_engine \u663e\u5f0f\u4f20\u503c\uff08search_std / search_pro / search_pro_sogou /\n      search_pro_quark\uff09\uff0c\u4e0d\u4f9d\u8d56\u672a\u6587\u6863\u5316\u7684\u9ed8\u8ba4\u884c\u4e3a\u3002\n    - count \u63a7\u5236\u8fd4\u56de\u7684\u641c\u7d22\u7ed3\u679c\u6761\u6570\uff081-50\uff09\uff0c\u540c\u65f6\u4e5f\u51b3\u5b9a\u4e86\u5f15\u7528\u6765\u6e90\u5217\u8868\u7684\n      \u6761\u76ee\u6570\u91cf\u4e0a\u9650\u3002\n    \"\"\"\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\n                \"role\": \"system\",\n                \"content\": (\n                    \"\u4f60\u662f\u4e00\u4e2a\u4e50\u4e8e\u52a9\u4eba\u7684\u52a9\u624b\u3002\u5982\u679c\u95ee\u9898\u6d89\u53ca\u6700\u65b0\u4fe1\u606f\u3001\u65f6\u6548\u6027\u5185\u5bb9\"\n                    \"\u6216\u4f60\u4e0d\u786e\u5b9a\u7684\u4e8b\u5b9e\uff0c\u8bf7\u4f7f\u7528\u8054\u7f51\u641c\u7d22\u5de5\u5177\u67e5\u8bc1\u540e\u518d\u56de\u7b54\u3002\"\n                ),\n            },\n            {\"role\": \"user\", \"content\": question},\n        ],\n        \"tools\": [\n            {\n                \"type\": \"web_search\",\n                \"web_search\": {\n                    \"enable\": True,\n                    \"search_engine\": search_engine,\n                    \"count\": count,\n                    # \u5fc5\u987b\u663e\u5f0f\u4e3a True\uff0c\u54cd\u5e94\u4f53\u624d\u4f1a\u5e26 \"web_search\" \u5f15\u7528\u6765\u6e90\u6570\u7ec4\u3002\n                    \"search_result\": True,\n                },\n            }\n        ],\n    }\n\n\ndef call_glm_with_web_search(\n    question: str,\n    model: str = DEFAULT_MODEL,\n    search_engine: str = \"search_pro\",\n    count: int = 5,\n    timeout: int = 60,\n) -> dict[str, Any]:\n    \"\"\"\u8c03\u7528 chat/completions \u63a5\u53e3\uff0c\u8fd4\u56de\u539f\u59cb\u54cd\u5e94 JSON\uff08dict\uff09\u3002\"\"\"\n    if not API_KEY or API_KEY == \"YOUR_API_KEY_PLACEHOLDER\":\n        raise RuntimeError(\n            \"\u672a\u914d\u7f6e\u6709\u6548\u7684 API Key\uff1a\u8bf7\u5148\u6267\u884c \"\n            \"`export ZHIPUAI_API_KEY=\u4f60\u7684\u771f\u5b9eKey` \u540e\u518d\u8fd0\u884c\u672c\u811a\u672c\u3002\"\n        )\n\n    headers = {\n        \"Authorization\": f\"Bearer {API_KEY}\",\n        \"Content-Type\": \"application/json\",\n    }\n    payload = build_payload(\n        question, model=model, search_engine=search_engine, count=count\n    )\n\n    resp = requests.post(BASE_URL, headers=headers, json=payload, timeout=timeout)\n    resp.raise_for_status()\n    return resp.json()\n\n\ndef extract_answer(response_json: dict[str, Any]) -> str:\n    \"\"\"\u4ece\u54cd\u5e94\u4e2d\u53d6\u51fa\u6a21\u578b\u7684\u81ea\u7136\u8bed\u8a00\u56de\u7b54\u6b63\u6587\u3002\"\"\"\n    choices = response_json.get(\"choices\") or []\n    if not choices:\n        return \"\"\n    message = choices[0].get(\"message\") or {}\n    return message.get(\"content\") or \"\"\n\n\ndef extract_citations(response_json: dict[str, Any]) -> list[dict[str, Any]]:\n    \"\"\"\u53d6\u51fa\u54cd\u5e94\u4f53\u9876\u5c42\u7684 web_search \u5f15\u7528\u6765\u6e90\u6570\u7ec4\u3002\n\n    \u6bcf\u6761\u8bb0\u5f55\u53ef\u80fd\u5305\u542b icon/title/link/media/publish_date/content/refer \u7b49\n    \u5b57\u6bb5\uff1b\u53ea\u8981\u5f00\u542f\u4e86 web_search.search_result=True \u5c31\u4f1a\u6709\u8fd9\u4e2a\u9876\u5c42\u5b57\u6bb5\n    \uff08\u547d\u4e2d\u641c\u7d22\u610f\u56fe\u65f6\u662f\u975e\u7a7a\u6570\u7ec4\uff0c\u672a\u89e6\u53d1\u8054\u7f51\u68c0\u7d22\u65f6\u53ef\u80fd\u662f\u7a7a\u6570\u7ec4\uff09\u3002\n    \"\"\"\n    return response_json.get(\"web_search\") or []\n\n\ndef format_citations(citations: list[dict[str, Any]]) -> str:\n    \"\"\"\u628a\u5f15\u7528\u6765\u6e90\u6570\u7ec4\u683c\u5f0f\u5316\u6210\"\u6807\u9898 + \u94fe\u63a5\"\u5217\u8868\uff0c\u65b9\u4fbf\u7528\u6237\u6eaf\u6e90\u3002\"\"\"\n    if not citations:\n        return \"\"\n\n    lines = [\"\u53c2\u8003\u6765\u6e90\uff1a\"]\n    for idx, item in enumerate(citations, start=1):\n        title = (item.get(\"title\") or \"\").strip() or \"\uff08\u65e0\u6807\u9898\uff09\"\n        link = (item.get(\"link\") or \"\").strip() or \"\uff08\u65e0\u94fe\u63a5\uff09\"\n        lines.append(f\"{idx}. {title} - {link}\")\n    return \"\\n\".join(lines)\n\n\ndef answer_with_citations(question: str, model: str = DEFAULT_MODEL) -> str:\n    \"\"\"\u4e00\u7ad9\u5f0f\uff1a\u63d0\u95ee -> \u8054\u7f51\u641c\u7d22\u589e\u5f3a\u56de\u7b54 -> \u6b63\u6587\u540e\u9644\u5f15\u7528\u6765\u6e90\u5217\u8868\u3002\"\"\"\n    response_json = call_glm_with_web_search(question, model=model)\n\n    answer = extract_answer(response_json)\n    citations = extract_citations(response_json)\n    citations_block = format_citations(citations)\n\n    if citations_block:\n        return f\"{answer}\\n\\n{citations_block}\"\n    return answer\n\n\ndef main() -> None:\n    question = \" \".join(sys.argv[1:]).strip() or \"\u4eca\u5929\u6709\u54ea\u4e9b\u503c\u5f97\u5173\u6ce8\u7684\u79d1\u6280\u65b0\u95fb\uff1f\"\n\n    try:\n        result = answer_with_citations(question)\n    except requests.exceptions.HTTPError as exc:\n        # \u5e38\u89c1\u4e8e API Key \u65e0\u6548/\u8fc7\u671f\u3001\u53c2\u6570\u975e\u6cd5\u7b49\uff0c\u628a\u670d\u52a1\u7aef\u8fd4\u56de\u7684\u9519\u8bef\u8be6\u60c5\u6253\u5370\u51fa\u6765\n        # \u65b9\u4fbf\u6392\u67e5\uff08\u54cd\u5e94\u4f53\u901a\u5e38\u662f {\"error\": {\"code\": ..., \"message\": ...}}\uff09\u3002\n        detail = \"\"\n        if exc.response is not None:\n            try:\n                detail = json.dumps(exc.response.json(), ensure_ascii=False)\n            except ValueError:\n                detail = exc.response.text\n        print(f\"\u8bf7\u6c42\u5931\u8d25\uff1a{exc}\\n{detail}\", file=sys.stderr)\n        sys.exit(1)\n    except requests.exceptions.RequestException as exc:\n        print(f\"\u7f51\u7edc\u8bf7\u6c42\u5f02\u5e38\uff1a{exc}\", file=sys.stderr)\n        sys.exit(1)\n    except RuntimeError as exc:\n        print(str(exc), file=sys.stderr)\n        sys.exit(1)\n\n    print(result)\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"expectations": [{"text": "\u663e\u5f0f\u4f20 search_result: true", "passed": true, "evidence": "web_search \u914d\u7f6e\u91cc\u660e\u786e search_result: true\uff0c\u4e14\u6ce8\u91ca\u5f15\u7528\u4e86\u6280\u80fd\u5305\u91cc\u5df2\u9a8c\u8bc1\u7684\u4e8b\u5b9e\uff08\u4e0d\u4f20\u5219\u54cd\u5e94\u4f53\u4e0d\u5e26 web_search \u5b57\u6bb5\uff09"}, {"text": "\u4ece\u54cd\u5e94\u4f53\u9876\u5c42 web_search \u5b57\u6bb5\u8bfb\u53d6\u5f15\u7528", "passed": true, "evidence": "\u5df2\u7528\u771f\u5b9e API \u590d\u6d4b\u786e\u8ba4\u5b57\u6bb5\u540d/\u7ed3\u6784\uff1atitle/link \u7b49\uff0c\u4e0e\u4ee3\u7801\u8bfb\u53d6\u903b\u8f91\u4e00\u81f4"}, {"text": "\u5bf9\u5b57\u6bb5\u7f3a\u5931\u6709\u57fa\u672c\u5224\u65ad", "passed": true, "evidence": "\u62a5\u544a\u786e\u8ba4\u4ee3\u7801\u5bf9\u8be5\u5b57\u6bb5\u505a\u4e86\u5b58\u5728\u6027\u5224\u65ad"}, {"text": "\u57fa\u7840\u683c\u5f0f\u6b63\u786e", "passed": true, "evidence": "tools \u7ed3\u6784\u3001\u9274\u6743\u5747\u6b63\u786e\uff0c\u4e14\u989d\u5916\u663e\u5f0f\u4f20\u4e86 search_engine\uff0c\u4e0d\u4f9d\u8d56\u672a\u6587\u6863\u5316\u7684\u9ed8\u8ba4\u503c"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "notes": "\u7ed3\u679c\u786e\u5b9a\u3001\u6709\u636e\u53ef\u67e5\u2014\u2014\u76f4\u63a5\u5f15\u7528\u4e86 chat.md \u91cc'\u5df2\u7528\u771f\u5b9e API \u9a8c\u8bc1'\u7684\u7ed3\u8bba\uff0c\u4e0d\u662f\u731c\u6d4b\u3002"}}, {"id": "eval-websearch-citations-without_skill-run-1", "prompt": "\u5e2e\u6211\u5199\u4ee3\u7801\uff0c\u5728\u8c03\u7528\u667a\u8c31 GLM \u6a21\u578b\u5bf9\u8bdd\uff08chat/completions\uff09\u65f6\u6302\u4e0a\u8054\u7f51\u641c\u7d22\u5de5\u5177\uff0c\u8ba9\u6a21\u578b\u56de\u7b54\u95ee\u9898\u65f6\u80fd\u67e5\u6700\u65b0\u4fe1\u606f\uff0c\u5e76\u4e14\u8981\u5728\u56de\u7b54\u540e\u9762\u9644\u4e0a\u5f15\u7528\u6765\u6e90\u7684\u6807\u9898\u548c\u94fe\u63a5\u5217\u8868\uff0c\u65b9\u4fbf\u7528\u6237\u6eaf\u6e90\u3002\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03 HTTP \u63a5\u53e3\u3002", "eval_id": 13, "outputs": [{"name": "search_chat.py", "type": "text", "content": "\"\"\"\n\u8c03\u7528\u667a\u8c31 GLM \u6a21\u578b\uff08chat/completions\uff09\uff0c\u6302\u4e0a\u5185\u7f6e\u7684\u8054\u7f51\u641c\u7d22\u5de5\u5177\uff08web_search\uff09\uff0c\n\u8ba9\u6a21\u578b\u5728\u56de\u7b54\u95ee\u9898\u65f6\u53ef\u4ee5\u67e5\u8be2\u6700\u65b0\u4fe1\u606f\uff0c\u5e76\u5728\u56de\u7b54\u6587\u672c\u540e\u9644\u4e0a\u5f15\u7528\u6765\u6e90\n\uff08\u6807\u9898 + \u94fe\u63a5\uff09\u5217\u8868\uff0c\u65b9\u4fbf\u7528\u6237\u6eaf\u6e90\u3002\n\n\u4ec5\u4f7f\u7528\u6807\u51c6\u5e93 requests \u76f4\u63a5\u8c03\u7528 HTTP \u63a5\u53e3\uff0c\u4e0d\u4f9d\u8d56\u5b98\u65b9 zhipuai SDK\u3002\n\n\u4f7f\u7528\u524d\u51c6\u5907\uff1a\n    export ZHIPU_API_KEY=\"\u4f60\u7684\u667a\u8c31API Key\"   # \u4ece https://open.bigmodel.cn \u63a7\u5236\u53f0\u83b7\u53d6\n    pip install requests\n\n\u8fd0\u884c\uff1a\n    python search_chat.py \"\u4eca\u5929\u6709\u4ec0\u4e48\u503c\u5f97\u5173\u6ce8\u7684AI\u65b0\u95fb\uff1f\"\n\n\u6ce8\u610f\uff1a\u672c\u6587\u4ef6\u4e0d\u4f1a\u5728\u7f16\u5199\u65f6\u771f\u5b9e\u8c03\u7528\u667a\u8c31 API\uff08\u6ca1\u6709\u53ef\u7528\u7684 Key\uff09\uff0c\u4ec5\u63d0\u4f9b\u53ef\u8fd0\u884c\u7684\n\u53c2\u8003\u5b9e\u73b0\u3002\u5982\u679c\u54cd\u5e94\u4f53\u7684\u5177\u4f53\u5b57\u6bb5\u540d\u79f0\u4e0e\u667a\u8c31\u540e\u7eed\u7248\u672c\u7684\u63a5\u53e3\u6709\u51fa\u5165\uff0c\u8bf7\u5bf9\u7167\n\u6700\u65b0\u5b98\u65b9\u6587\u6863\u5fae\u8c03 extract_citations() \u4e2d\u7684\u53d6\u503c\u903b\u8f91\uff08\u5df2\u505a\u4e86\u8f83\u4e3a\u5bbd\u677e/\u517c\u5bb9\u7684\n\u5b57\u6bb5\u540d\u63a2\u6d4b\uff09\u3002\n\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nimport sys\nimport json\nfrom typing import Any, Dict, List, Optional\n\nimport requests\n\n# ---------------------------------------------------------------------------\n# \u914d\u7f6e\n# ---------------------------------------------------------------------------\n\n# \u667a\u8c31\u5f00\u653e\u5e73\u53f0 GLM \u7cfb\u5217\u6a21\u578b\u7684 Chat Completions \u63a5\u53e3\u5730\u5740\uff08OpenAI \u517c\u5bb9\u98ce\u683c\uff09\nGLM_API_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\"\n\n# \u4ece\u73af\u5883\u53d8\u91cf\u8bfb\u53d6 API Key\uff0c\u907f\u514d\u628a\u5bc6\u94a5\u786c\u7f16\u7801\u8fdb\u4ee3\u7801\u3002\n# \u667a\u8c31\u7684 API Key \u683c\u5f0f\u901a\u5e38\u5f62\u5982 \"{id}.{secret}\"\uff0cv4 \u63a5\u53e3\u652f\u6301\u76f4\u63a5\u628a\u5b8c\u6574\u7684\n# API Key \u4f5c\u4e3a Bearer Token \u4f7f\u7528\uff08\u65e0\u9700\u50cf\u65e7\u7248 SDK \u90a3\u6837\u624b\u52a8\u7b7e\u53d1 JWT\uff09\u3002\nAPI_KEY_ENV_VAR = \"ZHIPU_API_KEY\"\n\n# \u4f7f\u7528\u7684\u6a21\u578b\uff0c\u53ef\u6309\u9700\u66ff\u6362\u4e3a glm-4-plus / glm-4-air / glm-4-flash \u7b49\u3002\nDEFAULT_MODEL = \"glm-4-plus\"\n\nREQUEST_TIMEOUT_SECONDS = 60\n\n\nclass GLMAPIError(RuntimeError):\n    \"\"\"\u5c01\u88c5\u667a\u8c31\u63a5\u53e3\u8fd4\u56de\u7684\u9519\u8bef\u4fe1\u606f\uff0c\u65b9\u4fbf\u4e0a\u5c42\u7edf\u4e00\u5904\u7406\u3002\"\"\"\n\n\ndef _get_api_key() -> str:\n    api_key = os.environ.get(API_KEY_ENV_VAR)\n    if not api_key:\n        raise RuntimeError(\n            f\"\u672a\u627e\u5230\u73af\u5883\u53d8\u91cf {API_KEY_ENV_VAR}\uff0c\u8bf7\u5148\u6267\u884c\uff1a\"\n            f'\\n    export {API_KEY_ENV_VAR}=\"\u4f60\u7684\u667a\u8c31API Key\"'\n        )\n    return api_key\n\n\ndef build_payload(user_query: str, model: str = DEFAULT_MODEL) -> Dict[str, Any]:\n    \"\"\"\u6784\u9020\u5e26\u6709\u8054\u7f51\u641c\u7d22\u5de5\u5177\u7684 chat/completions \u8bf7\u6c42\u4f53\u3002\"\"\"\n    return {\n        \"model\": model,\n        \"messages\": [\n            {\"role\": \"user\", \"content\": user_query},\n        ],\n        # \u5173\u95ed\u6d41\u5f0f\u8f93\u51fa\uff0c\u65b9\u4fbf\u4e00\u6b21\u6027\u62ff\u5230\u5b8c\u6574\u56de\u7b54\u4e0e\u5f15\u7528\u4fe1\u606f\u3002\n        \"stream\": False,\n        # \u6302\u8f7d\u667a\u8c31\u5b98\u65b9\u5185\u7f6e\u7684\u8054\u7f51\u641c\u7d22\u5de5\u5177\u3002\n        # search_result: \"True\" \u8868\u793a\u8981\u6c42\u6a21\u578b\u5728\u8fd4\u56de\u7ed3\u679c\u4e2d\u5e26\u4e0a\u68c0\u7d22\u5230\u7684\n        # \u7f51\u9875\u7247\u6bb5\uff08\u6807\u9898/\u94fe\u63a5/\u6458\u8981\u7b49\uff09\uff0c\u4f9b\u6211\u4eec\u63d0\u53d6\u5f15\u7528\u6765\u6e90\u3002\n        \"tools\": [\n            {\n                \"type\": \"web_search\",\n                \"web_search\": {\n                    \"enable\": \"True\",\n                    \"search_result\": \"True\",\n                },\n            }\n        ],\n    }\n\n\ndef call_glm_chat(user_query: str, model: str = DEFAULT_MODEL) -> Dict[str, Any]:\n    \"\"\"\u76f4\u63a5\u7528 requests \u8c03\u7528\u667a\u8c31 GLM \u7684 chat/completions \u63a5\u53e3\u3002\"\"\"\n    api_key = _get_api_key()\n\n    headers = {\n        \"Authorization\": f\"Bearer {api_key}\",\n        \"Content-Type\": \"application/json\",\n    }\n    payload = build_payload(user_query, model=model)\n\n    response = requests.post(\n        GLM_API_URL,\n        headers=headers,\n        data=json.dumps(payload, ensure_ascii=False).encode(\"utf-8\"),\n        timeout=REQUEST_TIMEOUT_SECONDS,\n    )\n\n    if response.status_code != 200:\n        raise GLMAPIError(\n            f\"GLM \u63a5\u53e3\u8c03\u7528\u5931\u8d25\uff0cHTTP {response.status_code}: {response.text}\"\n        )\n\n    data = response.json()\n\n    if isinstance(data, dict) and data.get(\"error\"):\n        raise GLMAPIError(f\"GLM \u63a5\u53e3\u8fd4\u56de\u9519\u8bef: {data['error']}\")\n\n    return data\n\n\n# ---------------------------------------------------------------------------\n# \u5f15\u7528\u6765\u6e90\u63d0\u53d6\n# ---------------------------------------------------------------------------\n\n# \u667a\u8c31\u8054\u7f51\u641c\u7d22\u5de5\u5177\u8fd4\u56de\u7684\u68c0\u7d22\u7ed3\u679c\u91cc\uff0c\u6807\u9898/\u94fe\u63a5\u5b57\u6bb5\u5728\u4e0d\u540c\u6a21\u578b\u7248\u672c\u6216\u63a5\u53e3\n# \u7248\u672c\u4e4b\u95f4\u547d\u540d\u53ef\u80fd\u7565\u6709\u5dee\u5f02\uff0c\u8fd9\u91cc\u505a\u517c\u5bb9\u5904\u7406\uff0c\u591a\u4e2a\u5019\u9009 key \u4f9d\u6b21\u5c1d\u8bd5\u3002\n_TITLE_KEYS = (\"title\", \"name\", \"media\")\n_LINK_KEYS = (\"link\", \"url\", \"source_url\")\n\n\ndef _pick_first(d: Dict[str, Any], keys: tuple) -> Optional[str]:\n    for key in keys:\n        value = d.get(key)\n        if value:\n            return str(value)\n    return None\n\n\ndef _normalize_search_items(raw_items: Any) -> List[Dict[str, str]]:\n    \"\"\"\u628a\u67d0\u4e2a\u641c\u7d22\u7ed3\u679c\u5b57\u6bb5\uff08\u53ef\u80fd\u662f list[dict]\uff09\u89c4\u8303\u5316\u4e3a {title, link} \u5217\u8868\u3002\"\"\"\n    citations: List[Dict[str, str]] = []\n    if not isinstance(raw_items, list):\n        return citations\n\n    for item in raw_items:\n        if not isinstance(item, dict):\n            continue\n        title = _pick_first(item, _TITLE_KEYS) or \"\uff08\u672a\u63d0\u4f9b\u6807\u9898\uff09\"\n        link = _pick_first(item, _LINK_KEYS)\n        if not link:\n            # \u6ca1\u6709\u94fe\u63a5\u7684\u6761\u76ee\u5bf9\"\u6eaf\u6e90\"\u6ca1\u6709\u610f\u4e49\uff0c\u8df3\u8fc7\u3002\n            continue\n        citations.append({\"title\": title, \"link\": link})\n    return citations\n\n\ndef extract_answer_and_citations(response_json: Dict[str, Any]) -> Dict[str, Any]:\n    \"\"\"\n    \u4ece chat/completions \u54cd\u5e94\u4e2d\u63d0\u53d6\uff1a\n      - answer: \u6a21\u578b\u751f\u6210\u7684\u6b63\u6587\u56de\u7b54\n      - citations: [{title, link}, ...] \u5f15\u7528\u6765\u6e90\u5217\u8868\uff08\u5df2\u53bb\u91cd\uff09\n\n    \u667a\u8c31\u7684\u8054\u7f51\u641c\u7d22\u7ed3\u679c\u901a\u5e38\u51fa\u73b0\u5728\u4ee5\u4e0b\u4f4d\u7f6e\u4e4b\u4e00\uff08\u505a\u517c\u5bb9\u63a2\u6d4b\uff09\uff1a\n      1) choices[0][\"message\"][\"tool_calls\"]\uff0c\u5176\u4e2d\u67d0\u4e00\u9879 type == \"web_search\"\uff0c\n         \u5bf9\u5e94\u7684\u68c0\u7d22\u7ed3\u679c\u5217\u8868\u5728\u8be5\u9879\u7684 \"web_search\" \u6216 \"search_result\" \u5b57\u6bb5\u91cc\uff1b\n      2) \u54cd\u5e94\u9876\u5c42\u7684 \"web_search\" \u5b57\u6bb5\uff08\u90e8\u5206\u63a5\u53e3\u7248\u672c\u76f4\u63a5\u653e\u5728\u9876\u5c42\uff09\uff1b\n      3) choices[0] \u5c42\u7ea7\u4e0b\u7684 \"web_search\" \u5b57\u6bb5\u3002\n    \"\"\"\n    choices = response_json.get(\"choices\") or []\n    if not choices:\n        raise GLMAPIError(f\"\u54cd\u5e94\u4e2d\u6ca1\u6709 choices \u5b57\u6bb5: {response_json}\")\n\n    choice = choices[0]\n    message = choice.get(\"message\") or {}\n    answer_text = message.get(\"content\") or \"\"\n\n    raw_citations: List[Dict[str, str]] = []\n\n    # \u4f4d\u7f6e 1\uff1amessage.tool_calls \u4e2d\u7c7b\u578b\u4e3a web_search \u7684\u5de5\u5177\u8c03\u7528\u7ed3\u679c\n    for tool_call in message.get(\"tool_calls\") or []:\n        if not isinstance(tool_call, dict):\n            continue\n        if tool_call.get(\"type\") != \"web_search\":\n            continue\n        search_items = tool_call.get(\"web_search\") or tool_call.get(\"search_result\")\n        raw_citations.extend(_normalize_search_items(search_items))\n\n    # \u4f4d\u7f6e 2\uff1a\u54cd\u5e94\u9876\u5c42\n    if not raw_citations and isinstance(response_json.get(\"web_search\"), list):\n        raw_citations.extend(_normalize_search_items(response_json[\"web_search\"]))\n\n    # \u4f4d\u7f6e 3\uff1achoice \u5c42\u7ea7\n    if not raw_citations and isinstance(choice.get(\"web_search\"), list):\n        raw_citations.extend(_normalize_search_items(choice[\"web_search\"]))\n\n    # \u6309 link \u53bb\u91cd\uff0c\u4fdd\u6301\u539f\u6709\u51fa\u73b0\u987a\u5e8f\n    seen_links = set()\n    citations: List[Dict[str, str]] = []\n    for c in raw_citations:\n        if c[\"link\"] in seen_links:\n            continue\n        seen_links.add(c[\"link\"])\n        citations.append(c)\n\n    return {\"answer\": answer_text, \"citations\": citations}\n\n\ndef format_answer_with_citations(answer: str, citations: List[Dict[str, str]]) -> str:\n    \"\"\"\u628a\u6b63\u6587\u56de\u7b54\u548c\u5f15\u7528\u6765\u6e90\u5217\u8868\u62fc\u63a5\u6210\u4fbf\u4e8e\u5c55\u793a\u7ed9\u7528\u6237\u7684\u6700\u7ec8\u6587\u672c\u3002\"\"\"\n    if not citations:\n        return answer\n\n    lines = [answer.rstrip(), \"\", \"\u53c2\u8003\u6765\u6e90\uff1a\"\"\".rstrip(\"\uff1a\") + \"\uff1a\"]\n    for idx, c in enumerate(citations, start=1):\n        lines.append(f\"[{idx}] {c['title']} - {c['link']}\")\n\n    return \"\\n\".join(lines)\n\n\ndef ask_with_web_search(user_query: str, model: str = DEFAULT_MODEL) -> str:\n    \"\"\"\u5bf9\u5916\u7684\u4e3b\u5165\u53e3\uff1a\u63d0\u95ee -> \u8054\u7f51\u641c\u7d22\u589e\u5f3a\u56de\u7b54 -> \u9644\u5e26\u5f15\u7528\u6765\u6e90\u7684\u6700\u7ec8\u6587\u672c\u3002\"\"\"\n    response_json = call_glm_chat(user_query, model=model)\n    result = extract_answer_and_citations(response_json)\n    return format_answer_with_citations(result[\"answer\"], result[\"citations\"])\n\n\ndef main() -> None:\n    query = sys.argv[1] if len(sys.argv) > 1 else \"\u6700\u8fd1\u4e00\u5468\u6709\u54ea\u4e9b\u503c\u5f97\u5173\u6ce8\u7684\u79d1\u6280\u65b0\u95fb\uff1f\"\n\n    try:\n        final_text = ask_with_web_search(query)\n    except (GLMAPIError, RuntimeError) as exc:\n        print(f\"\u8c03\u7528\u5931\u8d25: {exc}\", file=sys.stderr)\n        sys.exit(1)\n\n    print(final_text)\n\n\nif __name__ == \"__main__\":\n    main()\n"}], "grading": {"expectations": [{"text": "\u663e\u5f0f\u4f20 search_result: true", "passed": true, "evidence": "\u4ee3\u7801\u4f20\u4e86 search_result: \"True\"\uff08\u5b57\u7b26\u4e32\u800c\u975e\u5e03\u5c14\u503c\uff09\u2014\u2014\u5df2\u7528\u771f\u5b9e API \u590d\u6d4b\u786e\u8ba4 bigmodel.cn \u5bf9\u8fd9\u4e2a\u5b57\u6bb5\u505a\u4e86\u5bbd\u677e\u7684\u7c7b\u578b\u5f3a\u8f6c\uff0c\u5b57\u7b26\u4e32 'True' \u540c\u6837\u80fd\u89e6\u53d1 web_search \u9876\u5c42\u5b57\u6bb5\u51fa\u73b0\uff0c\u4e0d\u7b97\u9519\u8bef\uff0c\u4f46\u8fd9\u662f\u5de7\u5408\u800c\u975e\u786e\u5b9a\u6027\uff0c\u5982\u679c API \u672a\u6765\u6536\u7d27\u7c7b\u578b\u6821\u9a8c\uff0c\u8fd9\u4e2a\u5199\u6cd5\u4f1a\u788e"}, {"text": "\u4ece\u54cd\u5e94\u4f53\u9876\u5c42 web_search \u5b57\u6bb5\u8bfb\u53d6\u5f15\u7528", "passed": true, "evidence": "extract_answer_and_citations() \u91cc\u7b2c2\u4e2a\u63a2\u6d4b\u4f4d\u7f6e\u5c31\u662f response_json.get('web_search') \u9876\u5c42\u5b57\u6bb5\u2014\u2014\u5df2\u7528\u771f\u5b9e API \u590d\u6d4b\u786e\u8ba4\u8fd9\u6b63\u662f\u771f\u5b9e\u6570\u636e\u6240\u5728\u4f4d\u7f6e\uff0c\u547d\u4e2d\u7387\u7b97\u6cd5\u867d\u662f'\u591a\u5904\u731c\u6d4b'\u4f46\u8986\u76d6\u5230\u4e86\u6b63\u786e\u7b54\u6848"}, {"text": "\u5bf9\u5b57\u6bb5\u7f3a\u5931\u6709\u57fa\u672c\u5224\u65ad", "passed": true, "evidence": "isinstance \u68c0\u67e5\u3001seen_links \u53bb\u91cd\u3001citations \u4e3a\u7a7a\u65f6\u4e0d\u8ffd\u52a0\u6765\u6e90\u6bb5\uff0c\u5904\u7406\u5f97\u6bd4\u8f83\u5468\u5168"}, {"text": "\u57fa\u7840\u683c\u5f0f\u6b63\u786e", "passed": true, "evidence": "tools \u7ed3\u6784\u3001\u9274\u6743\u5747\u6b63\u786e"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "notes": "\u53e6\u4e00\u4e2a\u8bda\u5b9e\u7684'\u6253\u5e73'\u7ed3\u679c\uff1abaseline \u7528\u4e86'\u591a\u5904\u63a2\u6d4b + \u591a\u4e2a\u5019\u9009\u5b57\u6bb5\u540d'\u7684\u9632\u5fa1\u6027\u5199\u6cd5\u6765\u5bf9\u51b2\u4e0d\u786e\u5b9a\u6027\uff0c\u8fd9\u6b21\u4e09\u4e2a\u5019\u9009\u4f4d\u7f6e\u91cc\u7b2c\u4e8c\u4e2a\u5c31\u547d\u4e2d\u4e86\u771f\u5b9e\u4f4d\u7f6e\uff0c\u5b57\u6bb5\u540d\u5019\u9009\uff08title/link\uff09\u4e5f\u6070\u597d\u5305\u542b\u6b63\u786e\u7b54\u6848\uff0c\u5b57\u7b26\u4e32 'True' \u4e5f\u88ab API \u5bbd\u677e\u63a5\u53d7\u2014\u2014\u591a\u4e2a\u4e0d\u786e\u5b9a\u56e0\u7d20\u8fde\u7eed'\u8499\u5bf9'\uff0c\u529f\u80fd\u4e0a\u786e\u5b9e\u53ef\u7528\u3002\u4f46\u8fd9\u7248\u4ee3\u7801\u672c\u8d28\u4e0a\u4e0d\u77e5\u9053'\u4e3a\u4ec0\u4e48'\u8981\u4f20 search_result\uff0c\u53ea\u662f\u5e38\u89c1 Web \u641c\u7d22 API \u7684\u7ecf\u9a8c\u6a21\u5f0f\uff1b\u540c\u65f6\u5b83\u7684\u63a2\u6d4b\u903b\u8f91\u8fd8\u68c0\u67e5\u4e86\u4e24\u4e2a\u5b9e\u9645\u4e0d\u5b58\u5728\u7684\u4f4d\u7f6e\uff08message.tool_calls \u91cc\u7684 web_search\u3001choice \u5c42\u7ea7\u7684 web_search\uff09\uff0c\u8fd9\u4e9b\u662f\u65e0\u6548\u4ee3\u7801\uff0c\u53ea\u662f\u6ca1\u6709\u9020\u6210\u9519\u8bef\u3002\u8fd9\u7c7b'\u9632\u5fa1\u6027\u8986\u76d6\u591a\u79cd\u53ef\u80fd'\u7684\u901a\u7528\u5de5\u7a0b\u4e60\u60ef\uff0c\u662f\u672c\u8f6e\u51e0\u6b21'\u6253\u5e73'\u80cc\u540e\u7684\u5171\u540c\u6a21\u5f0f\uff0c\u503c\u5f97\u5728\u6700\u7ec8\u62a5\u544a\u91cc\u6307\u51fa\u3002"}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "bigmodel-cn", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-09-03T07:54:58Z", "evals_run": [12, 13], "runs_per_configuration": 3}, "runs": [{"eval_id": 12, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 44.1, "tokens": 75110, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u4e0d\u7528\u81c6\u9020\u7684 OpenAI \u98ce\u683c\u97f3\u8272\u540d", "passed": true, "evidence": "\u9009\u7528\u771f\u5b9e\u7cfb\u7edf\u97f3\u8272 tongtong\uff0c\u4e14\u660e\u786e\u5217\u51fa\u5176\u4f596\u4e2a\u771f\u5b9e\u97f3\u8272\u4f5c\u4e3a\u5907\u9009"}, {"text": "\u7528\u771f\u5b9e\u97f3\u8272\u540d\u6216\u67e5\u8be2 voice/list", "passed": true, "evidence": "voice=tongtong\uff0c\u6765\u81ea references/media.md \u91cc\u5df2\u9a8c\u8bc1\u7684\u771f\u5b9e\u7cfb\u7edf\u97f3\u8272\u679a\u4e3e"}, {"text": "\u6b63\u786e\u5904\u7406\u4e8c\u8fdb\u5236\u54cd\u5e94", "passed": true, "evidence": "resp.content \u5199\u6587\u4ef6\uff0c\u672a\u8bef\u7528 resp.json()"}, {"text": "\u57fa\u7840\u683c\u5f0f\u6b63\u786e", "passed": true, "evidence": "endpoint/model/auth \u5747\u6b63\u786e"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "notes": []}, {"eval_id": 13, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 89.9, "tokens": 77894, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u663e\u5f0f\u4f20 search_result: true", "passed": true, "evidence": "web_search \u914d\u7f6e\u91cc\u660e\u786e search_result: true\uff0c\u4e14\u6ce8\u91ca\u5f15\u7528\u4e86\u6280\u80fd\u5305\u91cc\u5df2\u9a8c\u8bc1\u7684\u4e8b\u5b9e\uff08\u4e0d\u4f20\u5219\u54cd\u5e94\u4f53\u4e0d\u5e26 web_search \u5b57\u6bb5\uff09"}, {"text": "\u4ece\u54cd\u5e94\u4f53\u9876\u5c42 web_search \u5b57\u6bb5\u8bfb\u53d6\u5f15\u7528", "passed": true, "evidence": "\u5df2\u7528\u771f\u5b9e API \u590d\u6d4b\u786e\u8ba4\u5b57\u6bb5\u540d/\u7ed3\u6784\uff1atitle/link \u7b49\uff0c\u4e0e\u4ee3\u7801\u8bfb\u53d6\u903b\u8f91\u4e00\u81f4"}, {"text": "\u5bf9\u5b57\u6bb5\u7f3a\u5931\u6709\u57fa\u672c\u5224\u65ad", "passed": true, "evidence": "\u62a5\u544a\u786e\u8ba4\u4ee3\u7801\u5bf9\u8be5\u5b57\u6bb5\u505a\u4e86\u5b58\u5728\u6027\u5224\u65ad"}, {"text": "\u57fa\u7840\u683c\u5f0f\u6b63\u786e", "passed": true, "evidence": "tools \u7ed3\u6784\u3001\u9274\u6743\u5747\u6b63\u786e\uff0c\u4e14\u989d\u5916\u663e\u5f0f\u4f20\u4e86 search_engine\uff0c\u4e0d\u4f9d\u8d56\u672a\u6587\u6863\u5316\u7684\u9ed8\u8ba4\u503c"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "notes": []}, {"eval_id": 12, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 64.0, "tokens": 61932, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u4e0d\u7528\u81c6\u9020\u7684 OpenAI \u98ce\u683c\u97f3\u8272\u540d", "passed": true, "evidence": "\u9009\u7528\u4e86 'tongtong'\uff0c\u6070\u597d\u662f\u771f\u5b9e\u5b58\u5728\u7684\u7cfb\u7edf\u97f3\u8272\uff08\u4e0e with_skill \u7248\u672c\u9009\u62e9\u4e00\u81f4\uff09"}, {"text": "\u7528\u771f\u5b9e\u97f3\u8272\u540d\u6216\u67e5\u8be2 voice/list", "passed": true, "evidence": "\u78b0\u5bf9\u4e86\u771f\u5b9e\u97f3\u8272\u540d\uff0c\u4f46\u4ee3\u7801\u6ce8\u91ca\u660e\u786e\u627f\u8ba4'\u672a\u8054\u7f51\u6838\u5bf9\u6700\u65b0\u5b98\u65b9\u97f3\u8272\u5217\u8868'\uff0c\u662f\u4e00\u6b21\u672a\u7ecf\u8bc1\u5b9e\u7684\u731c\u6d4b\uff0c\u4e0d\u662f\u67e5\u8bc1\u540e\u7684\u786e\u5b9a\u9009\u62e9"}, {"text": "\u6b63\u786e\u5904\u7406\u4e8c\u8fdb\u5236\u54cd\u5e94", "passed": true, "evidence": "\u4ee3\u7801\u540c\u65f6\u517c\u5bb9'\u7eaf\u4e8c\u8fdb\u5236'\u548c'JSON \u91cc\u5e26 base64 \u97f3\u9891\u5b57\u6bb5'\u4e24\u79cd\u60c5\u51b5\uff0c\u5904\u7406\u66f4\u4fdd\u5b88\u4f46\u4e5f\u6b63\u786e\u8986\u76d6\u4e86\u771f\u5b9e\u60c5\u51b5"}, {"text": "\u57fa\u7840\u683c\u5f0f\u6b63\u786e", "passed": true, "evidence": "endpoint/model/auth \u5747\u6b63\u786e"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1 py_compile \u901a\u8fc7"}], "notes": []}, {"eval_id": 13, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 68.3, "tokens": 62618, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u663e\u5f0f\u4f20 search_result: true", "passed": true, "evidence": "\u4ee3\u7801\u4f20\u4e86 search_result: \"True\"\uff08\u5b57\u7b26\u4e32\u800c\u975e\u5e03\u5c14\u503c\uff09\u2014\u2014\u5df2\u7528\u771f\u5b9e API \u590d\u6d4b\u786e\u8ba4 bigmodel.cn \u5bf9\u8fd9\u4e2a\u5b57\u6bb5\u505a\u4e86\u5bbd\u677e\u7684\u7c7b\u578b\u5f3a\u8f6c\uff0c\u5b57\u7b26\u4e32 'True' \u540c\u6837\u80fd\u89e6\u53d1 web_search \u9876\u5c42\u5b57\u6bb5\u51fa\u73b0\uff0c\u4e0d\u7b97\u9519\u8bef\uff0c\u4f46\u8fd9\u662f\u5de7\u5408\u800c\u975e\u786e\u5b9a\u6027\uff0c\u5982\u679c API \u672a\u6765\u6536\u7d27\u7c7b\u578b\u6821\u9a8c\uff0c\u8fd9\u4e2a\u5199\u6cd5\u4f1a\u788e"}, {"text": "\u4ece\u54cd\u5e94\u4f53\u9876\u5c42 web_search \u5b57\u6bb5\u8bfb\u53d6\u5f15\u7528", "passed": true, "evidence": "extract_answer_and_citations() \u91cc\u7b2c2\u4e2a\u63a2\u6d4b\u4f4d\u7f6e\u5c31\u662f response_json.get('web_search') \u9876\u5c42\u5b57\u6bb5\u2014\u2014\u5df2\u7528\u771f\u5b9e API \u590d\u6d4b\u786e\u8ba4\u8fd9\u6b63\u662f\u771f\u5b9e\u6570\u636e\u6240\u5728\u4f4d\u7f6e\uff0c\u547d\u4e2d\u7387\u7b97\u6cd5\u867d\u662f'\u591a\u5904\u731c\u6d4b'\u4f46\u8986\u76d6\u5230\u4e86\u6b63\u786e\u7b54\u6848"}, {"text": "\u5bf9\u5b57\u6bb5\u7f3a\u5931\u6709\u57fa\u672c\u5224\u65ad", "passed": true, "evidence": "isinstance \u68c0\u67e5\u3001seen_links \u53bb\u91cd\u3001citations \u4e3a\u7a7a\u65f6\u4e0d\u8ffd\u52a0\u6765\u6e90\u6bb5\uff0c\u5904\u7406\u5f97\u6bd4\u8f83\u5468\u5168"}, {"text": "\u57fa\u7840\u683c\u5f0f\u6b63\u786e", "passed": true, "evidence": "tools \u7ed3\u6784\u3001\u9274\u6743\u5747\u6b63\u786e"}, {"text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c", "passed": true, "evidence": "agent \u62a5\u544a\u5df2\u9a8c\u8bc1"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 67.0, "stddev": 32.3855, "min": 44.1, "max": 89.9}, "tokens": {"mean": 76502.0, "stddev": 1968.5853, "min": 75110, "max": 77894}}, "without_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 66.15, "stddev": 3.0406, "min": 64.0, "max": 68.3}, "tokens": {"mean": 62275.0, "stddev": 485.0753, "min": 61932, "max": 62618}}, "delta": {"pass_rate": "+0.00", "time_seconds": "+0.8", "tokens": "+14227"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

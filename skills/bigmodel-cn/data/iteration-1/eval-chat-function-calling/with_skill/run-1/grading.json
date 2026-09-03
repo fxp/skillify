@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions", "passed": true, "evidence": "BASE_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\""},
+    {"text": "Authorization header is exactly 'Bearer <API_KEY>', key read from env var", "passed": true, "evidence": "headers = {\"Authorization\": f\"Bearer {api_key}\", ...}; api_key = os.environ.get(API_KEY_ENV_VAR)"},
+    {"text": "model field is a real GLM chat model code", "passed": true, "evidence": "MODEL = \"glm-5.3\", with an inline comment correctly noting glm-5.3 forces thinking on"},
+    {"text": "tools array uses documented {'type':'function','function':{...}} shape, not legacy 'functions'", "passed": true, "evidence": "TOOLS = [{\"type\": \"function\", \"function\": {\"name\":..., \"description\":..., \"parameters\":...}}]"},
+    {"text": "Code reads tool_calls with id/type/function.name/function.arguments", "passed": true, "evidence": "execute_tool_call() reads tool_call['function']['name'] and ['arguments'], parses arguments via json.loads"},
+    {"text": "Appends role='tool' message with matching tool_call_id", "passed": true, "evidence": "messages.append({'role':'tool','tool_call_id': tool_call['id'], 'content': tool_result_content})"},
+    {"text": "Makes follow-up call to get and print final answer", "passed": true, "evidence": "run_agent loops calling call_chat_completions again; main() prints under '=== 最终回答 ==='"},
+    {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}
+  ],
+  "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0},
+  "notes": "Beyond the assertions, this run also correctly encoded a non-obvious fact only available in the docs: glm-5.3 cannot disable thinking, only tune reasoning_effort, and it preserves reasoning_content across tool-call turns for interleaved thinking continuity — details the baseline run does not mention at all."
+}

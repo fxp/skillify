@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不对 glm-5.3 传 thinking:{type:disabled}", "passed": true, "evidence": "第169行固定 \"thinking\": {\"type\": \"enabled\"}，注释明确'GLM-5.3 无法关闭思考，thinking.type 必须保持默认的 enabled，否则会报错码 1210'"},
+    {"text": "用已验证有效的降本降延迟手段（reasoning_effort='low' 或换模型）", "passed": true, "evidence": "DEFAULT_REASONING_EFFORT='low'；notes.md 里额外提到 glm-4.6/glm-4.5-airx/glm-4-flashx-250414 作为可选的更彻底方案"},
+    {"text": "提及模型选择权衡，视为加分项", "passed": true, "evidence": "notes.md 明确对比了'必须用glm-5.3'与'可以换模型'两种情况下的最优解"},
+    {"text": "基础格式正确", "passed": true, "evidence": "BASE_URL、Authorization、model 均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告 py_compile 通过，且在缺少 API Key 时能优雅退出而不发起网络请求"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "与官方技能包里已记录的真实调用数据吻合：reasoning_effort=low 时 reasoning_tokens 实测为 0。"
+}

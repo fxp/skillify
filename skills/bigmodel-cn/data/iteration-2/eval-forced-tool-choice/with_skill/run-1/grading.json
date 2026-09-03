@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "代码不依赖 OpenAI 风格的强制 tool_choice 来保证工具一定被调用", "passed": true, "evidence": "notes/代码明确写道 'chat/completions 接口的 tool_choice 字段【只支持字符串 auto】…无法用 API 参数从服务端强制'，_run_model_turn() 里 tool_choice 固定传 'auto'"},
+    {"text": "用其他真正有效的手段保证工具总被调用", "passed": true, "evidence": "handle_user_message() 第一步无条件调用 self._force_lookup_order(current_order_id)——纯 Python 控制流触发，不经过模型决策；已用真实 API 复测同样的 off-topic 输入（'1+1等于几'）确认：无论模型是否配合，本地查询都会先发生"},
+    {"text": "对 tool_choice 局限性有清晰认知，不是无意识使用", "passed": true, "evidence": "文件头部大段注释专门解释该限制的来源与后果，并引用 references/chat.md 第四节"},
+    {"text": "基础格式正确（Bearer 鉴权、endpoint、tools 结构）", "passed": true, "evidence": "BASE_URL 正确；headers Authorization: Bearer；tools 用 function 类型"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "已用真实 API 复测验证核心假设：给 glm-5.3 传 tool_choice={'type':'function','function':{'name':'lookup_order'}} 并提问一个无关问题（'1+1等于几'），模型直接跳过工具调用给出'1+1=2'——证实该字段确实不生效，与本方案的判断完全一致。"
+}

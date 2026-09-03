@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "用 chat/completions 的 file 类型直接读文件，不本地解析 PDF", "passed": false, "evidence": "代码确实没有用 PyPDF2 之类的库，但也完全没有用到 chat/completions 的 file 类型——它自己发明了一套'上传→GET /files/{id}/content 取回解析文本→把文本拼进 prompt'的两步流程，这个流程和 bigmodel.cn 真实提供的多模态直读能力是两码事"},
+    {"text": "上传时 purpose 正确", "passed": false, "evidence": "用了臆造的 purpose='file-extract'，回复里还编造了 'retrieval'、'fine-tune' 等同样不存在的 purpose 值来做对比论证——已用真实 API 验证真实的 purpose 枚举只有 batch/code-interpreter/agent/voice-clone-input/user_data，没有这些名字"},
+    {"text": "流程本身可行", "passed": false, "evidence": "核心依赖的 GET /files/{file_id}/content 接口——已用真实 API 复测确认：该接口只支持 purpose=batch 的文件，对其他 purpose（包括本例的 'file-extract'，或任何非 batch 值）一律返回 'The file purpose ... does not support downloading'。也就是说这版代码的整个方案在第 2 步就会 100% 失败，不是字段细节问题，是方案本身不成立"},
+    {"text": "基础格式正确", "passed": true, "evidence": "endpoint 拼写、鉴权头本身没问题"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已语法检查通过（语法没问题，但整个方案在真实调用下从第二步起就会失败）"}
+  ],
+  "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4},
+  "notes": "这是本轮里最彻底的一次功能性失败：baseline 完全不知道 bigmodel.cn 的 chat/completions 支持直接传文件（这是 OpenAI 生态里没有对应能力的平台特有功能），于是凭对'文件上传+解析'这类接口的通用印象，编造了一套听起来合理、但整个方案在这个平台上根本不存在的两步流程——不是某个参数传错，而是从架构设计的第一步就走错了方向。已用真实 API 复测确认 GET /files/{id}/content 明确拒绝非 batch 文件（'does not support downloading'），这个方案不可能跑通。"
+}

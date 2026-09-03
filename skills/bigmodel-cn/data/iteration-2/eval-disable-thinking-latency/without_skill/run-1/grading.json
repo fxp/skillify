@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不对 glm-5.3 传 thinking:{type:disabled}", "passed": false, "evidence": "第128-130行：\"thinking\": {\"type\": \"disabled\"}，注释称'模型会跳过思维链、直接输出答案'——已用真实 API 验证：glm-5.3 对此直接返回 {\"error\":{\"code\":\"1210\",\"message\":\"该模型始终思考，不支持关闭思考；请使用 low、high 或 max。\"}}，是一个必现的硬错误，不是被忽略或降级处理"},
+    {"text": "用真正有效的降本降延迟手段", "passed": false, "evidence": "全部'降本'思路都建立在 thinking.type=disabled 真的能生效的错误假设上；代码里没有 reasoning_effort 字段，也没有考虑换用非强制思考模型的备选方案"},
+    {"text": "对模型选择权衡有认知", "passed": false, "evidence": "完全没有提到 glm-5.3 是强制思考模型、reasoning_effort 存在或可以换模型这几个关键信息"},
+    {"text": "基础格式正确", "passed": true, "evidence": "BASE_URL、Authorization、model 均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告 py_compile 通过（语法层面没问题，问题在运行时会 100% 报错）"}
+  ],
+  "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4},
+  "notes": "这是本轮里最直接、最容易复现的一个功能性差异：这个脚本对 glm-5.3 发起的每一次请求都会因为 thinking.type=disabled 而 100% 收到业务错误码 1210，机器人完全无法工作，不是'边缘情况偶发失败'，而是'从第一次调用起就完全跑不起来'。已用真实 API 直接验证了这个报错。"
+}

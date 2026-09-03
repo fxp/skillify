@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "用 chat/completions 的 file 类型直接读文件，不本地解析 PDF", "passed": true, "evidence": "上传后用 {'type':'file','file':{'file_id':...}} 引用，未使用 PyPDF2/pdfplumber"},
+    {"text": "上传时 purpose=user_data", "passed": true, "evidence": "明确使用 purpose=user_data，并在回复里解释了原因（agent/code-interpreter 上传的文件会在 chat 里解析失败）——已用真实 API 复测确认这个结论完全准确"},
+    {"text": "用支持多模态 file 类型的模型", "passed": true, "evidence": "使用 glm-5.3-flash（视觉模型），并解释了为什么必须用视觉模型；还额外注意到视觉模型不支持 response_format，改用强 prompt 约束 JSON 输出"},
+    {"text": "基础格式正确", "passed": true, "evidence": "两次请求 endpoint、鉴权均正确，且实现了上传后自动清理文件"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile、--help、错误路径"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "完全正确、有据可查，直接引用了技能包里刚验证过的结论。"
+}

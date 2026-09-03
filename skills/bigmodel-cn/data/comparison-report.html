@@ -1,0 +1,554 @@
+<title>Skill Value Audit</title>
+<style>
+:root{
+  --bg:#f4f5f8;
+  --surface:#ffffff;
+  --surface-2:#eceef3;
+  --ink:#1b2030;
+  --ink-2:#454c5f;
+  --muted:#767f93;
+  --border:#dde0e8;
+  --accent:#3450c9;
+  --accent-ink:#2540ad;
+  --win:#1c8f5e;
+  --win-bg:#e6f5ee;
+  --tie:#8a7000;
+  --tie-bg:#f7f1de;
+  --bar-track:#e6e8ef;
+  --code-bg:#eef0f6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11131a;
+    --surface:#1a1d27;
+    --surface-2:#20242f;
+    --ink:#e8eaf1;
+    --ink-2:#b7bccb;
+    --muted:#8890a3;
+    --border:#2c303d;
+    --accent:#7f9bff;
+    --accent-ink:#a9bcff;
+    --win:#4fd399;
+    --win-bg:#173028;
+    --tie:#e0c25a;
+    --tie-bg:#332c17;
+    --bar-track:#2a2e3a;
+    --code-bg:#20242f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11131a;
+  --surface:#1a1d27;
+  --surface-2:#20242f;
+  --ink:#e8eaf1;
+  --ink-2:#b7bccb;
+  --muted:#8890a3;
+  --border:#2c303d;
+  --accent:#7f9bff;
+  --accent-ink:#a9bcff;
+  --win:#4fd399;
+  --win-bg:#173028;
+  --tie:#e0c25a;
+  --tie-bg:#332c17;
+  --bar-track:#2a2e3a;
+  --code-bg:#20242f;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+  line-height:1.55;
+}
+.wrap{max-width:980px;margin:0 auto;padding:56px 24px 96px;}
+
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;}
+.tnum{font-variant-numeric:tabular-nums;}
+
+header.top{margin-bottom:44px;}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--accent-ink);
+  margin:0 0 10px;
+}
+h1{
+  font-size:34px;
+  font-weight:650;
+  letter-spacing:-0.01em;
+  margin:0 0 12px;
+  text-wrap:balance;
+}
+.dek{
+  font-size:16px;
+  color:var(--ink-2);
+  max-width:62ch;
+  margin:0;
+}
+.dek code{font-size:14.5px;}
+
+code{
+  font-family:"IBM Plex Mono",monospace;
+  background:var(--code-bg);
+  padding:1px 6px;
+  border-radius:4px;
+  font-size:.92em;
+  color:var(--ink);
+}
+
+/* summary tiles */
+.tiles{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1px;
+  background:var(--border);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  margin-bottom:56px;
+}
+.tile{
+  background:var(--surface);
+  padding:22px 20px;
+}
+.tile .num{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:32px;
+  font-weight:600;
+  color:var(--ink);
+  letter-spacing:-0.02em;
+}
+.tile .num span{font-size:18px;color:var(--muted);font-weight:500;}
+.tile .lbl{
+  margin-top:6px;
+  font-size:12.5px;
+  color:var(--muted);
+  line-height:1.4;
+}
+
+section.block{margin-bottom:52px;}
+.block > h2{
+  font-size:13px;
+  font-family:"IBM Plex Mono",monospace;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 4px;
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
+.block > h2 .n{color:var(--accent-ink);}
+.block-note{
+  font-size:14px;
+  color:var(--ink-2);
+  margin:0 0 20px;
+  max-width:70ch;
+}
+
+/* iteration group */
+.iter{margin-bottom:38px;}
+.iter-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:16px;
+  border-bottom:1px solid var(--border);
+  padding-bottom:10px;
+  margin-bottom:16px;
+}
+.iter-head h3{
+  font-size:16px;
+  font-weight:620;
+  margin:0;
+}
+.iter-head .model-tag{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.rows{display:flex;flex-direction:column;gap:14px;}
+.row{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
+  display:grid;
+  grid-template-columns:1fr 220px;
+  gap:18px;
+  align-items:center;
+}
+.row .info h4{
+  margin:0 0 4px;
+  font-size:15px;
+  font-weight:610;
+}
+.row .info .task{
+  font-size:13.5px;
+  color:var(--ink-2);
+  margin:0 0 8px;
+}
+.row .info .why{
+  font-size:13px;
+  color:var(--muted);
+  margin:0;
+  border-left:2px solid var(--border);
+  padding-left:10px;
+}
+.row .info .why b{color:var(--ink-2);font-weight:600;}
+
+.bars{display:flex;flex-direction:column;gap:8px;}
+.bar-line{display:grid;grid-template-columns:64px 1fr 40px;align-items:center;gap:8px;}
+.bar-line .who{font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace;}
+.bar-track{height:8px;background:var(--bar-track);border-radius:5px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:5px;}
+.bar-fill.skill{background:var(--accent);}
+.bar-fill.base{background:var(--muted);}
+.bar-line .pct{font-family:"IBM Plex Mono",monospace;font-size:12.5px;text-align:right;color:var(--ink-2);}
+
+.tag{
+  display:inline-block;
+  font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;
+  letter-spacing:.03em;
+  padding:2px 7px;
+  border-radius:5px;
+  margin-left:8px;
+  vertical-align:middle;
+  font-weight:600;
+}
+.tag.win{background:var(--win-bg);color:var(--win);}
+.tag.tie{background:var(--tie-bg);color:var(--tie);}
+
+/* findings log */
+.finding{
+  display:grid;
+  grid-template-columns:120px 1fr;
+  gap:16px;
+  padding:14px 0;
+  border-top:1px solid var(--border);
+}
+.finding:last-child{border-bottom:1px solid var(--border);}
+.finding .file{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:12px;
+  color:var(--accent-ink);
+  padding-top:2px;
+}
+.finding .desc h5{
+  margin:0 0 4px;
+  font-size:14px;
+  font-weight:610;
+}
+.finding .desc p{
+  margin:0;
+  font-size:13.5px;
+  color:var(--ink-2);
+}
+
+footer{
+  margin-top:60px;
+  padding-top:20px;
+  border-top:1px solid var(--border);
+  font-size:12.5px;
+  color:var(--muted);
+}
+
+@media (max-width:640px){
+  .tiles{grid-template-columns:1fr 1fr;}
+  .row{grid-template-columns:1fr;}
+  .finding{grid-template-columns:1fr;}
+  .wrap{padding:32px 16px 64px;}
+  h1{font-size:27px;}
+}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;650&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<div class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">bigmodel-cn skill · value audit</p>
+    <h1>Where the skill actually changes the outcome</h1>
+    <p class="dek">14 coding tasks run twice each — once with an agent that read the <code>bigmodel-cn</code> skill, once with an agent working from general knowledge only — then graded against the real <code>open.bigmodel.cn</code> API, not against assumptions.</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile">
+      <div class="num tnum">14</div>
+      <div class="lbl">scenarios tested, across 5 rounds</div>
+    </div>
+    <div class="tile">
+      <div class="num tnum">7<span>/14</span></div>
+      <div class="lbl">where the unskilled agent's code fails against the real API</div>
+    </div>
+    <div class="tile">
+      <div class="num tnum">100<span>%</span></div>
+      <div class="lbl">pass rate for the skilled agent, every round</div>
+    </div>
+    <div class="tile">
+      <div class="num tnum">7</div>
+      <div class="lbl">real documentation errors found and fixed mid-audit</div>
+    </div>
+  </div>
+
+  <section class="block">
+    <h2><span class="n">Round 1</span> — obvious tasks</h2>
+    <p class="block-note">Chat completion, image→video, an OpenAI-SDK migration. Common enough patterns that general training data already covers them — the audit's first honest result was a tie.</p>
+    <div class="rows">
+      <div class="row">
+        <div class="info">
+          <h4>Tool-calling weather bot <span class="tag tie">tie</span></h4>
+          <p class="task">GLM-5.3 command-line assistant that must call a weather function before answering.</p>
+          <p class="why"><b>Why:</b> both agents produced a correct function-calling loop — this pattern is well represented in general knowledge.</p>
+        </div>
+        <div class="bars">
+          <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+          <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="info">
+          <h4>Image → video pipeline <span class="tag tie">tie</span></h4>
+          <p class="task">GLM-Image generates a frame, CogVideoX-3 animates it, poll the async result.</p>
+          <p class="why"><b>Why:</b> both agents got the endpoints, first-frame parameter, and polling loop right.</p>
+        </div>
+        <div class="bars">
+          <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+          <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="info">
+          <h4>OpenAI SDK migration + web search <span class="tag tie">tie</span></h4>
+          <p class="task">Swap an existing OpenAI client over to bigmodel.cn, add web search.</p>
+          <p class="why"><b>Why:</b> initially scored as a win — baseline omitted <code>search_engine</code>. A live retest showed the field is silently defaulted, not required. Corrected after the fact rather than left standing.</p>
+        </div>
+        <div class="bars">
+          <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+          <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2><span class="n">Round 2</span> — GLM-5.3-specific traps</h2>
+    <p class="block-note">Four tasks built around behavior verified against the live API first, then handed to both agents as an ordinary feature request — nothing in the prompt hints at the trap.</p>
+    <div class="iter">
+      <div class="iter-head"><h3>model: glm-5.3</h3><span class="model-tag">4 scenarios</span></div>
+      <div class="rows">
+        <div class="row">
+          <div class="info">
+            <h4>Force a tool call, every turn <span class="tag win">win</span></h4>
+            <p class="task">Support bot that must call <code>lookup_order</code> before answering anything — even off-topic questions.</p>
+            <p class="why"><b>Why:</b> baseline sets an OpenAI-style forced <code>tool_choice</code>, which is silently downgraded to <code>auto</code> on this API. On an off-topic message it retries 3 times, then gives up and prints an internal error instead of replying.</p>
+          </div>
+          <div class="bars">
+            <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+            <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:40%"></div></div><span class="pct tnum">40%</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="info">
+            <h4>Guaranteed-schema JSON extraction <span class="tag win">win</span></h4>
+            <p class="task">Pull name / issue type / urgency out of feedback text as JSON matching an exact schema.</p>
+            <p class="why"><b>Why:</b> baseline uses <code>response_format:{type:"json_schema"}</code>. The API accepts it, then ignores it — returns prose, not JSON. Every retry fails the same way; extraction never succeeds.</p>
+          </div>
+          <div class="bars">
+            <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+            <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:40%"></div></div><span class="pct tnum">40%</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="info">
+            <h4>Turn off reasoning for latency <span class="tag win">win</span></h4>
+            <p class="task">High-concurrency FAQ bot — disable deep-thinking mode to cut cost and latency.</p>
+            <p class="why"><b>Why:</b> baseline sends <code>thinking:{type:"disabled"}</code>. On GLM-5.3 that's a hard error, code 1210, every single call — the bot cannot run at all.</p>
+          </div>
+          <div class="bars">
+            <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+            <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:40%"></div></div><span class="pct tnum">40%</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="info">
+            <h4>Batch-classify 2,000 reviews, best model <span class="tag win">win</span></h4>
+            <p class="task">Sentiment classification via the Batch API — quality matters, pick the newest model.</p>
+            <p class="why"><b>Why:</b> baseline picks glm-4.6 (a real, current model). Batch has its own model allow-list that excludes it — the upload is rejected before a single review is processed.</p>
+          </div>
+          <div class="bars">
+            <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+            <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:67%"></div></div><span class="pct tnum">67%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2><span class="n">Round 3</span> — same 4 tasks, glm-5.2</h2>
+    <p class="block-note">Re-run to separate model-specific quirks from platform-wide ones. Two stayed broken, two flipped to a tie for two different, equally honest reasons.</p>
+    <div class="iter">
+      <div class="iter-head"><h3>model: glm-5.2</h3><span class="model-tag">4 scenarios</span></div>
+      <div class="rows">
+        <div class="row">
+          <div class="info">
+            <h4>Force a tool call, every turn <span class="tag tie">tie</span></h4>
+            <p class="task">Same order-lookup bot, same wrong belief about <code>tool_choice</code>.</p>
+            <p class="why"><b>Why:</b> this baseline's fallback path actually re-synthesizes the call locally when forcing fails — it works, just at 2 model calls per turn instead of 1. Good defensive code covered for a wrong assumption.</p>
+          </div>
+          <div class="bars">
+            <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+            <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="info">
+            <h4>Guaranteed-schema JSON extraction <span class="tag win">win</span></h4>
+            <p class="task">Same extraction task, different model.</p>
+            <p class="why"><b>Why:</b> <code>json_schema</code> being ignored is a platform behavior, not a GLM-5.3 quirk — confirmed broken again here.</p>
+          </div>
+          <div class="bars">
+            <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+            <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:40%"></div></div><span class="pct tnum">40%</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="info">
+            <h4>Turn off reasoning for latency <span class="tag tie">tie</span></h4>
+            <p class="task">Same request, glm-5.2 instead of glm-5.3.</p>
+            <p class="why"><b>Why:</b> glm-5.2 isn't a forced-thinking model — <code>thinking:{type:"disabled"}</code> genuinely works here. The earlier failure really was GLM-5.3-specific; the skilled agent correctly used the direct switch instead of over-generalizing a rule that no longer applies.</p>
+          </div>
+          <div class="bars">
+            <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+            <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="info">
+            <h4>Batch job, user insists on glm-5.2 <span class="tag win">win</span></h4>
+            <p class="task">"Use glm-5.2, our other projects already standardized on it."</p>
+            <p class="why"><b>Why:</b> baseline complies literally — glm-5.2 isn't Batch-whitelisted either, so the job fails at upload. The skilled version catches the conflict and substitutes a whitelisted model with a stated reason.</p>
+          </div>
+          <div class="bars">
+            <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+            <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:40%"></div></div><span class="pct tnum">40%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2><span class="n">Round 4</span> — new territory, two more ties</h2>
+    <p class="block-note">Voice naming and search citations — plausible traps that didn't pan out. Worth showing, not just the wins.</p>
+    <div class="rows">
+      <div class="row">
+        <div class="info">
+          <h4>Text-to-speech, pick a voice <span class="tag tie">tie</span></h4>
+          <p class="task">"A gentle female voice" for GLM-TTS.</p>
+          <p class="why"><b>Why:</b> a made-up voice name errors with "音色不存在" — but baseline happened to guess <code>tongtong</code>, a real system voice, likely well-represented in public bigmodel.cn material.</p>
+        </div>
+        <div class="bars">
+          <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+          <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="info">
+          <h4>Web search with visible citations <span class="tag tie">tie</span></h4>
+          <p class="task">Answer with sources listed — title and link — underneath.</p>
+          <p class="why"><b>Why:</b> citations only appear if <code>search_result:true</code> is set explicitly. Baseline guessed it anyway, and its defensive multi-location field-probing happened to check the one place the data actually lives.</p>
+        </div>
+        <div class="bars">
+          <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+          <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2><span class="n">Round 5</span> — the largest gap found</h2>
+    <p class="block-note">A capability OpenAI's API has no equivalent for at all — nothing to pattern-match against, so the baseline agent invented a plausible-sounding pipeline instead.</p>
+    <div class="rows">
+      <div class="row">
+        <div class="info">
+          <h4>Read a PDF contract directly, no local parsing <span class="tag win">win</span></h4>
+          <p class="task">"The model should just read the file" — no PyPDF2, no pdfplumber.</p>
+          <p class="why"><b>Why:</b> baseline invents a two-step upload-then-download flow using <code>GET /files/{id}/content</code> — an endpoint that explicitly rejects anything but Batch output files ("does not support downloading"). It never discovers that chat completions accepts a file directly, or that doing so requires the upload's <code>purpose</code> to be exactly <code>user_data</code> — <code>agent</code> and <code>code-interpreter</code> uploads succeed but fail silently later.</p>
+        </div>
+        <div class="bars">
+          <div class="bar-line"><span class="who">skill</span><div class="bar-track"><div class="bar-fill skill" style="width:100%"></div></div><span class="pct tnum">100%</span></div>
+          <div class="bar-line"><span class="who">baseline</span><div class="bar-track"><div class="bar-fill base" style="width:40%"></div></div><span class="pct tnum">40%</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Documentation fixed along the way</h2>
+    <p class="block-note">Every audit round tested the skill's own claims against the live API. Seven turned out to be wrong or incomplete — corrected in place, dated, with the exact error text that proved it.</p>
+
+    <div class="finding">
+      <div class="file">chat.md</div>
+      <div class="desc">
+        <h5><code>web_search.search_engine</code> requirement is inconsistent across two entry points</h5>
+        <p>Required and enforced on the standalone <code>/paas/v4/web_search</code> endpoint (real error <code>1214</code> if missing) — but silently defaulted when used as a chat-completions tool. Same field name, different platform behavior depending on which door you use.</p>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="file">chat.md</div>
+      <div class="desc">
+        <h5><code>web_search</code> citations need an explicit opt-in</h5>
+        <p><code>search_result:true</code> must be set or the response's <code>web_search</code> array — the actual source list — never appears, even though the search itself still ran and shaped the answer.</p>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="file">chat.md</div>
+      <div class="desc">
+        <h5>File input in chat requires <code>purpose=user_data</code> specifically</h5>
+        <p>Files uploaded with <code>agent</code> or <code>code-interpreter</code> — both plausible, both accepted at upload time — fail when referenced in a chat message: <code>"文件解析失败，请检查文件可访问性和格式"</code>.</p>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="file">agents-assistant-knowledge.md</div>
+      <div class="desc">
+        <h5>Agent response <code>content</code> is an object, not a string</h5>
+        <p>Documented example showed plain text; the real shape is <code>{"type":"text","text":"..."}</code>. Code written against the old example would try string operations on a dict.</p>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="file">files-batch.md</div>
+      <div class="desc">
+        <h5>Batch accepts a fixed, dated model list — not the general catalog</h5>
+        <p>Confirmed rejections for glm-4.6, glm-5.1's newer siblings, and both 5.2 and 5.3. Every model this skill recommends elsewhere for quality has to be checked against this separate list first.</p>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="file">files-batch.md</div>
+      <div class="desc">
+        <h5>Two smaller Batch corrections</h5>
+        <p>Request counts live under a nested <code>request_counts</code> object, not top-level fields as the old example showed. Separately, <code>custom_id</code> has an undocumented 6-character minimum — anything shorter fails upload with error <code>1214</code>.</p>
+      </div>
+    </div>
+    <div class="finding">
+      <div class="file">realtime.md</div>
+      <div class="desc">
+        <h5>An undocumented event precedes the one the spec describes</h5>
+        <p>A live WebSocket session showed <code>session.created</code> arriving immediately on connect, before <code>session.updated</code> — an event the AsyncAPI spec never mentions. Code that only waits for <code>session.updated</code> can misread the handshake.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Every "win" and "tie" above was checked against <code class="mono">open.bigmodel.cn</code> with a real API key — not inferred from the OpenAPI spec alone, which itself proved wrong in two of the cases documented. Full transcripts and per-assertion grading for all 5 rounds are in <code class="mono">bigmodel-cn-workspace/</code>.
+  </footer>
+
+</div>

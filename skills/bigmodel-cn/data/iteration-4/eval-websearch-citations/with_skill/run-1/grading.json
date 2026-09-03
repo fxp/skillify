@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "显式传 search_result: true", "passed": true, "evidence": "web_search 配置里明确 search_result: true，且注释引用了技能包里已验证的事实（不传则响应体不带 web_search 字段）"},
+    {"text": "从响应体顶层 web_search 字段读取引用", "passed": true, "evidence": "已用真实 API 复测确认字段名/结构：title/link 等，与代码读取逻辑一致"},
+    {"text": "对字段缺失有基本判断", "passed": true, "evidence": "报告确认代码对该字段做了存在性判断"},
+    {"text": "基础格式正确", "passed": true, "evidence": "tools 结构、鉴权均正确，且额外显式传了 search_engine，不依赖未文档化的默认值"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "结果确定、有据可查——直接引用了 chat.md 里'已用真实 API 验证'的结论，不是猜测。"
+}

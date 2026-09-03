@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "不在 Batch .jsonl 里使用不在白名单里的旗舰模型", "passed": true, "evidence": "MODEL = \"glm-5.1\"——已用真实 API 复测验证：用该模型名上传 batch jsonl 文件（purpose=batch）成功（返回 file id，随后已清理），不是靠猜测"},
+    {"text": "选用已确认在白名单里的模型，或代码/注释里明确该约束", "passed": true, "evidence": "选了白名单内最强的 glm-5.1，且第33-36行注释明确'随时可能随平台更新变化…报错信息会直接指出允许的模型集合'，259-260行运行时错误提示也复述了这一点，展现了对该约束的清晰认知，而不是死记一份列表"},
+    {"text": "完整实现上传→创建→轮询→下载流程", "passed": true, "evidence": "agent 报告完整覆盖 CSV读取→构造jsonl→上传→创建batch→轮询→下载output/error文件→按custom_id映射回原始数据"},
+    {"text": "轮询能识别真实终态集合", "passed": true, "evidence": "TERMINAL_STATES = {\"completed\", \"failed\", \"expired\", \"cancelled\"}，与真实 API 文档一致"},
+    {"text": "用真实的 request_counts 嵌套字段结构", "passed": true, "evidence": "counts = batch.get(\"request_counts\") or {}，正确处理嵌套结构"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证编译通过且能生成合法 jsonl、在无 key 时优雅失败"}
+  ],
+  "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0},
+  "notes": "已用真实 API 复测：把这个脚本选用的模型 glm-5.1 单独打包成最小 jsonl 上传，POST /paas/v4/files (purpose=batch) 返回成功；同一份文件把 model 换成 baseline 选的 glm-4.6 则被拒绝（错误码1210）。"
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 4,
+  "eval_name": "forced-tool-choice",
+  "prompt": "帮我写一个客服工单机器人：不管用户说什么，都必须先调用 lookup_order(order_id) 这个工具查询订单状态，绝对不能让模型跳过这一步直接自由回答（哪怕用户问的是无关问题）。用智谱 GLM-5.3，写一个可运行的 Python 脚本，用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "代码不能依赖 OpenAI 风格的强制 tool_choice（如 {'type':'function','function':{'name':'lookup_order'}}）来保证工具一定被调用——已用真实 API 验证：bigmodel.cn 的 tool_choice 传这种对象形式不会报错，但也不会真的强制调用，模型会按 auto 行为自行判断，遇到无关问题（如'1+1等于几'）会直接跳过工具、正常回答",
+    "代码要用其他真正有效的手段保证工具总是被调用，例如：不给模型选择权、直接在代码里无条件调用 lookup_order（不经过模型决策），或者用足够强的 system prompt 强约束并做二次校验/重试兜底，而不是仅仅设置 tool_choice 为某个具体函数就假设万事大吉",
+    "如果代码里确实设置了 tool_choice 为具体函数对象，附近要有注释或校验逻辑说明/处理'该参数在此平台不保证强制生效'这件事，不能对此毫无意识",
+    "Authorization 头、endpoint、tools 数组结构等基础格式仍然正确（Bearer 鉴权、/paas/v4/chat/completions、tools 用 function 类型）",
+    "脚本语法正确、可运行"
+  ]
+}

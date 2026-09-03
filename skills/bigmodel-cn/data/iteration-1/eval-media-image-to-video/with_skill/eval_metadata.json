@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "media-image-to-video",
+  "prompt": "我要做一个内容生成小工具：先用智谱的 GLM-Image 模型根据一段文字描述生成一张图片，再把这张图作为首帧，用 CogVideoX-3 生成一段视频。视频生成是异步的，需要轮询结果。麻烦写出完整可运行的 Python 脚本。",
+  "assertions": [
+    "Image generation call targets https://open.bigmodel.cn/api/paas/v4/images/generations with model set to glm-image (or another real image model), sending a text prompt",
+    "Script extracts the generated image URL from the image-generation response and uses it as an input to the video generation call, rather than re-uploading or fabricating a new path",
+    "Video generation call targets https://open.bigmodel.cn/api/paas/v4/videos/generations with model set to cogvideox-3",
+    "The parameter used to pass the first-frame image into the video generation request is a real field documented for that endpoint, not an invented name — and the code doesn't just guess a generic 'image' key without grounding",
+    "Video generation is treated as asynchronous: the code captures a task/request id from the response rather than expecting the video URL synchronously",
+    "Script polls a GET endpoint of the form https://open.bigmodel.cn/api/paas/v4/async-result/{id} using that id, with a sleep/backoff between polls and a loop-exit condition on success or failure status",
+    "Script is syntactically valid Python (no syntax errors) and runnable given a valid API key"
+  ]
+}

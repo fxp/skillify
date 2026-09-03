@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不用臆造的 OpenAI 风格音色名", "passed": true, "evidence": "选用真实系统音色 tongtong，且明确列出其余6个真实音色作为备选"},
+    {"text": "用真实音色名或查询 voice/list", "passed": true, "evidence": "voice=tongtong，来自 references/media.md 里已验证的真实系统音色枚举"},
+    {"text": "正确处理二进制响应", "passed": true, "evidence": "resp.content 写文件，未误用 resp.json()"},
+    {"text": "基础格式正确", "passed": true, "evidence": "endpoint/model/auth 均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "结果确定、有据可查（引用了 media.md 里已验证的音色枚举），而不是碰运气。"
+}

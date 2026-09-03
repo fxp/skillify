@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "不依赖 tool_choice 强制作为保证手段", "passed": true, "evidence": "_force_lookup_order() 无条件本地调用，_run_model_turn() 里 tool_choice 固定 'auto'，从不依赖强制 tool_choice"},
+    {"text": "用真正有效的手段保证工具总被调用", "passed": true, "evidence": "同 eval4 with_skill 的设计：Python 控制流无条件先执行 lookup_order 再调模型"},
+    {"text": "基础格式正确，model 用 glm-5.2", "passed": true, "evidence": "MODEL/BASE_URL/Authorization 均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "效率优势：由于跳过了徒劳的强制 tool_choice 尝试，简单问答场景下每轮只需 1 次模型调用（vs baseline 的 2 次，见 without_skill 的 grading notes）。"
+}

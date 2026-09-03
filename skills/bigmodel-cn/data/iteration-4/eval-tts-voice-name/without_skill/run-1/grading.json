@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不用臆造的 OpenAI 风格音色名", "passed": true, "evidence": "选用了 'tongtong'，恰好是真实存在的系统音色（与 with_skill 版本选择一致）"},
+    {"text": "用真实音色名或查询 voice/list", "passed": true, "evidence": "碰对了真实音色名，但代码注释明确承认'未联网核对最新官方音色列表'，是一次未经证实的猜测，不是查证后的确定选择"},
+    {"text": "正确处理二进制响应", "passed": true, "evidence": "代码同时兼容'纯二进制'和'JSON 里带 base64 音频字段'两种情况，处理更保守但也正确覆盖了真实情况"},
+    {"text": "基础格式正确", "passed": true, "evidence": "endpoint/model/auth 均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "诚实的'打平'结果：baseline 蒙对了 tongtong 这个音色名，可能是因为智谱的公开 Demo/博客里这个音色名出现频率较高、训练数据里有覆盖。但这是运气而非确定性——代码自己也承认是猜测，换一个不那么出名的音色名（比如'kazi'/'douji'）大概率就蒙不对了。这次两版代码功能上都能跑通，不构成真正的差异点，如实报告为打平，不夸大技能包的价值。"
+}

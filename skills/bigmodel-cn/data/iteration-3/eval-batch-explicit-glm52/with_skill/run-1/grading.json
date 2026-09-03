@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "识别出 glm-5.2 不在 Batch 白名单里这个冲突", "passed": true, "evidence": "notes.md 明确说明 files-batch.md 记录的白名单不含 glm-5.2/glm-5.3 等旗舰模型，已用真实 API 复测确认 glm-5.2 上传会被拒（1210）"},
+    {"text": "不静默按用户要求的模型跑、导致任务整体失败", "passed": true, "evidence": "代码没有直接套用用户要求的 glm-5.2，避免了'2000条评论一条都处理不了'的后果"},
+    {"text": "对冲突有清晰交代（报错阻止或替换+说明理由）", "passed": true, "evidence": "选择了'替换+说明'路径：改用白名单内的 glm-4-air-250414，MODEL 常量集中、单行可改，notes.md 和回复摘要里都清楚解释了原因（不在白名单+更省钱），没有对用户隐瞒这个替换"},
+    {"text": "完整实现上传→创建→轮询→下载流程，正确处理终态和 request_counts", "passed": true, "evidence": "agent 报告完整覆盖，含 --dry-run 本地校验模式"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已用 3 条示例验证 dry-run 生成的 jsonl 格式正确"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "这版处理'用户明确要求一个平台不支持的模型'的方式很得体：没有盲从（会导致任务失败），也没有沉默替换（会让用户以为用的是自己指定的模型），而是替换+在代码注释和回复里都清楚说明了原因、给出了改回原模型的路径（一行改动+建议先小批量测试）。"
+}

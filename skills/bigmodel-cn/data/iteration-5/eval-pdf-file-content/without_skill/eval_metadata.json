@@ -1,0 +1,12 @@
+{
+  "eval_id": 14,
+  "eval_name": "pdf-file-content",
+  "prompt": "我有一批 PDF 合同文件，想用智谱的大模型直接分析、提取里面的关键信息（合同编号、甲乙双方、金额），不想额外引入 PyPDF2/pdfplumber 这类库自己在本地解析 PDF 文本——智谱的模型应该能直接读文件内容吧？帮我写一个 Python 脚本，输入一个本地 PDF 文件路径，输出提取到的结构化信息。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "代码要先用 POST /paas/v4/files 把 PDF 上传，拿到 file_id，再在 chat/completions 的多模态 content 数组里用 {'type':'file','file':{'file_id':...}} 引用它，而不是本地用 PyPDF2 等库解析 PDF 文本（用户明确说了不想这样做）",
+    "上传文件时 purpose 必须传 'user_data'——已用真实 API 验证：用 purpose=agent 或 purpose=code-interpreter 上传的文件（这两个 purpose 同样能接受 pdf 格式、上传本身不报错），拿它们的 file_id 去 chat/completions 里用 file 类型引用，会 100% 返回 {'error':{'code':'1210','message':'文件解析失败，请检查文件可访问性和格式'}}——只有 purpose=user_data 上传的文件才能被 chat/completions 的 file 类型正常解析",
+    "调用 chat/completions 时用的是支持多模态 file 类型的模型（如 glm-5.3-flash 等视觉/多模态模型），而不是纯文本模型（已用真实 API 验证：纯文本模型如 glm-5.2 对 content 数组里出现非 text 类型会直接报错 'messages.content.type 参数非法，取值范围 [text]'）",
+    "基础格式正确：Authorization: Bearer 鉴权，两次请求（上传+对话）的 endpoint 都对",
+    "脚本语法正确、可运行"
+  ]
+}

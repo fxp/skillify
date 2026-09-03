@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "Code keeps using the openai package's OpenAI client class", "passed": true, "evidence": "from openai import OpenAI; client = OpenAI(...)"},
+    {"text": "base_url set to bigmodel.cn OpenAI-compatible endpoint under /paas/v4/", "passed": true, "evidence": "base_url=\"https://open.bigmodel.cn/api/paas/v4/\""},
+    {"text": "api_key sourced from an env var specific to the new provider", "passed": true, "evidence": "api_key=os.environ.get(\"ZHIPU_API_KEY\", \"your-zhipu-api-key-here\")"},
+    {"text": "model changed to a real GLM model code", "passed": true, "evidence": "MODEL_NAME = \"glm-5.3\""},
+    {"text": "Web search wired via a real, functional mechanism", "passed": true, "evidence": "WEB_SEARCH_TOOL = {'type':'web_search','web_search':{'enable':True,'search_engine':'search_pro', ...}} — includes search_engine explicitly, verified live to return real search results"},
+    {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python -m py_compile"}
+  ],
+  "summary": {"passed": 6, "failed": 0, "total": 6, "pass_rate": 1.0},
+  "notes": "UPDATED after live API verification (2026-09-03): a live call confirmed both this version (explicit search_engine) and the baseline's version (omitted search_engine) return successful search results when hitting POST /paas/v4/chat/completions — the platform silently defaults the engine when omitted, so this specific eval no longer differentiates with-skill vs baseline on pass/fail. The with-skill version is still the better engineering choice (it doesn't rely on an undocumented default, and its notes.md correctly flagged this exact field as something to verify against a live call rather than assuming), but this is a matter of robustness/best-practice, not functional correctness. A separate, unrelated finding from this same live-testing round: the STANDALONE /paas/v4/web_search endpoint (a different code path, in references/tools.md) does hard-require search_engine and returns a real 1214 error without it — so the skill's advice to always pass it explicitly remains correct and is now the more important differentiator to test if this eval is reused."
+}

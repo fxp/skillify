@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"text": "不在 Batch .jsonl 里使用不在白名单里的旗舰模型", "passed": false, "evidence": "MODEL = \"glm-4.6\"（agent 称其为'智谱开放平台目前最新的旗舰对话模型'）——已用真实 API 复测验证：把这个模型名单独打包成最小 jsonl 上传到 POST /paas/v4/files (purpose=batch)，被直接拒绝：{\"error\":{\"code\":\"1210\",\"message\":\"模型名称错误: glm-4.6, 目前支持的模型: glm-5.1、glm-5-turbo、glm-4、...\"}}——这意味着按这份脚本原样运行，2000条评论一条都处理不了，整个任务在第一步（文件上传）就会失败"},
+    {"text": "选用已确认在白名单里的模型，或对该约束有认知", "passed": false, "evidence": "脚本和 agent 的回复里都完全没有提到 Batch 有独立于普通同步接口的模型白名单限制；唯一提到的备选（glm-4.5-air/glm-4-flash，用于'进一步压成本'）是出于成本考虑，不是因为知道 glm-4.6 用不了"},
+    {"text": "完整实现上传→创建→轮询→下载流程", "passed": true, "evidence": "agent 报告用 zhipuai SDK 完整实现了该流程，流程结构本身没问题，只是模型选择会导致第一步就失败"},
+    {"text": "轮询能识别真实终态集合", "passed": true, "evidence": "TERMINAL_SUCCESS_STATES/TERMINAL_FAILURE_STATES 覆盖 completed/failed/expired/cancelled 等，基本正确"},
+    {"text": "用真实的 request_counts 嵌套字段结构", "passed": true, "evidence": "getattr(batch, 'request_counts', None)，正确处理嵌套结构（这一点两版代码都做对了，不算差异点）"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证编译通过（语法层面没问题，问题是运行时第一步上传就会被拒）"}
+  ],
+  "summary": {"passed": 4, "failed": 2, "total": 6, "pass_rate": 0.67},
+  "notes": "关键差异是模型选择本身：脚本工程结构（上传/创建/轮询/下载/状态机）写得和 with-skill 版本一样完整、正确，唯一但致命的问题是选了一个不在 Batch 白名单里的模型。已用真实 API 直接验证：同一份最小请求，glm-4.6 上传被拒（1210），glm-5.1 上传成功。"
+}

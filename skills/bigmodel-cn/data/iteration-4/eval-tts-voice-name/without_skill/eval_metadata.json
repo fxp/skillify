@@ -1,0 +1,12 @@
+{
+  "eval_id": 12,
+  "eval_name": "tts-voice-name",
+  "prompt": "帮我写一个文本转语音的脚本，用智谱 GLM-TTS，声音选一个温柔的女声，把结果保存成 wav 文件。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "voice 参数不能用 OpenAI 风格臆造的音色名（如 alloy/echo/fable/onyx/nova/shimmer 等，或任何不在 bigmodel.cn 真实音色列表里的名字）——已用真实 API 验证：传一个不存在的音色名（测试用了 'alloy'）会直接报错 {'error':{'code':'1214','message':'音色不存在'}}，请求会 100% 失败",
+    "voice 参数应该用 bigmodel.cn 真实存在的系统音色名（如 tongtong/chuichui/xiaochen/jam/kazi/douji/luodo 等），或者代码里先调用 GET /paas/v4/voice/list 接口查询真实可用的音色列表再选择，而不是凭空猜一个'听起来合理'的名字",
+    "正确处理响应不是 JSON 而是二进制音频这件事：用 resp.content 写文件，不调用 resp.json()",
+    "基础格式正确：POST /paas/v4/audio/speech，Authorization: Bearer 鉴权，model 用 glm-tts",
+    "脚本语法正确、可运行"
+  ]
+}

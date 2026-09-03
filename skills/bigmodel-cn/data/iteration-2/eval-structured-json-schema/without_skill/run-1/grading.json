@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不依赖 response_format:json_schema 来保证输出合法且符合 schema", "passed": false, "evidence": "_RESPONSE_FORMAT = {'type':'json_schema','json_schema':{...,'strict':True}} 被当作'主要保证'手段；注释称'这会让模型在解码阶段做结构化约束（constrained decoding），从模型侧就保证输出是「合法 JSON + 符合给定 Schema」'——已用真实 API 验证这个假设是错的：同样的 payload 形状（type=json_schema）实测被平台完全忽略，模型返回的是夹杂解释文字和示例代码块的自由文本，根本不是纯 JSON"},
+    {"text": "用真正有效的方式（json_object+prompt描述）实现", "passed": false, "evidence": "代码完全没有用到 json_object 模式；'兜底保证'只是本地 jsonschema 校验+重试，但重试请求本身仍然带着同一个不生效的 response_format，模型不会因为'代码打算重试'就改变输出方式——由于底层从未真正启用结构化约束，每一次请求（包括所有重试）都大概率返回不合规的自由文本，导致本地校验持续失败、重试次数耗尽后抛出 FeedbackExtractionError，函数实际上从未能在真实调用下成功返回过任何结果"},
+    {"text": "对结构化输出方式的局限性有清晰认知", "passed": false, "evidence": "完全没有意识到 bigmodel.cn 不支持 json_schema 严格模式，注释里假设它和 OpenAI/Anthropic 一样支持 constrained decoding"},
+    {"text": "基础格式正确", "passed": true, "evidence": "BASE_URL、Authorization、model 均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已用 mock 验证逻辑，但 mock 测试本身是针对'假设 API 会返回合规 JSON'这个前提设计的，并未真实反映线上行为"}
+  ],
+  "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4},
+  "notes": "已用真实 API 复测确认：对 chat/completions 传 response_format={'type':'json_schema',...}（附带一个和本 eval 几乎一样的抽取任务）返回的是自由文本+示例JSON代码块，不是纯 JSON，也没有严格遵循 schema 的字段名——这个函数在真实环境下会持续触发'解析/校验失败→重试→再失败'直到耗尽重试次数并抛出异常，永远拿不到一次成功的结构化抽取结果。这是一个必现的功能性故障，而不是偶发的模型不稳定。"
+}

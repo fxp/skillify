@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不依赖 response_format:json_schema", "passed": false, "evidence": "response_format={'type':'json_schema','json_schema':{...,'strict':True}} 被当作'主要保证'——已用真实 API 在 glm-5.2 上复测确认：这不是 5.3 特有问题，glm-5.2 同样静默忽略该约束，返回的是'提取的信息如下：* 姓名：张三...'这种自由文本，不是合法 JSON"},
+    {"text": "用真正有效的方式实现", "passed": false, "evidence": "完全没用 json_object 模式；重试逻辑复用同一个不生效的 response_format，每次重试大概率仍拿到不合规文本，最终耗尽重试抛出 StructuredExtractionError，函数在真实调用下基本不会成功返回结果"},
+    {"text": "对结构化输出限制有清晰认知", "passed": false, "evidence": "依旧假设 bigmodel.cn 和 OpenAI/Anthropic 一样支持 constrained decoding，这个错误假设与具体用哪个 GLM 型号无关，换模型不会让它变对"},
+    {"text": "基础格式正确，model 用 glm-5.2", "passed": true, "evidence": "model 字段正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告 py_compile 通过"}
+  ],
+  "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4},
+  "notes": "与 glm-5.3 版本（上一轮 eval5）结果一致：这是一个平台级、与模型无关的限制，baseline 在换成 glm-5.2 后依然会踩同一个坑，真实调用下持续失败。"
+}

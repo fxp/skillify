@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "显式传 search_result: true", "passed": true, "evidence": "代码传了 search_result: \"True\"（字符串而非布尔值）——已用真实 API 复测确认 bigmodel.cn 对这个字段做了宽松的类型强转，字符串 'True' 同样能触发 web_search 顶层字段出现，不算错误，但这是巧合而非确定性，如果 API 未来收紧类型校验，这个写法会碎"},
+    {"text": "从响应体顶层 web_search 字段读取引用", "passed": true, "evidence": "extract_answer_and_citations() 里第2个探测位置就是 response_json.get('web_search') 顶层字段——已用真实 API 复测确认这正是真实数据所在位置，命中率算法虽是'多处猜测'但覆盖到了正确答案"},
+    {"text": "对字段缺失有基本判断", "passed": true, "evidence": "isinstance 检查、seen_links 去重、citations 为空时不追加来源段，处理得比较周全"},
+    {"text": "基础格式正确", "passed": true, "evidence": "tools 结构、鉴权均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "notes": "另一个诚实的'打平'结果：baseline 用了'多处探测 + 多个候选字段名'的防御性写法来对冲不确定性，这次三个候选位置里第二个就命中了真实位置，字段名候选（title/link）也恰好包含正确答案，字符串 'True' 也被 API 宽松接受——多个不确定因素连续'蒙对'，功能上确实可用。但这版代码本质上不知道'为什么'要传 search_result，只是常见 Web 搜索 API 的经验模式；同时它的探测逻辑还检查了两个实际不存在的位置（message.tool_calls 里的 web_search、choice 层级的 web_search），这些是无效代码，只是没有造成错误。这类'防御性覆盖多种可能'的通用工程习惯，是本轮几次'打平'背后的共同模式，值得在最终报告里指出。"
+}

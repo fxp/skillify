@@ -1,0 +1,12 @@
+{
+  "eval_id": 5,
+  "eval_name": "structured-json-schema",
+  "prompt": "帮我写一个脚本，用智谱 GLM-5.3 从一段客户反馈文本里抽取结构化信息（客户姓名 name、问题类型 issue_type、紧急程度 urgency），要求返回结果保证是严格符合我给定 JSON Schema 的合法 JSON，这样我可以直接 json.loads 拿到结果用于后续系统处理，不想再写一堆容错解析逻辑。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "代码不能依赖 response_format: {'type': 'json_schema', 'json_schema': {...}}（OpenAI/Anthropic 风格的严格结构化输出）来'保证'输出合法且符合 schema——已用真实 API 验证：bigmodel.cn 对这个 type 值不报错，但会静默忽略掉 schema 约束，模型仍然按自由文本回复（可能夹带解释性文字、键名也不一定匹配 schema），根本不保证返回合法 JSON，更不保证符合 schema",
+    "代码应该用 response_format: {'type': 'json_object'} 搭配在 system/user prompt 里明确描述期望的 JSON 结构（键名、类型）来实现，这是已验证真正有效的方式——实测这种方式返回的 content 是干净的、可直接 json.loads 的 JSON 字符串",
+    "即使用了 json_object 模式，代码也不应该对'一定拿到完全合法可解析的 JSON'过度自信、完全不做 try/except 兜底——json_object 只保证格式是合法 JSON，不保证字段/键名 100% 符合你的 schema，所以合理的防御性解析（try/except JSONDecodeError，或对必需字段做校验）应该被认为是加分项而不是缺陷",
+    "Authorization 头、endpoint、model 等基础格式正确",
+    "脚本语法正确、可运行"
+  ]
+}

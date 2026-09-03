@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "代码不依赖 OpenAI 风格的强制 tool_choice 来保证工具一定被调用", "passed": false, "evidence": "_force_lookup_order_call() 把 tool_choice=FORCED_TOOL_CHOICE（OpenAI 风格对象）当作'模型层强制'这一保证的主要手段；注释称'模型收到这个参数后，本轮 completion *只能* 产出对 lookup_order 的 tool_call'——已用真实 API 验证这个假设是错的：同一 payload 对无关问题（'1+1等于几'）模型会直接跳过工具、正常回答，tool_choice 被静默当成 auto 处理"},
+    {"text": "代码有真正有效的兜底手段", "passed": false, "evidence": "代码确实有'代码层校验+重试'（MAX_FORCED_CALL_RETRIES=2，共3次尝试），但校验失败后的结局是抛出 ForcedToolCallViolation 并在 main() 里被捕获、打印内部错误信息、continue——也就是说对任何一次触发失败的用户输入，机器人最终【不会给用户任何回复】，只会在控制台打印'已阻止一次未经工具核实的回答'。这直接违反了需求原文'绝对不能让模型跳过这一步直接自由回答'背后的真实意图——用户想要的是'工具一定被调用、然后正常作答'，不是'工具没被调用就干脆不回答'。由于 tool_choice 实测不生效，对任何与订单无关的输入，这个机器人在生产环境里大概率会退化成'问什么都不回答、只打印内部错误'，是一个真实的功能性故障，不是风格问题"},
+    {"text": "对 tool_choice 局限性有清晰认知，不是无意识使用", "passed": false, "evidence": "文档注释里明确写'这是 OpenAI 兼容协议…里强制调用指定函数的标准写法'，并说'代码层兜底'只是'不同网关/模型版本对该参数的支持程度可能不同'的保险——完全没有意识到 bigmodel.cn 上这个参数实测就是不生效，而是被当成小概率边缘情况处理，实际上是必现的"},
+    {"text": "基础格式正确（Bearer 鉴权、endpoint、tools 结构）", "passed": true, "evidence": "GLM_API_URL 正确；headers Authorization: Bearer；tools 用 function 类型"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过"}
+  ],
+  "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4},
+  "notes": "这是本轮最清晰的一个功能性差异：baseline 的机器人在真实调用中，对'与订单无关的问题'（需求原文明确要求覆盖的场景）会大概率触发 3 次重试全部失败，最终不给用户任何回复——完全没有完成任务要求的'先查订单、再回答'，而是'查不到就不回答'。已用真实 API 复测确认了 tool_choice 强制不生效这一根因。"
+}

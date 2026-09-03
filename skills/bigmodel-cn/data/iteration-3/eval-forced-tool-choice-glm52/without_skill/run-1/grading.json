@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "不依赖 tool_choice 强制作为唯一保证手段（结果不能仅在 tool_choice 生效时才正确）", "passed": true, "evidence": "已完整读代码：ensure_lookup_order_called() 里，如果 tool_choice 强制没有产出 lookup_order 的 tool_calls（真实情况下这是常态，已用真实 API 验证 tool_choice 对象形式不生效），代码会走'兜底路径'——在本地无条件合成一次 lookup_order 调用并执行，效果上和 with_skill 版本一样可靠。这次的 baseline 设计比上一轮（eval4）更健壮：它把 fallback 做成了真正的强制执行，而不是抛异常拒绝回答"},
+    {"text": "有真正有效的兜底手段保证任务完成", "passed": true, "evidence": "兜底路径本身就是无条件本地调用，功能上等价于 with_skill 的做法，用户对无关问题提问时依然能拿到基于订单数据的回答，不会像上一轮 eval4 的 baseline 那样直接拒绝回答"},
+    {"text": "基础格式正确，model 用 glm-5.2", "passed": true, "evidence": "MODEL_NAME/API_URL/Authorization 均正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "诚实更新：这一版 baseline 的'代码层兜底'设计得比上一轮（glm-5.3 版本）更好——不是'校验失败就抛异常拒绝回答'，而是'校验失败就在本地强制合成调用'，功能上确实能兜底成功，这次不构成真正的功能性故障。但仍然存在一个隐性代价：由于代码依然相信 tool_choice 强制'通常有效、只是极端情况下才需要兜底'，而实测这个强制在 bigmodel.cn 上是【必然不生效】的（不是小概率边缘情况），所以这版代码在每一轮对话里都会先徒劳发起一次注定被忽略的强制调用请求，再发起真正生效的第二次调用——也就是说，正常运行时每轮实际消耗 2 次模型调用，而 with_skill 版本因为一开始就不做这次徒劳尝试，每轮只需 1 次。这是一个真实存在但不算'功能性错误'的效率/成本差异，值得在报告里如实说明，而不是把这次也打成'失败'凑数据。"
+}

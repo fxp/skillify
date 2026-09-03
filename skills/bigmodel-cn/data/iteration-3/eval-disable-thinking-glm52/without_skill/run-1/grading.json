@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "不错误声称 glm-5.2 无法关闭思考", "passed": true, "evidence": "代码没有做出'无法关闭'的错误论断，只是直接尝试了 thinking:{type:disabled}"},
+    {"text": "使用 thinking:{type:disabled}", "passed": true, "evidence": "代码里确实用了 \"thinking\": {\"type\": \"disabled\"}——这次这个做法是对的：已用真实 API 在 glm-5.2 上验证该参数完全合法生效，不报错"},
+    {"text": "基础格式正确，model 用 glm-5.2", "passed": true, "evidence": "model 字段正确"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告 py_compile 通过"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0},
+  "notes": "诚实的'反转'结果：这道题里 baseline 的做法是对的。上一轮（eval6，要求用 glm-5.3）这个完全相同的写法（thinking:{type:disabled}）是错的、会 100% 触发真实报错；这一轮换成 glm-5.2 后，同样的写法反而是正确、已验证有效的方案。这恰好说明 eval6 发现的差异确实是 glm-5.3 特有的模型限制，而不是 bigmodel.cn 平台级的通用限制——不应该把它包装成'技能包永远更好'的证据，如实报告这次两边打平。baseline 的报告里还诚实地承认了自己'不确定 glm-5.2 是否是真实存在的最新模型'，这点态度是值得肯定的，但没有影响最终代码的正确性。"
+}

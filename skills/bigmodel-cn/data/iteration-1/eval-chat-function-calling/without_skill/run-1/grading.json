@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions", "passed": true, "evidence": "BIGMODEL_API_URL = \"https://open.bigmodel.cn/api/paas/v4/chat/completions\""},
+    {"text": "Authorization header is exactly 'Bearer <API_KEY>', key read from env var", "passed": true, "evidence": "headers = {\"Authorization\": f\"Bearer {API_KEY}\", ...}; API_KEY = os.environ.get('BIGMODEL_API_KEY', ...)"},
+    {"text": "model field is a real GLM chat model code", "passed": true, "evidence": "MODEL_NAME = \"glm-5.3\""},
+    {"text": "tools array uses documented {'type':'function','function':{...}} shape, not legacy 'functions'", "passed": true, "evidence": "TOOLS_SCHEMA = [{\"type\": \"function\", \"function\": {...}}]"},
+    {"text": "Code reads tool_calls with id/type/function.name/function.arguments", "passed": true, "evidence": "reads tool_call['function']['name'] / ['arguments'], parses via json.loads"},
+    {"text": "Appends role='tool' message with matching tool_call_id", "passed": true, "evidence": "messages.append({'role':'tool','tool_call_id': tool_call_id, 'content': ...})"},
+    {"text": "Makes follow-up call to get and print final answer", "passed": true, "evidence": "loop continues until finish_reason != 'tool_calls'; main() prints '模型最终回答:' + answer"},
+    {"text": "Script is syntactically valid Python", "passed": true, "evidence": "Agent verified with python3 -m py_compile"}
+  ],
+  "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0},
+  "notes": "The baseline also gets the core function-calling protocol right, likely because bigmodel.cn's OpenAI-compatible tool-calling shape is common knowledge. It sends 'temperature': 0.7 without knowing glm-5.3's thinking is forced-on and reasoning_effort exists, and doesn't mention reasoning_content preservation — not incorrect, just less informed than the with-skill version, and would miss an opportunity to tune reasoning depth for latency/cost."
+}

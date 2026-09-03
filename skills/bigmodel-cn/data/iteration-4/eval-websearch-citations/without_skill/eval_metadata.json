@@ -1,0 +1,12 @@
+{
+  "eval_id": 13,
+  "eval_name": "websearch-citations",
+  "prompt": "帮我写代码，在调用智谱 GLM 模型对话（chat/completions）时挂上联网搜索工具，让模型回答问题时能查最新信息，并且要在回答后面附上引用来源的标题和链接列表，方便用户溯源。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "web_search 工具配置里必须显式传 search_result: true——已用真实 API 验证：不传这个字段（默认 false）时，联网搜索依然会正常执行、结果也会被模型用于生成回答，但响应体顶层完全不会出现 web_search 这个引用来源数组字段，代码如果不设这个参数，'展示信息来源'这个需求会在真实调用下静默失效（不报错，就是拿不到来源列表）",
+    "代码要从响应体顶层的 web_search 字段（一个数组，每项含 title/link 等）读取引用来源，而不是尝试从 message.content 或 reasoning_content 里解析/正则提取引用信息",
+    "代码对 web_search 字段缺失/为空的情况有基本的判断和处理（不是假设它一定存在），比如空值判断后再拼接展示",
+    "基础格式正确：tools 数组里 {'type':'web_search','web_search':{...}}，Authorization: Bearer 鉴权",
+    "脚本语法正确、可运行"
+  ]
+}

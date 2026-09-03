@@ -1,0 +1,13 @@
+{
+  "eval_id": 3,
+  "eval_name": "openai-migration-with-search",
+  "prompt": "我们现有项目是用 OpenAI 的 Python SDK 写的聊天功能，现在想切换成智谱的 GLM 模型，尽量少改代码；另外还想给它加上联网搜索能力，让模型能查到最新信息再回答用户问题。给出改造后的代码。",
+  "assertions": [
+    "Code keeps using the 'openai' Python package's OpenAI client class rather than switching to a different SDK or raw requests (matches the user's 'minimal code change' ask)",
+    "base_url is set to a bigmodel.cn OpenAI-compatible endpoint under https://open.bigmodel.cn/api/paas/v4/ (or equivalent documented compatible path)",
+    "api_key is sourced from an environment variable specific to the new provider, not left as an OpenAI key or hardcoded",
+    "model field is changed to a real GLM model code (e.g. glm-5.3), not left as an OpenAI model name like gpt-4",
+    "Web search is wired in through a mechanism that actually exists in bigmodel.cn's documented API (e.g. a 'web_search' tool type inside the chat/completions 'tools' array, or a call to the standalone /paas/v4/web_search endpoint) — not an invented OpenAI-style built-in browsing tool that bigmodel.cn doesn't support",
+    "Script is syntactically valid Python (no syntax errors) and runnable given a valid API key"
+  ]
+}

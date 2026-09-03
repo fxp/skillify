@@ -86,3 +86,5 @@ print(resp.json())
 ```
 
 **注意事项**：`mountable` 只接受 `1` 或 `-1`，不是布尔值 `true`/`false`。
+
+**✅ 已用真实 API 调用验证（2026-09）**：`mountable=1`（开）和 `mountable=-1`（关）都按文档行为正常工作，响应始终是 `{"code":"Success","data":null,"msg":""}`——测试时开关各调用一次，最终确认已切回关闭状态，未对账号存储配置留下变更。

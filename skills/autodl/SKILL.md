@@ -7,9 +7,11 @@ description: 接入 AutoDL（autodl.com）GPU 算力租用平台 API 的使用�
 
 AutoDL 是一个面向个人开发者和企业的 GPU 算力租用平台。本技能包覆盖它的 REST API——不是控制台网页操作，是可以写代码调用的编程接口，目前分三块：账户/存储、容器实例 Pro（单实例管理）、弹性部署（多副本自动伸缩）。
 
-## ⚠️ 大部分容器实例 Pro API 已用真实 API 验证，弹性部署仍未验证
+## ⚠️ 账户/容器实例 Pro API 已用真实 API 验证；弹性部署仅创建/管理类接口仍未验证
 
-已用真实 Token 验证过账户/容器实例 Pro API 的**完整生命周期**：查余额、查实例/镜像列表、查 GPU 库存、**创建实例 → 开机运行 → 关机 → 释放**全流程都真实跑通过一次（实测总花费约 0.03 元），过程中发现并修正了两处真实问题：① 官方文档自己写错了 GET 接口的传参方式（见下方"跨领域的通用规则"第一条）；② 未实名认证的账号创建实例会被拒绝（见下方红色提示）。**弹性部署 API 的创建/管理接口仍未验证**——测试账号没有企业认证，那部分内容还是忠实转录自文档，未经真实调用确认。
+已用真实 Token 验证过账户/容器实例 Pro API 的**全部接口**：查余额、切换专用 NFS、查实例/镜像列表、查 GPU 库存、**创建实例 → 开机运行 → 关机 → 保存镜像 → 重新开机 → 再关机 → 释放**完整生命周期都真实跑通过（实测总花费不到 5 元），过程中发现并修正了好几处真实问题：① 官方文档自己写错了 GET 接口的传参方式；② 未实名认证的账号创建实例会被拒绝；③ 保存镜像前必须先关机，文档没写这个前置条件；④ `power_on` 的响应结构和 `power_off`/`release` 不一样（见下方"跨领域的通用规则"）。
+
+弹性部署 API 里**所有只读查询接口也已用真实调用验证**（镜像列表、GPU 库存、部署列表、时长包、调度黑名单），并确认了权限门槛是按接口区分、不是整个 API 一刀切。**只有"创建部署"和依赖已有部署/容器 UUID 的管理类接口（停止容器、设置副本数、停止/删除部署、设置调度黑名单）仍未验证**——测试账号没有企业认证，创建不了部署，这些接口自然也拿不到真实的 `deployment_uuid`/`container_uuid` 去测，这部分内容还是忠实转录自文档，未经真实调用确认。
 
 另外做过一轮**文档保真度对照测试**（3 个场景，读了这份技能包的 Agent vs 完全凭通用知识写代码的 Agent，对照官方文档判定谁写对了，不是真实调用打分）：通过率 100% vs 40%，详见 `../../autodl-workspace/iteration-1/review.html`。AutoDL 相对小众，公开语料对它 API 细节的覆盖比 `bigmodel-cn` 那种头部平台少得多，所以没装技能包时编造接口的情况比 bigmodel-cn 测试时更严重。
 
@@ -62,7 +64,9 @@ print(resp.json())
 - **金额单位统一是"元 × 1000"的整数**：无论是余额（`wallet/balance` 的 `assets`）还是弹性部署的价格区间（`price_from`/`price_to`），都要除以 1000 才是"元"。
 - **GPU 型号有两套完全不同的标识方式**：容器实例 Pro API 用 `gpu_spec_uuid`（如 `pro6000-p`），弹性部署 API 用 `gpu_name_set`（GPU 型号名称字符串，如 `"RTX 4090"`）。写同时用到两套接口的代码时，不要把这两套值搞混或试图共用一个配置项。
 - **CUDA 版本统一用整数编码**：去掉版本号的点，`11.8` → `118`。两套 API 都这么编码，规则一致。
-- **私有镜像 UUID 在两套实例 API 间通用**：容器实例 Pro API 保存出来的私有镜像，`image_uuid` 也可以直接填进弹性部署 API 的 `image_uuid` 字段，反之亦然；公共基础镜像 UUID 也是两边共用同一套。
+- **私有镜像 UUID 在两套实例 API 间通用，但"查镜像列表"接口本身不通用**：已用真实调用验证——用容器实例 Pro API 保存出来的镜像，同一个 `image_uuid` 在两套 API 各自的"获取镜像列表"接口里都查得到，说明底层是同一份镜像仓库，`image_uuid` 可以跨两套 API 直接使用；但**这两个"获取镜像列表"是完全不同的接口**——容器实例 Pro API 的是 `POST .../instance/pro/image/private/list`，返回字段含 `image_uuid`/`name`/`status`/`image_size`/`create_at`；弹性部署的是 `POST /api/v1/dev/image/private/list`，返回字段只有 `id`/`image_name`/`image_uuid`，字段名不一样（`name` vs `image_name`）也没有 `status`/`image_size`，两者路径和字段都不能混用。
+- **保存镜像前必须先关机**：已用真实调用验证——`POST .../instance/pro/image/save` 对一台 `running` 状态的实例直接调用会被拒绝，返回 `{"code":"InternalError","msg":"保存实例镜像前，请确保实例是关机状态"}`，文档没有写这个前置条件。正确顺序是 `power_off` → 轮询确认 `shutdown` → 再 `image/save`。
+- **`power_on` 的响应结构和 `power_off`/`release` 不一样**：已用真实调用验证——`power_off`/`release` 成功时 `data` 是 `null`，但 `power_on` 成功时 `data` 是 `{"description": "开机指令已下发，请稍后关注实例最新状态"}`，是个带字段的对象。写统一的响应解析代码时不要假设所有开关机类接口的 `data` 形状一致。
 - **实例/容器内置环境变量可以省掉一次 API 调用**：容器 UUID（`AutoDLContainerUUID`）、部署 UUID（`AutoDLDeploymentUUID`）、实际调度到的地区（`AutoDLDataCenter`）都能直接从容器内环境变量读到，不需要反过来调 API 查"我是谁"。
 - **地区代码、CUDA 版本编码、公共镜像 UUID 这几张附录表**统一放在 [`references/elastic-deployment.md`](references/elastic-deployment.md) 末尾，`references/instances.md` 只放了 GPU 规格 ID 这一张专属于它的表，避免重复维护两份几乎一样的表格。
 

@@ -25,6 +25,8 @@
 
 **注意事项**：弹性部署**不支持从外部导入镜像**——只能用平台内创建并保存的自定义镜像（在 autodl.com 网页上操作），或用下方附录里的公共基础镜像 UUID。
 
+**✅ 已用真实 API 调用验证（2026-09）**：个人认证账号（无企业认证）直接可用，符合上方总览说的"只读查询接口不需要企业认证"。**但要注意这个接口和 `references/instances.md` 里容器实例 Pro API 的"获取镜像列表"（`POST /api/v1/dev/instance/pro/image/private/list`）是两个不同路径、返回字段也不一样的接口**——这个弹性部署专用的版本，真实响应每条记录是 `{"id", "image_name", "image_uuid"}`，字段名是 `image_name` 不是 `name`，也**没有** `status`/`image_size`/`create_at` 这几个字段（那几个字段只在容器实例 Pro API 的镜像列表里出现）。两套 API 都叫"获取镜像列表"、路径和字段却不一样，是本平台又一个容易踩的重名坑。
+
 ---
 
 ## 创建部署
@@ -102,6 +104,8 @@ print(resp.json())
 **Endpoint**: `POST /api/v1/dev/deployment/list`
 
 **关键参数**：`page_index`/`page_size`（必填）、`name`（精确匹配，不支持模糊查询）、`status`（`running`/`stopped`，不填则全部）、`deployment_uuid`（均选填）。
+
+**✅ 已用真实 API 调用验证（2026-09）**：属于"账号自己的部署资源"这一类，个人认证账号（无企业认证）调用会被拒绝，返回 `{"code":"BadRequest","msg":"无当前资源访问权限"}`——和上方总览一致。
 
 ---
 
@@ -186,6 +190,8 @@ print(resp.json())
 
 无请求参数。返回当前生效中的黑名单列表，含 `machine_id`、`data_center`、`expired_time` 等。
 
+**✅ 已用真实 API 调用验证（2026-09）**：和"获取部署列表"、"获取已购时长包数据"一样属于"账号自己的部署资源"这一类——个人认证账号（无企业认证）调用会被拒绝，返回 `{"code":"BadRequest","msg":"无当前资源访问权限"}`，即使不带任何参数也一样，说明门槛判断和参数无关，是纯按接口区分的。
+
 ---
 
 ## 获取弹性部署 GPU 库存
@@ -213,6 +219,8 @@ print(resp.json())
 **注意事项**：本文档介绍的这几个弹性部署 GET 接口里，这是唯一一个用 query string 传参的（`requests.get(url, params=...)` 而不是 `json=...`）。**但这不代表"query string 传参"在整个 AutoDL API 里很罕见**——`references/instances.md` 里容器实例 Pro API 的两个 GET 接口（`snapshot`/`status`），官方文档虽然写的是 JSON body 示例，但已用真实调用验证那两个接口实际也只认 query string，文档本身在那两处示例写错了。**结论：这个平台所有 GET 接口，无论文档怎么示例，都优先假设需要用 query string 传参，遇到报 `RequestParameterIsWrong` 再检查是不是传参方式搞反了。**
 
 **示例响应**：`total`/`balance` 单位是**秒**，不是小时或元。
+
+**✅ 已用真实 API 调用验证（2026-09）**：个人认证账号（无企业认证）调用会被拒绝，返回 `{"code":"BadRequest","msg":"无当前资源访问权限"}`——即使传一个不存在的 `deployment_uuid`，报的也是这个权限错误而不是"记录不存在"，说明鉴权检查在查资源之前就先拦下了。
 
 ---
 

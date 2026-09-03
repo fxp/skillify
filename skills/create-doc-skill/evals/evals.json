@@ -1,0 +1,47 @@
+{
+  "skill_name": "create-doc-skill",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我做一个 Resend（邮件 API，文档在 https://resend.com/docs）的接入 skill，以后让 Agent 能直接写对调用它的代码。我手上现在没有 Resend 的 API key，所以先做到 skill 草稿写完就行，不要做真实调用；但要把后面需要真实验证的清单和对照评测的场景一起准备好。示例代码用 TypeScript。所有产出放到 __OUT__ 下。",
+      "expected_output": "__OUT__/resend/ 下有 SKILL.md（路由表 + 通用规则）、references/ 按开发者意图分组的若干文件、evals/evals.json；另有验证计划文件；全部内容明确标注未经真实调用验证；鉴权格式来自 OpenAPI 或文档而非猜测。",
+      "files": [],
+      "expectations": [
+        "Transcript shows the agent attempted https://resend.com/docs/llms.txt (or llms-full.txt) and located/attempted an OpenAPI spec rather than browsing pages one by one",
+        "SKILL.md states the exact auth header format (Authorization: Bearer re_...) and cites where it came from (OpenAPI securitySchemes or docs), not from memory",
+        "SKILL.md is a routing layer: under 200 lines, contains a navigation table mapping developer intents to reference files and endpoints, and does not contain full parameter tables",
+        "references/ contains at least 3 files grouped by developer intent (e.g. sending/emails, domains/api-keys, webhooks/events), not one file per docs page",
+        "Every reference file and SKILL.md carries an explicit statement that content is unverified against the live API (no fabricated '已验证' claims)",
+        "A verification plan exists listing specific claims to test with a real key, ordered cheap-first, with the endpoint and how to judge each",
+        "evals/evals.json contains at least 3 scenarios that are trap-style (behaviors a developer would get wrong by analogy with other email/SaaS APIs), not hello-world send-an-email",
+        "Example code is TypeScript (resend SDK or fetch), reads the API key from an environment variable, and no real-looking secret appears anywhere in the outputs",
+        "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) before or while structuring the skill directory",
+        "Transcript/process-log shows the bundled scripts (fetch_docs.sh, openapi_summary.py) or an equivalent one-shot llms-full.txt download were used instead of hand-written page-by-page parsing",
+        "Uncertainty markers (⚠ 文档未说明 / 待验证 / doc-quoted) appear inline at endpoint level across the references (at least 30 in total), not only as a summary list per file",
+        "SKILL.md opens with a verification-status section stating which endpoints are verified (none, in draft mode) and that error strings are doc-transcribed",
+        "No reference file was overwritten by a competing writer: every delegated file has a matching .done marker or the process-log shows delegation completed without conflict"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Moonshot AI 的 Kimi 开放平台文档在 https://platform.moonshot.cn/docs ，帮我整理成一个 skill 放到 __OUT__ 下。我暂时没有 key，先把草稿、验证计划和评测场景做出来，后面我拿到 key 再补真实验证。Python 示例。",
+      "expected_output": "__OUT__/kimi 或 moonshot/ 下有 SKILL.md、references/、evals/evals.json 和验证计划；文档站没有 llms.txt 时使用了 sitemap / 渲染后的页面等 fallback；未验证内容显式标注。",
+      "files": [],
+      "expectations": [
+        "Transcript shows the agent probed for llms.txt / an OpenAPI spec first, and on failure fell back to sitemap.xml, rendered pages, or a manually built page list rather than writing from memory",
+        "SKILL.md states the base URL and exact auth header format with the source page cited",
+        "SKILL.md is a routing layer under 200 lines with a navigation table (intent -> reference file -> endpoints) and cross-cutting rules, without full parameter tables",
+        "references/ has at least 3 files grouped by developer intent, and places where the docs were unclear are marked (e.g. '⚠ 文档未说明') instead of guessed",
+        "Every reference file and SKILL.md explicitly states content is unverified against the live API",
+        "A verification plan exists listing specific claims to test cheap-first with endpoint and judging criteria",
+        "evals/evals.json contains at least 3 trap-style scenarios (e.g. OpenAI-compatibility gaps, model-name pitfalls, context caching/file semantics) rather than hello-world chat",
+        "Python examples read the key from an environment variable; no real-looking secret appears in outputs",
+        "Transcript shows the agent loaded /anthropic-skills:skill-creator (or read its SKILL.md) when structuring the skill directory",
+        "Transcript/process-log shows the bundled scripts (fetch_docs.sh, openapi_summary.py) or an equivalent one-shot llms-full.txt download were used instead of hand-written page-by-page parsing",
+        "Uncertainty markers (⚠ 文档未说明 / 待验证 / doc-quoted) appear inline at endpoint level across the references (at least 30 in total), not only as a summary list per file",
+        "SKILL.md opens with a verification-status section stating which endpoints are verified (none, in draft mode) and that error strings are doc-transcribed",
+        "No reference file was overwritten by a competing writer: every delegated file has a matching .done marker or the process-log shows delegation completed without conflict"
+      ]
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 把 SaaS / 开放平台的开发者文档，变成 AI Agent 可以直接拿去写代码的 Claude Skill——不是"把文档丢给 Agent 转述一遍"，而是**读文档打草稿 → 用真实 API Key 逐条验证 → 用真实前后对照实验证明技能确实有用**再交付。
 
-方法论本身也是一份 Skill：[`skills/generate-skill-from-api-docs`](skills/generate-skill-from-api-docs)。
+方法论本身也是一份 Skill：[`skills/create-doc-skill`](skills/create-doc-skill)（原 `generate-skill-from-api-docs`，2026-09 重写：SKILL.md 只留流程与关键判断，细节拆进 `references/`，新增 `scripts/fetch_docs.sh` 与 `scripts/openapi_summary.py`）。
 
 ## Skills
 

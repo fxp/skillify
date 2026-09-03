@@ -2,7 +2,9 @@
 
 来源：`www.autodl.com/docs/esd_api_doc/`
 
-管理"部署"（deployment）——按副本数量自动伸缩、批量管理多个容器的服务，适合跑常驻推理服务、批量训练任务等场景。**使用这套 API 必须先完成企业认证**，门槛比 `references/instances.md` 里的容器实例 Pro API（个人实名或企业认证均可）更高，调用前务必和用户确认账号类型。
+管理"部署"（deployment）——按副本数量自动伸缩、批量管理多个容器的服务，适合跑常驻推理服务、批量训练任务等场景。**创建/管理部署需要先完成企业认证**，门槛比 `references/instances.md` 里的容器实例 Pro API（个人实名或企业认证均可）更高，调用前务必和用户确认账号类型。
+
+**已用真实 API 调用验证（2026-09）**：企业认证门槛**不是套在整个弹性部署 API 上**，而是按接口区分——`POST /api/v1/dev/deployment/list`（查部署列表）、`GET /api/v1/dev/deployment/ddp/overview`（查时长包）这类涉及"账号自己的部署资源"的接口，未企业认证会返回 `{"code":"BadRequest","msg":"无当前资源访问权限"}`；但 `POST /api/v1/dev/image/private/list`（查私有镜像列表）、`POST /api/v1/dev/machine/region/gpu_stock`（查 GPU 库存）这类不涉及具体部署资源的只读查询接口，个人认证账号一样能正常调用。也就是说：**创建部署前可以先用个人认证账号调库存/镜像列表探路，但真要创建部署本身，账号必须企业认证**。
 
 ## 核心概念
 
@@ -196,6 +198,8 @@ print(resp.json())
 
 **注意事项**：文档原文强调——查询按"调度 1 张卡"的口径统计库存，如果查到某型号库存为 2，这 2 张卡可能分布在两台不同机器上；如果一个容器需要同时占用 2 张卡，实际不一定能调度成功。**库存数字不能直接当成"能同时开几张卡"的保证**，写自动化脚本时对这类边界要做好重试/降级处理。
 
+**已用真实 API 调用验证（2026-09）**：真实响应比文档示例多两个字段，`data` 数组每一项的库存对象里还有 `chip_corp`（芯片厂商，如 `"nvidia"`）和 `cpu_arch`（CPU 架构，如 `"x86"`），不只是文档写的 `idle_gpu_num`/`total_gpu_num` 两个字段。另外这个接口本身不需要企业认证也能调用——本 token 没有企业认证（调 `deployment/list` 会返回 `1502` 权限错误，见下），但 GPU 库存查询依然正常返回数据，说明"查库存"和"建部署"这两类接口的权限门槛不一样，不要假设整个弹性部署 API 都需要企业认证才能调用任何一个接口。
+
 ---
 
 ## 获取已购时长包数据
@@ -206,7 +210,7 @@ print(resp.json())
 
 **关键参数**：`deployment_uuid`（必填，query string 参数，不是 body）。
 
-**注意事项**：这是本文档里**唯一一个用 query string 传参而不是 JSON body** 的 GET 接口（用 `requests.get(url, params=...)` 而不是 `json=...`），容易和其他接口的传参方式搞混。
+**注意事项**：本文档介绍的这几个弹性部署 GET 接口里，这是唯一一个用 query string 传参的（`requests.get(url, params=...)` 而不是 `json=...`）。**但这不代表"query string 传参"在整个 AutoDL API 里很罕见**——`references/instances.md` 里容器实例 Pro API 的两个 GET 接口（`snapshot`/`status`），官方文档虽然写的是 JSON body 示例，但已用真实调用验证那两个接口实际也只认 query string，文档本身在那两处示例写错了。**结论：这个平台所有 GET 接口，无论文档怎么示例，都优先假设需要用 query string 传参，遇到报 `RequestParameterIsWrong` 再检查是不是传参方式搞反了。**
 
 **示例响应**：`total`/`balance` 单位是**秒**，不是小时或元。
 

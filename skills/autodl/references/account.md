@@ -21,21 +21,36 @@ resp = requests.post(
 print(resp.json())
 ```
 
-**示例响应**：
+**示例响应**（已用真实 API 调用验证，2026-09；文档原文只列了 3 个字段，真实响应字段多得多，补充如下）：
 
 ```json
 {
     "code": "Success",
     "msg": "",
     "data": {
-        "assets": 1000,
-        "accumulate": 1000,
-        "voucher_balance": 1000
+        "id": 282382,
+        "uid": 282383,
+        "assets": 29290,
+        "blocked_asset": 0,
+        "accumulate": 120710,
+        "voucher_balance": 0,
+        "available_coupon_num": 0,
+        "to_expire_voucher_num": 0,
+        "certain_conditions_voucher_balance": 0,
+        "remittance_code": "ADL00282383",
+        "total_recharge_asset": 150000,
+        "exclusive_transfer_account": "",
+        "created_at": "2023-12-11T15:05:33+08:00",
+        "updated_at": "2026-09-03T17:00:18+08:00"
     }
 }
 ```
 
-**注意事项**：`assets`（当前余额）、`accumulate`（累计消费）、`voucher_balance`（代金券余额）三个数值都是**整数，除以 1000 才是"元"**——比如 `assets: 1000` 代表余额 1 元，不要直接把返回的整数当成"元"展示给用户。
+**注意事项**：
+
+- `assets`（当前余额）、`accumulate`（累计消费）、`voucher_balance`（代金券余额）、`blocked_asset`（冻结金额）、`total_recharge_asset`（累计充值）都是**整数，除以 1000 才是"元"**——已用真实调用验证：真实余额 29.29 元对应的 `assets` 是 `29290`，不要直接把返回的整数当成"元"展示给用户。
+- **可用余额建议算 `(assets - blocked_asset) / 1000`**，而不是只看 `assets`——`blocked_asset`（冻结中的金额）文档完全没提，但真实响应里确实有这个字段，冻结金额是不能直接花的。
+- `remittance_code` 是账户的对公汇款识别码，`created_at`/`updated_at` 是账户创建/本次查询更新时间，这几个字段文档也没提，但一次真实调用就看到了，写强类型解析代码时不要假设响应只有文档列出的那 3 个字段。
 
 ---
 

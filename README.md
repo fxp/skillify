@@ -9,9 +9,9 @@
 | # | Skill | 覆盖范围 | 状态 |
 | :-- | :-- | :-- | :-- |
 | 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层 | ✅ 已生成，5 轮共 14 个场景真实 API 对照验证，7 处文档偏差已修正 |
-| 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ⚠️ 已生成 + 文档保真度对照测试通过（100% vs 40%），**但未做真实调用验证**（没有可用的 API Token），内容忠实转录自官方文档 |
+| 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ⚠️ 已生成，文档保真度对照测试通过（100% vs 40%）；**只读接口已用真实 Token 验证**（发现并修正了官方文档自己的一处传参错误），**会花钱/建资源的接口仍未验证** |
 
-每个 skill 目录下都是一份可以直接安装使用的 SKILL.md + `references/`，外加一个 `data/` 目录留档对照测试的完整过程（prompt、打分依据、报错原文），不只是一个"通过率"数字。`autodl` 是刻意保留的反例——按同一套方法论走完了抓取、结构化撰写、对照测试三步，唯独跳过了最关键的"真实 API 验证"（没有测试用的 Token），SKILL.md 里也如实标注了这一点，而不是假装它和 `bigmodel-cn` 一样可信。
+每个 skill 目录下都是一份可以直接安装使用的 SKILL.md + `references/`，外加一个 `data/` 目录留档对照测试的完整过程（prompt、打分依据、报错原文），不只是一个"通过率"数字。`autodl` 一开始是刻意保留的反例（没有 Token，只做了文档保真度测试），拿到真实 Token 后补测了只读接口——过程中发现官方文档自己在两个 GET 接口的传参方式上写错了（示例给的是 JSON body，实测必须用 URL 查询字符串），已修正。创建实例/创建部署这类会实际花钱、暂时还没有条件验证的接口，SKILL.md 里如实标注了这个边界，没有假装全部验证过。
 
 ## 验证结果
 
@@ -22,12 +22,12 @@
 
 详见 [`skills/bigmodel-cn/data/comparison-report.html`](skills/bigmodel-cn/data/comparison-report.html)。
 
-**autodl**（没有真实 Token，改用"对照官方文档判定谁写对了"打分——这不能替代真实调用验证，只能说明"至少比凭空编强"）：
+**autodl**：
 
-- 3 个场景，100% vs 40%——没装技能包的版本会编出这个平台并不存在的接口路径和字段：把 GPU 规格 ID 当成可以动态查询的接口（真实是静态文档表格）、账户余额换算系数套用国内支付类 API 常见的"除以100"习惯（真实是"除以1000"）、弹性部署的 `deployment_type` 猜成 `"fixed"`/`"scaling"` 这类通用云平台说法（真实取值是 `ReplicaSet`/`Job`/`Container`）
-- 差距比 bigmodel-cn 更明显，因为 AutoDL 相对小众，公开语料对它 API 细节的覆盖比智谱这类头部平台少得多
+- 文档保真度对照测试（没有真实 Token 时跑的，"对照官方文档判定谁写对了"，不是真实调用打分）：3 个场景 100% vs 40%——没装技能包的版本会编出这个平台并不存在的接口路径和字段：把 GPU 规格 ID 当成可以动态查询的接口（真实是静态文档表格）、账户余额换算系数套用国内支付类 API 常见的"除以100"习惯（真实是"除以1000"）、弹性部署的 `deployment_type` 猜成 `"fixed"`/`"scaling"` 这类通用云平台说法（真实取值是 `ReplicaSet`/`Job`/`Container`）。差距比 bigmodel-cn 更明显，因为 AutoDL 相对小众，公开语料对它 API 细节的覆盖比智谱这类头部平台少得多。详见 [`skills/autodl/data/iteration-1/review.html`](skills/autodl/data/iteration-1/review.html)。
+- 拿到真实 Token 后追加验证了只读接口，发现**官方文档自己写错了传参方式**：`GET .../instance/pro/snapshot` 和 `GET .../instance/pro/status` 这两个接口，文档给的示例是 JSON body，但实测必须用 URL 查询字符串传参，用 JSON body 会直接报 `RequestParameterIsWrong`。这类"文档本身有 bug"的发现，只有真实调用能抓到，光靠"读文档写得对不对"的对照测试是测不出来的。
 
-详见 [`skills/autodl/data/iteration-1/review.html`](skills/autodl/data/iteration-1/review.html)。
+两次测试合起来正好说明为什么方法论坚持要走完真实验证这一步——静态测试能测出"有没有编造内容"，测不出"文档本身写没写对"。
 
 ## 用法
 

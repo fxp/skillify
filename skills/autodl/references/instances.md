@@ -62,7 +62,19 @@ print(resp.json())
 
 **用途**: 查询实例的完整快照——SSH 连接信息、Jupyter 地址、端口映射、CPU/内存/磁盘使用率等。
 
-**关键参数**：`instance_uuid`（string，必填）。
+**关键参数**：`instance_uuid`（string，必填），**用 URL 查询字符串传，不是 JSON body**（见下方注意事项）。
+
+**示例请求**：
+
+```python
+import requests
+resp = requests.get(
+    "https://api.autodl.com/api/v1/dev/instance/pro/snapshot",
+    headers={"Authorization": "your_token"},
+    params={"instance_uuid": "pro-76576c61fdf1"},  # 用 params，不是 json
+)
+print(resp.json())
+```
 
 **示例响应关键字段**：
 
@@ -76,6 +88,8 @@ print(resp.json())
 
 **注意事项**：这个接口一次性把"怎么连上这台机器"的全部信息都给了（SSH/Jupyter/HTTP 端口映射），比自己拼 SSH 命令更可靠——直接用返回的 `ssh_command`，不要自己用 `proxy_host`+`ssh_port` 手工拼接（字段名和格式后续可能调整，拼接容易出错）。
 
+**⚠️ 已用真实 API 调用验证（2026-09）：官方文档本身在这个接口写错了传参方式**——文档展示的是"请求Body示例"（JSON），但实测把 `instance_uuid` 放进 JSON body（`requests.get(url, json={...})`）会直接返回 `{"code":"RequestParameterIsWrong","msg":"请求参数错误"}`；改用 URL 查询字符串（`requests.get(url, params={...})`）才会被正确解析（返回 `RecordNotFoundError`/正常数据）。**这个坑对下面"获取实例状态"接口同样成立**——两个 GET 接口的官方文档示例都误导成了 JSON body 传参，实际都得用 query string。
+
 ---
 
 ## 获取实例状态
@@ -84,7 +98,19 @@ print(resp.json())
 
 **用途**: 只查状态，比查完整详情（snapshot）更轻量，适合轮询。
 
-**关键参数**：`instance_uuid`（string，必填）。
+**关键参数**：`instance_uuid`（string，必填），**同样必须用 URL 查询字符串传**，不是 JSON body——原因见上方"获取实例详情"的验证说明。
+
+**示例请求**：
+
+```python
+import requests
+resp = requests.get(
+    "https://api.autodl.com/api/v1/dev/instance/pro/status",
+    headers={"Authorization": "your_token"},
+    params={"instance_uuid": "pro-76576c61fdf1"},
+)
+print(resp.json())
+```
 
 **示例响应**：`data` 直接是状态字符串，如 `"running"`。
 

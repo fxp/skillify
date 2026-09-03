@@ -28,6 +28,10 @@
 | 角色扮演/情感陪伴 | `charglm-4`(拟人对话) / `emohaa`(心理支持) |  |
 | 代码补全(非对话式) | `codegeex-4` | 128K 上下文 |
 
+## GLM Coding Plan（编程套餐）可用模型
+
+套餐 Key 走 `…/api/coding/paas/v4` 或 `…/api/anthropic` 时，所有档位都支持 `glm-5.3`、`glm-5.3-flash`；传旧模型代码 `glm-5.2` / `glm-5.1` / `glm-5-turbo` / `glm-4.7` 会被自动路由到新版本。下表其余模型（视觉、生图、生视频、语音、embedding、rerank 等）**不在套餐内**，要用标准 API Key 走 `…/api/paas/v4`。详见 `references/coding-plan.md`。
+
 ## 文本模型全表
 
 | 模型代码 | 特点 | 上下文 | 最大输出 |
@@ -106,7 +110,7 @@
 
 | 模型 | thinking 默认行为 |
 | :--- | :--- |
-| glm-5.3 / glm-5.3-flash | **强制开启**,只能用 `reasoning_effort` 控制思考强度,不能关闭 |
+| glm-5.3 / glm-5.3-flash | 标准端点**强制开启**,只能用 `reasoning_effort` 控制思考强度,传 `disabled` 报 `1210`；Coding 端点（`…/api/coding/paas/v4`）实测可以关闭,见 `references/coding-plan.md` |
 | glm-4.7 / glm-4.5v | 强制思考 |
 | glm-5.2 / glm-5.1 / glm-5 / glm-5-turbo / glm-5v-turbo / glm-4.6 / glm-4.6v / glm-4.5 | 模型自动判断是否思考(可通过 `thinking.type` 显式开关) |
 | glm-4.5 以下版本 | 不支持 `thinking` 参数 |

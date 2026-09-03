@@ -1,0 +1,9 @@
+{
+  "eval_id": 23,
+  "eval_name": "cp-two-keys-embed-chat",
+  "prompt": "我手里有两把智谱的 Key：一把是 GLM Coding Plan 套餐的（环境变量 GLM_CODING_PLAN_API_KEY），一把是开放平台按量付费的（环境变量 ZHIPUAI_API_KEY）。写一个 main.py，用 requests 直接调 HTTP：先用 embedding-3 计算“今天天气很好”和“天气不错”两句话的余弦相似度并打印，然后让 glm-5.3 用一句话说明这两句话意思是否相近并打印。能用套餐额度的地方尽量用套餐额度。要能直接 `python3 main.py` 跑通。",
+  "assertions": [
+    "Executing `python3 main.py` with both keys exported exits 0 and prints a similarity score and a model sentence",
+    "Embeddings call uses the standard key (Coding Plan key cannot call embeddings), chat call uses the plan key on the coding endpoint"
+  ]
+}

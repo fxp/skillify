@@ -1,0 +1,11 @@
+{
+  "exit_code": 0,
+  "stdout": "[embed] 使用开放平台按量付费 Key 调用 embedding-3\n「今天天气很好」与「天气不错」的余弦相似度：0.9190\n[chat] 使用 GLM Coding Plan 套餐额度 调用 glm-5.3\nglm-5.3：是的，两句都表达天气好、语气积极，意思相近，与 0.9190 的高余弦相似度一致。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.8,
+  "env_keys": [
+    "GLM_CODING_PLAN_API_KEY",
+    "ZHIPUAI_API_KEY"
+  ]
+}

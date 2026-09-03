@@ -1,0 +1,9 @@
+{
+  "eval_id": 20,
+  "eval_name": "cp-openai-sdk-stream",
+  "prompt": "我用的是智谱 GLM Coding Plan。写一个 main.py，用 openai 官方 Python SDK 以流式（stream）方式调用 glm-5.3-flash，让它写一首关于秋天的四行小诗，边收边打印，最后换行结束。Key 从环境变量 GLM_CODING_PLAN_API_KEY 读取。要能直接 `python3 main.py` 跑通。",
+  "assertions": [
+    "Executing `python3 main.py` with only GLM_CODING_PLAN_API_KEY exported exits 0 and prints a non-empty streamed poem",
+    "base_url is the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4"
+  ]
+}

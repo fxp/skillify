@@ -1,0 +1,12 @@
+{
+  "eval_id": 18,
+  "eval_name": "coding-plan-rag-embeddings-scope",
+  "prompt": "我有智谱 GLM Coding Plan 套餐，想用套餐额度做一个本地代码库的 RAG 问答：先用 embedding-3 把代码切片向量化，再用 glm-5.3 回答。用 Python 写，直接 requests 调 HTTP。",
+  "assertions": [
+    "The response states that embeddings (embedding-3) are NOT covered by the Coding Plan and must be called with a standard platform API key at https://open.bigmodel.cn/api/paas/v4/embeddings",
+    "The chat/answer step uses the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions with model glm-5.3 (or glm-5.3-flash) when using the plan key — or clearly explains the user may instead use the standard key for everything",
+    "The script reads two separate keys from two environment variables (one for the plan, one for the standard API) rather than assuming a single key works on both endpoints",
+    "The embeddings request uses the documented shape: POST /paas/v4/embeddings with JSON body {model: 'embedding-3', input: <string or list>} and reads vectors from response['data'][i]['embedding']",
+    "Script is valid Python with a working retrieval loop (cosine similarity or equivalent) and a chat call that injects the retrieved chunks into the prompt"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "eval_id": 22,
+  "eval_name": "cp-function-calling",
+  "prompt": "我订阅了智谱 GLM Coding Plan。用 requests 直接调 HTTP，写一个 main.py：定义一个工具函数 get_current_time(timezone) 返回当前时间（本地实现即可），让 glm-5.3 回答“现在东京几点了？”——模型发起 tool call 后脚本执行函数、把结果以 tool 消息回传，再打印模型的最终回答。Key 在环境变量 GLM_KEY 里。要能直接 `python3 main.py` 跑通。",
+  "assertions": [
+    "Executing `python3 main.py` with only GLM_KEY (a Coding Plan key) exported exits 0 and prints a final answer that mentions a time",
+    "Request goes to https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+    "Tool-call loop is implemented (tool_calls parsed, role=tool message with tool_call_id sent back)"
+  ]
+}

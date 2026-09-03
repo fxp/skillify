@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "The diagnosis is that the base_url is the standard endpoint /api/paas/v4, which does not see Coding Plan quota, and the fix is to switch to https://open.bigmodel.cn/api/coding/paas/v4",
+      "passed": true,
+      "evidence": "表格对比两套 Base URL，'你的代码里 base_url=…/api/paas/v4/ 是标准 API 端点…完全看不到你的 Max 套餐额度'，修复段改为 …/api/coding/paas/v4/"
+    },
+    {
+      "text": "The response explicitly tells the user NOT to top up / that this is not a balance problem and not a platform bug",
+      "passed": true,
+      "evidence": "'不是智谱的 bug，也不需要充值'，并说明充值后走的是按 token 计费"
+    },
+    {
+      "text": "The response explains that the Coding Plan and the standard pay-as-you-go API are separate billing systems with separate keys",
+      "passed": true,
+      "evidence": "开头表格：'两套彼此隔离的计费体系'，Key 来源分别为控制台 apikeys 与 coding-plan/personal/overview，'两套 Key 不通用'"
+    },
+    {
+      "text": "The response suggests verifying the key was created on the Coding Plan page (and, for team plans, that the team key is used), since a standard platform key would not carry plan quota",
+      "passed": true,
+      "evidence": "'确认 GLM_KEY 真的是套餐 Key…必须是在 https://bigmodel.cn/coding-plan/personal/overview（团队版是「团队编程套餐 > 我的套餐」）里创建的 Key'"
+    },
+    {
+      "text": "The corrected code snippet keeps the OpenAI SDK usage and model glm-5.3 and only changes base_url (plus optionally the env var name)",
+      "passed": true,
+      "evidence": "修正代码只改 base_url，保留 openai SDK 与 glm-5.3，并额外给出 Anthropic 兼容层写法"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "notes": "完全按 references/coding-plan.md 的排查顺序作答，还带上了 /v1 追加 404、套餐条款限制、套餐不含 embeddings 等提示。"
+}

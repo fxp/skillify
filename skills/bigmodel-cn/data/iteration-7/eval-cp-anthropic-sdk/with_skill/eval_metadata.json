@@ -1,0 +1,10 @@
+{
+  "eval_id": 21,
+  "eval_name": "cp-anthropic-sdk",
+  "prompt": "我有智谱 GLM Coding Plan，想在自己的 Python 脚本里通过 anthropic 官方 SDK（Messages API）调用 glm-5.3。写一个 main.py：问模型“1 到 10 的质数有哪些”，打印回答文本。Key 从环境变量 GLM_CODING_PLAN_API_KEY 读取。要能直接 `python3 main.py` 跑通。",
+  "assertions": [
+    "Executing `python3 main.py` with only GLM_CODING_PLAN_API_KEY exported exits 0 and prints a non-empty answer",
+    "base_url is https://open.bigmodel.cn/api/anthropic",
+    "Code handles the response content list correctly (prints the text block, not a thinking block or the raw list)"
+  ]
+}

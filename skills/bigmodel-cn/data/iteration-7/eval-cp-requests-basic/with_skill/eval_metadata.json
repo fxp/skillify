@@ -1,0 +1,9 @@
+{
+  "eval_id": 19,
+  "eval_name": "cp-requests-basic",
+  "prompt": "我买了智谱的 GLM Coding Plan 套餐。帮我写一个 Python 脚本 main.py：用标准库以外只允许用 requests 直接调 HTTP 接口，让 glm-5.3 回答“用一句话介绍 Python”，把模型的回答打印到 stdout。API Key 放在环境变量 GLM_KEY 里。脚本要能直接 `python3 main.py` 跑通。",
+  "assertions": [
+    "Executing `python3 main.py` with only GLM_KEY (a Coding Plan key) exported exits 0 and prints a non-empty model answer",
+    "Request goes to the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"
+  ]
+}

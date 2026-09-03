@@ -18,7 +18,7 @@
 | :--- | :--- | :--- | :--- |
 | 1000/1001/1003 | 401 | 鉴权失败 / 缺少 Authorization 头 / Token 过期 | 检查 `Authorization: Bearer <API_KEY>` 是否正确携带、Key 是否有效 |
 | 1005 | 401 | 账户开启了二次认证，需要二次登录 | 提示用户去控制台完成二次认证 |
-| 1113 | 429 | 账户欠费 | 提示用户充值 |
+| 1113 | 429 | 账户余额不足 / 无可用资源包（`余额不足或无可用资源包,请充值。`） | **先别急着让用户充值**：如果用户买的是 GLM Coding Plan 套餐，这个错误几乎总是因为套餐 Key 打到了标准端点 `…/api/paas/v4`，改成 `…/api/coding/paas/v4` 即可（见 `references/coding-plan.md`）。确认是标准 Key 后再提示充值 |
 | 1210 | 400 | 请求参数有误 | 检查参数名/类型是否符合本技能包各参考文档里的字段定义 |
 | 1211 | 400 | 模型不存在 | 检查 `model` 字段拼写，参考 `references/models.md` |
 | 1212 | 400 | 当前模型不支持该调用方式 | 例如给不支持工具调用的模型传了 `tools` |
@@ -34,6 +34,16 @@
 | 1308/1310 | 429 | 达到用量/次数上限，`next_flush_time` 给出重置时间 | 按重置时间调整调用节奏，或申请提升权益等级 |
 
 完整错误码表见源文档，此处只列出 Agent 在写调用代码和错误处理逻辑时最需要感知的部分。
+
+## GLM Coding Plan 套餐相关
+
+- 套餐 Key 与平台 Key **不通用**，套餐 Key 必须打 `https://open.bigmodel.cn/api/coding/paas/v4`（或 Anthropic 兼容层 `https://open.bigmodel.cn/api/anthropic`）。打错端点的症状是 HTTP 429 + `1113`（已实测）。反过来标准 Key 打 Coding 端点是可以的（已实测，按标准计费）。
+- **同一个 `1113` 有三种原因**：套餐 Key 打了标准端点；套餐 Key 调了套餐不含的能力（embeddings / rerank / tokenizer / async chat / 独立 web_search / images，均已实测）；套餐 Key 请求了套餐不含的模型（如 `glm-4-long`、`charglm-4`、`codegeex-4`，已实测）。错误体一模一样，只能按「端点 → 能力 → 模型」的顺序排查。
+- `thinking: {"type":"disabled"}` 对 `glm-5.3` / `glm-5.3-flash` 在标准端点报 `1210`，在 Coding 端点却被接受并生效（已实测）——不同端点参数校验不一致。
+- 套餐额度按 **5 小时窗口 + 7 天周期** 双重重置，用完后不会自动扣账户余额；重置时间是动态的，代码里不要写死。
+- 套餐只含 `glm-5.3` / `glm-5.3-flash`（旧代码自动路由），不含 embeddings / 图像视频语音生成 / Batch 等，这些要用标准 Key。
+- 官方条款限制套餐只能在指定编码工具内使用，自写脚本调用属于条款外用法。
+- 完整对照与排查顺序见 `references/coding-plan.md`。
 
 ## 速率限制（Rate Limit）
 
@@ -54,6 +64,7 @@
 写完调用代码后，建议按这个顺序自查一遍：
 
 - [ ] `Authorization` 头是否正确设置为 `Bearer <API_KEY>`（不是 `ApiKey` 或裸 Key）
+- [ ] Key 的类型（标准 / Coding Plan 套餐）与 Base URL（`…/api/paas/v4` / `…/api/coding/paas/v4`）是否匹配
 - [ ] `model` 字段是否是 `references/models.md` 里存在的模型代码
 - [ ] 是否给所有可能失败的调用加了错误处理（区分 4xx 配置错误 vs 429/5xx 重试）
 - [ ] 是否对高并发/批量场景选择了异步接口或 Batch API,而不是同步接口硬扛

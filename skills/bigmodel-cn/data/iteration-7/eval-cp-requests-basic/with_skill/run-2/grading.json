@@ -1,0 +1,21 @@
+{
+  "expectations": [
+    {
+      "text": "Executing `python3 main.py` with only GLM_KEY (a Coding Plan key) exported exits 0 and prints a non-empty model answer",
+      "passed": true,
+      "evidence": "exit=0 seconds=16.0 stdout_len=67 ::  | stdout: Python 是一种解释型、面向对象的高级编程语言，以简洁易读的语法著称，广泛应用于 Web 开发、数据分析、人工智能和自动化等领域。"
+    },
+    {
+      "text": "Request goes to the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+      "passed": true,
+      "evidence": "grep coding/paas/v4 in main.py"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1.0
+  },
+  "notes": "end_to_end_success=yes"
+}

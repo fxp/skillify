@@ -1,0 +1,21 @@
+{
+  "expectations": [
+    {
+      "text": "Executing `python3 main.py` with both keys exported exits 0 and prints a similarity score and a model sentence",
+      "passed": true,
+      "evidence": "exit=0 seconds=14.8 stdout_len=164 ::  | stdout: [1/2] 用 embedding-3（标准 API，ZHIPUAI_API_KEY）计算向量…\n「今天天气很好」 vs 「天气不错」\n余弦相似度 = 0.9040  （向量维度 2048）\n\n[2/2] 用 glm-5.3（GLM Coding Plan 套餐额度）判断语义…\nglm-5.3：这两句话意思相近，都表示天气好。"
+    },
+    {
+      "text": "Embeddings call uses the standard key (Coding Plan key cannot call embeddings), chat call uses the plan key on the coding endpoint",
+      "passed": true,
+      "evidence": "both env names + coding endpoint in source, and the run succeeded (a plan key on embeddings would have failed with 1113)"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1.0
+  },
+  "notes": "end_to_end_success=yes"
+}

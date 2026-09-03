@@ -1,0 +1,21 @@
+{
+  "expectations": [
+    {
+      "text": "Executing `python3 main.py` with only ZHIPU_API_KEY (holding a Coding Plan key) exported exits 0 and prints a non-empty model answer",
+      "passed": true,
+      "evidence": "exit=0 seconds=5.2 stdout_len=76 ::  | stdout: Rust 是一门强调内存安全、并发性能和零成本抽象的系统级编程语言，通过所有权机制在编译期防止空指针和数据竞争，无需垃圾回收即可实现高效可靠的软件开发。"
+    },
+    {
+      "text": "Request goes to the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions, i.e. the agent recognised the plan from the wording",
+      "passed": true,
+      "evidence": "grep coding/paas/v4 in main.py"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1.0
+  },
+  "notes": "end_to_end_success=yes"
+}

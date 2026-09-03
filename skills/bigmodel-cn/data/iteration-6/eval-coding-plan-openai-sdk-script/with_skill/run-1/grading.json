@@ -1,0 +1,41 @@
+{
+  "expectations": [
+    {
+      "text": "base_url is https://open.bigmodel.cn/api/coding/paas/v4 (with or without trailing slash), NOT the standard https://open.bigmodel.cn/api/paas/v4",
+      "passed": true,
+      "evidence": "add_docstrings.py:43 CODING_PLAN_BASE_URL = https://open.bigmodel.cn/api/coding/paas/v4；404 提示检查是否多拼了 /v1"
+    },
+    {
+      "text": "api_key is read from an environment variable and the response/comments make clear it must be the Coding Plan key (from bigmodel.cn/coding-plan), not the standard platform API key from usercenter/proj-mgmt/apikeys",
+      "passed": true,
+      "evidence": "Key 从 GLM_CODING_PLAN_API_KEY 读取，注释'Coding Plan 套餐 Key，不是开放平台按量 Key'；response.md 表格给出两种 Key 的来源页面"
+    },
+    {
+      "text": "model is glm-5.3 (or glm-5.3-flash), a model that the Coding Plan actually includes",
+      "passed": true,
+      "evidence": "DEFAULT_MODEL=glm-5.3，并用 CODING_PLAN_MODELS 集合校验模型是否在套餐内"
+    },
+    {
+      "text": "The response warns that using the standard /api/paas/v4 endpoint with a Coding Plan key fails with error 1113 余额不足, or equivalently that the two billing systems / keys are not interchangeable",
+      "passed": true,
+      "evidence": "response.md:16 '套餐 Key 打到了 …/api/paas/v4，会返回 HTTP 429 + 业务码 1113…这不是要你充值'；脚本对 1113 直接中止并提示改 Base URL"
+    },
+    {
+      "text": "The response mentions that the Coding Plan is officially restricted to designated coding tools (Claude Code, OpenCode, Kilo Code, etc.) and that a custom script is outside that scope / production use should use the standard API",
+      "passed": true,
+      "evidence": "response.md:21 引用官方'套餐仅限在官方支持的指定工具与产品环境中使用'，建议生产用标准 Key（--standard-api 开关）"
+    },
+    {
+      "text": "Script is syntactically valid Python that iterates files, calls chat.completions.create, and writes results",
+      "passed": true,
+      "evidence": "py_compile 通过；ast 定位缺 docstring 节点 → chat.completions.create → JSON 解析 → 回写并 ast 复验；离线 stub 测试通过"
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "total": 6,
+    "pass_rate": 1.0
+  },
+  "notes": "按 coding-plan.md 与 models.md 作答：glm-5.3 思考不可关闭故改用 reasoning_effort=low；json_schema 被忽略故用 json_object + 客户端校验；1113 视为配置错误不重试。耗时与 token 明显高于 baseline（读了多个参考文件）。"
+}

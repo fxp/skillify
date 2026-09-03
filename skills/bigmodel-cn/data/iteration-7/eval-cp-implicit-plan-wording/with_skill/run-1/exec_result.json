@@ -1,0 +1,10 @@
+{
+  "exit_code": 0,
+  "stdout": "Rust 是一种注重**内存安全、并发安全和高性能**的系统编程语言，通过所有权机制在编译期消除空指针、数据竞争等常见错误，同时无需垃圾回收即可实现自动内存管理。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 8.6,
+  "env_keys": [
+    "ZHIPU_API_KEY"
+  ]
+}

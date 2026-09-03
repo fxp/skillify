@@ -1,0 +1,10 @@
+{
+  "exit_code": 0,
+  "stdout": "金风送爽雁南飞，\n枫叶如霞映夕晖。\n篱畔菊花开正好，\n一帘秋月照人归。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 19.3,
+  "env_keys": [
+    "GLM_CODING_PLAN_API_KEY"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "exit_code": 0,
+  "stdout": "{\"ANTHROPIC_DEFAULT_SONNET_MODEL\": {\"model\": \"glm-5.3\", \"status\": 200, \"body\": \"{\\\"id\\\":\\\"msg_20260903192144faccd1b7a681439f\\\",\\\"type\\\":\\\"message\\\",\\\"role\\\":\\\"assistant\\\",\\\"model\\\":\\\"glm-5.3\\\",\\\"content\\\":[{\\\"type\\\":\\\"thinking\\\",\\\"thinking\\\":\\\"The user is asking me\"}, \"ANTHROPIC_DEFAULT_HAIKU_MODEL\": {\"model\": \"glm-5.3\", \"status\": 200, \"body\": \"{\\\"id\\\":\\\"msg_20260903192148088ac84e110c440f\\\",\\\"type\\\":\\\"message\\\",\\\"role\\\":\\\"assistant\\\",\\\"model\\\":\\\"glm-5.3\\\",\\\"content\\\":[{\\\"type\\\":\\\"thinking\\\",\\\"thinking\\\":\\\"The user is asking me\"}, \"ANTHROPIC_DEFAULT_OPUS_MODEL\": {\"model\": \"glm-5.3\", \"status\": 200, \"body\": \"{\\\"id\\\":\\\"msg_202609031921527e92f2d1c0d448c0\\\",\\\"type\\\":\\\"message\\\",\\\"role\\\":\\\"assistant\\\",\\\"model\\\":\\\"glm-5.3\\\",\\\"content\\\":[{\\\"type\\\":\\\"thinking\\\",\\\"thinking\\\":\\\"The user is asking me\"}, \"ANTHROPIC_MODEL\": {\"model\": \"glm-5.3\", \"status\": 200, \"body\": \"{\\\"id\\\":\\\"msg_202609031921572d0602d83f6e4c0b\\\",\\\"type\\\":\\\"message\\\",\\\"role\\\":\\\"assistant\\\",\\\"model\\\":\\\"glm-5.3\\\",\\\"content\\\":[{\\\"type\\\":\\\"thinking\\\",\\\"thinking\\\":\\\"The user is asking me\"}}",
+  "stderr": "",
+  "timed_out": false,
+  "models": {
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": {
+      "model": "glm-5.3",
+      "status": 200,
+      "body": "{\"id\":\"msg_20260903192144faccd1b7a681439f\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"glm-5.3\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is asking me"
+    },
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": {
+      "model": "glm-5.3",
+      "status": 200,
+      "body": "{\"id\":\"msg_20260903192148088ac84e110c440f\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"glm-5.3\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is asking me"
+    },
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": {
+      "model": "glm-5.3",
+      "status": 200,
+      "body": "{\"id\":\"msg_202609031921527e92f2d1c0d448c0\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"glm-5.3\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is asking me"
+    },
+    "ANTHROPIC_MODEL": {
+      "model": "glm-5.3",
+      "status": 200,
+      "body": "{\"id\":\"msg_202609031921572d0602d83f6e4c0b\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"glm-5.3\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"The user is asking me"
+    }
+  },
+  "base_url": "https://open.bigmodel.cn/api/anthropic",
+  "has_token_var": true,
+  "seconds": 15.4
+}

@@ -1,0 +1,26 @@
+{
+  "expectations": [
+    {
+      "text": "Executing `python3 main.py` with only GLM_KEY (a Coding Plan key) exported exits 0 and prints a final answer that mentions a time",
+      "passed": true,
+      "evidence": "exit=0 seconds=13.5 stdout_len=234 ::  | stdout: ezone': 'Asia/Tokyo'})\n[tool result] {\"timezone\": \"Asia/Tokyo\", \"datetime\": \"2026-09-03 20:16:30\", \"utc_offset\": \"+0900\", \"weekday\": \"Thursday\"}\n\n=== 模型最终回答 ===\n东京现在是 **2026年9月3日 星期四 20:16**（晚上8点16分）。"
+    },
+    {
+      "text": "Request goes to https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+      "passed": true,
+      "evidence": "grep coding/paas/v4 in main.py"
+    },
+    {
+      "text": "Tool-call loop is implemented (tool_calls parsed, role=tool message with tool_call_id sent back)",
+      "passed": true,
+      "evidence": "grep tool_call_id + role tool in main.py"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "notes": "end_to_end_success=yes"
+}

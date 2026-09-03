@@ -1,0 +1,11 @@
+{
+  "exit_code": 0,
+  "stdout": "句子 A: 今天天气很好\n句子 B: 天气不错\nembedding-3 余弦相似度: 0.9040\n[info] 对话调用使用: GLM Coding Plan 套餐额度\nglm-5.3 的判断: 这两句话意思相近，余弦相似度0.9040接近1，且两句都表达了“天气好”的含义。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 10.5,
+  "env_keys": [
+    "GLM_CODING_PLAN_API_KEY",
+    "ZHIPUAI_API_KEY"
+  ]
+}

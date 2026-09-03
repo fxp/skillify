@@ -1,0 +1,26 @@
+{
+  "expectations": [
+    {
+      "text": "Executing `python3 main.py` with only GLM_CODING_PLAN_API_KEY exported exits 0 and prints a non-empty answer",
+      "passed": true,
+      "evidence": "exit=0 seconds=13.8 stdout_len=378 ::  | stdout: |\n| 4 | ❌ | 4 = 2 × 2 |\n| 5 | ✅ | 只能被 1 和 5 整除 |\n| 6 | ❌ | 6 = 2 × 3 |\n| 7 | ✅ | 只能被 1 和 7 整除 |\n| 8 | ❌ | 8 = 2 × 4 |\n| 9 | ❌ | 9 = 3 × 3 |\n| 10 | ❌ | 10 = 2 × 5 |\n\n**质数定义**：大于 1 的自然数中，只能被 1 和它本身整除的数。"
+    },
+    {
+      "text": "base_url is https://open.bigmodel.cn/api/anthropic",
+      "passed": true,
+      "evidence": "grep api/anthropic in main.py"
+    },
+    {
+      "text": "Code handles the response content list correctly (prints the text block, not a thinking block or the raw list)",
+      "passed": true,
+      "evidence": "stdout looks like prose"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "notes": "end_to_end_success=yes"
+}

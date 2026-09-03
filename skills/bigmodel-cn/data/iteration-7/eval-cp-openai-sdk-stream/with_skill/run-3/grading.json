@@ -1,0 +1,21 @@
+{
+  "expectations": [
+    {
+      "text": "Executing `python3 main.py` with only GLM_CODING_PLAN_API_KEY exported exits 0 and prints a non-empty streamed poem",
+      "passed": true,
+      "evidence": "exit=0 seconds=19.3 stdout_len=35 ::  | stdout: 金风送爽雁南飞，\n枫叶如霞映夕晖。\n篱畔菊花开正好，\n一帘秋月照人归。"
+    },
+    {
+      "text": "base_url is the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4",
+      "passed": true,
+      "evidence": "grep coding/paas/v4 in main.py"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 0,
+    "total": 2,
+    "pass_rate": 1.0
+  },
+  "notes": "end_to_end_success=yes"
+}

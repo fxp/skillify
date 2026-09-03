@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "The response states that embeddings (embedding-3) are NOT covered by the Coding Plan and must be called with a standard platform API key at https://open.bigmodel.cn/api/paas/v4/embeddings",
+      "passed": true,
+      "evidence": "response.md 开头即纠正：'GLM Coding Plan 不包含 embeddings（也不含 rerank、生图、语音、Batch 等）'，embedding-3 走 …/api/paas/v4/embeddings"
+    },
+    {
+      "text": "The chat/answer step uses the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions with model glm-5.3 (or glm-5.3-flash) when using the plan key — or clearly explains the user may instead use the standard key for everything",
+      "passed": true,
+      "evidence": "CODING_BASE=https://open.bigmodel.cn/api/coding/paas/v4，chat 用 glm-5.3；response 说明生产环境可整体换回标准 Key"
+    },
+    {
+      "text": "The script reads two separate keys from two environment variables (one for the plan, one for the standard API) rather than assuming a single key works on both endpoints",
+      "passed": true,
+      "evidence": "code_rag.py:144/155 分别读取 ZHIPUAI_API_KEY（标准）与 GLM_CODING_PLAN_API_KEY（套餐），缺哪个报哪个的提示"
+    },
+    {
+      "text": "The embeddings request uses the documented shape: POST /paas/v4/embeddings with JSON body {model: 'embedding-3', input: <string or list>} and reads vectors from response['data'][i]['embedding']",
+      "passed": true,
+      "evidence": "POST …/paas/v4/embeddings，{model:'embedding-3', input:[...], dimensions:1024}，≤64 条一批，按 index 对齐读取 item['embedding']"
+    },
+    {
+      "text": "Script is valid Python with a working retrieval loop (cosine similarity or equivalent) and a chat call that injects the retrieved chunks into the prompt",
+      "passed": true,
+      "evidence": "py_compile 通过；cosine_topk() 余弦 top-k（可选 rerank 精排），检索片段拼入 prompt 后调 chat/completions"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "notes": "完全按 coding-plan.md 的两套 Key/两套 Base URL 设计。response 里'套餐 Key 调 embeddings 会返回 1113'一开始是外推，之后用真实套餐 Key 实测确认为真（429 + 1113）。"
+}

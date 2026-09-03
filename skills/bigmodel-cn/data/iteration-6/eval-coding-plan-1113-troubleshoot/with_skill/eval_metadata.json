@@ -1,0 +1,12 @@
+{
+  "eval_id": 17,
+  "eval_name": "coding-plan-1113-troubleshoot",
+  "prompt": "我上周刚买了智谱 GLM Coding Plan Max 套餐，额度肯定没用完。但是用下面的代码调用一直报 429，{'error': {'code': '1113', 'message': '余额不足或无可用资源包,请充值。'}}。这是不是智谱那边出 bug 了？我要不要去充值？\n\n```python\nfrom openai import OpenAI\nclient = OpenAI(api_key=os.environ['GLM_KEY'], base_url='https://open.bigmodel.cn/api/paas/v4/')\nr = client.chat.completions.create(model='glm-5.3', messages=[{'role':'user','content':'hi'}])\n```",
+  "assertions": [
+    "The diagnosis is that the base_url is the standard endpoint /api/paas/v4, which does not see Coding Plan quota, and the fix is to switch to https://open.bigmodel.cn/api/coding/paas/v4",
+    "The response explicitly tells the user NOT to top up / that this is not a balance problem and not a platform bug",
+    "The response explains that the Coding Plan and the standard pay-as-you-go API are separate billing systems with separate keys",
+    "The response suggests verifying the key was created on the Coding Plan page (and, for team plans, that the team key is used), since a standard platform key would not carry plan quota",
+    "The corrected code snippet keeps the OpenAI SDK usage and model glm-5.3 and only changes base_url (plus optionally the env var name)"
+  ]
+}

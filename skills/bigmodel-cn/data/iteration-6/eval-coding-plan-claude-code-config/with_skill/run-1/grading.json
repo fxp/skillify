@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "ANTHROPIC_BASE_URL is exactly https://open.bigmodel.cn/api/anthropic (not /api/paas/v4, not /api/coding/paas/v4, not api.z.ai)",
+      "passed": true,
+      "evidence": "settings.json: ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic，并明确说明不要填 /api/coding/paas/v4"
+    },
+    {
+      "text": "The key is supplied via ANTHROPIC_AUTH_TOKEN (Claude Code's bearer-token variable), not only ANTHROPIC_API_KEY",
+      "passed": true,
+      "evidence": "settings.json 使用 ANTHROPIC_AUTH_TOKEN，response 强调不是 ANTHROPIC_API_KEY"
+    },
+    {
+      "text": "Model aliases are mapped with ANTHROPIC_DEFAULT_SONNET_MODEL / ANTHROPIC_DEFAULT_OPUS_MODEL = glm-5.3 and ANTHROPIC_DEFAULT_HAIKU_MODEL = glm-5.3-flash (or an equivalent mapping using real GLM model codes)",
+      "passed": true,
+      "evidence": "OPUS/SONNET=glm-5.3，HAIKU=glm-5.3-flash，与官方 Claude Code 指南一致"
+    },
+    {
+      "text": "The response says the key must be created on the Coding Plan page (bigmodel.cn/coding-plan/personal/overview or the team plan page), and that standard platform API keys / team keys are not interchangeable with it",
+      "passed": true,
+      "evidence": "response.md 第 40 行：套餐 Key 在 coding-plan/personal/overview 新建（团队版在「团队编程套餐 > 我的套餐」），开放平台 apikeys 的 Key 属于另一套体系"
+    },
+    {
+      "text": "Config is valid JSON placed under the \"env\" key of settings.json (or an equivalent shell export block), with no invented variable names",
+      "passed": true,
+      "evidence": "settings.json 合法 JSON，仅使用官方指南列出的变量；另附等价 export 脚本"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "notes": "与官方 Claude Code 指南逐项一致；额外给出 1113 / 404 排错和 MCP 配置。发现并修正了参考文件里 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 应为字符串 \"1\" 的问题。"
+}

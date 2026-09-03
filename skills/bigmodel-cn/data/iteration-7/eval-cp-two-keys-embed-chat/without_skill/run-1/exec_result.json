@@ -1,0 +1,11 @@
+{
+  "exit_code": 0,
+  "stdout": "[1/2] 使用 ZHIPUAI_API_KEY(按量付费)调用 embedding-3 ...\n「今天天气很好」 与 「天气不错」 的余弦相似度: 0.9040\n\n[2/2] 使用 GLM_CODING_PLAN_API_KEY(套餐额度)调用 glm-5.3 ...\nglm-5.3 的判断: 是的，这两句话意思相近，都表达了天气晴好、令人满意的意思，且其余弦相似度高达 0.9040 也印证了这一点。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 6.5,
+  "env_keys": [
+    "GLM_CODING_PLAN_API_KEY",
+    "ZHIPUAI_API_KEY"
+  ]
+}

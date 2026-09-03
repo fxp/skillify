@@ -1,0 +1,10 @@
+{
+  "exit_code": 0,
+  "stdout": "[user] 现在东京几点了？\n[tool] get_current_time({\"timezone\": \"Asia/Tokyo\"}) -> {\"timezone\": \"Asia/Tokyo\", \"datetime\": \"2026-09-03 20:06:22\", \"utc_offset\": \"+0900\", \"weekday\": \"Thursday\"}\n[assistant] 现在东京是 **2026年9月3日（星期四）晚上 8:06**（20:06，日本标准时间 UTC+9）。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 24.0,
+  "env_keys": [
+    "GLM_KEY"
+  ]
+}

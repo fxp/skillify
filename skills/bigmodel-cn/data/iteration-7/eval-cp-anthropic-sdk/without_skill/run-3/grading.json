@@ -1,0 +1,26 @@
+{
+  "expectations": [
+    {
+      "text": "Executing `python3 main.py` with only GLM_CODING_PLAN_API_KEY exported exits 0 and prints a non-empty answer",
+      "passed": true,
+      "evidence": "exit=0 seconds=7.9 stdout_len=190 ::  | stdout: 1 到 10 之间的质数有：**2、3、5、7**\n\n**简单说明：**\n- **质数**是指大于 1，且只能被 1 和它本身整除的自然数。\n- **1 不是质数**（因为质数要求有且只有两个因数，而 1 只有一个因数）。\n- **2** 是唯一的偶质数。\n- 4 = 2×2，6 = 2×3，8 = 2×4，9 = 3×3，10 = 2×5，这些都能被其他数整除，所以不是质数。"
+    },
+    {
+      "text": "base_url is https://open.bigmodel.cn/api/anthropic",
+      "passed": true,
+      "evidence": "grep api/anthropic in main.py"
+    },
+    {
+      "text": "Code handles the response content list correctly (prints the text block, not a thinking block or the raw list)",
+      "passed": true,
+      "evidence": "stdout looks like prose"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "notes": "end_to_end_success=yes"
+}

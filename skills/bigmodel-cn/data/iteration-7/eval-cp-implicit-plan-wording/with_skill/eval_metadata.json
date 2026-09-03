@@ -1,0 +1,9 @@
+{
+  "eval_id": 24,
+  "eval_name": "cp-implicit-plan-wording",
+  "prompt": "我买的是智谱的 GLM 编程套餐 Pro 版（就是按 5 小时额度算的那种包月，不是按量付费）。写一个 main.py，用 requests 直接调 HTTP，让 glm-5.3 回答“用一句话介绍 Rust”，打印回答。Key 在环境变量 ZHIPU_API_KEY 里。要能直接 `python3 main.py` 跑通。",
+  "assertions": [
+    "Executing `python3 main.py` with only ZHIPU_API_KEY (holding a Coding Plan key) exported exits 0 and prints a non-empty model answer",
+    "Request goes to the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions, i.e. the agent recognised the plan from the wording"
+  ]
+}

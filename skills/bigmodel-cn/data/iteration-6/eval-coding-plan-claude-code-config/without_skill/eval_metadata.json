@@ -1,0 +1,12 @@
+{
+  "eval_id": 16,
+  "eval_name": "coding-plan-claude-code-config",
+  "prompt": "我买了智谱 GLM Coding Plan，想让 Claude Code 用 GLM-5.3 跑。给我 ~/.claude/settings.json 里要加的配置（或等价的环境变量），要能直接用。",
+  "assertions": [
+    "ANTHROPIC_BASE_URL is exactly https://open.bigmodel.cn/api/anthropic (not /api/paas/v4, not /api/coding/paas/v4, not api.z.ai)",
+    "The key is supplied via ANTHROPIC_AUTH_TOKEN (Claude Code's bearer-token variable), not only ANTHROPIC_API_KEY",
+    "Model aliases are mapped with ANTHROPIC_DEFAULT_SONNET_MODEL / ANTHROPIC_DEFAULT_OPUS_MODEL = glm-5.3 and ANTHROPIC_DEFAULT_HAIKU_MODEL = glm-5.3-flash (or an equivalent mapping using real GLM model codes)",
+    "The response says the key must be created on the Coding Plan page (bigmodel.cn/coding-plan/personal/overview or the team plan page), and that standard platform API keys / team keys are not interchangeable with it",
+    "Config is valid JSON placed under the \"env\" key of settings.json (or an equivalent shell export block), with no invented variable names"
+  ]
+}

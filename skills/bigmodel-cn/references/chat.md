@@ -593,7 +593,7 @@ print(result["sentiment"], result["confidence"])
 
 | 参数名 | 类型 | 必填 | 默认值 | 说明 |
 | :-- | :-- | :-- | :-- | :-- |
-| `thinking.type` | string | 否 | `enabled` | `enabled`/`disabled`。**GLM-5.3、GLM-5.3-FLASH 不支持关闭**，传 `disabled` 会报错 |
+| `thinking.type` | string | 否 | `enabled` | `enabled`/`disabled`。**GLM-5.3、GLM-5.3-FLASH 在标准端点 `…/api/paas/v4` 不支持关闭**，传 `disabled` 报 `1210`（已实测）；同一请求体打 Coding 端点 `…/api/coding/paas/v4` 却会被接受并真的关闭思考（`reasoning_tokens=0`，已实测），见 `references/coding-plan.md` |
 | `thinking.clear_thinking` | boolean | 否 | `true` | 是否清除历史轮次的 `reasoning_content`，控制 Preserved Thinking，见下 |
 | `reasoning_effort` | string | 否 | `max` | 推理强度，仅 GLM-5.2 及以上支持 |
 
@@ -601,7 +601,7 @@ print(result["sentiment"], result["confidence"])
 
 | 模型系列 | `thinking.type=enabled` 时的实际行为 |
 | :-- | :-- |
-| GLM-5.3、GLM-5.3-FLASH | 强制思考，无法关闭，思考强度由 `reasoning_effort` 控制 |
+| GLM-5.3、GLM-5.3-FLASH | 标准端点强制思考、无法关闭（传 `disabled` 报 `1210`），思考强度由 `reasoning_effort` 控制；Coding 端点实测可关闭 |
 | GLM-4.7、GLM-4.5V | 强制思考 |
 | GLM-5.2、GLM-5.1、GLM-5、GLM-5-Turbo、GLM-5V-Turbo、GLM-4.6、GLM-4.6V、GLM-4.5 | 模型自动判断是否需要思考 |
 
@@ -714,7 +714,7 @@ print(resp2.json()["choices"][0]["message"]["content"])
 
 **注意事项**：
 
-- 开启深度思考会增加响应时间与 Token 消耗，简单事实查询/翻译/分类等轻量任务建议关闭（GLM-5.3/5.3-FLASH 除外，无法关闭）。
+- 开启深度思考会增加响应时间与 Token 消耗，简单事实查询/翻译/分类等轻量任务建议关闭（GLM-5.3/5.3-FLASH 在标准端点无法关闭，用 `reasoning_effort: "low"` 替代）。
 - Preserved Thinking 对 `reasoning_content` 的透传要求非常严格：必须完整、未改写、按原顺序，否则效果下降甚至失效，也会影响缓存命中率。
 - 流式场景下 `reasoning_content` 通过 `delta.reasoning_content` 增量返回，需要自行拼接后再原样存回历史消息。
 
@@ -759,7 +759,7 @@ print(f"缓存命中 {cached}/{usage['prompt_tokens']} tokens")
 | `top_p` | number | 依模型而定（GLM-5.x/4.7/4.6/4.5 系列为 `0.95`，GLM-4 系列为 `0.9`） | `[0.01, 1.0]`，两位小数 | 核采样阈值；建议 0.8-0.95；与 `temperature` 二选一调整 |
 | `max_tokens` | integer | 依模型而定 | `[1, 131072]`（视模型上限不同） | 只限制输出长度，不含输入；各模型具体默认值/上限见 `models.md` |
 | `stream` | boolean | `false` | `true`/`false` | 是否 SSE 流式返回 |
-| `thinking.type` | string | `enabled` | `enabled`/`disabled` | 仅 GLM-4.5 及以上支持；GLM-5.3/5.3-FLASH 不可关闭 |
+| `thinking.type` | string | `enabled` | `enabled`/`disabled` | 仅 GLM-4.5 及以上支持；GLM-5.3/5.3-FLASH 在标准端点不可关闭（Coding 端点实测可以） |
 | `reasoning_effort` | string | `max` | 见第六节档位表 | 仅 GLM-5.2 及以上支持，`thinking` 开启时生效 |
 
 不同模型家族的 `temperature`/`top_p`/`max_tokens` 具体默认值与上限差异较大（例如视觉模型、音频模型、CharGLM/Emohaa 各不相同），本表仅给出纯文本旗舰模型的典型值，完整的分模型参数表见 `models.md`。

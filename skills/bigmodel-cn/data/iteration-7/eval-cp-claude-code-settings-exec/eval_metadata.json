@@ -1,0 +1,10 @@
+{
+  "eval_id": 26,
+  "eval_name": "cp-claude-code-settings-exec",
+  "prompt": "我买了智谱 GLM Coding Plan，想让 Claude Code 跑在 GLM-5.3 上。给我一份可以直接合并进 ~/.claude/settings.json 的 JSON（只要 env 那一块即可），把 Key 的占位写成 <YOUR_KEY>。",
+  "assertions": [
+    "settings.json parses as JSON with an env object; ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN are present",
+    "A live POST to <ANTHROPIC_BASE_URL>/v1/messages with the plan key succeeds (HTTP 200) for the sonnet-mapped model",
+    "A live POST to <ANTHROPIC_BASE_URL>/v1/messages with the plan key succeeds (HTTP 200) for the haiku-mapped model and the opus-mapped model (every model alias Claude Code may request must be usable under the plan)"
+  ]
+}

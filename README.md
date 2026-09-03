@@ -8,7 +8,7 @@
 
 | # | Skill | 覆盖范围 | 状态 |
 | :-- | :-- | :-- | :-- |
-| 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层 | ✅ 已生成，5 轮共 14 个场景真实 API 对照验证，7 处文档偏差已修正 |
+| 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层、**GLM Coding Plan 编程套餐**（专用 Key / Base URL / 可用模型 / 1113 排错 / Claude Code 配置） | ✅ 已生成，7 轮共 25 个场景真实 API 对照验证（第 7 轮为真实执行的端到端成功率），9 处文档偏差已修正 |
 | 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ✅ 账户 + 容器实例 Pro API 全部接口、弹性部署全部只读接口已用真实 Token 验证；⚠️ 弹性部署创建/管理类接口仍未验证（测试账号没有企业认证，这是账号资质的硬性限制，不是没测） |
 
 每个 skill 目录下都是一份可以直接安装使用的 SKILL.md + `references/`，外加一个 `data/` 目录留档对照测试的完整过程（prompt、打分依据、报错原文），不只是一个"通过率"数字。`autodl` 一开始是刻意保留的反例（没有 Token，只做了文档保真度测试），拿到真实 Token 后先测了只读接口，账号完成实名认证后又补测了完整的"创建实例 → 运行 → 关机 → 保存镜像 → 重新开机 → 释放"生命周期（真实花费不到 5 元）——过程中发现了 9 处文档本身的错误或遗漏，已全部修正并推动了三轮针对性的 with/without 对照评测。
@@ -20,7 +20,10 @@
 - 14 个场景，7 个打平（预训练知识本身已经覆盖到）
 - 7 个场景没装技能包的版本会在真实调用下失败——典型如：OpenAI 风格的强制 `tool_choice` 被静默降级成 `auto`；`response_format: json_schema` 不报错但被静默忽略；GLM-5.3 无法关闭深度思考（换成 GLM-5.2 又完全没这个限制）；Batch 只认一份和主力模型清单不重合的白名单；PDF 传进对话消息时 `purpose=agent`/`code-interpreter` 上传的文件会静默解析失败，只有 `purpose=user_data` 才行
 
-详见 [`skills/bigmodel-cn/data/comparison-report.md`](skills/bigmodel-cn/data/comparison-report.md)。
+- 第 6 轮补上了之前完全没覆盖的 **GLM Coding Plan**：智谱有两套隔离的计费体系，套餐 Key 与平台 Key 不通用、Base URL 是 `…/api/coding/paas/v4` 而不是 `…/api/paas/v4`、套餐只含 `glm-5.3`/`glm-5.3-flash` 的对话能力。4 个场景 **100% vs 71%**——没装技能包的版本普遍知道 Coding 端点地址（GitHub issue 里传开了），但把 Key 来源写成控制台 API Keys 页面、把 Claude Code 的 haiku 档映射到套餐外模型、或者用一把 Key 同时打两个端点。用一把真实套餐 Key 和一把标准 Key 逐条实测后，又发现三处文档没写的行为：标准 Key 其实也能打 Coding 端点；`glm-4.6`/`glm-4.5-air` 会被静默路由到 `glm-5.3-flash`；`glm-5.3` "无法关闭思考"只在标准端点成立，Coding 端点传 `thinking: disabled` 会被接受并生效。
+- 第 7 轮换了个更硬的标准：让 agent 写出对接脚本后**真的用套餐 Key 执行**，跑通并打印出模型回答才算成功。7 个场景各跑 3 次，**两边都是 21/21，打平**——顺路径上基础模型已经够用，技能包的价值集中在第 6 轮那些失败模式（Key 家族、套餐外模型/能力、1113 诊断），而不在"第一个请求能不能通"。这个平局如实记录，没有为了好看去挑场景。
+
+详见 [`skills/bigmodel-cn/data/comparison-report.md`](skills/bigmodel-cn/data/comparison-report.md)；实测脚本在 [`skills/bigmodel-cn/data/coding-plan-probe.py`](skills/bigmodel-cn/data/coding-plan-probe.py) 与 [`skills/bigmodel-cn/data/run_iter7.py`](skills/bigmodel-cn/data/run_iter7.py)。
 
 **autodl**：
 

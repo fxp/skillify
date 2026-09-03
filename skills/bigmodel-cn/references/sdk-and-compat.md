@@ -15,6 +15,8 @@
 | 官方 Python SDK（`zai-sdk`） | 对 HTTP API 的官方 Python 封装 | 新 Python 项目，需要完整功能覆盖 | 无，原生支持 |
 | 官方 Java SDK（`zai-sdk` for Java） | 对 HTTP API 的官方 Java 封装 | 新 Java 项目、企业级应用 | 无，原生支持 |
 
+> **GLM Coding Plan（编程套餐）用户注意**：本文所有示例默认是**标准 API**（平台按量 Key + `…/api/paas/v4`）。套餐 Key 与平台 Key 不通用，OpenAI 兼容 Base URL 要改成 `https://open.bigmodel.cn/api/coding/paas/v4`（Anthropic 兼容 Base URL 不变，仍是 `https://open.bigmodel.cn/api/anthropic`，靠 Key 区分）。用套餐 Key 打 `…/api/paas/v4` 会报 `1113 余额不足`。完整对照与 Claude Code 配置见 `references/coding-plan.md`。
+
 ---
 
 ## 1. HTTP 原生调用
@@ -47,7 +49,7 @@ python -c "import openai; print(openai.__version__)"
 
 ### 创建客户端
 
-把 `base_url` 指向智谱的 `paas/v4` 端点即可，`api_key` 换成智谱的 API Key（建议通过环境变量注入，例如 `export ZAI_API_KEY=YOUR_API_KEY`）：
+把 `base_url` 指向智谱的 `paas/v4` 端点即可，`api_key` 换成智谱的 API Key（建议通过环境变量注入，例如 `export ZAI_API_KEY=YOUR_API_KEY`）。如果用的是 GLM Coding Plan 套餐 Key，`base_url` 必须改成 `https://open.bigmodel.cn/api/coding/paas/v4/`，否则报 1113（见 `references/coding-plan.md`）：
 
 ```python
 from openai import OpenAI
@@ -225,8 +227,8 @@ response = client.chat.completions.create(
 
 ### 迁移方式
 
-- 兼容端点：`https://open.bigmodel.cn/api/anthropic`
-- 在[智谱开放平台](https://bigmodel.cn/usercenter/proj-mgmt/apikeys)申请 `api_key`
+- 兼容端点：`https://open.bigmodel.cn/api/anthropic`（标准 API 与 GLM Coding Plan **共用**这一个端点，走哪套额度由 Key 决定）
+- 标准 API：在[智谱开放平台](https://bigmodel.cn/usercenter/proj-mgmt/apikeys)申请 `api_key`；Coding Plan：在 `https://bigmodel.cn/coding-plan/personal/overview`（个人）或「团队编程套餐 > 我的套餐」（团队）新建套餐 Key
 - 调用时把 `model` 换成智谱模型编码（如 `glm-5.3`），其余调用方式与原生 Anthropic SDK 一致
 
 ```python
@@ -252,7 +254,9 @@ message = client.messages.create(
 )
 ```
 
-建议将 API Key 设置为环境变量替代硬编码，例如 `export ANTHROPIC_API_KEY=YOUR_API_KEY`。Anthropic SDK / Claude Code 这类 CLI 工具通常也支持通过环境变量配置服务端点（例如 `ANTHROPIC_BASE_URL`）而不用改代码，具体变量名与用法请以所使用工具自身的文档为准；智谱官方文档为此单独提供了 Claude Code 接入指南（"畅玩 Claude Code"，见 `/cn/guide/develop/claude` 相关页面），如果目标是配置 Claude Code CLI 本身而不是写代码调用 SDK，应优先查阅该指南。
+建议将 API Key 设置为环境变量替代硬编码，例如 `export ANTHROPIC_API_KEY=YOUR_API_KEY`。
+
+如果目标是配置 **Claude Code CLI 本身**（而不是写代码调 SDK），官方给出的环境变量是：`ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic`、`ANTHROPIC_AUTH_TOKEN=<Key>`（注意是 `AUTH_TOKEN` 而不是 `API_KEY`），以及把 Claude Code 内部的模型别名映射到 GLM：`ANTHROPIC_DEFAULT_HAIKU_MODEL=glm-5.3-flash`、`ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.3`、`ANTHROPIC_DEFAULT_OPUS_MODEL=glm-5.3`，可选 `API_TIMEOUT_MS=3000000`、`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`。这套配置对标准 Key 和 Coding Plan 套餐 Key 完全一样，区别只在 Key 本身。完整 `settings.json` 示例与套餐排错见 `references/coding-plan.md`。
 
 ### 代码示例
 

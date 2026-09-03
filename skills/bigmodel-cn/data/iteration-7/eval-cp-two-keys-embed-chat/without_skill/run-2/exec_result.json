@@ -1,0 +1,11 @@
+{
+  "exit_code": 0,
+  "stdout": "[1/2] 使用 embedding-3（开放平台按量付费）计算余弦相似度 ...\n「今天天气很好」与「天气不错」的余弦相似度：0.9040\n\n[2/2] 使用 glm-5.3（GLM Coding Plan 套餐）判断语义是否相近 ...\nglm-5.3 的回答：这两句话意思相近，都在表达“天气好”这一相同的核心语义。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 15.9,
+  "env_keys": [
+    "GLM_CODING_PLAN_API_KEY",
+    "ZHIPUAI_API_KEY"
+  ]
+}

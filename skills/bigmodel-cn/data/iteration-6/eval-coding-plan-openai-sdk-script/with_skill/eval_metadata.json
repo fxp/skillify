@@ -1,0 +1,13 @@
+{
+  "eval_id": 15,
+  "eval_name": "coding-plan-openai-sdk-script",
+  "prompt": "我订阅了智谱的 GLM Coding Plan（Pro 套餐），想在自己的 Python 脚本里用 openai SDK 调 glm-5.3 帮我批量给一批 Python 文件写 docstring。帮我写这个脚本，API Key 从环境变量读。",
+  "assertions": [
+    "base_url is https://open.bigmodel.cn/api/coding/paas/v4 (with or without trailing slash), NOT the standard https://open.bigmodel.cn/api/paas/v4",
+    "api_key is read from an environment variable and the response/comments make clear it must be the Coding Plan key (from bigmodel.cn/coding-plan), not the standard platform API key from usercenter/proj-mgmt/apikeys",
+    "model is glm-5.3 (or glm-5.3-flash), a model that the Coding Plan actually includes",
+    "The response warns that using the standard /api/paas/v4 endpoint with a Coding Plan key fails with error 1113 余额不足, or equivalently that the two billing systems / keys are not interchangeable",
+    "The response mentions that the Coding Plan is officially restricted to designated coding tools (Claude Code, OpenCode, Kilo Code, etc.) and that a custom script is outside that scope / production use should use the standard API",
+    "Script is syntactically valid Python that iterates files, calls chat.completions.create, and writes results"
+  ]
+}

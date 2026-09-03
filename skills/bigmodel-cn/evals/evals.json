@@ -1,0 +1,190 @@
+{
+  "skill_name": "bigmodel-cn",
+  "evals": [
+    {
+      "id": 1,
+      "name": "chat-function-calling",
+      "prompt": "帮我写一个 Python 脚本，用智谱 GLM-5.3 模型（bigmodel.cn）实现一个支持工具调用（function calling）的命令行助手：定义一个查询指定城市实时天气的函数工具，当模型决定调用它时，脚本要执行这个函数（可以返回mock数据）并把结果传回模型，最终打印模型综合工具结果后的最终回答。要求直接用标准库 requests 调用 HTTP 接口，不要用官方 SDK。",
+      "expected_output": "一个可运行的 Python 脚本：调用正确的 chat/completions 端点，请求体里正确定义 tools（function 类型）、正确处理模型返回的 tool_calls、用 role=tool 消息把结果传回、并完成多轮循环拿到最终回答。",
+      "files": [],
+      "expectations": [
+        "Request URL is https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        "Authorization header is exactly 'Bearer <API_KEY>', key read from an environment variable rather than hardcoded",
+        "model field is a real GLM chat model code (e.g. glm-5.3)",
+        "tools array uses the documented shape: [{'type': 'function', 'function': {'name', 'description', 'parameters'}}], not the legacy OpenAI top-level 'functions' field",
+        "Code reads tool_calls from response['choices'][0]['message']['tool_calls'] with id/type/function.name/function.arguments",
+        "Code appends a role='tool' message with matching tool_call_id before the follow-up request",
+        "Code makes a second call to chat/completions with updated messages to get and print the final answer",
+        "Script is syntactically valid Python and runnable given a valid API key"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "media-image-to-video",
+      "prompt": "我要做一个内容生成小工具：先用智谱的 GLM-Image 模型根据一段文字描述生成一张图片，再把这张图作为首帧，用 CogVideoX-3 生成一段视频。视频生成是异步的，需要轮询结果。麻烦写出完整可运行的 Python 脚本。",
+      "expected_output": "脚本先调用图像生成接口拿到图片URL，再调用视频生成接口并正确传入首帧图片参数，然后用正确的异步结果查询接口轮询直到视频生成完成。",
+      "files": [],
+      "expectations": [
+        "Image generation call targets https://open.bigmodel.cn/api/paas/v4/images/generations with model=glm-image (or another real image model)",
+        "Script extracts the generated image URL and uses it as input to the video generation call",
+        "Video generation call targets https://open.bigmodel.cn/api/paas/v4/videos/generations with model=cogvideox-3",
+        "The first-frame image parameter name is a real documented field, not invented",
+        "Video generation is treated as asynchronous: code captures a task id from the response",
+        "Script polls GET https://open.bigmodel.cn/api/paas/v4/async-result/{id} with sleep/backoff and a loop-exit condition",
+        "Script is syntactically valid Python and runnable given a valid API key"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "openai-migration-with-search",
+      "prompt": "我们现有项目是用 OpenAI 的 Python SDK 写的聊天功能，现在想切换成智谱的 GLM 模型，尽量少改代码；另外还想给它加上联网搜索能力，让模型能查到最新信息再回答用户问题。给出改造后的代码。",
+      "expected_output": "改造后的代码通过替换 base_url/api_key 接入智谱的 OpenAI 兼容端点，并用文档中真实存在的方式接入联网搜索（例如 chat/completions 的 web_search 工具类型，或独立的网络搜索接口），而不是编造一个 OpenAI 风格但智谱并不支持的参数。",
+      "files": [],
+      "expectations": [
+        "Code keeps using the 'openai' Python package's OpenAI client class",
+        "base_url is set to a bigmodel.cn OpenAI-compatible endpoint under https://open.bigmodel.cn/api/paas/v4/",
+        "api_key is sourced from an environment variable specific to the new provider",
+        "model field is changed to a real GLM model code, not left as an OpenAI model name",
+        "Web search is wired in via a mechanism that actually exists in bigmodel.cn's API (web_search tool type in chat/completions tools, or the standalone /paas/v4/web_search endpoint), not an invented OpenAI-style browsing tool",
+        "Script is syntactically valid Python and runnable given a valid API key"
+      ]
+    },
+    {
+      "id": 15,
+      "name": "coding-plan-openai-sdk-script",
+      "prompt": "我订阅了智谱的 GLM Coding Plan（Pro 套餐），想在自己的 Python 脚本里用 openai SDK 调 glm-5.3 帮我批量给一批 Python 文件写 docstring。帮我写这个脚本，API Key 从环境变量读。",
+      "expected_output": "一个用 openai SDK 的 Python 脚本：base_url 指向 Coding Plan 专用端点 https://open.bigmodel.cn/api/coding/paas/v4，api_key 从环境变量读取套餐 Key，model=glm-5.3；并提醒套餐 Key 与平台 Key 不通用、套餐官方限定在指定编码工具内使用。",
+      "files": [],
+      "expectations": [
+        "base_url is https://open.bigmodel.cn/api/coding/paas/v4 (with or without trailing slash), NOT the standard https://open.bigmodel.cn/api/paas/v4",
+        "api_key is read from an environment variable and the response/comments make clear it must be the Coding Plan key (from bigmodel.cn/coding-plan), not the standard platform API key from usercenter/proj-mgmt/apikeys",
+        "model is glm-5.3 (or glm-5.3-flash), a model that the Coding Plan actually includes",
+        "The response warns that using the standard /api/paas/v4 endpoint with a Coding Plan key fails with error 1113 余额不足, or equivalently that the two billing systems / keys are not interchangeable",
+        "The response mentions that the Coding Plan is officially restricted to designated coding tools (Claude Code, OpenCode, Kilo Code, etc.) and that a custom script is outside that scope / production use should use the standard API",
+        "Script is syntactically valid Python that iterates files, calls chat.completions.create, and writes results"
+      ]
+    },
+    {
+      "id": 16,
+      "name": "coding-plan-claude-code-config",
+      "prompt": "我买了智谱 GLM Coding Plan，想让 Claude Code 用 GLM-5.3 跑。给我 ~/.claude/settings.json 里要加的配置（或等价的环境变量），要能直接用。",
+      "expected_output": "settings.json 的 env 配置：ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic，ANTHROPIC_AUTH_TOKEN=<Coding Plan Key>，三个 ANTHROPIC_DEFAULT_*_MODEL 映射到 glm-5.3 / glm-5.3-flash，并说明 Key 从编程套餐页面获取。",
+      "files": [],
+      "expectations": [
+        "ANTHROPIC_BASE_URL is exactly https://open.bigmodel.cn/api/anthropic (not /api/paas/v4, not /api/coding/paas/v4, not api.z.ai)",
+        "The key is supplied via ANTHROPIC_AUTH_TOKEN (Claude Code's bearer-token variable), not only ANTHROPIC_API_KEY",
+        "Model aliases are mapped with ANTHROPIC_DEFAULT_SONNET_MODEL / ANTHROPIC_DEFAULT_OPUS_MODEL = glm-5.3 and ANTHROPIC_DEFAULT_HAIKU_MODEL = glm-5.3-flash (or an equivalent mapping using real GLM model codes)",
+        "The response says the key must be created on the Coding Plan page (bigmodel.cn/coding-plan/personal/overview or the team plan page), and that standard platform API keys / team keys are not interchangeable with it",
+        "Config is valid JSON placed under the \"env\" key of settings.json (or an equivalent shell export block), with no invented variable names"
+      ]
+    },
+    {
+      "id": 17,
+      "name": "coding-plan-1113-troubleshoot",
+      "prompt": "我上周刚买了智谱 GLM Coding Plan Max 套餐，额度肯定没用完。但是用下面的代码调用一直报 429，{'error': {'code': '1113', 'message': '余额不足或无可用资源包,请充值。'}}。这是不是智谱那边出 bug 了？我要不要去充值？\n\n```python\nfrom openai import OpenAI\nclient = OpenAI(api_key=os.environ['GLM_KEY'], base_url='https://open.bigmodel.cn/api/paas/v4/')\nr = client.chat.completions.create(model='glm-5.3', messages=[{'role':'user','content':'hi'}])\n```",
+      "expected_output": "指出根因是套餐 Key 打到了标准 API 端点（标准端点只看账户余额/资源包），把 base_url 改成 https://open.bigmodel.cn/api/coding/paas/v4 即可，不需要充值；顺带提醒确认 Key 是套餐页面创建的。",
+      "files": [],
+      "expectations": [
+        "The diagnosis is that the base_url is the standard endpoint /api/paas/v4, which does not see Coding Plan quota, and the fix is to switch to https://open.bigmodel.cn/api/coding/paas/v4",
+        "The response explicitly tells the user NOT to top up / that this is not a balance problem and not a platform bug",
+        "The response explains that the Coding Plan and the standard pay-as-you-go API are separate billing systems with separate keys",
+        "The response suggests verifying the key was created on the Coding Plan page (and, for team plans, that the team key is used), since a standard platform key would not carry plan quota",
+        "The corrected code snippet keeps the OpenAI SDK usage and model glm-5.3 and only changes base_url (plus optionally the env var name)"
+      ]
+    },
+    {
+      "id": 18,
+      "name": "coding-plan-rag-embeddings-scope",
+      "prompt": "我有智谱 GLM Coding Plan 套餐，想用套餐额度做一个本地代码库的 RAG 问答：先用 embedding-3 把代码切片向量化，再用 glm-5.3 回答。用 Python 写，直接 requests 调 HTTP。",
+      "expected_output": "说明 embeddings 不在 Coding Plan 套餐内，向量化必须用标准 API Key 走 https://open.bigmodel.cn/api/paas/v4/embeddings；对话部分可以用套餐 Key 走 https://open.bigmodel.cn/api/coding/paas/v4/chat/completions；脚本里两个 Key / 两个 Base URL 分开管理。",
+      "files": [],
+      "expectations": [
+        "The response states that embeddings (embedding-3) are NOT covered by the Coding Plan and must be called with a standard platform API key at https://open.bigmodel.cn/api/paas/v4/embeddings",
+        "The chat/answer step uses the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions with model glm-5.3 (or glm-5.3-flash) when using the plan key — or clearly explains the user may instead use the standard key for everything",
+        "The script reads two separate keys from two environment variables (one for the plan, one for the standard API) rather than assuming a single key works on both endpoints",
+        "The embeddings request uses the documented shape: POST /paas/v4/embeddings with JSON body {model: 'embedding-3', input: <string or list>} and reads vectors from response['data'][i]['embedding']",
+        "Script is valid Python with a working retrieval loop (cosine similarity or equivalent) and a chat call that injects the retrieved chunks into the prompt"
+      ]
+    },
+    {
+      "id": 19,
+      "name": "cp-requests-basic",
+      "prompt": "我买了智谱的 GLM Coding Plan 套餐。帮我写一个 Python 脚本 main.py：用标准库以外只允许用 requests 直接调 HTTP 接口，让 glm-5.3 回答“用一句话介绍 Python”，把模型的回答打印到 stdout。API Key 放在环境变量 GLM_KEY 里。脚本要能直接 `python3 main.py` 跑通。",
+      "expected_output": "main.py 调 https://open.bigmodel.cn/api/coding/paas/v4/chat/completions，Bearer 鉴权，model=glm-5.3，打印 choices[0].message.content。",
+      "files": [],
+      "expectations": [
+        "Executing `python3 main.py` with only GLM_KEY (a Coding Plan key) exported exits 0 and prints a non-empty model answer",
+        "Request goes to the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"
+      ]
+    },
+    {
+      "id": 20,
+      "name": "cp-openai-sdk-stream",
+      "prompt": "我用的是智谱 GLM Coding Plan。写一个 main.py，用 openai 官方 Python SDK 以流式（stream）方式调用 glm-5.3-flash，让它写一首关于秋天的四行小诗，边收边打印，最后换行结束。Key 从环境变量 GLM_CODING_PLAN_API_KEY 读取。要能直接 `python3 main.py` 跑通。",
+      "expected_output": "OpenAI(base_url='https://open.bigmodel.cn/api/coding/paas/v4', api_key=env)，stream=True，逐 chunk 打印 delta.content。",
+      "files": [],
+      "expectations": [
+        "Executing `python3 main.py` with only GLM_CODING_PLAN_API_KEY exported exits 0 and prints a non-empty streamed poem",
+        "base_url is the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4"
+      ]
+    },
+    {
+      "id": 21,
+      "name": "cp-anthropic-sdk",
+      "prompt": "我有智谱 GLM Coding Plan，想在自己的 Python 脚本里通过 anthropic 官方 SDK（Messages API）调用 glm-5.3。写一个 main.py：问模型“1 到 10 的质数有哪些”，打印回答文本。Key 从环境变量 GLM_CODING_PLAN_API_KEY 读取。要能直接 `python3 main.py` 跑通。",
+      "expected_output": "anthropic.Anthropic(base_url='https://open.bigmodel.cn/api/anthropic', api_key=env)，messages.create(model='glm-5.3', max_tokens=...)，打印 text block。",
+      "files": [],
+      "expectations": [
+        "Executing `python3 main.py` with only GLM_CODING_PLAN_API_KEY exported exits 0 and prints a non-empty answer",
+        "base_url is https://open.bigmodel.cn/api/anthropic",
+        "Code handles the response content list correctly (prints the text block, not a thinking block or the raw list)"
+      ]
+    },
+    {
+      "id": 22,
+      "name": "cp-function-calling",
+      "prompt": "我订阅了智谱 GLM Coding Plan。用 requests 直接调 HTTP，写一个 main.py：定义一个工具函数 get_current_time(timezone) 返回当前时间（本地实现即可），让 glm-5.3 回答“现在东京几点了？”——模型发起 tool call 后脚本执行函数、把结果以 tool 消息回传，再打印模型的最终回答。Key 在环境变量 GLM_KEY 里。要能直接 `python3 main.py` 跑通。",
+      "expected_output": "Coding 端点 chat/completions，tools=[{type:function,...}]，处理 tool_calls，role=tool 回传，二次请求后打印最终回答。",
+      "files": [],
+      "expectations": [
+        "Executing `python3 main.py` with only GLM_KEY (a Coding Plan key) exported exits 0 and prints a final answer that mentions a time",
+        "Request goes to https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+        "Tool-call loop is implemented (tool_calls parsed, role=tool message with tool_call_id sent back)"
+      ]
+    },
+    {
+      "id": 23,
+      "name": "cp-two-keys-embed-chat",
+      "prompt": "我手里有两把智谱的 Key：一把是 GLM Coding Plan 套餐的（环境变量 GLM_CODING_PLAN_API_KEY），一把是开放平台按量付费的（环境变量 ZHIPUAI_API_KEY）。写一个 main.py，用 requests 直接调 HTTP：先用 embedding-3 计算“今天天气很好”和“天气不错”两句话的余弦相似度并打印，然后让 glm-5.3 用一句话说明这两句话意思是否相近并打印。能用套餐额度的地方尽量用套餐额度。要能直接 `python3 main.py` 跑通。",
+      "expected_output": "embeddings 用 ZHIPUAI_API_KEY 打 https://open.bigmodel.cn/api/paas/v4/embeddings；chat 用 GLM_CODING_PLAN_API_KEY 打 https://open.bigmodel.cn/api/coding/paas/v4/chat/completions。",
+      "files": [],
+      "expectations": [
+        "Executing `python3 main.py` with both keys exported exits 0 and prints a similarity score and a model sentence",
+        "Embeddings call uses the standard key (Coding Plan key cannot call embeddings), chat call uses the plan key on the coding endpoint"
+      ]
+    },
+    {
+      "id": 24,
+      "name": "cp-implicit-plan-wording",
+      "prompt": "我买的是智谱的 GLM 编程套餐 Pro 版（就是按 5 小时额度算的那种包月，不是按量付费）。写一个 main.py，用 requests 直接调 HTTP，让 glm-5.3 回答“用一句话介绍 Rust”，打印回答。Key 在环境变量 ZHIPU_API_KEY 里。要能直接 `python3 main.py` 跑通。",
+      "expected_output": "识别出“编程套餐/5 小时额度”就是 GLM Coding Plan，请求打 https://open.bigmodel.cn/api/coding/paas/v4/chat/completions 而不是标准端点。",
+      "files": [],
+      "expectations": [
+        "Executing `python3 main.py` with only ZHIPU_API_KEY (holding a Coding Plan key) exported exits 0 and prints a non-empty model answer",
+        "Request goes to the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions, i.e. the agent recognised the plan from the wording"
+      ]
+    },
+    {
+      "id": 26,
+      "name": "cp-claude-code-settings-exec",
+      "prompt": "我买了智谱 GLM Coding Plan，想让 Claude Code 跑在 GLM-5.3 上。给我一份可以直接合并进 ~/.claude/settings.json 的 JSON（只要 env 那一块即可），把 Key 的占位写成 <YOUR_KEY>。",
+      "expected_output": "{\"env\": {\"ANTHROPIC_AUTH_TOKEN\": \"<YOUR_KEY>\", \"ANTHROPIC_BASE_URL\": \"https://open.bigmodel.cn/api/anthropic\", \"ANTHROPIC_DEFAULT_HAIKU_MODEL\": \"glm-5.3-flash\", \"ANTHROPIC_DEFAULT_SONNET_MODEL\": \"glm-5.3\", \"ANTHROPIC_DEFAULT_OPUS_MODEL\": \"glm-5.3\", ...}}",
+      "files": [],
+      "expectations": [
+        "settings.json parses as JSON with an env object; ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN are present",
+        "A live POST to <ANTHROPIC_BASE_URL>/v1/messages with the plan key succeeds (HTTP 200) for the sonnet-mapped model",
+        "A live POST to <ANTHROPIC_BASE_URL>/v1/messages with the plan key succeeds (HTTP 200) for the haiku-mapped model and the opus-mapped model (every model alias Claude Code may request must be usable under the plan)"
+      ]
+    }
+  ]
+}

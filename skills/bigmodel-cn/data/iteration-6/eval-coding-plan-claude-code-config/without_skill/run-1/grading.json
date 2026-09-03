@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "ANTHROPIC_BASE_URL is exactly https://open.bigmodel.cn/api/anthropic (not /api/paas/v4, not /api/coding/paas/v4, not api.z.ai)",
+      "passed": true,
+      "evidence": "settings.json: ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic（海外 api.z.ai 只作为备注）"
+    },
+    {
+      "text": "The key is supplied via ANTHROPIC_AUTH_TOKEN (Claude Code's bearer-token variable), not only ANTHROPIC_API_KEY",
+      "passed": true,
+      "evidence": "settings.json 使用 ANTHROPIC_AUTH_TOKEN，并解释了不用 ANTHROPIC_API_KEY 的原因"
+    },
+    {
+      "text": "Model aliases are mapped with ANTHROPIC_DEFAULT_SONNET_MODEL / ANTHROPIC_DEFAULT_OPUS_MODEL = glm-5.3 and ANTHROPIC_DEFAULT_HAIKU_MODEL = glm-5.3-flash (or an equivalent mapping using real GLM model codes)",
+      "passed": false,
+      "evidence": "opus/sonnet 映射 glm-5.3 正确，但 haiku/small-fast 映射为 glm-4.5-air——该模型不在 Coding Plan 支持列表（官方仅 glm-5.3 / glm-5.3-flash，旧代码自动路由列表里也没有 4.5-air），套餐 Key 请求它大概率失败；agent 自己也承认模型名'凭记忆写、未验证'"
+    },
+    {
+      "text": "The response says the key must be created on the Coding Plan page (bigmodel.cn/coding-plan/personal/overview or the team plan page), and that standard platform API keys / team keys are not interchangeable with it",
+      "passed": false,
+      "evidence": "response.md 第 30 行：'Coding Plan 开通后在 bigmodel.cn 控制台“API Keys”里生成'——与官方'在个人编程套餐 > 套餐概览新建 API Key'、'团队套餐 Key 与平台其他 API Key 不通用'相反"
+    },
+    {
+      "text": "Config is valid JSON placed under the \"env\" key of settings.json (or an equivalent shell export block), with no invented variable names",
+      "passed": true,
+      "evidence": "settings.json 为合法 JSON，env 下变量名均为 Claude Code 真实变量（含额外的 ANTHROPIC_MODEL / CLAUDE_CODE_SUBAGENT_MODEL / ANTHROPIC_SMALL_FAST_MODEL）"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "notes": "端点和变量名基本正确，但 Key 来源写错、haiku 档映射到套餐外模型，用户照抄会在 haiku 档调用时踩坑。"
+}

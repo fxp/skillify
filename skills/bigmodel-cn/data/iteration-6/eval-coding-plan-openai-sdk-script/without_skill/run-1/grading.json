@@ -1,0 +1,41 @@
+{
+  "expectations": [
+    {
+      "text": "base_url is https://open.bigmodel.cn/api/coding/paas/v4 (with or without trailing slash), NOT the standard https://open.bigmodel.cn/api/paas/v4",
+      "passed": true,
+      "evidence": "glm_docstring.py:44 DEFAULT_BASE_URL = https://open.bigmodel.cn/api/coding/paas/v4"
+    },
+    {
+      "text": "api_key is read from an environment variable and the response/comments make clear it must be the Coding Plan key (from bigmodel.cn/coding-plan), not the standard platform API key from usercenter/proj-mgmt/apikeys",
+      "passed": false,
+      "evidence": "Key 从 ZHIPU_API_KEY 读取，但 response.md:25 注释为'智谱控制台里的 API Key'，没有区分套餐 Key（coding-plan 页面新建）与平台 Key，用户拿控制台 Key 配 coding 端点不会走套餐额度"
+    },
+    {
+      "text": "model is glm-5.3 (or glm-5.3-flash), a model that the Coding Plan actually includes",
+      "passed": true,
+      "evidence": "默认 model=glm-5.3（agent 注明无法在线验证）"
+    },
+    {
+      "text": "The response warns that using the standard /api/paas/v4 endpoint with a Coding Plan key fails with error 1113 余额不足, or equivalently that the two billing systems / keys are not interchangeable",
+      "passed": true,
+      "evidence": "response.md:13：填成 …/api/paas/v4 '会走按量付费余额，而不是套餐额度（余额为 0 会直接报错）'——说明了两套计费隔离，虽未给出 1113 错误码"
+    },
+    {
+      "text": "The response mentions that the Coding Plan is officially restricted to designated coding tools (Claude Code, OpenCode, Kilo Code, etc.) and that a custom script is outside that scope / production use should use the standard API",
+      "passed": true,
+      "evidence": "response.md:15-16：套餐定位在编程工具内使用，自写脚本'是否属于套餐允许的使用范围，请以服务协议和 FAQ 为准'"
+    },
+    {
+      "text": "Script is syntactically valid Python that iterates files, calls chat.completions.create, and writes results",
+      "passed": true,
+      "evidence": "py_compile 通过；遍历 .py 文件、ast 定位缺 docstring 的节点、chat.completions.create 生成、按行号回写并 ast 复验"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.833
+  },
+  "notes": "工程实现很扎实，端点也对，但 Key 来源写成了控制台 Key。另外脚本默认传 thinking.type=disabled，而 glm-5.3 的思考无法关闭（见 models.md），该参数会被忽略或报错——未验证。"
+}

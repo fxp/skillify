@@ -1,0 +1,36 @@
+{
+  "expectations": [
+    {
+      "text": "The response states that embeddings (embedding-3) are NOT covered by the Coding Plan and must be called with a standard platform API key at https://open.bigmodel.cn/api/paas/v4/embeddings",
+      "passed": true,
+      "evidence": "response.md：'Coding Plan 的额度大概率不覆盖 embedding-3…需要走通用端点 https://open.bigmodel.cn/api/paas/v4 并按量付费'（措辞为'大概率/据我所知'，让用户自己去控制台确认）"
+    },
+    {
+      "text": "The chat/answer step uses the Coding Plan endpoint https://open.bigmodel.cn/api/coding/paas/v4/chat/completions with model glm-5.3 (or glm-5.3-flash) when using the plan key — or clearly explains the user may instead use the standard key for everything",
+      "passed": true,
+      "evidence": "CHAT_BASE_URL 默认 https://open.bigmodel.cn/api/coding/paas/v4，CHAT_MODEL=glm-5.3，可用环境变量改回标准端点"
+    },
+    {
+      "text": "The script reads two separate keys from two environment variables (one for the plan, one for the standard API) rather than assuming a single key works on both endpoints",
+      "passed": false,
+      "evidence": "code_rag.py:46 只有一个 API_KEY = os.environ.get('ZHIPU_API_KEY')，同一把 Key 同时打 coding 端点和标准 embeddings 端点——而套餐 Key 与平台 Key 不通用，用户按脚本配置后必然有一半请求报 1113"
+    },
+    {
+      "text": "The embeddings request uses the documented shape: POST /paas/v4/embeddings with JSON body {model: 'embedding-3', input: <string or list>} and reads vectors from response['data'][i]['embedding']",
+      "passed": true,
+      "evidence": "POST {EMBED_BASE_URL}/embeddings，payload {model, input:[...], dimensions}，按 data[i].index 对齐读取 item['embedding']"
+    },
+    {
+      "text": "Script is valid Python with a working retrieval loop (cosine similarity or equivalent) and a chat call that injects the retrieved chunks into the prompt",
+      "passed": true,
+      "evidence": "py_compile 通过；retrieve() 用归一化向量点积取 top-k（余弦），ask 把命中片段拼进 prompt 再调 chat/completions（SSE 流式）"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5,
+    "pass_rate": 0.8
+  },
+  "notes": "工程质量高（增量索引、SSE、退避），也猜到了 embeddings 不在套餐内，但把两套体系当成共用一把 Key，这是 Coding Plan 最核心的坑。"
+}

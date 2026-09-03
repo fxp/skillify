@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不能在实例还处于 running 状态时直接调用保存镜像接口（image/save）——必须先关机", "passed": true, "evidence": "Step 1 无条件先检查状态、非 stopped 就 power_off 并轮询，虽然 agent 自己把这标注成'不确定的假设'，但选择了保守做法，恰好和真实要求一致"},
+    {"text": "正确流程：power_off → 轮询 GET status（query string）直到 shutdown → image/save → 轮询 POST image/private/list（JSON body）确认 finished → 再 release", "passed": false, "evidence": "高层步骤顺序是对的（Step 1-5），但 _call() 对所有方法一律用 requests.session.request(method, url, json=body, ...)——GET 请求也走 json= body，不是 query string。docstring 里明确写着这是照抄文档示例做的选择（'docs show GET with a JSON request body'），会被真实 API 拒绝并返回 RequestParameterIsWrong，这正是该场景要考察的关键失分点"},
+    {"text": "release 前必须确认实例状态是 shutdown", "passed": true, "evidence": "release 前重新查一次状态，非 stopped 会重新 power_off 并等待"},
+    {"text": "鉴权头 Authorization 直接放 token，不带 Bearer 前缀", "passed": true, "evidence": "session.headers 里 Authorization 直接是 token，没有 Bearer 前缀"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告 py_compile 与 ast.parse 均通过，--help 也能正常渲染"}
+  ],
+  "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8},
+  "notes": "这次 baseline 明显比 iteration-2 的三个场景强：会主动 WebFetch 官方文档而不是纯凭记忆瞎编端点，还额外设计了'创建一次性验证实例、真的开机跑一遍再释放'这种比题目要求更严谨的可用性校验思路。但唯一的失分点恰恰是本场景刻意设计要考察的坑——GET 接口传参方式，agent 自己在 docstring 里坦白'文档示例是 JSON body，所以就用 JSON body'，没有能力像 with-skill 版本一样知道'文档这里写错了，实测必须用 query string'，这正是静态读文档和真实调用验证之间的差距，不做真实验证是补不上这个信息差的。"
+}

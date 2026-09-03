@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "不能在实例还处于 running 状态时直接调用保存镜像接口（image/save）——必须先关机", "passed": true, "evidence": "main() 先查状态，非 shutdown 就先 power_off 并轮询到 shutdown，代码注释明确引用了已验证的 InternalError/'保存实例镜像前，请确保实例是关机状态' 这一发现"},
+    {"text": "正确流程：power_off → 轮询 GET status（query string）直到 shutdown → image/save → 轮询 POST image/private/list（JSON body）确认 finished → 再 release", "passed": true, "evidence": "_get() 用 requests.get(..., params=...)，_post() 用 json=；wait_for_instance_status → save_image → wait_for_image_finished → confirm_image_usable，顺序完整正确"},
+    {"text": "release 前必须确认实例状态是 shutdown", "passed": true, "evidence": "release 前显式重新查一次状态（status_before_release），不是 shutdown 就重新等待，不假设保存镜像期间状态没变"},
+    {"text": "鉴权头 Authorization 直接放 token，不带 Bearer 前缀", "passed": true, "evidence": "_headers() 返回 {'Authorization': self.token}"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告 py_compile 与 ast.parse 均通过"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}
+}

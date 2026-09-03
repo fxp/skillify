@@ -1,0 +1,149 @@
+{
+  "metadata": {
+    "skill_name": "autodl",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-09-03T10:28:18Z",
+    "evals_run": [
+      7
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 7,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 76985,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "\u4e0d\u80fd\u5728\u5b9e\u4f8b\u8fd8\u5904\u4e8e running \u72b6\u6001\u65f6\u76f4\u63a5\u8c03\u7528\u4fdd\u5b58\u955c\u50cf\u63a5\u53e3\uff08image/save\uff09\u2014\u2014\u5fc5\u987b\u5148\u5173\u673a",
+          "passed": true,
+          "evidence": "main() \u5148\u67e5\u72b6\u6001\uff0c\u975e shutdown \u5c31\u5148 power_off \u5e76\u8f6e\u8be2\u5230 shutdown\uff0c\u4ee3\u7801\u6ce8\u91ca\u660e\u786e\u5f15\u7528\u4e86\u5df2\u9a8c\u8bc1\u7684 InternalError/'\u4fdd\u5b58\u5b9e\u4f8b\u955c\u50cf\u524d\uff0c\u8bf7\u786e\u4fdd\u5b9e\u4f8b\u662f\u5173\u673a\u72b6\u6001' \u8fd9\u4e00\u53d1\u73b0"
+        },
+        {
+          "text": "\u6b63\u786e\u6d41\u7a0b\uff1apower_off \u2192 \u8f6e\u8be2 GET status\uff08query string\uff09\u76f4\u5230 shutdown \u2192 image/save \u2192 \u8f6e\u8be2 POST image/private/list\uff08JSON body\uff09\u786e\u8ba4 finished \u2192 \u518d release",
+          "passed": true,
+          "evidence": "_get() \u7528 requests.get(..., params=...)\uff0c_post() \u7528 json=\uff1bwait_for_instance_status \u2192 save_image \u2192 wait_for_image_finished \u2192 confirm_image_usable\uff0c\u987a\u5e8f\u5b8c\u6574\u6b63\u786e"
+        },
+        {
+          "text": "release \u524d\u5fc5\u987b\u786e\u8ba4\u5b9e\u4f8b\u72b6\u6001\u662f shutdown",
+          "passed": true,
+          "evidence": "release \u524d\u663e\u5f0f\u91cd\u65b0\u67e5\u4e00\u6b21\u72b6\u6001\uff08status_before_release\uff09\uff0c\u4e0d\u662f shutdown \u5c31\u91cd\u65b0\u7b49\u5f85\uff0c\u4e0d\u5047\u8bbe\u4fdd\u5b58\u955c\u50cf\u671f\u95f4\u72b6\u6001\u6ca1\u53d8"
+        },
+        {
+          "text": "\u9274\u6743\u5934 Authorization \u76f4\u63a5\u653e token\uff0c\u4e0d\u5e26 Bearer \u524d\u7f00",
+          "passed": true,
+          "evidence": "_headers() \u8fd4\u56de {'Authorization': self.token}"
+        },
+        {
+          "text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c",
+          "passed": true,
+          "evidence": "agent \u62a5\u544a py_compile \u4e0e ast.parse \u5747\u901a\u8fc7"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 7,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 0.0,
+        "tokens": 87614,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "\u4e0d\u80fd\u5728\u5b9e\u4f8b\u8fd8\u5904\u4e8e running \u72b6\u6001\u65f6\u76f4\u63a5\u8c03\u7528\u4fdd\u5b58\u955c\u50cf\u63a5\u53e3\uff08image/save\uff09\u2014\u2014\u5fc5\u987b\u5148\u5173\u673a",
+          "passed": true,
+          "evidence": "Step 1 \u65e0\u6761\u4ef6\u5148\u68c0\u67e5\u72b6\u6001\u3001\u975e stopped \u5c31 power_off \u5e76\u8f6e\u8be2\uff0c\u867d\u7136 agent \u81ea\u5df1\u628a\u8fd9\u6807\u6ce8\u6210'\u4e0d\u786e\u5b9a\u7684\u5047\u8bbe'\uff0c\u4f46\u9009\u62e9\u4e86\u4fdd\u5b88\u505a\u6cd5\uff0c\u6070\u597d\u548c\u771f\u5b9e\u8981\u6c42\u4e00\u81f4"
+        },
+        {
+          "text": "\u6b63\u786e\u6d41\u7a0b\uff1apower_off \u2192 \u8f6e\u8be2 GET status\uff08query string\uff09\u76f4\u5230 shutdown \u2192 image/save \u2192 \u8f6e\u8be2 POST image/private/list\uff08JSON body\uff09\u786e\u8ba4 finished \u2192 \u518d release",
+          "passed": false,
+          "evidence": "\u9ad8\u5c42\u6b65\u9aa4\u987a\u5e8f\u662f\u5bf9\u7684\uff08Step 1-5\uff09\uff0c\u4f46 _call() \u5bf9\u6240\u6709\u65b9\u6cd5\u4e00\u5f8b\u7528 requests.session.request(method, url, json=body, ...)\u2014\u2014GET \u8bf7\u6c42\u4e5f\u8d70 json= body\uff0c\u4e0d\u662f query string\u3002docstring \u91cc\u660e\u786e\u5199\u7740\u8fd9\u662f\u7167\u6284\u6587\u6863\u793a\u4f8b\u505a\u7684\u9009\u62e9\uff08'docs show GET with a JSON request body'\uff09\uff0c\u4f1a\u88ab\u771f\u5b9e API \u62d2\u7edd\u5e76\u8fd4\u56de RequestParameterIsWrong\uff0c\u8fd9\u6b63\u662f\u8be5\u573a\u666f\u8981\u8003\u5bdf\u7684\u5173\u952e\u5931\u5206\u70b9"
+        },
+        {
+          "text": "release \u524d\u5fc5\u987b\u786e\u8ba4\u5b9e\u4f8b\u72b6\u6001\u662f shutdown",
+          "passed": true,
+          "evidence": "release \u524d\u91cd\u65b0\u67e5\u4e00\u6b21\u72b6\u6001\uff0c\u975e stopped \u4f1a\u91cd\u65b0 power_off \u5e76\u7b49\u5f85"
+        },
+        {
+          "text": "\u9274\u6743\u5934 Authorization \u76f4\u63a5\u653e token\uff0c\u4e0d\u5e26 Bearer \u524d\u7f00",
+          "passed": true,
+          "evidence": "session.headers \u91cc Authorization \u76f4\u63a5\u662f token\uff0c\u6ca1\u6709 Bearer \u524d\u7f00"
+        },
+        {
+          "text": "\u811a\u672c\u8bed\u6cd5\u6b63\u786e\u3001\u53ef\u8fd0\u884c",
+          "passed": true,
+          "evidence": "agent \u62a5\u544a py_compile \u4e0e ast.parse \u5747\u901a\u8fc7\uff0c--help \u4e5f\u80fd\u6b63\u5e38\u6e32\u67d3"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 76985.0,
+        "stddev": 0.0,
+        "min": 76985,
+        "max": 76985
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.8,
+        "stddev": 0.0,
+        "min": 0.8,
+        "max": 0.8
+      },
+      "time_seconds": {
+        "mean": 0.0,
+        "stddev": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "tokens": {
+        "mean": 87614.0,
+        "stddev": 0.0,
+        "min": 87614,
+        "max": 87614
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.20",
+      "time_seconds": "+0.0",
+      "tokens": "-10629"
+    }
+  },
+  "notes": []
+}

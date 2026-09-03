@@ -1,0 +1,12 @@
+{
+  "eval_id": 7,
+  "eval_name": "save-image-before-release",
+  "prompt": "我在 AutoDL 的容器实例里跑完了一个训练任务，配好了一整套环境，想把这个实例存成一个私有镜像，方便以后直接用这个镜像开新实例，不用重新装一遍环境。存好之后确认镜像真的可用了，再把这台实例释放掉省钱。帮我写一个 Python 脚本，用标准库 requests 直接调 HTTP 接口，自动完成这个流程。",
+  "assertions": [
+    "不能在实例还处于 running 状态时直接调用保存镜像接口（image/save）——已用真实 API 调用验证：这个接口有文档没写的前置条件，运行中的实例调用会被拒绝，返回 {'code':'InternalError','data':null,'msg':'保存实例镜像前，请确保实例是关机状态'}，必须先关机",
+    "正确流程：先调用 power_off → 轮询 GET /api/v1/dev/instance/pro/status（用 query string 传参，不是 JSON body）直到状态变成 shutdown → 再调用 image/save → 轮询 POST /api/v1/dev/instance/pro/image/private/list（这个接口用 JSON body 传 page_index/page_size，不是 query string）确认对应 image_uuid 的 status 变成 finished，代表镜像真的保存完了 → 确认镜像 finished 之后再调用 release 释放实例",
+    "release 前必须确认实例状态是 shutdown（不是调用 power_off 后就立刻当作已经关机了）",
+    "鉴权头 Authorization 直接放 token，不带 Bearer 前缀",
+    "脚本语法正确、可运行（可用 py_compile 或等价方式自查）"
+  ]
+}

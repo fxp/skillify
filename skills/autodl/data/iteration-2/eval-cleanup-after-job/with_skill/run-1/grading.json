@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "不在 power_off 后立即 release", "passed": true, "evidence": "wait_until_shutdown() 轮询直到真正 shutdown 才 release，把 shutting_down 当成'进行中'而不是错误"},
+    {"text": "流程正确：power_off → 轮询至 shutdown → release", "passed": true, "evidence": "完整实现，超时会中止并跳过 release、留出人工介入空间"},
+    {"text": "轮询用 query string 传参", "passed": true, "evidence": "GET status 用 params=，符合已验证的真实要求"},
+    {"text": "鉴权头不带 Bearer", "passed": true, "evidence": "Authorization: <token>"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}
+}

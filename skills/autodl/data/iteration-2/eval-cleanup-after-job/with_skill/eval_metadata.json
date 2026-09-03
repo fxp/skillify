@@ -1,0 +1,12 @@
+{
+  "eval_id": 6,
+  "eval_name": "cleanup-after-job",
+  "prompt": "我用 AutoDL 的容器实例跑一个训练任务，任务跑完之后想自动把这台实例关掉并释放掉，省钱、也不留着占资源。帮我写一个 Python 脚本，在训练任务结束后自动完成这个清理流程。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "不能在调用完关机接口（power_off）之后就立刻调释放接口（release）——已用真实 API 调用验证：release 要求实例必须处于真正的 shutdown 状态，如果在关机还没完成（比如还在 shutting_down 中间态，甚至还在 running/starting）时就调 release，会 100% 被拒绝，返回 {'code':'BadRequest','msg':'请在实例关机状态下执行释放操作'}——不是'偶尔失败'，是确定性失败，因为关机本身不是瞬间完成的",
+    "正确的流程是：调用 power_off → 轮询 GET /api/v1/dev/instance/pro/status 直到状态变成 shutdown → 再调用 release，而不是 power_off 后立即 release 或者只 sleep 一个固定的秒数就假设已经关完机了",
+    "轮询状态查询用 query string 传参（params=），不是 JSON body",
+    "鉴权头不带 Bearer 前缀",
+    "脚本语法正确、可运行"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不在 create 成功后多余调用 power_on", "passed": false, "evidence": "代码明确会在状态不是 running 时调用 power_on()——agent 自己承认这是基于'create 只是注册实例、通常不会自动开机，需要显式开机'这个错误假设；已用真实调用验证：create 成功后实例已经在启动/运行了，这是一次多余、基于错误理解写出来的调用"},
+    {"text": "用轮询 status 确认 running", "passed": true, "evidence": "有轮询逻辑，方向正确，虽然多了一步不必要的 power_on"},
+    {"text": "轮询用 query string 传参", "passed": false, "evidence": "用的是完全编造的路径 GET /instance/{uuid}，不是真实的 /api/v1/dev/instance/pro/status，也没有走真实要求的 query string 传参约定"},
+    {"text": "endpoint 路径真实存在", "passed": false, "evidence": "GET_INSTANCE_PATH/CREATE_INSTANCE_PATH/POWER_ON_PATH 全部是编造的 /api/v1/instance* 路径，不是真实的 /api/v1/dev/instance/pro/* 路径体系"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过"}
+  ],
+  "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4},
+  "notes": "对'创建后是否要开机'这个具体问题给出的答案是错的（多余调用），根源是对该平台创建实例的默认行为做了错误假设；同时全部 endpoint 路径也是编造的，两类错误叠加。"
+}

@@ -1,0 +1,9 @@
+{
+  "expectations": [
+    {"text": "用 query string 传 instance_uuid，不是 JSON body", "passed": true, "evidence": "requests.get(url, params={...})，并引用了 instances.md 里已验证的 GET 接口坑"},
+    {"text": "SSH 信息直接用 data.ssh_command", "passed": true, "evidence": "优先打印返回的 ssh_command，同时展示拆分字段作为补充"},
+    {"text": "鉴权头不带 Bearer 前缀", "passed": true, "evidence": "Authorization: <token>"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}
+}

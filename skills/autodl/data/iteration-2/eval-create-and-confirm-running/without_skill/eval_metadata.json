@@ -1,0 +1,12 @@
+{
+  "eval_id": 5,
+  "eval_name": "create-and-confirm-running",
+  "prompt": "帮我写一个 Python 脚本，用 AutoDL 的容器实例 Pro API 创建一台 GPU 实例，并确保它创建完成后处于运行状态（running），可以马上开始用。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "不能在 create 成功之后，为了'确保运行'而多余地再调用一次 POST /api/v1/dev/instance/pro/power_on——已用真实 API 调用验证：实例创建成功后会自动开机启动，创建请求返回后立刻查状态就已经是 starting/running，power_on 接口是给'重新启动一台已经关机的实例'用的，创建后额外调用它属于多余、无意义的调用（虽然不一定会报错，但这是对接口用途的误解，不是正确做法）",
+    "如果代码想'确保运行'，正确做法是创建后轮询 GET /api/v1/dev/instance/pro/status 直到状态变成 running（并正确处理中间态 starting，不要把 starting 当成异常），而不是调用开机接口",
+    "轮询状态查询用 query string 传参（params=），不是 JSON body",
+    "鉴权头不带 Bearer 前缀，必填字段（req_gpu_amount/expand_system_disk_by_gb/image_uuid/cuda_v_from/gpu_spec_uuid）齐全",
+    "脚本语法正确、可运行"
+  ]
+}

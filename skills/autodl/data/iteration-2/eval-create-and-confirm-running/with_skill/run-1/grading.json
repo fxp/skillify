@@ -1,0 +1,10 @@
+{
+  "expectations": [
+    {"text": "不在 create 成功后多余调用 power_on", "passed": true, "evidence": "明确不调用 power_on，注释引用了 instances.md 里已验证的'create 后自动开机'结论"},
+    {"text": "用轮询 status 确认 running，正确处理 starting 中间态", "passed": true, "evidence": "轮询 GET status，把 starting 当作'还没就绪'继续等待，不当异常"},
+    {"text": "轮询用 query string 传参", "passed": true, "evidence": "GET .../status 用 params=，不是 json="},
+    {"text": "鉴权头不带 Bearer，必填字段齐全", "passed": true, "evidence": "Authorization 无 Bearer；agent 报告字段齐全，还额外处理了 TORealName/InternalError 真实错误码"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}
+}

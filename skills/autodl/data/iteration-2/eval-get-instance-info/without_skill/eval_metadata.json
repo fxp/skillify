@@ -1,0 +1,11 @@
+{
+  "eval_id": 4,
+  "eval_name": "get-instance-info",
+  "prompt": "我有一台 AutoDL 的容器实例，已知它的实例 ID。帮我写一个 Python 脚本，查询这台实例的详细信息（尤其是 SSH 连接方式）并打印出来。用标准库 requests 直接调 HTTP 接口。",
+  "assertions": [
+    "查询详情用的是 GET /api/v1/dev/instance/pro/snapshot 接口，且参数用 URL 查询字符串传（requests.get(url, params={...})），不能用 JSON body（requests.get(url, json={...})）——已用真实 API 调用验证：这个 GET 接口的官方文档示例本身给的是 JSON body 写法，但那是文档写错了，实测把 instance_uuid 放进 json body 会直接返回 {'code':'RequestParameterIsWrong','msg':'请求参数错误'}，只有放进 params 才能被正确解析",
+    "从响应里正确取出 SSH 连接信息：直接用 data.ssh_command 这个现成的完整 SSH 命令，而不是自己用 proxy_host/ssh_port/root_password 手工拼接一条 ssh 命令字符串",
+    "鉴权头不带 Bearer 前缀",
+    "脚本语法正确、可运行"
+  ]
+}

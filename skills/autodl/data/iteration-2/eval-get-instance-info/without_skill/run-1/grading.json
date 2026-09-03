@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "用 query string 传 instance_uuid，不是 JSON body", "passed": false, "evidence": "代码用 json=payload 传参（GET 请求带 JSON body），并且用的是完全编造的 endpoint 路径，不是真实的 /api/v1/dev/instance/pro/snapshot——已用真实 API 验证这类传参方式在真实接口上会返回 RequestParameterIsWrong"},
+    {"text": "endpoint 路径正确", "passed": false, "evidence": "INSTANCE_DETAIL_PATH 是凭'一般 REST API 印象'编造的路径，不是真实的 /api/v1/dev/instance/pro/snapshot；agent 自己在文档字符串里也承认'端点路径和字段名是最佳猜测'"},
+    {"text": "SSH 信息取值方式合理", "passed": true, "evidence": "代码有 fallback 逻辑尝试展示 ssh 相关字段，即便字段名猜测未必准确，思路是对的"},
+    {"text": "鉴权头不带 Bearer 前缀", "passed": true, "evidence": "Authorization: <token>（无 Bearer），虽然代码注释里还留了个'如果被拒绝试试加Bearer'的提示，说明这只是猜测蒙对，不是确定的认知"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过"}
+  ],
+  "summary": {"passed": 2, "failed": 3, "total": 5, "pass_rate": 0.4},
+  "notes": "这份代码最大的问题不是传参方式（这点甚至部分蒙对了鉴权格式），而是整个 endpoint 路径都是凭空编的——用真实 AutoDL API 调用会直接 404，传参方式对不对根本无从验证。"
+}

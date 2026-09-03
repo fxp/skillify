@@ -1,0 +1,11 @@
+{
+  "expectations": [
+    {"text": "不在 power_off 后立即 release", "passed": true, "evidence": "轮询确认 shutdown 相关状态字符串后才 release，超时则中止不 release——这个高层逻辑判断和 with-skill 版本一样正确、审慎，是纯靠通用工程直觉做对的，值得肯定"},
+    {"text": "流程正确：power_off → 轮询至 shutdown → release", "passed": true, "evidence": "逻辑结构完整"},
+    {"text": "轮询用 query string 传参", "passed": false, "evidence": "轮询用的是 POST /api/v1/instance 带 json={...} body（自造的'get_instance'方法），不是真实要求的 GET + query string；这个方法名和路径本身也是编造的"},
+    {"text": "endpoint 路径真实存在", "passed": false, "evidence": "/api/v1/instance/power_off、/api/v1/instance（查询）、/api/v1/instance/release 全部是编造路径，真实路径应为 /api/v1/dev/instance/pro/power_off、/api/v1/dev/instance/pro/status（GET）、/api/v1/dev/instance/pro/release"},
+    {"text": "脚本语法正确、可运行", "passed": true, "evidence": "agent 报告已验证 py_compile 通过"}
+  ],
+  "summary": {"passed": 3, "failed": 2, "total": 5, "pass_rate": 0.6},
+  "notes": "这是本轮最有意思的一个对照：baseline 单靠'关机不是瞬时完成、release 前该等确认'这个通用云平台工程直觉，把最容易出错的时序逻辑做对了——这一点上和 with-skill 版本打平，说明这类'常识性谨慎'不需要专门文档也能写对。但它依然在'具体这个平台的 endpoint 长什么样'上全军覆没，因为这部分确实无法凭通用知识推导，必须要么读文档要么试错。"
+}

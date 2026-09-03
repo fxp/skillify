@@ -9,9 +9,9 @@
 | # | Skill | 覆盖范围 | 状态 |
 | :-- | :-- | :-- | :-- |
 | 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层 | ✅ 已生成，5 轮共 14 个场景真实 API 对照验证，7 处文档偏差已修正 |
-| 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ⚠️ 已生成，文档保真度对照测试通过（100% vs 40%）；**只读接口已用真实 Token 验证**（发现并修正了官方文档自己的一处传参错误），**会花钱/建资源的接口仍未验证** |
+| 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ✅ 容器实例 Pro API 全流程已用真实 Token 验证（含真实花钱创建/释放实例）；⚠️ 弹性部署创建接口仍未验证（测试账号没有企业认证） |
 
-每个 skill 目录下都是一份可以直接安装使用的 SKILL.md + `references/`，外加一个 `data/` 目录留档对照测试的完整过程（prompt、打分依据、报错原文），不只是一个"通过率"数字。`autodl` 一开始是刻意保留的反例（没有 Token，只做了文档保真度测试），拿到真实 Token 后补测了只读接口——过程中发现官方文档自己在两个 GET 接口的传参方式上写错了（示例给的是 JSON body，实测必须用 URL 查询字符串），已修正。创建实例/创建部署这类会实际花钱、暂时还没有条件验证的接口，SKILL.md 里如实标注了这个边界，没有假装全部验证过。
+每个 skill 目录下都是一份可以直接安装使用的 SKILL.md + `references/`，外加一个 `data/` 目录留档对照测试的完整过程（prompt、打分依据、报错原文），不只是一个"通过率"数字。`autodl` 一开始是刻意保留的反例（没有 Token，只做了文档保真度测试），拿到真实 Token 后先测了只读接口，账号完成实名认证后又补测了完整的"创建实例 → 运行 → 关机 → 释放"生命周期（真实花费约 0.03 元）——过程中发现了好几处文档本身的错误或遗漏，已全部修正并推动了两轮针对性的 with/without 对照评测。
 
 ## 验证结果
 

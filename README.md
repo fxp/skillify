@@ -9,9 +9,9 @@
 | # | Skill | 覆盖范围 | 状态 |
 | :-- | :-- | :-- | :-- |
 | 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层 | ✅ 已生成，5 轮共 14 个场景真实 API 对照验证，7 处文档偏差已修正 |
-| 2 | `autodl` | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的 API | 🚧 下一个案例，尚未生成 |
+| 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ⚠️ 已生成，**未做真实调用验证**（没有可用的 API Token），内容忠实转录自官方文档 |
 
-每个 skill 目录下都是一份可以直接安装使用的 SKILL.md + `references/`；`bigmodel-cn` 额外带了 `data/` 目录，是生成过程中 5 轮真实 API 对照测试的完整留档（prompt、打分依据、真实调用报错原文），不只是一个"通过率"数字。
+每个 skill 目录下都是一份可以直接安装使用的 SKILL.md + `references/`；`bigmodel-cn` 额外带了 `data/` 目录，是生成过程中 5 轮真实 API 对照测试的完整留档（prompt、打分依据、真实调用报错原文），不只是一个"通过率"数字。`autodl` 是刻意保留的反例——按同一套方法论走完了抓取和结构化撰写两步，但跳过了"真实 API 验证"这一步（没有测试用的 Token），SKILL.md 里也如实标注了这一点，而不是假装它和 `bigmodel-cn` 一样可信。
 
 ## bigmodel-cn 的验证结果
 

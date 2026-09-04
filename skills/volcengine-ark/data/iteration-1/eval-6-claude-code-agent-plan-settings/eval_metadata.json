@@ -1,0 +1,12 @@
+{
+  "eval_id": 6,
+  "eval_name": "claude-code-agent-plan-settings",
+  "prompt": "把我的 Claude Code 切到火山方舟 Agent Plan 上跑：主模型用 glm-5.3，轻量任务用 doubao-seed-2.0-mini，要开思考并且开 1M 上下文，别让 Claude Code 的遥测偷偷吃我的额度。给我完整的 ~/.claude/settings.json。",
+  "assertions": [
+    "ANTHROPIC_BASE_URL 是 https://ark.cn-beijing.volces.com/api/plan（Anthropic 协议入口，不带 /v3，也不是 /api/coding）",
+    "说明 ANTHROPIC_AUTH_TOKEN 要填 Agent Plan 控制台的专属 API Key，而不是方舟 API Key",
+    "设置了 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 并解释是为了不让遥测占额度",
+    "开启思考用 CLAUDE_CODE_EXTRA_BODY={\"thinking\":{\"type\":\"enabled\"}}（并可指出 glm-5.3 本身默认开思考不可关）",
+    "1M 上下文的开启方式与官方文档一致（按 tools-setup.md 记载的模型名后缀或环境变量写法）"
+  ]
+}

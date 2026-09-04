@@ -1,0 +1,11 @@
+{
+  "eval_id": 3,
+  "eval_name": "openclaw-coding-plan-developer-role",
+  "prompt": "我用 OpenClaw 配了火山方舟 Coding Plan，报错 HTTP 400 The parameter messages.role specified in the request are not valid: invalid value: developer。另外我担心自己配的 base URL 不对——我填的是 https://ark.cn-beijing.volces.com/api/v3，模型填的 doubao-seed-2.0-lite。帮我把 ~/.openclaw/openclaw.json 里 provider 那段改对，并解释这两个问题。",
+  "assertions": [
+    "把 Base URL 改成 https://ark.cn-beijing.volces.com/api/coding/v3，并解释 /api/v3 不消耗 Coding Plan 额度而是按量扣费",
+    "developer role 的修复是在 model 对象内加 compat: { supportsDeveloperRole: false }，并说明放在 provider 级别会报 Unrecognized key",
+    "说明 Coding Plan 用的是方舟 API Key（不需要另一把专属 Key）",
+    "没有把 model 改成带日期的 Model ID"
+  ]
+}

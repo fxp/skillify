@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "model": "glm-5.3[1m]",
+  "alwaysThinkingEnabled": true,
+
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://ark.cn-beijing.volces.com/api/coding",
+    "ANTHROPIC_AUTH_TOKEN": "<在这里填你的火山方舟 Agent Plan API Key>",
+    "ANTHROPIC_API_KEY": "",
+
+    "ANTHROPIC_MODEL": "glm-5.3[1m]",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.3[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5.3[1m]",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "doubao-seed-2.0-mini",
+    "ANTHROPIC_SMALL_FAST_MODEL": "doubao-seed-2.0-mini",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "glm-5.3[1m]",
+
+    "MAX_THINKING_TOKENS": "32000",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "32000",
+    "API_TIMEOUT_MS": "600000",
+
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_NON_ESSENTIAL_MODEL_CALLS": "1",
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_BUG_COMMAND": "1",
+    "DISABLE_AUTOUPDATER": "1",
+    "DISABLE_COST_WARNINGS": "1",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "0"
+  },
+
+  "includeCoAuthoredBy": false,
+  "cleanupPeriodDays": 30
+}

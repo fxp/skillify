@@ -1,0 +1,12 @@
+{
+  "eval_id": 8,
+  "eval_name": "kimi-glm-thinking-and-max-tokens",
+  "prompt": "帮我写个 Python 脚本，用火山方舟 Agent Plan 的 kimi-k3 和 glm-5.3 两个模型分别给同一段代码写 code review，比较结果。要求：控制输出别太长（限制在 300 token 左右），glm-5.3 那边不需要思维链，直接给结论。Key 从环境变量读。",
+  "assertions": [
+    "Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3 且使用 Agent Plan 专属 Key",
+    "对 kimi-k3 限长用的是 max_completion_tokens（或明确说明 max_tokens 会把思维链算进去而预留了远大于 300 的额度），不会出现 max_tokens=300 导致空回答",
+    "glm-5.3 关闭思维链没有使用 thinking: {type: disabled}（真实返回 400 thinking.type disabled is not supported by this model），而是 reasoning_effort=low 之类被接受的取值",
+    "没有使用 reasoning_effort=none（真实返回 400）",
+    "从 message.reasoning_content 与 message.content 分别取思维链与正文，而不是假设思维链混在 content 里"
+  ]
+}

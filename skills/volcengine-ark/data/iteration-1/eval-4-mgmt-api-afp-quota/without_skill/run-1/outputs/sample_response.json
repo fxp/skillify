@@ -1,0 +1,19 @@
+{
+  "ResponseMetadata": {
+    "RequestId": "2024xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "Action": "GetAgentPlanQuota",
+    "Version": "2024-01-01",
+    "Service": "ark",
+    "Region": "cn-beijing"
+  },
+  "Result": {
+    "PlanName": "Agent Plan 个人版",
+    "PlanType": "Personal",
+    "Status": "Active",
+    "Quotas": [
+      {"Window": "FiveHour", "Total": 2000, "Used": 1850, "Remaining": 150, "ResetTime": "2026-09-04T14:00:00+08:00"},
+      {"Window": "Week",     "Total": 20000, "Used": 6400, "Remaining": 13600, "ResetTime": "2026-09-08T00:00:00+08:00"},
+      {"Window": "Month",    "Total": 60000, "Used": 21000, "Remaining": 39000, "ResetTime": "2026-10-01T00:00:00+08:00"}
+    ]
+  }
+}

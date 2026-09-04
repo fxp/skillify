@@ -1,0 +1,9 @@
+# eval-7 · plan-embeddings-text-and-images
+
+Result: win
+
+**Task**：用 OpenAI Python SDK 接火山方舟 **Agent Plan** 做本地笔记语义搜索——`notes/*.md` 与 `imgs/*.png` 一起向量化存进 numpy 数组，再对查询算余弦相似度返回 top5，因此代码必须同时选对入口 / Key、把图片从 OpenAI 形态的 `/embeddings` 里挪到 `/embeddings/multimodal`、按单对象解析响应、并保证文本与图片向量同维。
+
+**Why**：带 skill 的 run 5/5 全过，baseline 3/5。两条失败都不是风格问题，而是跑起来就断的问题。第一处：baseline 的 `config.py` 默认 `base_url = "https://ark.cn-beijing.volces.com/api/v3"`、Key 读 `ARK_API_KEY`，`.env.example` 还写死一句「Agent Plan 的 Key 与按量付费 Key 形态相同」，NOTES.md 更进一步建议「若 Embedding 不在套餐内，用同一个 key 打普通 `/api/v3` 即可（按量计费）」——实测 Agent Plan 专属 Key 打 `/api/v3` 返回 **401** `{"error":{"code":"AuthenticationError","message":"The API key or AK/SK in the request is missing or invalid. ...","type":"Unauthorized"}}`，`indexer.py` 的第一条请求就会挂，一行向量都存不进去；而如果用户手上恰好还有一把标准方舟 Key 照做，就正好落进控制台警告「请勿使用 …/api/v3，接入会产生额外费用」的按量计费路径，套餐白买 [guessed-wrong]。它对套餐能力的判断同样是猜的——「套餐通常只覆盖对话模型，Embedding 很可能仍按量计费或需要另开」——实测 `/api/plan/v3/embeddings` 与 `/api/plan/v3/embeddings/multimodal` 都是 200 [guessed-wrong]。第二处：默认模型写成 `doubao-embedding-vision-250615`，而 Plan 入口的 Model Name 是 `doubao-embedding-vision`、multimodal 实际解析到的版本是 `doubao-embedding-vision-251215`，`-250615` 是凭记忆造出来的日期后缀；NOTES.md 自己承认「模型 ID 与维度表来自我对方舟文档的记忆」[guessed-wrong]。同一张 `NATIVE_DIMS` 表里还留着 `doubao-embedding-vision-250328: 3072`，正是文档里那份维度写法不一（2048 / 1024 / 3072）的过期示例，实测两条路默认都是 2048 [doc-contradiction]。
+
+公平地说，baseline 在两个真正反直觉的点上蒙对了：它把图片放进 `/embeddings/multimodal` 而没有塞进 OpenAI 形态 `/embeddings` 的 `input` 数组（那种写法真实返回 400 ``The parameter `input[0]` ... expected a string, but got `map[text:a cat type:text]` ``），`_extract_embedding()` 也优先按 `data["embedding"]` 单对象取值。所以本 eval 的增量集中在入口 / Key / 模型名这三件「不看文档就一定写错、写错就 401 或扣错钱」的事上——skill run 的 `ARK_PLAN_BASE_URL = ".../api/plan/v3"` + `ARK_AGENT_PLAN_API_KEY` + `model="doubao-embedding-vision"`，并在 401 分支直接提示「Key 与入口不配套」，正好补上了 baseline 缺的那一半。

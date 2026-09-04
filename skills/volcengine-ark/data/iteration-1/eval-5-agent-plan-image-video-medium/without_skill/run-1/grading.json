@@ -1,0 +1,86 @@
+{
+  "expectations": [
+    {
+      "text": "图片生成用 Agent Plan 入口 /api/plan/v3/images/generations 与 Model Name doubao-seedream-5.0-lite",
+      "passed": false,
+      "evidence": "generate.py: DEFAULT_BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3'; DEFAULT_IMAGE_MODEL = 'doubao-seedream-4-0-250828'. NOTES.md asserts 'Agent Plan 的 Key 也是同一格式，套餐权益绑定在账号/Key 上，而不是靠不同的 URL 区分'. Ground truth A1: an Agent Plan Key on /api/v3 returns 401 {\"error\":{\"code\":\"AuthenticationError\",\"message\":\"The API key or AK/SK in the request is missing or invalid. ...\"}}. Because ArkError.is_entitlement is true for 401, generate_one() re-raises and main() aborts with exit code 2 on the very first prompt: zero images are produced. Wrong entry, wrong model (a dated standard Model ID, not the Plan Model Name), wrong size ('1K' would be 400 on the real Plan image model)."
+    },
+    {
+      "text": "明确指出 Medium 套餐不支持视频生成模型（视频仅 Large / Max 档），而不是直接写视频代码假定能跑",
+      "passed": false,
+      "evidence": "NOTES.md only hedges: '视频（Seedance）大概率不在套餐内 … 据我所知一般不放进订阅套餐额度，而是按量付费' and '我无法在没有 Key 的情况下查询你账号的实际权益'. It never states that Medium lacks video or that video is Large/Max only; it frames video as a pay-as-you-go add-on. The code assumes it might run and relies on runtime detection, but ENTITLEMENT_CODES = {ModelNotOpen, ModelNotFound, AccountOverdueError, QuotaExceeded, AccessDenied, AuthenticationError, InvalidEndpointOrModel} does not include UnsupportedModel and is_entitlement only treats 401/403 status as entitlement, so the real Medium response (404 UnsupportedModel, ground truth B10) would be logged as 'video failed' with exit code 1 instead of the promised graceful 'unavailable' skip."
+    },
+    {
+      "text": "如给出视频代码，采用创建任务 + 轮询 GET /contents/generations/tasks/{id} 的异步模式",
+      "passed": true,
+      "evidence": "create_video_task(): self._request('POST', '/contents/generations/tasks', json=body); get_video_task(): self._request('GET', f'/contents/generations/tasks/{task_id}'); make_video() polls every 5 s until status in succeeded/failed/cancelled/expired and downloads content.video_url. The async pattern itself is correct even though the base URL and model (doubao-seedance-1-0-pro-250528) would never work with the user's Plan key."
+    },
+    {
+      "text": "提到每张图消耗 99 AFP 或图片模型不受 5 小时 / 周限额约束、只受日 / 月限额",
+      "passed": false,
+      "evidence": "No mention of AFP anywhere in NOTES.md or generate.py. Pricing is given in RMB pay-as-you-go terms ('Seedream 4.0 约 0.2 元/张 1K 图量级'). On limits it states the opposite of the truth for images: '套餐 Key 通常按 5 小时/日 窗口限额、且有 RPM 上限' — the 5-hour window applies to text models, not image models."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "timing": {
+    "total_tokens": 65838,
+    "duration_ms": 211892,
+    "total_duration_seconds": 211.9,
+    "executor_duration_seconds": 211.9
+  },
+  "claims": [
+    {
+      "claim": "Agent Plan key works on /api/v3; plan entitlement is bound to the key, not to a different URL",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Contradicted by verification-findings.md A1/A2 (401 AuthenticationError on /api/v3 and /api/coding/v3) and A3 (200 only on /api/plan/v3). Console text also says do not use /api/v3."
+    },
+    {
+      "claim": "Seedream 4.0 (doubao-seedream-4-0-250828) accepts size '1K' and is the right model for Agent Plan quota",
+      "type": "factual",
+      "verified": false,
+      "evidence": "4.0 is a standard pay-as-you-go Model ID, not the Plan Model Name (doubao-seedream-5.0-lite). The Plan image model rejects '1K' with 400 (findings D). Even if 4.0 accepts 1K on /api/v3, the user cannot reach /api/v3 with a Plan key."
+    },
+    {
+      "claim": "Script auto-detects video unavailability and downgrades gracefully (exit 0, status 'unavailable')",
+      "type": "quality",
+      "verified": false,
+      "evidence": "The real Medium error is 404 UnsupportedModel (findings B10). is_entitlement checks code in ENTITLEMENT_CODES or status in (401, 403); neither matches, so the script would return exit code 1 with status 'failed'. Also unreachable in practice: the image stage aborts first on 401."
+    },
+    {
+      "claim": "Plan keys are rate-limited by a 5-hour/daily window that applies to batch image generation",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Skill documentation (and the with_skill run) state image/video models are exempt from the 5-hour and weekly caps and only bound by daily/monthly AFP caps. Not directly probed in findings, but the baseline's claim is unsupported and contradicts the plan documentation."
+    },
+    {
+      "claim": "Script was not executed against the real API",
+      "type": "process",
+      "verified": true,
+      "evidence": "NOTES.md header: '无 API Key，本脚本未做真实调用'."
+    },
+    {
+      "claim": "Video model default doubao-seedance-1-0-pro-250528 supports image-to-video on this account",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Dated standard Model ID; Plan entry accepts Model Names and routes by name (findings B2/B6: old dated IDs -> 404 UnsupportedModel). On Medium any video model returns 404 regardless."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "reason": "No assertion checks the size parameter, yet the prompt explicitly asks for '1K' and the real 5.0-lite rejects it with 400. Add an assertion that the output either avoids size '1K' on 5.0-lite or explains why 1K is unavailable."
+      },
+      {
+        "assertion": "如给出视频代码，采用创建任务 + 轮询 GET /contents/generations/tasks/{id} 的异步模式",
+        "reason": "This is the only assertion the baseline passed, and it passed with code that can never run for this user (wrong base URL, wrong model, and a 404 UnsupportedModel handler gap). Consider tightening it to require correct handling of 404 UnsupportedModel as 'plan lacks video'."
+      }
+    ],
+    "overall": "Three of four assertions discriminate well and all three exposed real production failures in the baseline. Assertion 3 is a near-freebie; the '1K' size trap is unasserted."
+  }
+}

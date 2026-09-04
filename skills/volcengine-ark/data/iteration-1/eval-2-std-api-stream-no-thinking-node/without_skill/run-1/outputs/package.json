@@ -1,0 +1,18 @@
+{
+  "name": "ark-doubao-cs-chat",
+  "version": "1.0.0",
+  "description": "Customer-service Q&A CLI on Volcengine Ark (Doubao Seed 2.0 lite), streaming, thinking disabled, token usage printed at end.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18.17"
+  },
+  "bin": {
+    "ark-cs-chat": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "ask": "node index.js --question"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,140 @@
+{
+  "expectations": [
+    {
+      "text": "代码的 Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3（或 /api/plan 走 Anthropic 协议），而不是 /api/v3 或 /api/coding/v3",
+      "passed": true,
+      "evidence": "summarize_notes.py: `AGENT_PLAN_BASE_URL = \"https://ark.cn-beijing.volces.com/api/plan/v3\"`; build_client() additionally hard-rejects any override not containing `/api/plan` (`raise SystemExit(... 不是 Agent Plan 入口（必须包含 /api/plan）...)`). Matches verification-findings A3 (Agent Plan Key + /api/plan/v3 + doubao-seed-2.0-lite -> 200)."
+    },
+    {
+      "text": "代码把 Agent Plan 专属 Key 和普通方舟 API Key 区分开（环境变量命名或注释明确这是 Agent Plan 控制台里的专属 Key）",
+      "passed": true,
+      "evidence": "Env var is `ARK_AGENT_PLAN_API_KEY` (PLAN_KEY_ENV) with comment `# Agent Plan 专属 Key 的环境变量名。方舟 API Key（ARK_API_KEY）在 /api/plan 下会 401`. build_client() refuses to use ARK_API_KEY and prints a hint if only that is set. .env.example: `不是「API Key 管理」里的方舟 API Key（那把 Key 在 /api/plan 下会 401，且在 /api/v3 下会走后付费）`. Consistent with findings A1/A2 (plan key -> 401 on /api/v3 and /api/coding/v3)."
+    },
+    {
+      "text": "model 字段是 Plan 入口接受的小写 Model Name（doubao-seed-2.0-lite），不是带日期的 Model ID",
+      "passed": true,
+      "evidence": "`MODEL_NAME = \"doubao-seed-2.0-lite\"` passed as `model=MODEL_NAME`. Findings B1: this exact value returns 200 with served model `doubao-seed-2-0-lite-260215`; the script's `EXPECTED_MODEL_PREFIX = \"doubao-seed-2-0-lite\"` guard correctly matches that echoed name, so the drift check would not false-trigger."
+    },
+    {
+      "text": "messages 里没有 developer role",
+      "passed": true,
+      "evidence": "messages = [{\"role\": \"system\", ...}, {\"role\": \"user\", ...}] with inline comment `role must be system/user/assistant/tool. developer -> 400 InvalidParameter`. Matches findings C1."
+    },
+    {
+      "text": "代码或说明提到了 Agent Plan 的 5 小时 / 周 / 月额度限制或超额后付费开关（至少不会把额度耗尽误判为余额不足去提示充值）",
+      "passed": true,
+      "evidence": "NOTES.md section 「不能从后付费余额扣钱」 item 2: `Agent Plan 套餐有 5 小时 / 周 / 月三级 AFP 额度（Medium：10,000 / 35,000 / 100,000）... 未开启「超额后付费」时，额度用完请求直接返回 429 QuotaExceeded ... 请到 Agent Plan 控制台 → 「超额后付费管理」确认 ... 是关闭的`. Code treats `QuotaExceeded` as FATAL_CODES and stops the batch with a quota message; nowhere does it prompt to top up balance. Specific quota numbers and the 429/QuotaExceeded code are NOT covered by verification-findings (quota exhaustion was not tested) — the assertion only requires the limits/switch be mentioned, which they are."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "executor_duration_seconds": 391.5,
+    "total_duration_seconds": 391.5,
+    "duration_ms": 391466,
+    "total_tokens": 166309
+  },
+  "claims": [
+    {
+      "claim": "Agent Plan 专属 Key 打 /api/v3 是 401（已实测）",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings A1: 401 AuthenticationError."
+    },
+    {
+      "claim": "Agent Plan Key 打 /api/coding/v3 也是 401",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings A2."
+    },
+    {
+      "claim": "Plan 入口对带日期 Model ID 不报错但静默改版本",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings B2 (doubao-seed-2-0-lite-260428 -> served 260215)."
+    },
+    {
+      "claim": "doubao-seed-2.0-lite 默认开思考（reasoning_tokens≈109），thinking.disabled 生效 reasoning_tokens=0",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings C5."
+    },
+    {
+      "claim": "developer role 返回 400 InvalidParameter",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings C1."
+    },
+    {
+      "claim": "service_tier fast 在 Plan 入口 400",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings C8."
+    },
+    {
+      "claim": "/tokenization、/context/create、/files、/models 在 /api/plan/v3 下 404",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings section D."
+    },
+    {
+      "claim": "kimi-k3 的 max_tokens 把思维链算进去，回答会被截空",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings C7."
+    },
+    {
+      "claim": "额度耗尽返回 429 QuotaExceeded；Medium 额度 10,000 / 35,000 / 100,000 AFP；抵扣系数 0.5/0.5",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Not covered by verification-findings (quota exhaustion, AFP coefficients and tier numbers were not probed). Doc-derived; unverifiable here."
+    },
+    {
+      "claim": "Agent Plan 文档写文本模型「不可用于 API 调用」，直调有条款风险",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Not in verification-findings; cannot be verified from available materials. Findings only show the call technically succeeds (A3)."
+    },
+    {
+      "claim": "temperature/top_p 在 doubao-seed-2-0-lite-260215 上是固定值、传了也被忽略",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Not probed in verification-findings."
+    },
+    {
+      "claim": "已用 mock 客户端覆盖请求形态、重试、停批等路径；未对真实接口跑过",
+      "type": "process",
+      "verified": false,
+      "evidence": "No transcript or test file in outputs/ to confirm the mock tests ran; taken as an honest self-report but unverifiable."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "Which dated version doubao-seed-2.0-lite resolves to changes over time; script only checks prefix.",
+      "Quota-exhaustion behaviour depends on the console 超额后付费 switch, which code cannot control."
+    ],
+    "needs_review": [
+      "Terms-of-service risk: NOTES.md warns Agent Plan text models are documented as not for direct API use; user must accept that risk or move to /api/v3 postpaid."
+    ],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "代码或说明提到了 Agent Plan 的 5 小时 / 周 / 月额度限制或超额后付费开关",
+        "reason": "The 「或」 makes this pass on a single vague mention of a '5 小时窗口'. Consider requiring that quota-exhaustion be handled as a stop condition distinct from rate limiting (e.g. QuotaExceeded not retried), since that is the behaviour that actually protects the user."
+      },
+      {
+        "reason": "No assertion checks that thinking is disabled for doubao-seed-2.0-lite (findings C5: thinking is on by default, ~109 reasoning tokens per call). For a batch-summary task this is the largest controllable AFP cost and is a good discriminator between doc-aware and guessing outputs."
+      },
+      {
+        "reason": "No assertion checks that the response `model` echo (doubao-seed-2-0-lite-260215, findings B1) is handled correctly — an output that asserts equality with the request name would break in production."
+      }
+    ],
+    "overall": "Assertions 1-4 are sharp and decidable from the findings. Assertion 5 is lenient; adding a thinking-disabled check would make the eval more discriminating for this task."
+  }
+}

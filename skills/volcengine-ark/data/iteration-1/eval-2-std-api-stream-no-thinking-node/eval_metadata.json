@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "std-api-stream-no-thinking-node",
+  "prompt": "帮我写一个 Node.js 脚本，用火山方舟标准 API（我有方舟 API Key，模型已开通）调用豆包 Seed 2.0 lite 做客服问答，要求关闭深度思考、流式输出并在结束时打印 token 用量。",
+  "assertions": [
+    "Base URL 是 https://ark.cn-beijing.volces.com/api/v3",
+    "model 是带日期版本号的 Model ID 形式（如 doubao-seed-2-0-lite-260428）或 ep- 接入点，不是小写点分隔的 Model Name",
+    "关闭思考用的是方舟的 thinking: {\"type\": \"disabled\"} 字段（或 reasoning_effort），不是 OpenAI 的 reasoning: {effort} 之类不存在的写法",
+    "开启了 stream_options.include_usage 以在流式结束拿到 usage",
+    "没有使用 developer role"
+  ]
+}

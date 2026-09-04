@@ -1,0 +1,116 @@
+{
+  "expectations": [
+    {
+      "text": "Base URL 是 https://ark.cn-beijing.volces.com/api/v3",
+      "passed": true,
+      "evidence": "ark-client.js `export const DEFAULT_BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3';`，URL 由 `${baseUrl}/chat/completions` 拼出；.env.example 与 NOTES.md「Base URL」小节均写同一地址。文档保真度判定：/api/v3 入口本身在 ground truth 中未经真实调用验证（verification-findings.md §G，账号只有 Agent Plan Key），此处按官方文档口径判 PASS。"
+    },
+    {
+      "text": "model 是带日期版本号的 Model ID 形式（如 doubao-seed-2-0-lite-260428）或 ep- 接入点，不是小写点分隔的 Model Name",
+      "passed": true,
+      "evidence": "index.js `const DEFAULT_MODEL = 'doubao-seed-2-0-lite-260215';` —— 连字符 + 日期后缀的 Model ID 形式，非 doubao-seed-2.0-lite 这种小写点分 Model Name；NOTES.md 亦说明「也可以填推理接入点 ID（ep-2025...）」。断言只约束形式，形式正确故 PASS。但需记录：NOTES.md 自陈「本文件里的后缀是我凭记忆写的，若实际版本号不同请改 .env」—— 版本号取值是猜的。文档保真度判定：/api/v3 对 Model ID 是否精确匹配（猜错版本会 404 还是像 Plan 入口 B2 那样静默换版本）未实测。"
+    },
+    {
+      "text": "关闭思考用的是方舟的 thinking: {\"type\": \"disabled\"} 字段（或 reasoning_effort），不是 OpenAI 的 reasoning: {effort} 之类不存在的写法",
+      "passed": true,
+      "evidence": "ark-client.js `if (disableThinking) payload.thinking = { type: 'disabled' };`，`disableThinking = true` 为默认值，index.js 调用时亦显式传 `disableThinking: true`。全仓无 `reasoning: { effort }` 写法。NOTES.md 正确指出这是「Ark 扩展字段，不是 OpenAI 标准字段，OpenAI 官方 SDK 需通过 extra_body 传」。文档保真度判定：字段本身有 Plan 入口实测支撑（verification-findings.md C5：doubao-seed-2.0-lite 上 thinking.disabled 生效，reasoning_tokens 0），但 /api/v3 上未实测。"
+    },
+    {
+      "text": "开启了 stream_options.include_usage 以在流式结束拿到 usage",
+      "passed": true,
+      "evidence": "ark-client.js payload 固定包含 `stream_options: { include_usage: true }`（与 `stream: true` 同时发出）；消费侧 `if (chunk?.usage && !usageEmitted)` 单独派发 usage 事件，且 `const choice = Array.isArray(chunk?.choices) ? chunk.choices[0] : undefined;` 正确处理收尾 chunk 的空 choices。index.js 在流结束后打印「--- Token 用量 ---」，未拿到 usage 时明确提示而非静默。文档保真度判定：对应 Plan 入口实测 C9（chunk 中 usage 为 null 直到末尾），/api/v3 上属推断。"
+    },
+    {
+      "text": "没有使用 developer role",
+      "passed": true,
+      "evidence": "messages 仅使用 `{ role: 'system', content: SYSTEM_PROMPT }` 与 user/assistant（index.js SYSTEM_PROMPT、trimHistory、多轮 push）。全仓 grep 无 'developer' 字样。不过与 with_skill 不同，这里既没有 role 白名单校验，也没有任何说明「方舟不接受 developer role」—— 属于「碰巧没用到」而非「知道不能用」。文档保真度判定：developer → 400 的实测（verification-findings.md C1）来自 Plan 入口。"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "output_files": 5,
+    "output_chars": 24960,
+    "errors_encountered": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 214.2,
+    "total_duration_seconds": 214.2,
+    "duration_ms": 214172,
+    "total_tokens": 66714
+  },
+  "claims": [
+    {
+      "claim": "默认模型 doubao-seed-2-0-lite-260215 的版本后缀是凭记忆写的，需与控制台核对",
+      "type": "quality",
+      "verified": true,
+      "evidence": "NOTES.md 原文：「本文件里的后缀是我凭记忆写的，若实际版本号不同请改 .env」。这是诚实标注，但也确认了这个 Model ID 是猜的。巧合的是 verification-findings.md B1 显示 Plan 入口实际服务模型正是 doubao-seed-2-0-lite-260215，说明该版本字符串真实存在 —— 但那是较旧版本，且是否在 /api/v3 上可用未实测。"
+    },
+    {
+      "claim": "方舟的 Model ID 必须带版本日期后缀，不带后缀会报 InvalidEndpointOrModel",
+      "type": "factual",
+      "verified": false,
+      "evidence": "verification-findings.md 中不存在这条实测。§G 明确把「/api/v3 ... 小写 Name 是否被接受」列为未验证；Plan 入口的实测（B1）恰恰相反 —— 不带后缀的 doubao-seed-2.0-lite 返回 200。这条被当作确定结论写出的报错码是无来源的猜测。"
+    },
+    {
+      "claim": "Seed 1.6 / 2.0 系列均默认开启思考，关掉能降低首字延迟和 completion_tokens",
+      "type": "factual",
+      "verified": true,
+      "evidence": "2.0 lite 的部分与 verification-findings.md C5 一致（默认 reasoning_tokens 109）。1.6 系列本次未测，属未核实的附带断言。"
+    },
+    {
+      "claim": "思考内容也计费 / max_tokens=1024 可能截断回答",
+      "type": "factual",
+      "verified": true,
+      "evidence": "与 C6 一致（doubao 思考开时 completion_tokens 110 = reasoning 109 + 回答 1）。不过 NOTES 未提到 C6 的关键坑：max_tokens 并不限制豆包的思维链，因此靠 max_tokens 控费在思考开启时无效 —— baseline 的 finish_reason=length 警告文案暗示了相反的心智模型。"
+    },
+    {
+      "claim": "脚本零第三方依赖，Node ≥ 18.17 可直接运行",
+      "type": "process",
+      "verified": true,
+      "evidence": "package.json 无 dependencies，仅用 node:readline/promises、node:util、node:process 与全局 fetch。grader 执行 `node --check index.js` 与 `node --check ark-client.js` 均通过。"
+    },
+    {
+      "claim": "SSE 解析处理了 TCP 分片、CRLF、注释行、多行 data、无尾部空行的最后一个事件",
+      "type": "quality",
+      "verified": true,
+      "evidence": "parseSseJson 逐行缓冲 + TextDecoder({stream:true})，显式处理 line.endsWith('\\r')、line.startsWith(':')、dataLines 多行拼接、以及循环结束后的 tail flush。实现与描述一致（无测试文件，故只做代码审阅，未实跑）。"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "doubao-seed-2-0-lite-260215 的版本后缀凭记忆写出，需与控制台核对",
+      "方舟对 Seed 2.0 是否仍接受 thinking.type=disabled 不确定（自称 1.6 系列确认支持），如报错改用 reasoning_effort",
+      "错误响应 header 中 request id 的具体键名未知，同时尝试 x-request-id 与 x-client-request-id"
+    ],
+    "needs_review": [
+      "本次无 API Key，未发起任何真实请求；全部请求形态未经验证"
+    ],
+    "workarounds": [
+      "用原生 fetch 自写 SSE 解析而非 openai SDK",
+      "版本后缀写进 .env.example 以便用户自行改正"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "model 是带日期版本号的 Model ID 形式（如 doubao-seed-2-0-lite-260428）或 ep- 接入点，不是小写点分隔的 Model Name",
+        "reason": "断言只查形式不查取值，因此一个自陈「凭记忆写的」版本号也满分通过。这正是 skill 应该带来价值的地方（提供权威模型列表），却被断言抹平了。建议改成：模型版本号必须与 skill 记录的模型列表一致，或代码显式要求用户从控制台确认。"
+      },
+      {
+        "reason": "没有断言检查是否正确处理「usage 收尾 chunk 的 choices 为空数组」。这是 stream + include_usage 组合的头号运行时崩溃点，两个 run 恰好都处理了，但断言集完全没覆盖，下次若有 run 写成 chunk.choices[0].delta 会带着满分交付一段必崩的代码。"
+      },
+      {
+        "reason": "「没有使用 developer role」在当前生态下几乎不可能失败 —— 除非明确要求，模型不会主动写 developer role。建议改为「输出显式说明方舟只接受 system/user/assistant/tool」，才能区分「碰巧没用」与「知道不能用」：本 run 是前者，with_skill 是后者（有 ALLOWED_ROLES 本地校验 + 测试用例）。"
+      },
+      {
+        "reason": "本 eval 的 5 条断言全部落在 ground truth 的未验证区（verification-findings.md §G「/api/v3 全部行为」），只能按文档保真度评分。若日后拿到标准 Ark Key，应优先补测 /api/v3 上的 Model ID 精确匹配与小写 Model Name 行为 —— 这决定了 baseline 猜错版本号到底是 404 还是静默降级。"
+      }
+    ],
+    "overall": "断言写得偏形式合规，baseline 在没有 skill 的情况下也全部通过，说明这套断言对本任务的区分度不足。真正的差异（模型版本号是猜的、缺少 role 白名单、缺少测试）全部落在断言之外。"
+  }
+}

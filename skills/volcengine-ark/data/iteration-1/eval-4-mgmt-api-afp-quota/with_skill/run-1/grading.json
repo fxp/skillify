@@ -1,0 +1,103 @@
+{
+  "expectations": [
+    {
+      "text": "请求发往管控面域名 ark.cn-beijing.volcengineapi.com 且带 Action 与 Version=2024-01-01",
+      "passed": true,
+      "evidence": "GRADED ON DOC FIDELITY ONLY — no Access Key / Secret Key was available, so the management plane was never live-called; the verdict compares the code against references/management-api.md §2. ark_afp_quota.py sets MGMT_HOST = \"ark.cn-beijing.volcengineapi.com\" and MGMT_VERSION = \"2024-01-01\"; _StdlibTransport.call builds query = {\"Action\": action, \"Version\": MGMT_VERSION} and url = f\"https://{MGMT_HOST}/?{StdlibSigner.canonical_query(query)}\". test_ark_afp_quota.py line 179 asserts the exact URL \"https://ark.cn-beijing.volcengineapi.com/?Action=GetAFPUsage&Version=2024-01-01\", and the 24-test suite passes locally. The SDK path passes the same version/action through UniversalInfo(version=\"2024-01-01\", action=...) with cfg.host = MGMT_HOST. This matches the doc's Base URL and request shape exactly."
+    },
+    {
+      "text": "鉴权用火山引擎 Access Key / Secret Key 的 HMAC-SHA256 签名（官方 SDK 或签名实现），不是 Authorization: Bearer <API Key>",
+      "passed": true,
+      "evidence": "DOC-FIDELITY GRADE (no AK/SK, no live call). Two AK/SK paths, both HMAC-SHA256: (a) _SdkTransport wires volcenginesdkcore.Configuration().ak/.sk and calls UniversalApi.do_call, letting the official SDK sign; (b) StdlibSigner implements the documented derivation k_date=HMAC(sk, yyyyMMdd) -> k_region(cn-beijing) -> k_service(ark) -> k_signing(\"request\") and emits \"Authorization: HMAC-SHA256 Credential=<AK>/<scope>, SignedHeaders=..., Signature=...\" plus Host / X-Date / X-Content-Sha256, with optional X-Security-Token for STS. Credentials come only from VOLC_ACCESSKEY / VOLC_SECRETKEY; no Bearer header appears anywhere in the file, and the error hint states explicitly \"这里不能用 Agent Plan API Key\". Matches references/management-api.md §1 (\"仅支持 Access Key 签名\", Service ark, Region cn-beijing)."
+    },
+    {
+      "text": "使用的 Action 名与文档一致（获取套餐 AFP 额度 / 用量详情类 Action），不是编造的 REST 路径",
+      "passed": true,
+      "evidence": "DOC-FIDELITY GRADE (no AK/SK, no live call). ACTION_GET_AFP_USAGE = \"GetAFPUsage\" (body {}) and ACTION_GET_PERSONAL_PLAN = \"GetPersonalPlan\" (body {\"Plan\": \"AgentPlan\"}) are verbatim the Action names and request bodies documented in references/management-api.md §2.2. NOTES.md also documents why GetUsageDetails was rejected for this task (token/image detail, not AFP balance) and that enterprise seats would use GetSeatAFPUsage / ListSeatAFPUsage — i.e. the neighbouring Actions were considered by their real names. No invented REST path is used; everything goes through ?Action=<Name>&Version=2024-01-01."
+    },
+    {
+      "text": "正确区分 5 小时 / 周 / 月三档额度字段",
+      "passed": true,
+      "evidence": "DOC-FIDELITY GRADE (no AK/SK, no live call). WINDOW_LABELS keys are exactly the documented result fields AFPFiveHour / AFPDaily / AFPWeekly / AFPMonthly, and PRIMARY_WINDOWS = (\"AFPFiveHour\", \"AFPWeekly\", \"AFPMonthly\") so the default alert set is the three tiers the prompt asked for while the daily window is displayed but excluded (correctly noted as image/video/speech/Harness-only, with --all-windows to opt in). Per-window parsing reads Quota / Used as strings via Decimal and SubscribeTime / ResetTime as epoch milliseconds, matching the doc's \"Quota/Used 是 string 类型…时间戳是 epoch 毫秒\". test_from_result_parses_strings_and_ms_timestamps and test_default_primary_windows_only pass, and the JSON output keys alerts by AFPFiveHour / AFPMonthly."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "executor_duration_seconds": 511.8,
+    "total_duration_seconds": 511.8,
+    "total_tokens": 166162,
+    "duration_ms": 511805
+  },
+  "claims": [
+    {
+      "claim": "GetAFPUsage returns Result.AFPFiveHour / AFPDaily / AFPWeekly / AFPMonthly, each {Quota, Used, SubscribeTime, ResetTime}, plus PlanType",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Matches references/management-api.md §2.2 'GetAFPUsage' example Result verbatim, including the string type of Quota/Used and epoch-millisecond timestamps. Not confirmed against a live response — no AK/SK available."
+    },
+    {
+      "claim": "volcenginesdkark.ARKApi (volcengine-python-sdk 5.0.48) exposes only 17 methods and has NO get_afp_usage / get_personal_plan, so the skill's SDK skeleton would AttributeError; UniversalApi is the correct SDK route",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Matches the independently verified ground truth for this eval (local check on 2026-09-04: ARKApi has 17 methods covering endpoints, batch jobs, model customization and get_api_key, no get_afp_usage). The run acted on this: _SdkTransport uses volcenginesdkcore.UniversalApi(...).do_call(UniversalInfo(...)) rather than a generated ARKApi method, and NOTES.md flags the skill doc for correction. This is a genuine doc-vs-reality discrepancy caught by the run."
+    },
+    {
+      "claim": "The tool never reads an Ark / Agent Plan API Key because the management plane only accepts AK/SK",
+      "type": "process",
+      "verified": true,
+      "evidence": "grep of ark_afp_quota.py finds no ARK_API_KEY / ARK_AGENT_PLAN_API_KEY reference and no Bearer header; ArkManagementClient raises if VOLC_ACCESSKEY / VOLC_SECRETKEY are unset, with a hint that the Agent Plan API Key does not work here."
+    },
+    {
+      "claim": "Offline unit tests pass without credentials",
+      "type": "quality",
+      "verified": true,
+      "evidence": "python3 -m unittest test_ark_afp_quota -v -> 'Ran 24 tests ... OK', covering signer determinism, header shape, envelope unwrapping, string/ms parsing, zero-quota and over-quota edge cases, threshold inclusivity, and CLI JSON output."
+    },
+    {
+      "claim": "The stdlib signer follows the documented Volcengine signing algorithm",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Key derivation chain and Authorization format match references/management-api.md §1. One benign deviation: SIGNED_HEADERS is 'content-type;host;x-content-sha256;x-date' whereas the doc's example lists 'host;x-content-sha256;x-date'. Adding a header to SignedHeaders is legal under the algorithm as long as it is declared and sent (both are), but it is untested against the live service since no AK/SK was available."
+    },
+    {
+      "claim": "Response field names and types are implemented from the doc, not from an observed response",
+      "type": "quality",
+      "verified": true,
+      "evidence": "NOTES.md states this plainly: '未做真实调用（无 AK/SK），因此 GetAFPUsage 的响应字段名、Quota/Used 的字符串类型、毫秒时间戳 均按文档实现', and recommends verifying with --verbose --json on the first real run. The parser is defensive (missing field -> Decimal(0), non-numeric -> ArkMgmtError, empty Result -> explicit error listing the raw keys)."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "GetAFPUsage response field names, the string type of Quota/Used and the millisecond timestamps were implemented from the docs and never confirmed against a live response (no AK/SK)",
+      "The management-plane response envelope's top-level shape (ResponseMetadata + Result) is marked '文档未说明' in the skill reference; the tool accepts both the full envelope and an already-unwrapped Result",
+      "The docs expand AFP as 'Agent Frame Point' while the product page says 'Agent Fuel Point'"
+    ],
+    "needs_review": [
+      "Skill reference management-api.md §1 and errors-and-limits.md §6 show ARKApi.get_personal_plan(...) / ARKApi.list_model_rate_limit(...), which do not exist in volcengine-python-sdk 5.0.48 and would raise AttributeError — the skill should be updated to the UniversalApi pattern [doc-vs-reality discrepancy]"
+    ],
+    "workarounds": [
+      "Routed the Plan Actions through volcenginesdkcore.UniversalApi.do_call because volcenginesdkark.ARKApi has no generated method for them",
+      "Provided a dependency-free stdlib signer so the tool runs when volcengine-python-sdk is not installed"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "正确区分 5 小时 / 周 / 月三档额度字段",
+        "reason": "A tolerant alias-matching parser (as in the baseline run) can satisfy a loose reading of this assertion while committing to invented field names. Consider tightening it to name the documented keys — AFPFiveHour / AFPWeekly / AFPMonthly with string Quota/Used and epoch-millisecond ResetTime — and to require that AFPDaily is not silently folded into the 5h/week/month alert set, since the daily window only governs image/video/speech/Harness usage."
+      },
+      {
+        "reason": "No assertion covers the SDK entry point, yet that is where the skill's own reference is wrong: ARKApi has no get_afp_usage in volcengine-python-sdk 5.0.48. An assertion like 'if the official SDK is used, Plan Actions go through volcenginesdkcore.UniversalApi rather than a non-existent volcenginesdkark.ARKApi method' would be highly discriminating and would have caught the doc defect this run surfaced."
+      },
+      {
+        "reason": "No assertion checks that the tool refuses the Ark / Agent Plan API Key. 'Not Bearer' is covered only implicitly inside assertion 2; a separate check that no ARK_API_KEY env var is read would make the data-plane/management-plane split explicit."
+      }
+    ],
+    "overall": "Assertions are well aimed at the four things a run can get wrong here (host, auth scheme, Action name, window fields) and they cleanly separate the two runs. Two gaps worth closing: the window-field assertion is satisfiable by a fuzzy parser, and nothing checks the SDK entry point, which is precisely where the skill's own documentation is currently inaccurate."
+  }
+}

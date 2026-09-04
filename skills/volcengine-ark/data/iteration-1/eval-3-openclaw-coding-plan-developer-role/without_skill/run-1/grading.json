@@ -1,0 +1,102 @@
+{
+  "expectations": [
+    {
+      "text": "把 Base URL 改成 https://ark.cn-beijing.volces.com/api/coding/v3，并解释 /api/v3 不消耗 Coding Plan 额度而是按量扣费",
+      "passed": true,
+      "evidence": "openclaw.json: providers.volcengine-coding.baseUrl = \"https://ark.cn-beijing.volces.com/api/coding/v3\". ANSWER.md 问题 2: \"你现在填的是 `/api/v3`... 请求成功，但**扣的是按量付费余额，Coding Plan 的额度一点没用上**\"，并给出 /api/v3（按 token 计费）vs /api/coding/v3（走套餐额度）对照表。附带的第二种情形（未开通则 4xx）为推测，但不影响本断言。"
+    },
+    {
+      "text": "developer role 的修复是在 model 对象内加 compat: { supportsDeveloperRole: false }，并说明放在 provider 级别会报 Unrecognized key",
+      "passed": false,
+      "evidence": "openclaw.json 把 compat 放在 **provider 级别**（volcengine-coding.compat = {supportsDeveloperRole:false, supportsStore:false, supportsReasoningEffort:false}），三个 model 对象内均无 compat（程序化核对）。ANSWER.md 明确写 \"在 provider 上显式声明\"。按 ground truth（官方 Coding Plan OpenClaw FAQ）：compat 必须放在 model 级别，provider 级别会报 `Unrecognized key: \"compat\"`，即该配置会被 OpenClaw 拒绝或 compat 不生效，用户原始的 developer role 400 不会被修复。ANSWER.md 也完全未提及 Unrecognized key 这一坑。"
+    },
+    {
+      "text": "说明 Coding Plan 用的是方舟 API Key（不需要另一把专属 Key）",
+      "passed": true,
+      "evidence": "ANSWER.md 问题 2: \"火山方舟有两套入口，**用同一把 API Key**，但计费口径完全不同\"；配置说明: \"`apiKey` 用了 `${ARK_API_KEY}` 占位，请 `export ARK_API_KEY=你的方舟APIKey`\"。已明确 Coding Plan 用方舟 API Key、无需另一把 Key（但未提及 Agent Plan 专属 Key 的存在与不可混用）。"
+    },
+    {
+      "text": "没有把 model 改成带日期的 Model ID",
+      "passed": true,
+      "evidence": "openclaw.json model id 保持 \"doubao-seed-2.0-lite\"；ANSWER.md: \"模型名：`doubao-seed-2.0-lite` 本身没问题... 按**模型名**直接调用... **不需要**创建 `ep-xxxx` 推理接入点\"。"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "timing": {
+    "total_tokens": 59550,
+    "duration_ms": 138801,
+    "total_duration_seconds": 138.8,
+    "executor_duration_seconds": 138.8
+  },
+  "claims": [
+    {
+      "claim": "在 provider 上声明 compat.supportsDeveloperRole=false 即可让 OpenClaw 退回 system 角色",
+      "type": "factual",
+      "verified": false,
+      "evidence": "与 ground truth 冲突：官方文档明确 compat 须放 model 级别，provider 级别报 Unrecognized key: \"compat\"。[doc-contradiction]"
+    },
+    {
+      "claim": "方舟不认 reasoning_effort，所以要 supportsReasoningEffort:false",
+      "type": "factual",
+      "verified": false,
+      "evidence": "verification-findings C3：glm-5.3 + reasoning_effort:\"low\" 返回 200（仅 \"none\" 被拒，C4）。理由不成立，但关掉该字段本身无害。[guessed-wrong]"
+    },
+    {
+      "claim": "换成 /api/coding/v3 之后 developer role 同样会报 400（两条链路同一校验）",
+      "type": "factual",
+      "verified": true,
+      "evidence": "与 C1 一致：developer 400 是网关层校验，Agent Plan 入口也复现；推断合理。"
+    },
+    {
+      "claim": "在 /api/v3 按量付费入口模型名同样可以直接用 doubao-seed-2.0-lite",
+      "type": "factual",
+      "verified": false,
+      "evidence": "/api/v3 未用标准 Key 实测（findings G）；skill 侧文档转录为 /api/v3 需带日期 Model ID。无法核实，且与文档相反。"
+    },
+    {
+      "claim": "Coding Plan 套餐内第三方模型为 kimi-k2.5、glm-4.7、deepseek-v3.2；套餐含 doubao-seed-2.0-code",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Plan 入口实测可用的是 kimi-k3、glm-5.3（B7/B9）；所列名称疑为过时记忆，doubao-seed-2.0-code 是否存在无法核实。仅在 prose 与备用 model 列表中，不影响主模型。[guessed-wrong]"
+    },
+    {
+      "claim": "models.mode: \"merge\" 可保留 OpenClaw 内置 provider；OpenClaw 自带 volcengine 内置 provider 默认指向 /api/v3",
+      "type": "process",
+      "verified": false,
+      "evidence": "OpenClaw 侧细节，无可用材料核实。"
+    },
+    {
+      "claim": "compat 字段 supportsStore / supportsReasoningEffort 在 OpenClaw 中存在",
+      "type": "process",
+      "verified": false,
+      "evidence": "无法从可用材料核实；ANSWER.md 自己也在「建议再核对的点」里标注以本地版本文档为准。"
+    },
+    {
+      "claim": "本答案基于既有认知整理，未联网核对",
+      "type": "process",
+      "verified": true,
+      "evidence": "ANSWER.md 开头自我声明；与其多处 hedging（「按我的了解」「建议核对」）一致。"
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "说明 Coding Plan 用的是方舟 API Key（不需要另一把专属 Key）",
+        "reason": "baseline 仅凭一句「两套入口用同一把 API Key」即通过，却完全没提 Agent Plan 专属 Key 的存在——而 findings A2 表明拿错 Key 打 /api/coding/v3 会 401。可把断言收紧为「说明 Coding Plan 用方舟 API Key，且区别于 Agent Plan 专属 Key」。"
+      },
+      {
+        "assertion": "developer role 的修复是在 model 对象内加 compat: { supportsDeveloperRole: false }，并说明放在 provider 级别会报 Unrecognized key",
+        "reason": "「Unrecognized key」目前只有官方文档转录作为 ground truth；建议用真实 OpenClaw 跑一次 provider 级 compat 的 config validate，把这条唯一的区分性断言坐实。"
+      },
+      {
+        "reason": "baseline 在 prose 中给出的过时第三方模型名（kimi-k2.5 / glm-4.7 / deepseek-v3.2）与 「/api/v3 也可用小写 Name」 未被任何断言捕获；可考虑增加「未编造套餐外/过时模型名」的守门断言。"
+      }
+    ],
+    "overall": "断言 2 是本 eval 唯一区分 with/without 的点，且它命中了真实的生产故障（配置被拒 / 400 不消失）；其余三条 baseline 凭常识即可通过，区分度低。"
+  }
+}

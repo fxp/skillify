@@ -1,0 +1,106 @@
+{
+  "skill_name": "volcengine-ark",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我买了火山方舟的 Agent Plan（Medium 套餐），想在自己的 Python 脚本里用套餐额度跑一个批量摘要任务：读取 notes/ 目录下的 .md 文件，每个文件用 doubao-seed-2.0-lite 生成三句话摘要写到 summaries/ 目录。Key 请从环境变量读。要求跑起来不能从我的后付费余额扣钱。",
+      "expected_output": "使用 base_url https://ark.cn-beijing.volces.com/api/plan/v3、Agent Plan 专属 Key（独立环境变量，不是方舟 API Key）、model 用小写 Model Name doubao-seed-2.0-lite；不使用 /api/v3；不使用 developer role；处理额度耗尽的报错。",
+      "files": [],
+      "expectations": [
+        "代码的 Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3（或 /api/plan 走 Anthropic 协议），而不是 /api/v3 或 /api/coding/v3",
+        "代码把 Agent Plan 专属 Key 和普通方舟 API Key 区分开（环境变量命名或注释明确这是 Agent Plan 控制台里的专属 Key）",
+        "model 字段是 Plan 入口接受的小写 Model Name（doubao-seed-2.0-lite），不是带日期的 Model ID",
+        "messages 里没有 developer role",
+        "代码或说明提到了 Agent Plan 的 5 小时 / 周 / 月额度限制或超额后付费开关（至少不会把额度耗尽误判为余额不足去提示充值）"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "帮我写一个 Node.js 脚本，用火山方舟标准 API（我有方舟 API Key，模型已开通）调用豆包 Seed 2.0 lite 做客服问答，要求关闭深度思考、流式输出并在结束时打印 token 用量。",
+      "expected_output": "base_url https://ark.cn-beijing.volces.com/api/v3；model 用带日期的 Model ID（如 doubao-seed-2-0-lite-260428）；thinking: {type: disabled} 通过请求体传（OpenAI SDK 要走 extra body）；stream_options.include_usage: true；SSE 以 data: [DONE] 结束。",
+      "files": [],
+      "expectations": [
+        "Base URL 是 https://ark.cn-beijing.volces.com/api/v3",
+        "model 是带日期版本号的 Model ID 形式（如 doubao-seed-2-0-lite-260428）或 ep- 接入点，不是小写点分隔的 Model Name",
+        "关闭思考用的是方舟的 thinking: {\"type\": \"disabled\"} 字段（或 reasoning_effort），不是 OpenAI 的 reasoning: {effort} 之类不存在的写法",
+        "开启了 stream_options.include_usage 以在流式结束拿到 usage",
+        "没有使用 developer role"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我用 OpenClaw 配了火山方舟 Coding Plan，报错 HTTP 400 The parameter messages.role specified in the request are not valid: invalid value: developer。另外我担心自己配的 base URL 不对——我填的是 https://ark.cn-beijing.volces.com/api/v3，模型填的 doubao-seed-2.0-lite。帮我把 ~/.openclaw/openclaw.json 里 provider 那段改对，并解释这两个问题。",
+      "expected_output": "指出 /api/v3 会走后付费而不是 Coding Plan 额度，应改为 https://ark.cn-beijing.volces.com/api/coding/v3；developer role 需在 model 级别加 compat.supportsDeveloperRole: false（不是 provider 级别）；Key 是方舟 API Key。",
+      "files": [],
+      "expectations": [
+        "把 Base URL 改成 https://ark.cn-beijing.volces.com/api/coding/v3，并解释 /api/v3 不消耗 Coding Plan 额度而是按量扣费",
+        "developer role 的修复是在 model 对象内加 compat: { supportsDeveloperRole: false }，并说明放在 provider 级别会报 Unrecognized key",
+        "说明 Coding Plan 用的是方舟 API Key（不需要另一把专属 Key）",
+        "没有把 model 改成带日期的 Model ID"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "用 Python 给火山方舟写个工具：查询我账号 Agent Plan 个人版套餐当前 5 小时 / 周 / 月还剩多少 AFP，低于 10% 时打印告警。",
+      "expected_output": "识别出这是管控面 API（https://ark.cn-beijing.volcengineapi.com，Action + Version=2024-01-01），用火山引擎 AK/SK 签名（官方 SDK volcenginesdkark 或签名库），而不是拿 API Key 去打 /api/plan/v3；Action 名以 management-api.md 为准。",
+      "files": [],
+      "expectations": [
+        "请求发往管控面域名 ark.cn-beijing.volcengineapi.com 且带 Action 与 Version=2024-01-01",
+        "鉴权用火山引擎 Access Key / Secret Key 的 HMAC-SHA256 签名（官方 SDK 或签名实现），不是 Authorization: Bearer <API Key>",
+        "使用的 Action 名与文档一致（获取套餐 AFP 额度 / 用量详情类 Action），不是编造的 REST 路径",
+        "正确区分 5 小时 / 周 / 月三档额度字段"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "帮我用火山方舟 Agent Plan 的额度写一个 Python 脚本：把 prompts.txt 里每行文案生成一张 1K 的图，保存到 out/；如果还能用视频模型，再把第一张图做成 5 秒视频。我是 Medium 套餐。",
+      "expected_output": "图片走 POST /api/plan/v3/images/generations，model doubao-seedream-5.0-lite，专属 Key；视频部分应指出 Medium 套餐不支持视频生成（只有 Large/Max 才有 doubao-seedance-2.0*），并说明视频是异步任务需轮询。",
+      "files": [],
+      "expectations": [
+        "图片生成用 Agent Plan 入口 /api/plan/v3/images/generations 与 Model Name doubao-seedream-5.0-lite",
+        "明确指出 Medium 套餐不支持视频生成模型（视频仅 Large / Max 档），而不是直接写视频代码假定能跑",
+        "如给出视频代码，采用创建任务 + 轮询 GET /contents/generations/tasks/{id} 的异步模式",
+        "提到每张图消耗 99 AFP 或图片模型不受 5 小时 / 周限额约束、只受日 / 月限额"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "把我的 Claude Code 切到火山方舟 Agent Plan 上跑：主模型用 glm-5.3，轻量任务用 doubao-seed-2.0-mini，要开思考并且开 1M 上下文，别让 Claude Code 的遥测偷偷吃我的额度。给我完整的 ~/.claude/settings.json。",
+      "expected_output": "ANTHROPIC_BASE_URL=https://ark.cn-beijing.volces.com/api/plan（不是 /api/plan/v3、不是 /api/coding）；ANTHROPIC_AUTH_TOKEN 是 Agent Plan 专属 Key；ANTHROPIC_MODEL / DEFAULT_*_MODEL / SUBAGENT_MODEL 设置；CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1；开思考用 CLAUDE_CODE_EXTRA_BODY；1M 上下文按 tools-setup.md 的写法；hasCompletedOnboarding。",
+      "files": [],
+      "expectations": [
+        "ANTHROPIC_BASE_URL 是 https://ark.cn-beijing.volces.com/api/plan（Anthropic 协议入口，不带 /v3，也不是 /api/coding）",
+        "说明 ANTHROPIC_AUTH_TOKEN 要填 Agent Plan 控制台的专属 API Key，而不是方舟 API Key",
+        "设置了 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 并解释是为了不让遥测占额度",
+        "开启思考用 CLAUDE_CODE_EXTRA_BODY={\"thinking\":{\"type\":\"enabled\"}}（并可指出 glm-5.3 本身默认开思考不可关）",
+        "1M 上下文的开启方式与官方文档一致（按 tools-setup.md 记载的模型名后缀或环境变量写法）"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "我用 OpenAI 的 Python SDK 接火山方舟 Agent Plan 做一个本地笔记语义搜索：把 notes/*.md 向量化存进 numpy 数组，再对查询做向量化算余弦相似度返回 top5。另外有几张截图 imgs/*.png 也想一起入库。请给完整代码。",
+      "expected_output": "文本走 client.embeddings.create(model=doubao-embedding-vision, input=<str 或 str 列表>) 在 /api/plan/v3 可用；图片必须走 POST /api/plan/v3/embeddings/multimodal（OpenAI SDK 没有对应方法，需 requests），且其响应是 data.embedding 单个对象而不是 data[] 数组；维度默认 2048（或统一显式 dimensions=1024）；两条路维度必须一致才能比余弦。",
+      "files": [],
+      "expectations": [
+        "Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3，Key 是 Agent Plan 专属 Key",
+        "图片向量化没有塞进 OpenAI 形态的 /embeddings 的 input 数组里（该写法真实返回 400 expected a string），而是走 /embeddings/multimodal",
+        "解析 /embeddings/multimodal 响应时按 data.embedding（单对象）取向量，而不是 data[0].embedding",
+        "文本与图片向量维度一致（都默认 2048，或都显式指定 dimensions=1024）后再算余弦相似度",
+        "model 为 doubao-embedding-vision（Plan 的 Model Name），不是带日期的 doubao-embedding-vision-251215 之外的编造名"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "帮我写个 Python 脚本，用火山方舟 Agent Plan 的 kimi-k3 和 glm-5.3 两个模型分别给同一段代码写 code review，比较结果。要求：控制输出别太长（限制在 300 token 左右），glm-5.3 那边不需要思维链，直接给结论。Key 从环境变量读。",
+      "expected_output": "Plan 入口 + 专属 Key；kimi-k3 限制输出要用 max_completion_tokens 而不是 max_tokens（kimi-k3 的 max_tokens 把思维链算进去，300 会被思维链吃光返回空 content、finish_reason=length）；glm-5.3 不能传 thinking.type=disabled（400），只能 reasoning_effort=low（实测 reasoning_tokens 0），也不能传 reasoning_effort=none（400）。",
+      "files": [],
+      "expectations": [
+        "Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3 且使用 Agent Plan 专属 Key",
+        "对 kimi-k3 限长用的是 max_completion_tokens（或明确说明 max_tokens 会把思维链算进去而预留了远大于 300 的额度），不会出现 max_tokens=300 导致空回答",
+        "glm-5.3 关闭思维链没有使用 thinking: {type: disabled}（真实返回 400 thinking.type disabled is not supported by this model），而是 reasoning_effort=low 之类被接受的取值",
+        "没有使用 reasoning_effort=none（真实返回 400）",
+        "从 message.reasoning_content 与 message.content 分别取思维链与正文，而不是假设思维链混在 content 里"
+      ]
+    }
+  ]
+}

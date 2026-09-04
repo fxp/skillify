@@ -1,0 +1,20 @@
+{
+  "name": "ark-doubao-customer-service",
+  "version": "1.0.0",
+  "description": "火山方舟标准 API（/api/v3）调用豆包 Seed 2.0 lite 的客服问答脚本：关闭深度思考、SSE 流式输出、结束时打印 token 用量。零第三方依赖。",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18.17"
+  },
+  "main": "ark-client.js",
+  "bin": {
+    "ark-cs": "./customer-service.js"
+  },
+  "scripts": {
+    "start": "node customer-service.js",
+    "ask": "node customer-service.js",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

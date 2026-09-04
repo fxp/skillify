@@ -1,0 +1,106 @@
+{
+  "expectations": [
+    {
+      "text": "ANTHROPIC_BASE_URL 是 https://ark.cn-beijing.volces.com/api/plan（Anthropic 协议入口，不带 /v3，也不是 /api/coding）",
+      "passed": true,
+      "evidence": "settings.json: \"ANTHROPIC_BASE_URL\": \"https://ark.cn-beijing.volces.com/api/plan\". ANSWER.md §1 explains Claude Code hits POST /api/plan/v1/messages and tabulates why /api/v3 (Agent Plan Key -> 401), /api/coding (Agent Plan Key -> 401) and /api/plan/v3 (OpenAI-protocol entry, 'Claude Code 不要带 /v3') are all wrong. Matches verification-findings A1/A2/E1."
+    },
+    {
+      "text": "说明 ANTHROPIC_AUTH_TOKEN 要填 Agent Plan 控制台的专属 API Key，而不是方舟 API Key",
+      "passed": true,
+      "evidence": "settings.json placeholder: \"<在此粘贴 Agent Plan 专属 API Key，不是方舟 API Key>\". ANSWER.md §0 step 1 gives the console path (subscription/agent-plan → 使用配置 → 配置专属 API Key), states the two keys '互不通用', and cites the real 401 AuthenticationError when an Agent Plan Key hits /api/v3 or /api/coding/v3 (verification-findings A1/A2)."
+    },
+    {
+      "text": "设置了 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 并解释是为了不让遥测占额度",
+      "passed": true,
+      "evidence": "settings.json: \"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC\": \"1\". ANSWER.md §1 遥测 quotes the doc: '遥测请求默认会走 ANTHROPIC_BASE_URL 并占用 Plan 配额，设为 \"1\" 可避免额度被静默消耗', notes arkcli helper adds it automatically, and that the official §3.4 1M example omits it. Verbatim match to tools-setup.md §3.1."
+    },
+    {
+      "text": "开启思考用 CLAUDE_CODE_EXTRA_BODY={\"thinking\":{\"type\":\"enabled\"}}（并可指出 glm-5.3 本身默认开思考不可关）",
+      "passed": true,
+      "evidence": "settings.json: \"CLAUDE_CODE_EXTRA_BODY\": \"{\\\"thinking\\\":{\\\"type\\\":\\\"enabled\\\"}}\". ANSWER.md §1 思考 states the value must be stringified JSON, and explicitly notes glm-5.3 '默认开思考且不可关——传 thinking.type: disabled 会 400 thinking.type disabled is not supported by this model, reasoning_effort: none 同样 400' (verification-findings C2), warning never to write disabled with glm-5.3."
+    },
+    {
+      "text": "1M 上下文的开启方式与官方文档一致（按 tools-setup.md 记载的模型名后缀或环境变量写法）",
+      "passed": true,
+      "evidence": "settings.json uses glm-5.3[1m] for ANTHROPIC_MODEL / DEFAULT_OPUS / DEFAULT_SONNET / CLAUDE_CODE_SUBAGENT_MODEL plus \"CLAUDE_CODE_AUTO_COMPACT_WINDOW\": \"1000000\" — exactly the two-step recipe in tools-setup.md §3.4. It deliberately leaves the [1m] suffix off doubao-seed-2.0-mini (256k context, not in the 1M list) and reproduces the doc's '升级 Claude Code 到最新版本' caveat. The Haiku slot differs from the doc example (mini instead of glm-5.3[1m]) only because the user asked for mini."
+    }
+  ],
+  "summary": { "passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0 },
+  "timing": {
+    "total_tokens": 115706,
+    "duration_ms": 207723,
+    "total_duration_seconds": 207.7
+  },
+  "claims": [
+    {
+      "claim": "Agent Plan Key against /api/v3 or /api/coding/v3 returns 401 AuthenticationError",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md A1/A2 (real API, 2026-09-04)."
+    },
+    {
+      "claim": "Without ANTHROPIC_MODEL / ANTHROPIC_DEFAULT_*_MODEL, claude-* names are silently routed to doubao-seed-2.1-turbo (response model doubao-seed-2-1-turbo-260628, coefficient 2.5)",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md B11/E5; agent-plan.md §2.1 note 1; coefficient 2.5 in agent-plan.md line 176."
+    },
+    {
+      "claim": "glm-5.3 thinking cannot be disabled (thinking.type disabled -> 400; reasoning_effort none -> 400)",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md C2; agent-plan.md line 261."
+    },
+    {
+      "claim": "AFP coefficients: glm-5.3 4.5/4.5, doubao-seed-2.0-mini 0.25/0.25, doubao-seed-2.1-turbo 2.5",
+      "type": "factual",
+      "verified": true,
+      "evidence": "agent-plan.md lines 173, 176, 178; models.md line 407."
+    },
+    {
+      "claim": "Medium tier quotas 10,000 / 35,000 / 100,000 AFP (5h / week / month); since 2026-09-01 input coefficient no longer tiered by length",
+      "type": "factual",
+      "verified": true,
+      "evidence": "agent-plan.md lines 85-87 and 167."
+    },
+    {
+      "claim": "1M-capable Plan models: glm-5.3, glm-5.3-flash, deepseek-v4-flash, deepseek-v4-pro, kimi-k3 (and doubao-seed-evolving); mini/lite/2.1-turbo are 256k",
+      "type": "factual",
+      "verified": true,
+      "evidence": "agent-plan.md line 127 and model table lines 99-109; models.md line 391 for doubao-seed-evolving. Note tools-setup.md §3.4 itself lists only glm-5.3 / deepseek-v4-flash / deepseek-v4-pro; the answer's wider list is sourced from the other references and is consistent with them."
+    },
+    {
+      "claim": "glm-5.3 does not support overage post-pay; doubao-seed-2.0-mini does",
+      "type": "factual",
+      "verified": true,
+      "evidence": "agent-plan.md lines 276 and 280."
+    },
+    {
+      "claim": "glm-latest is a working alias for glm-5.3",
+      "type": "factual",
+      "verified": true,
+      "evidence": "agent-plan.md line 257 (real API: model glm-latest -> response model glm-5.3)."
+    },
+    {
+      "claim": "Using curl directly against /api/plan can be flagged as abuse and lead to suspension",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Attributed to the official doc ('文档原话'); not something the verification run could test. Consistent with agent-plan.md's abuse-risk wording for out-of-tool calls (line 372), but not independently verified here."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "1M 上下文的开启方式与官方文档一致（按 tools-setup.md 记载的模型名后缀或环境变量写法）",
+        "reason": "The '或' makes it ambiguous whether the [1m] suffix alone satisfies the assertion or whether CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000 is also required. tools-setup.md §3.4 says both ('模型名加 [1m] 后缀 + 设置压缩窗口'). Rewrite as 'both the [1m] suffix AND CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000' so the baseline's suffix-only answer is unambiguously graded."
+      },
+      {
+        "reason": "No assertion checks that all five model variables (ANTHROPIC_MODEL, ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL, CLAUDE_CODE_SUBAGENT_MODEL) are explicitly set. The live-verified silent claude-* -> doubao-seed-2.1-turbo routing (2.5x AFP) is the single most expensive Agent Plan mistake and is exactly what the skill's tools-setup.md §3 leads with; an eval on 'don't let anything eat my quota' should test it."
+      },
+      {
+        "reason": "No assertion checks that the Haiku-slot model (doubao-seed-2.0-mini) is NOT given the [1m] suffix. Blindly copying the doc's §3.4 example would put [1m] on a 256k model; the with-skill answer got this right and explained why, but nothing rewards it."
+      }
+    ],
+    "overall": "Assertions cover the load-bearing entry-point / key-type / telemetry / thinking facts well and cleanly separate the two runs. Tighten the 1M wording and add a model-variable-completeness check."
+  }
+}

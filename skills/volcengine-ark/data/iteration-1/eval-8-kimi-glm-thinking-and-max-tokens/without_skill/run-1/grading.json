@@ -1,0 +1,103 @@
+{
+  "expectations": [
+    {
+      "text": "Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3 且使用 Agent Plan 专属 Key",
+      "passed": false,
+      "evidence": "review_compare.py L40 `DEFAULT_BASE_URL = \"https://ark.cn-beijing.volces.com/api/coding/v3\"`; L140-145 reads generic `ARK_API_KEY` described as 'your Volcengine Ark API key' with no mention of the Agent Plan dedicated key. NOTES.md L11 calls /api/coding/v3 'the endpoint Ark uses for the subscription (Agent/Coding Plan) models' and offers /api/v3 as the only alternative; /api/plan/v3 is never mentioned. Real behaviour (verification A2): Agent Plan key on /api/coding/v3 → 401 `{\"error\":{\"code\":\"AuthenticationError\",\"message\":\"The API key or AK/SK in the request is missing or invalid. ...\"}}`. Every request in the script fails."
+    },
+    {
+      "text": "对 kimi-k3 限长用的是 max_completion_tokens（或明确说明 max_tokens 会把思维链算进去而预留了远大于 300 的额度），不会出现 max_tokens=300 导致空回答",
+      "passed": false,
+      "evidence": "L163 `max_tokens=max_tokens` with `DEFAULT_MAX_TOKENS = 300` (L41) for both models; `max_completion_tokens` is never used. NOTES.md L25 does acknowledge 'hidden reasoning tokens are counted inside max_tokens, so if Kimi thinks at length the visible answer can be shortened or cut', but the script keeps 300 and only prints a `[warn]` after the fact (L215-216). Real behaviour (verification C7): kimi-k3 with max_tokens=64 → finish_reason length, content \"\", reasoning 61; with max_tokens=300 the reasoning budget is still far too small for a code review, so an empty or truncated answer is the expected outcome. The assertion's escape clause requires reserving a budget far above 300, which was not done."
+    },
+    {
+      "text": "glm-5.3 关闭思维链没有使用 thinking: {type: disabled}（真实返回 400 thinking.type disabled is not supported by this model），而是 reasoning_effort=low 之类被接受的取值",
+      "passed": false,
+      "evidence": "L104-109 glm-5.3 ModelSpec: `extra_body={\"thinking\": {\"type\": \"disabled\"}}`; NOTES.md L24 calls this 'Ark's request-level switch for turning chain-of-thought off on reasoning-capable models'. Real behaviour (verification C2): glm-5.3 + thinking.type=disabled → 400 `{\"error\":{\"code\":\"InvalidParameter\",\"message\":\"thinking.type `disabled` is not supported by this model ...\"}}`. reasoning_effort is not used anywhere. The glm-5.3 half of the comparison can never succeed."
+    },
+    {
+      "text": "没有使用 reasoning_effort=none（真实返回 400）",
+      "passed": true,
+      "evidence": "grep for `reasoning_effort` in review_compare.py and NOTES.md returns nothing; the script never sends the parameter in any form. Passes literally, but only because a different (also rejected) mechanism was chosen — see assertion 3."
+    },
+    {
+      "text": "从 message.reasoning_content 与 message.content 分别取思维链与正文，而不是假设思维链混在 content 里",
+      "passed": true,
+      "evidence": "L180 `result.content = (msg.content or \"\").strip()`; L181-182 comment 'Ark returns chain-of-thought (when enabled) as a non-standard `reasoning_content` field' and `result.reasoning_content = getattr(msg, \"reasoning_content\", None)`; L189-191 reads `usage.completion_tokens_details.reasoning_tokens`. print_report L217-219 reports reasoning_content length separately from the answer."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 3,
+    "total": 5,
+    "pass_rate": 0.4
+  },
+  "timing": {
+    "total_tokens": 58154,
+    "duration_ms": 107468,
+    "total_duration_seconds": 107.5,
+    "executor_duration_seconds": 107.5
+  },
+  "claims": [
+    {
+      "claim": "/api/coding/v3 is the endpoint Ark uses for subscription (Agent/Coding Plan) models addressed by plain model name",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Conflates Coding Plan and Agent Plan. Verification A2: Agent Plan key on /api/coding/v3 → 401 AuthenticationError. Agent Plan's entry is /api/plan/v3 (A3 → 200)."
+    },
+    {
+      "claim": "thinking: {type: disabled} is Ark's request-level switch to turn off chain-of-thought on reasoning-capable models; with it, glm-5.3 spends the whole 300-token budget on the answer and returns no reasoning_content",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Verification C2: glm-5.3 rejects it with 400 `thinking.type `disabled` is not supported by this model`. The switch works on doubao-seed-2.0-lite (C5) but not on glm-5.3; the only accepted way is reasoning_effort=low (C3)."
+    },
+    {
+      "claim": "On Ark, hidden reasoning tokens are counted inside max_tokens",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Partially true: correct for kimi-k3 (C7), false for doubao-seed-2.0-lite where max_tokens does not cap the chain of thought (C6). The claim is stated but not acted upon — the default stays at max_tokens=300."
+    },
+    {
+      "claim": "If thinking is rejected for a model the SDK raises APIError, which the script catches and prints per model without aborting the other",
+      "type": "process",
+      "verified": true,
+      "evidence": "L167-170 catches APIError and stores the message; main() continues to the next spec. However this means the glm-5.3 review is always an [ERROR] line, so the requested comparison is never produced."
+    },
+    {
+      "claim": "Adding the same thinking: disabled flag to kimi-k3 is a valid one-line fix if Kimi's answer gets cut",
+      "type": "factual",
+      "verified": false,
+      "evidence": "kimi-k3 + thinking.disabled was not tested in verification-findings.md; cannot be confirmed. Given kimi-k3 supports max_completion_tokens (C7), the documented fix is the wrong lever."
+    },
+    {
+      "claim": "No API calls were made while writing this",
+      "type": "process",
+      "verified": true,
+      "evidence": "NOTES.md L33 'Not verified' section states this explicitly."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "NOTES.md L33: parameter names come from Ark's public OpenAI-compatible API docs and were not verified against the real API; author acknowledges `thinking` might be rejected for a given model.",
+      "NOTES.md L11: unsure whether the user's plan lives under /api/coding/v3 or /api/v3; /api/plan/v3 not considered."
+    ],
+    "needs_review": [
+      "Default endpoint + key type will 401 for an Agent Plan user; the glm-5.3 request will 400 even on the correct endpoint; kimi-k3 at max_tokens=300 will likely return empty/truncated content."
+    ],
+    "workarounds": [
+      "Relies on prompt structure (~200 words) plus a post-hoc finish_reason==length warning instead of reserving reasoning budget."
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "没有使用 reasoning_effort=none（真实返回 400）",
+        "reason": "This run passes it trivially by never using reasoning_effort at all while sending an equally rejected thinking.disabled. Merge into assertion 3 so the check is 'uses an accepted mechanism' rather than 'avoids one specific bad value'."
+      },
+      {
+        "reason": "No assertion checks that the script can actually deliver the requested comparison end-to-end (both reviews non-empty). Here the per-model error catching lets the script 'succeed' at printing while producing zero usable reviews; an assertion like 'both models are expected to return non-empty content under the chosen parameters' would name that outcome directly."
+      }
+    ],
+    "overall": "Assertions 1-3 are strongly discriminating and caught three real production failures. Assertion 4 is trivial; an end-to-end 'comparison actually produced' assertion is missing."
+  }
+}

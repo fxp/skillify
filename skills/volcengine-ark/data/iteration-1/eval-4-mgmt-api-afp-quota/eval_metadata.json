@@ -1,0 +1,11 @@
+{
+  "eval_id": 4,
+  "eval_name": "mgmt-api-afp-quota",
+  "prompt": "用 Python 给火山方舟写个工具：查询我账号 Agent Plan 个人版套餐当前 5 小时 / 周 / 月还剩多少 AFP，低于 10% 时打印告警。",
+  "assertions": [
+    "请求发往管控面域名 ark.cn-beijing.volcengineapi.com 且带 Action 与 Version=2024-01-01",
+    "鉴权用火山引擎 Access Key / Secret Key 的 HMAC-SHA256 签名（官方 SDK 或签名实现），不是 Authorization: Bearer <API Key>",
+    "使用的 Action 名与文档一致（获取套餐 AFP 额度 / 用量详情类 Action），不是编造的 REST 路径",
+    "正确区分 5 小时 / 周 / 月三档额度字段"
+  ]
+}

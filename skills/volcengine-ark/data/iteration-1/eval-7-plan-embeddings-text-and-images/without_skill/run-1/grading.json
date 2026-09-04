@@ -1,0 +1,115 @@
+{
+  "expectations": [
+    {
+      "text": "Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3，Key 是 Agent Plan 专属 Key",
+      "passed": false,
+      "evidence": "config.py 默认 `_env(\"ARK_BASE_URL\", \"https://ark.cn-beijing.volces.com/api/v3\")`，Key 读 `ARK_API_KEY`。.env.example 写「火山方舟 API Key（控制台 -> API Key 管理）。Agent Plan 的 Key 与按量付费 Key 形态相同。」NOTES.md 进一步建议「若 Embedding 不在套餐内，用同一个 key 打普通 /api/v3 即可（按量计费）」。findings §A1：Agent Plan Key 打 /api/v3 实测 401 `{\"error\":{\"code\":\"AuthenticationError\",...,\"type\":\"Unauthorized\"}}`。整个项目第一次请求就会 401，一行向量也存不进去。"
+    },
+    {
+      "text": "图片向量化没有塞进 OpenAI 形态的 /embeddings 的 input 数组里（该写法真实返回 400 expected a string），而是走 /embeddings/multimodal",
+      "passed": true,
+      "evidence": "ark_embeddings.py 的 `_embed_multimodal()` 用 `client.post(\"/embeddings/multimodal\", body=body, cast_to=httpx.Response)`，图片以 `{\"type\":\"image_url\",\"image_url\":{\"url\": data_url}}` 传入；OpenAI 形态的 `client.embeddings.create` 只在 `_embed_texts_openai()` 里用、且 input 是纯字符串列表。EMBED_BACKEND=text 时图片被跳过并告警（`RuntimeError(\"EMBED_BACKEND=text 不支持图片，请切换为 multimodal。\")`），不会被塞进 input 数组。"
+    },
+    {
+      "text": "解析 /embeddings/multimodal 响应时按 data.embedding（单对象）取向量，而不是 data[0].embedding",
+      "passed": true,
+      "evidence": "`_extract_embedding()`：`if isinstance(data, dict): return data[\"embedding\"]`（列表形态只作兜底）。NOTES.md 的响应样例 `\"data\":{\"object\":\"embedding\",\"embedding\":[...]}` 与 findings §D 的真实形态一致，并明确注明「data 是单个对象而非数组——与 OpenAI 的 /embeddings 不同」。"
+    },
+    {
+      "text": "文本与图片向量维度一致（都默认 2048，或都显式指定 dimensions=1024）后再算余弦相似度",
+      "passed": true,
+      "evidence": "默认 `EMBED_BACKEND=multimodal`，文本与图片都走 `_embed_multimodal()`、同一 model、body 里都不带 `dimensions`，因此两者同为服务端默认维度；降维时用同一段客户端截断 `vec[: embed_dim_override]` 再统一 l2_normalize。indexer.py 检测到 meta.json 的 model 变化会强制全量重建，search.py 在 `q.shape[0] != index.vectors.shape[1]` 时直接报错。维度这一环是自洽的（尽管 config.NATIVE_DIMS 里 `doubao-embedding-vision-250328: 3072` / `doubao-embedding-large-text-240915: 4096` 是凭记忆写的，findings §F.3 已裁决 3072 实测不存在）。"
+    },
+    {
+      "text": "model 为 doubao-embedding-vision（Plan 的 Model Name），不是带日期的 doubao-embedding-vision-251215 之外的编造名",
+      "passed": false,
+      "evidence": "config.py / .env.example 默认 `ARK_MULTIMODAL_MODEL=doubao-embedding-vision-250615`（另有 `ARK_TEXT_MODEL=doubao-embedding-large-text-250515`、NATIVE_DIMS 里的 `doubao-embedding-vision-250328`、`doubao-embedding-large-text-240915`、`doubao-embedding-text-240715`）。findings §D 实测 Plan 入口 multimodal 返回的真实版本是 `doubao-embedding-vision-251215`；`-250615` 既不是 Plan 的 Model Name `doubao-embedding-vision`，也不是真实的日期版本，属于凭记忆编造。NOTES.md 自认「模型 ID 与维度表来自我对方舟文档的记忆」。"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "timing": {
+    "total_tokens": 79459,
+    "duration_ms": 316851,
+    "total_duration_seconds": 316.9
+  },
+  "claims": [
+    {
+      "claim": "Agent Plan 的 Key 与按量付费 Key 形态相同，可以用同一个 key 打普通 /api/v3",
+      "type": "factual",
+      "verified": false,
+      "evidence": "被 findings §A1/§A2 直接推翻：Agent Plan Key 打 /api/v3 与 /api/coding/v3 都是 401 AuthenticationError（\"The API key or AK/SK in the request is missing or invalid.\"）。这是本 run 最致命的一条错误假设。"
+    },
+    {
+      "claim": "方舟套餐类只覆盖对话模型，Embedding 很可能仍按量计费或需要另开",
+      "type": "factual",
+      "verified": false,
+      "evidence": "findings §D 实测 `/api/plan/v3/embeddings` 与 `/api/plan/v3/embeddings/multimodal` 都返回 200，向量化在 Agent Plan 入口可用。该推测同时把用户导向了控制台明确警告会产生额外费用的 /api/v3 路径。"
+    },
+    {
+      "claim": "如果 Agent Plan 只允许通过接入点（ep-xxxxxxxx）调用，把接入点 ID 填进 ARK_MULTIMODAL_MODEL",
+      "type": "factual",
+      "verified": false,
+      "evidence": "findings §B 显示 Plan 入口按 Model Name 路由（甚至对带日期的 Model ID 也静默按 Name 解析），未见接入点 ID 机制。属于凭旧印象的猜测，虽然作者标注了「需要你在控制台核对」。"
+    },
+    {
+      "claim": "/embeddings/multimodal 响应的 data 是单个对象而非数组，一次请求只产出一个向量",
+      "type": "factual",
+      "verified": true,
+      "evidence": "与 findings §D 完全一致，且 `_extract_embedding` 与逐条请求的实现都据此写对了。这是本 run 做对的关键一点。"
+    },
+    {
+      "claim": "doubao-embedding-vision-250615 原生 2048 维；doubao-embedding-vision-250328 为 3072 维",
+      "type": "factual",
+      "verified": false,
+      "evidence": "2048 这个数值恰好与 findings §D 一致，但模型名是编造的；3072 已被 findings §F.3 裁决为“过期示例，实测不存在”。整张 NATIVE_DIMS 表未经验证。"
+    },
+    {
+      "claim": "已在本地确认 openai SDK 1.x 与 2.x 均支持 cast_to=httpx.Response 直通",
+      "type": "process",
+      "verified": false,
+      "evidence": "无法核实：outputs/ 里没有任何测试脚本或运行记录，也没有 transcript。NOTES.md 同时说「无 key，未真实调用」，只用 mock 跑通了切块 / 索引 / 检索流程。"
+    },
+    {
+      "claim": "方舟文本 embedding 单次请求最多 256 条输入（代码取 64）",
+      "type": "factual",
+      "verified": false,
+      "evidence": "findings 未验证批量上限。该分支（EMBED_BACKEND=text）在 Plan 入口的可用性也未被本 run 验证。"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "作者明确标注 Agent Plan 的 base_url / Key / 是否覆盖 Embedding「需要你在控制台核对，我无法在没有 key 的情况下验证」",
+      "「模型 ID 与维度表来自我对方舟文档的记忆」",
+      "multimodal 响应形状同样是凭记忆，靠 _extract_embedding 双形态兼容兜底"
+    ],
+    "needs_review": [
+      "base_url 与 Key 的搭配（实际会 401）",
+      "默认模型名 doubao-embedding-vision-250615 是否存在"
+    ],
+    "workarounds": [
+      "用 client.post(..., cast_to=httpx.Response) 绕开 SDK 对 data 数组的假设",
+      "多模态路径不发 dimensions，改为客户端截断前 k 维再归一化，「不依赖该接口是否接受 dimensions」",
+      "_extract_embedding 同时兼容 dict 与 list 两种 data 形态，把猜测成本转嫁成运行时分支"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "文本与图片向量维度一致（都默认 2048，或都显式指定 dimensions=1024）后再算余弦相似度",
+        "reason": "本 run 靠「两边都走 multimodal 且都不发 dimensions」自动满足这条，没有体现任何对真实维度行为的了解（它的 NATIVE_DIMS 表里还留着实测不存在的 3072）。建议要求代码显式发送并校验 dimensions，否则这条断言对 baseline 和 skill run 都不区分。"
+      },
+      {
+        "reason": "没有断言检查「Key 与 Base URL 必须同源」这一因果关系。本 run 把 base_url 做成可配置项并写了一段看似周全的注释，如果断言只查字符串出现与否，很容易被「注释里提到了 /api/plan/v3」蒙混过去。建议断言要求默认值即为 Plan 入口，且不得出现「同一个 key 也能打 /api/v3」这类建议。"
+      },
+      {
+        "reason": "断言 2、3 被 baseline 全过了——说明「data 是单对象」「图片不能塞进 /embeddings」这两点在没有 skill 时也可能猜对。真正的增量在入口 / Key / 模型名上，建议增加一条针对 multimodal 单请求单向量语义的断言以提高整体区分度。"
+      }
+    ],
+    "overall": "断言在入口与模型名上有效抓到了 baseline 的两处硬伤；但维度与响应形状两条断言对 baseline 也成立，区分度有限。"
+  }
+}

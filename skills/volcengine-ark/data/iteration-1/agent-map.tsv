@@ -1,0 +1,16 @@
+a45d5f172ea90ae80	eval-1-agent-plan-batch-summaries	with_skill
+a67ce082000513420	eval-1-agent-plan-batch-summaries	without_skill
+a155c6779e8e62850	eval-2-std-api-stream-no-thinking-node	with_skill
+a984490f2d878c3d4	eval-2-std-api-stream-no-thinking-node	without_skill
+a444379b2d1ed2bab	eval-3-openclaw-coding-plan-developer-role	with_skill
+a801c43569ade12f6	eval-3-openclaw-coding-plan-developer-role	without_skill
+a9ef34225530d00a9	eval-4-mgmt-api-afp-quota	with_skill
+ac101eb7af65af5fb	eval-4-mgmt-api-afp-quota	without_skill
+aa9f0b879d81155af	eval-5-agent-plan-image-video-medium	with_skill
+a0fdd0d893e9e2fb8	eval-5-agent-plan-image-video-medium	without_skill
+a0ed2fc974578c999	eval-6-claude-code-agent-plan-settings	with_skill
+a199ffc05c891aee5	eval-6-claude-code-agent-plan-settings	without_skill
+a305b6664ae2a06ed	eval-7-plan-embeddings-text-and-images	with_skill
+a66b791839c04ab7b	eval-7-plan-embeddings-text-and-images	without_skill
+a2778841bb8db4950	eval-8-kimi-glm-thinking-and-max-tokens	with_skill
+a09e37b1a5ad1faed	eval-8-kimi-glm-thinking-and-max-tokens	without_skill

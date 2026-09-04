@@ -1,0 +1,125 @@
+{
+  "expectations": [
+    {
+      "text": "Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3，Key 是 Agent Plan 专属 Key",
+      "passed": true,
+      "evidence": "ark_embedding.py: `ARK_PLAN_BASE_URL = \"https://ark.cn-beijing.volces.com/api/plan/v3\"`，make_client() 只读 `os.environ.get(\"ARK_AGENT_PLAN_API_KEY\")` 并在缺失时报错「方舟 API Key / Coding Plan Key 打 /api/plan/v3 会 401」。401 分支还专门抛 “Key 与入口不配套。/api/plan/v3 只认 Agent Plan 专属 Key”。与 verification-findings A1/A3 一致（Plan Key 打 /api/v3 → 401 AuthenticationError；打 /api/plan/v3 → 200）。"
+    },
+    {
+      "text": "图片向量化没有塞进 OpenAI 形态的 /embeddings 的 input 数组里（该写法真实返回 400 expected a string），而是走 /embeddings/multimodal",
+      "passed": true,
+      "evidence": "唯一的网络调用是 `client.post(\"/embeddings/multimodal\", cast_to=object, body=body)`；图片以 `{\"type\": \"image_url\", \"image_url\": {\"url\": data_url}}` 传入。代码里没有 `client.embeddings.create` 的调用。NOTES.md §2 明确写出「/embeddings 只收字符串（传多模态数组 → 400 InvalidParameter: input[0] expected a string）」，与 findings D 的真实报错一致。"
+    },
+    {
+      "text": "解析 /embeddings/multimodal 响应时按 data.embedding（单对象）取向量，而不是 data[0].embedding",
+      "passed": true,
+      "evidence": "embed(): `data = resp.get(\"data\")`；`if isinstance(data, dict): emb = data[\"embedding\"]`，列表形态只作为兜底分支。注释「实测形态：data.embedding」。NOTES.md §2 给出的响应样例 `\"data\":{\"object\":\"embedding\",\"embedding\":[…]}` 与 findings D 完全吻合。"
+    },
+    {
+      "text": "文本与图片向量维度一致（都默认 2048，或都显式指定 dimensions=1024）后再算余弦相似度",
+      "passed": true,
+      "evidence": "embed_note_chunk / embed_image / embed_query 共用同一个 `dimensions` 形参（DEFAULT_DIMENSIONS=1024），body 里显式带 `\"dimensions\": dimensions`；embed() 用 `if vec.shape != (dimensions,)` 断言返回长度。build_index.py 把 dimensions 写进 meta.json，search.py 用 `embed_query(client, query, dimensions=int(meta[\"dimensions\"]))` 保证查询侧同维，并在 load_index 里校验 `vectors.shape[1] != meta[\"dimensions\"]`。所有向量入库前 l2_normalize，检索是 `vectors @ res.vector`。"
+    },
+    {
+      "text": "model 为 doubao-embedding-vision（Plan 的 Model Name），不是带日期的 doubao-embedding-vision-251215 之外的编造名",
+      "passed": true,
+      "evidence": "`EMBEDDING_MODEL = \"doubao-embedding-vision\"`，注释「小写 Model Name；响应里会解析成 doubao-embedding-vision-251215」。build_index 把响应里的真实版本存进 meta.json 的 `model`，search.py 在版本漂移时告警。没有出现任何编造的日期后缀。"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "total_tokens": 150355,
+    "duration_ms": 513163,
+    "total_duration_seconds": 513.2
+  },
+  "claims": [
+    {
+      "claim": "/embeddings（OpenAI 形态）只收字符串，传多模态数组返回 400 input[0] expected a string",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md §D: `POST /embeddings`（input 为 [{\"type\":\"text\"...}] 多模态数组）→ 400 “The parameter `input[0]` ... expected a string, but got `map[text:a cat type:text]`”。"
+    },
+    {
+      "claim": "/embeddings/multimodal 的 data 是单个对象而不是数组",
+      "type": "factual",
+      "verified": true,
+      "evidence": "findings §D: “200，响应 data.embedding（对象，不是数组），2048 维 … model: doubao-embedding-vision-251215”。代码与 NOTES 的响应样例逐字段吻合。"
+    },
+    {
+      "claim": "dimensions 只允许 1024 或 2048，两条路径默认都是 2048；文档里的 3072 是过期示例",
+      "type": "factual",
+      "verified": true,
+      "evidence": "findings §D（`dimensions: 1024` 生效，默认 2048）与 §F.3（“文档多模态向量化默认维度写法不一（2048 vs 1024 vs 3072）→ 实测两条路默认都是 2048”）。"
+    },
+    {
+      "claim": "Agent Plan Key 打 /api/v3 或 /api/coding/v3 直接 401 AuthenticationError",
+      "type": "factual",
+      "verified": true,
+      "evidence": "findings §A1/§A2 逐字一致。"
+    },
+    {
+      "claim": "本仓库代码没有打过真实 API，只用 httpx.MockTransport 做了离线联调",
+      "type": "process",
+      "verified": false,
+      "evidence": "无法核实：outputs/ 里没有任何测试文件或 mock harness（只有 ark_embedding.py / build_index.py / search.py / requirements.txt / NOTES.md），也没有 transcript。这是诚实的自我披露，但离线联调本身无证据。"
+    },
+    {
+      "claim": "官方 instructions 模板（Query 侧 Target_modality: text/image. …；Corpus 侧 Compress the text/image into one word.）以及「请勿直接使用系统默认值」的加粗警告",
+      "type": "factual",
+      "verified": false,
+      "evidence": "verification-findings.md 未覆盖 instructions 参数（§D 只实测了 model / input / dimensions，NOTES §10 自己也承认这一点）。模板内容来自文档转录，无真实 API 验证。"
+    },
+    {
+      "claim": "Agent Plan 向量化按 AFP 抵扣，系数 0.5；Medium 档 10,000 / 35,000 / 100,000 AFP",
+      "type": "factual",
+      "verified": false,
+      "evidence": "findings 只记录了总消耗量级（“一张 2k 图 99 AFP”），没有验证向量化抵扣系数或三档额度数值。仅用于日志估算，不影响调用正确性。"
+    },
+    {
+      "claim": "官方口径称向量化模型「不可用于 API 调用」，仅允许在 AI 工具内使用；技术上直调返回 200",
+      "type": "quality",
+      "verified": false,
+      "evidence": "findings 只证实技术上 200，未涉及使用条款。NOTES §9 把它标成合规提示并同时给出标准入口迁移方案，属于合理的风险披露而非事实断言，但读者可能误当作已验证结论。"
+    },
+    {
+      "claim": "multimodal 接口把整个 input[] 融合成一条向量，所以每条素材必须单独请求",
+      "type": "factual",
+      "verified": true,
+      "evidence": "与 findings §D 的单对象响应形态自洽；build_index.py 的 `\"input\": [item]` 固定只放一个元素，并用线程池而非批量请求，实现与结论一致。"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "instructions / encoding_format 在 Plan 入口 multimodal 路径上的行为依据文档，未实测",
+      "标准 /api/v3 与 Coding Plan /api/coding/v3 的向量化路径未实测",
+      "Agent Plan 使用条款是否允许直调向量化 API 存在风险，作者建议自行评估"
+    ],
+    "needs_review": [
+      "NOTES §9 的合规风险：若要完全合规需改用标准入口（base_url /api/v3 + 方舟 API Key + doubao-embedding-vision-251215）"
+    ],
+    "workarounds": [
+      "OpenAI SDK 没有 multimodal 方法，改用 client.post(\"/embeddings/multimodal\", cast_to=object) 复用 base_url / Bearer / 超时",
+      "保留 data 为列表时取 data[0][\"embedding\"] 的兜底分支，以防文档另一处描述的形态"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "文本与图片向量维度一致（都默认 2048，或都显式指定 dimensions=1024）后再算余弦相似度",
+        "reason": "只要把文本和图片都路由到同一个 endpoint，这条就自动成立——两个 run 都是这样过的。它抓不到真正危险的写法：文本走 /embeddings 拿 2048 维、图片走 multimodal 传 dimensions=1024。建议改成「查询向量与建库向量走同一 endpoint、同一 model、同一 dimensions，且代码里有显式校验」，这样才具备区分度。"
+      },
+      {
+        "reason": "没有任何断言覆盖「multimodal 一次请求只产出一条融合向量」。把 N 条笔记塞进一个 input[] 数组的写法会静默拿到 1 条向量当成 N 条用，索引直接错乱，却能同时通过现有 5 条断言（endpoint 对、data.embedding 对、维度一致、model 对、base_url 对）。这是本接口最隐蔽的坑，值得单列一条断言。"
+      },
+      {
+        "reason": "断言 5 的措辞（“不是带日期的 doubao-embedding-vision-251215 之外的编造名”）读起来有歧义，容易被理解为允许写 -251215。建议直接写成「model 取 doubao-embedding-vision 或 doubao-embedding-vision-251215，出现其他日期后缀即失败」。"
+      }
+    ],
+    "overall": "断言方向对（入口 / Key / endpoint 误用 / 响应形状 / 模型名），但第 4 条区分度不足，且漏掉了 multimodal 单向量语义这个最容易翻车的点。"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "models": {
+    "providers": {
+      "volcengine-plan": {
+        "baseUrl": "https://ark.cn-beijing.volces.com/api/coding/v3",
+        "apiKey": "<你的方舟 API Key：控制台 → API Key 管理，即 ARK_API_KEY>",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "doubao-seed-2.0-lite",
+            "name": "doubao-seed-2.0-lite",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 256000,
+            "maxTokens": 32000,
+            "compat": { "supportsDeveloperRole": false }
+          },
+          {
+            "id": "ark-code-latest",
+            "name": "ark-code-latest",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 256000,
+            "maxTokens": 32000,
+            "compat": { "supportsDeveloperRole": false }
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": { "primary": "volcengine-plan/doubao-seed-2.0-lite" },
+      "models": {
+        "volcengine-plan/doubao-seed-2.0-lite": {},
+        "volcengine-plan/ark-code-latest": {}
+      }
+    }
+  },
+  "gateway": { "mode": "local" }
+}

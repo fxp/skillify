@@ -1,0 +1,4 @@
+# Optional. The tool runs on the Python standard library alone (--transport stdlib is
+# selected automatically when the SDK is absent). Install the official SDK to route the
+# signed request through volcenginesdkcore.UniversalApi instead:
+volcengine-python-sdk>=5.0.48

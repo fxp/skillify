@@ -1,0 +1,114 @@
+{
+  "expectations": [
+    {
+      "text": "把 Base URL 改成 https://ark.cn-beijing.volces.com/api/coding/v3，并解释 /api/v3 不消耗 Coding Plan 额度而是按量扣费",
+      "passed": true,
+      "evidence": "openclaw.json: providers.volcengine-plan.baseUrl = \"https://ark.cn-beijing.volces.com/api/coding/v3\". ANSWER.md 问题二: \"`/api/v3` 是**标准后付费**入口... 这把 Key 打 `/api/v3` **不会报错**... 但**不消耗套餐额度，而是从后付费余额里按 token 扣钱**\"，并引用官方原话「请勿使用 .../api/v3：该 Base URL 不会消耗您的 Coding Plan 额度，而是会产生额外费用」。三入口对照表 (/api/v3 vs /api/coding/v3 vs /api/plan/v3) 亦正确。"
+    },
+    {
+      "text": "developer role 的修复是在 model 对象内加 compat: { supportsDeveloperRole: false }，并说明放在 provider 级别会报 Unrecognized key",
+      "passed": true,
+      "evidence": "openclaw.json: 两个 model 对象 (doubao-seed-2.0-lite, ark-code-latest) 内各有 \"compat\": { \"supportsDeveloperRole\": false }；provider 级别无 compat 键（程序化核对）。ANSWER.md 问题一: \"注意 `compat` **必须放在 model 级别**，放到 provider 级别会报 `Unrecognized key: \\\"compat\\\"`（官方 FAQ 明确说明）\"。所引 400 原文与 verification-findings C1 实测响应逐字一致。"
+    },
+    {
+      "text": "说明 Coding Plan 用的是方舟 API Key（不需要另一把专属 Key）",
+      "passed": true,
+      "evidence": "ANSWER.md 对照表 Key 行: Coding Plan = \"**方舟 API Key（同一把）**\"，Agent Plan = \"Agent Plan 专属 Key\"；配置说明: \"`apiKey`：填控制台「API Key 管理」里的方舟 API Key（不是 Agent Plan 专属 Key，那把 Key 打 `/api/coding/v3` 会 401）\"。后者与 verification-findings A2 实测一致。openclaw.json apiKey 占位符也写明 \"即 ARK_API_KEY\"。"
+    },
+    {
+      "text": "没有把 model 改成带日期的 Model ID",
+      "passed": true,
+      "evidence": "openclaw.json model id 保持 \"doubao-seed-2.0-lite\"（小写 Model Name，无日期）；ANSWER.md: \"**模型名 `doubao-seed-2.0-lite` 是对的**... 不带日期、版本号用点的小写 Model Name\"，并正确指出 Plan 入口会回显 doubao-seed-2-0-lite-260215（与 B1 实测一致）。"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "total_tokens": 97126,
+    "duration_ms": 117698,
+    "total_duration_seconds": 117.7,
+    "executor_duration_seconds": 117.7
+  },
+  "claims": [
+    {
+      "claim": "developer role 400 已在 2026-09-04 用真实 API 复现，报错原文 supported values are: system, assistant, user, tool",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md C1 实测响应逐字相同（Agent Plan 入口，同一网关）。"
+    },
+    {
+      "claim": "Agent Plan 专属 Key 打 /api/coding/v3 会 401",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md A2: 401 AuthenticationError。"
+    },
+    {
+      "claim": "model 直接写 auto 返回 404 UnsupportedModel；需用 ark-code-latest + 控制台选 Auto",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md B3 (auto → 404) 与 B4 (ark-code-latest → 200, model:\"auto\")。"
+    },
+    {
+      "claim": "Plan 入口把 doubao-seed-2.0-lite 解析到 doubao-seed-2-0-lite-260215",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md B1。"
+    },
+    {
+      "claim": "compat 放 provider 级别会报 Unrecognized key: \"compat\"（官方 FAQ）",
+      "type": "factual",
+      "verified": true,
+      "evidence": "与任务给定的 ground truth 一致（官方文档转录，未用真实 OpenClaw 实例复跑）。"
+    },
+    {
+      "claim": "方舟 API Key 打 /api/v3 不报错但按后付费扣费（官方文档原话）",
+      "type": "factual",
+      "verified": true,
+      "evidence": "与 ground truth 中官方文档转录一致；/api/v3 真实行为未用标准 Key 实测（findings G）。"
+    },
+    {
+      "claim": "Coding Plan 「仅限 AI 编程工具内使用，不能用于 API 调用」，curl 直测可能被判滥用",
+      "type": "factual",
+      "verified": false,
+      "evidence": "文档转录性质的声明，无法从可用材料核实；不影响配置正确性。"
+    },
+    {
+      "claim": "ark-code-latest 控制台切换 3–5 分钟生效；Coding Plan 附带 doubao-embedding-vision 可作 memorySearch",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Coding Plan 入口未实测（findings G）；/embeddings 仅在 /api/plan/v3 验证可用（findings D）。"
+    },
+    {
+      "claim": "~/.openclaw/agents/main/agent/models.json 优先级高于 openclaw.json；provider id volcengine-plan 为官方 OpenClaw 示例 id",
+      "type": "process",
+      "verified": false,
+      "evidence": "OpenClaw 侧细节，无可用材料核实。"
+    },
+    {
+      "claim": "错误码速查：401=Key 与 Base URL 不配对；404 UnsupportedModel=模型不在套餐或写成 auto；429 QuotaExceeded",
+      "type": "factual",
+      "verified": true,
+      "evidence": "401 与 404 两项分别对应 findings A1/A2 与 B3/B5/B6；400 InvalidSubscription 与 429 未实测。"
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "没有把 model 改成带日期的 Model ID",
+        "reason": "该断言是「不做错事」型守门断言，原样保留用户填的 model 即可通过，几乎没有区分度；可改为要求同时说明「/api/v3 用带日期 Model ID、Plan 入口用小写 Name」这一对应关系，才算真正理解。"
+      },
+      {
+        "assertion": "developer role 的修复是在 model 对象内加 compat: { supportsDeveloperRole: false }，并说明放在 provider 级别会报 Unrecognized key",
+        "reason": "「provider 级别会报 Unrecognized key」目前只有官方文档转录作为 ground truth，没有用真实 OpenClaw 版本复跑；建议在 verification-findings 补一条 openclaw config validate 的实测，否则这是本 eval 唯一区分两组的断言却缺少一手证据。"
+      },
+      {
+        "reason": "没有断言检查 agents.defaults.model.primary 的前缀与 provider id 一致（两组都做对了，但这是 OpenClaw 配置最常见的错位点），也没有断言检查输出 JSON 可解析。"
+      }
+    ],
+    "overall": "断言覆盖了 Base URL / Key / compat 位置 / 模型名四个核心点，区分度主要来自断言 2；建议补一手证据并加强断言 4。"
+  }
+}

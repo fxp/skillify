@@ -1,0 +1,113 @@
+{
+  "expectations": [
+    {
+      "text": "Base URL 是 https://ark.cn-beijing.volces.com/api/v3",
+      "passed": true,
+      "evidence": "ark-client.js:21 `export const DEFAULT_BASE_URL = \"https://ark.cn-beijing.volces.com/api/v3\";`，请求 URL 由 `${normalizedBase}/chat/completions` 拼出；.env.example 与 customer-service.js 注释一致。客户端还对 baseURL 指向 /api/plan|/api/coding 时发 warning。注意：本条属于文档保真度判定 —— 标准 /api/v3 入口未经真实调用验证（verification-findings.md §G「/api/v3 全部行为」未验证，账号只有 Agent Plan Key），此处按官方文档口径判 PASS。"
+    },
+    {
+      "text": "model 是带日期版本号的 Model ID 形式（如 doubao-seed-2-0-lite-260428）或 ep- 接入点，不是小写点分隔的 Model Name",
+      "passed": true,
+      "evidence": "ark-client.js:22 `export const DEFAULT_MODEL = \"doubao-seed-2-0-lite-260428\";`。NOTES.md 明确区分「标准入口用带日期版本的 Model ID，版本号用连字符」与「doubao-seed-2.0-lite 是 Plan 入口的 Model Name 写法」，并说明可用 ARK_MODEL 换成 ep-xxx。文档保真度判定：/api/v3 对 Model ID 的精确匹配行为未实测（§G），只有 Plan 入口实测过（B2 显示 Plan 入口会静默忽略日期版本号）；按官方文档「/api/v3 取带日期 Model ID」判 PASS。"
+    },
+    {
+      "text": "关闭思考用的是方舟的 thinking: {\"type\": \"disabled\"} 字段（或 reasoning_effort），不是 OpenAI 的 reasoning: {effort} 之类不存在的写法",
+      "passed": true,
+      "evidence": "customer-service.js:117 `thinking: { type: \"disabled\" }`；ark-client.js:272 默认参数 `thinking = { type: \"disabled\" }`，body 里以顶层字段发出（ark-client.js:314）。全仓无 `reasoning: {` 或 `reasoning_effort` 误用。该字段行为有真实验证支撑：verification-findings.md C5「doubao-seed-2.0-lite 默认思考开（reasoning_tokens: 109）；thinking.disabled 生效（reasoning_tokens 0）」—— 但那是在 /api/plan/v3 入口测的，用于 /api/v3 时仍属文档/跨入口推断。"
+    },
+    {
+      "text": "开启了 stream_options.include_usage 以在流式结束拿到 usage",
+      "passed": true,
+      "evidence": "ark-client.js:313 请求体固定带 `stream_options: { include_usage: true }`（与 `stream: true` 同时发出）；ark-client.js:434 `if (!choice) continue; // include_usage 的收尾 chunk 没有 choices`，正确处理末尾 `choices: []` 的 usage chunk，并在未拿到 usage 时给出提示（:504）。`node --test` 实跑 16/16 通过，其中「streamChatCompletion: 请求形态正确，事件序列正确，usage 在收尾 chunk」直接断言了这一点。对应实测依据 C9（流式 chunk 中 usage 为 null 直到末尾），同样来自 Plan 入口，用于 /api/v3 属跨入口推断。"
+    },
+    {
+      "text": "没有使用 developer role",
+      "passed": true,
+      "evidence": "messages 只用 system/user/assistant（customer-service.js:104、:217）。更进一步：ark-client.js:224 的 `validateMessages()` 用 ALLOWED_ROLES 在本地拒绝 developer，错误文案「OpenAI 的 developer 要改成 system」，并有专门测试用例「role 校验：developer 被本地拒绝，不会发请求」通过。实测依据 C1（developer → 400 InvalidParameter）来自 Plan 入口；/api/v3 上的同样行为未实测，属文档/跨入口推断。"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "output_files": 5,
+    "output_chars": 55549,
+    "errors_encountered": 0
+  },
+  "timing": {
+    "executor_duration_seconds": 533.1,
+    "total_duration_seconds": 533.1,
+    "duration_ms": 533068,
+    "total_tokens": 158025
+  },
+  "claims": [
+    {
+      "claim": "ark-client.test.js 有 16 个用例，全部通过且不联网",
+      "type": "process",
+      "verified": true,
+      "evidence": "grader 实跑 `node --test`（Node v26.7.0）：`tests 16 / pass 16 / fail 0`，全部通过注入的 fetchImpl 模拟，无网络请求。"
+    },
+    {
+      "claim": "doubao-seed-2.0-lite 默认开启深度思考，thinking.disabled 生效",
+      "type": "factual",
+      "verified": true,
+      "evidence": "与 verification-findings.md C5 一致（reasoning_tokens 109 → 0）。但该实测在 /api/plan/v3 入口，NOTES.md 已在开头声明「标准入口 /api/v3 在 skill 里标为文档转录、未实测」，属诚实标注。"
+    },
+    {
+      "claim": "role 只能是 system/user/assistant/tool，developer 会 400 InvalidParameter",
+      "type": "factual",
+      "verified": true,
+      "evidence": "与 verification-findings.md C1 的原始报错文案逐字吻合（supported values are: system, assistant, user, tool）。同样来自 Plan 入口。"
+    },
+    {
+      "claim": "doubao-seed-2-0-lite-260428 是 2.0 lite 最新版（256k 上下文、128k 输出、RPM 30000 / TPM 5,000,000）",
+      "type": "factual",
+      "verified": false,
+      "evidence": "无法从 verification-findings.md 核实。ground truth B2 只证明 Plan 入口收到 260428 会静默降到 260215；模型列表页的规格数字（256k/128k/RPM/TPM）本次无独立来源可查，属文档转录的未验证细节。"
+    },
+    {
+      "claim": "标准入口传 Model Name 是否被接受，skill 标记为未测，所以默认用 Model ID",
+      "type": "process",
+      "verified": true,
+      "evidence": "与 verification-findings.md §G「/api/v3 全部行为（Model ID 精确匹配、小写 Name 是否被接受）」未验证完全一致 —— 输出正确地把不确定性向下游传达，而不是伪装成已知。"
+    },
+    {
+      "claim": "max_tokens 与 max_completion_tokens 互斥（方舟 400）",
+      "type": "factual",
+      "verified": false,
+      "evidence": "verification-findings.md 没有测过两者同传。C6/C7 只分别测了各自单传的行为。这是一条 skill 未验证、输出却当成确定结论写进 NOTES「防的坑 #3」的推断；代码里本地直接抛错，若实际并不互斥会造成不必要的限制（影响很小）。"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "未用真实 Key 调用过；/api/v3 标准入口本身在 skill 中标为文档转录、未实测",
+      "openai npm SDK 能否透传顶层 thinking 字段未实测，因此改用原生 fetch",
+      "标准入口是否接受小写 Model Name 未知"
+    ],
+    "needs_review": [
+      "拿到真实 Key 后需核对：响应 model 是否确为 doubao-seed-2-0-lite-260428、reasoning_tokens 是否为 0、末尾 usage chunk 是否存在"
+    ],
+    "workarounds": [
+      "放弃 openai SDK，用 Node 18+ 内置 fetch 自写 SSE 解析，以保证 thinking 字段一定发得出去",
+      "SSE 按「一行 data: = 一个事件」解析而非规范的多行拼接，以适配 OpenAI 兼容服务器"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "model 是带日期版本号的 Model ID 形式（如 doubao-seed-2-0-lite-260428）或 ep- 接入点，不是小写点分隔的 Model Name",
+        "reason": "该断言只检查「形式」，不检查版本号是否真实存在。baseline 用的是 doubao-seed-2-0-lite-260215（NOTES 自陈「凭记忆写的」），形式合规但在 /api/v3 精确匹配语义下若该版本不存在就是 404 —— 这个真实风险被断言放过了。建议加一条：模型版本号要么来自 skill 中记录的模型列表，要么代码/文档显式提示用户去控制台核对。"
+      },
+      {
+        "reason": "没有断言检查 stream: true 本身，也没有断言检查代码是否正确处理「usage 收尾 chunk 的 choices 为空数组」。后者是流式 + include_usage 的头号崩溃点（chunk.choices[0].delta 读 undefined），with_skill 显式处理了，是个有区分度的真实结果，却无断言覆盖。"
+      },
+      {
+        "reason": "「没有使用 developer role」是一条几乎不可能失败的断言：现在没有任何一版 OpenAI Node SDK 会默认注入 developer role，两个 run 都自然通过。若想真正考察这一点，建议把断言改成「代码或文档显式说明方舟不接受 developer role」，才能区分「碰巧没用」和「知道不能用」。"
+      }
+    ],
+    "overall": "断言方向正确，但三条偏「形式合规」而非「取值正确」，导致 baseline 一个自陈是猜的模型版本号也能满分通过。建议补一条针对模型版本号来源、一条针对 usage 收尾 chunk 处理的断言。另需注意：本 eval 的全部 5 条断言在 ground truth 中都属 /api/v3 未实测区（verification-findings.md §G），只能按文档保真度评分。"
+  }
+}

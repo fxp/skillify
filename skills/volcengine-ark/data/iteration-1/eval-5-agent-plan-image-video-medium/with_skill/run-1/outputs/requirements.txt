@@ -1,0 +1,3 @@
+requests>=2.31
+# 可选：只有用 --downscale 把 2k 图本地缩成 1K 时才需要
+pillow>=10.0

@@ -1,0 +1,98 @@
+{
+  "expectations": [
+    {
+      "text": "图片生成用 Agent Plan 入口 /api/plan/v3/images/generations 与 Model Name doubao-seedream-5.0-lite",
+      "passed": true,
+      "evidence": "generate.py: PLAN_BASE_URL = 'https://ark.cn-beijing.volces.com/api/plan/v3'; IMAGE_MODEL = 'doubao-seedream-5.0-lite'; generate_image() calls client.request('POST', '/images/generations', body). ArkPlanClient.__init__ hard-rejects any base_url containing /api/v3 without /api/plan/. Key read from ARK_AGENT_PLAN_API_KEY with an explicit note that it is not interchangeable with the standard Ark key (matches ground truth A1: Plan key on /api/v3 -> 401). Default size is lowercase '2k' and validate_size() refuses '1k' with the real 400 message, matching verified behaviour of 5.0-lite."
+    },
+    {
+      "text": "明确指出 Medium 套餐不支持视频生成模型（视频仅 Large / Max 档），而不是直接写视频代码假定能跑",
+      "passed": true,
+      "evidence": "NOTES.md §3: '文档《套餐概览》明确「Small、Medium 套餐仅供轻量化体验，不支持视频生成」。实测（Medium，2026-09-04）POST /api/plan/v3/contents/generations/tasks + doubao-seedance-2.0-mini → 404 UnsupportedModel'. generate.py docstring: 'out/video-001.mp4 (仅 Large / Max 套餐可用；Medium 会被服务端 404 拒绝并自动跳过)'. run_video() catches ArkError.is_unsupported_model (status 404 + code UnsupportedModel, exactly the verified error) and exits cleanly with an explanation; main() prints '视频：medium 档不支持视频生成，脚本仍会探测一次，预期 404 UnsupportedModel 后自动跳过' before any request. The probe is kept only because the user said '如果还能用视频模型'."
+    },
+    {
+      "text": "如给出视频代码，采用创建任务 + 轮询 GET /contents/generations/tasks/{id} 的异步模式",
+      "passed": true,
+      "evidence": "submit_video(): client.request('POST', '/contents/generations/tasks', body) returns task id; wait_video(): loops client.request('GET', f'/contents/generations/tasks/{task_id}') every 10 s until status in succeeded/failed/cancelled/expired, then downloads content.video_url. Poll interval justified by the documented query QPS cap (20)."
+    },
+    {
+      "text": "提到每张图消耗 99 AFP 或图片模型不受 5 小时 / 周限额约束、只受日 / 月限额",
+      "passed": true,
+      "evidence": "NOTES.md §4: 'Medium：200 元/月，100,000 AFP / 月；文本模型另受 5 小时 10,000、周 35,000 限额。图片 / 视频不受 5 小时与周限额，只受「日额度 = 月额度一半 = 50,000 AFP」和月额度约束' and '99 AFP / 张'. generate.py: IMAGE_AFP_PER_IMAGE = 99 and the dry-run banner prints '图片/视频日额度 … AFP（不受 5 小时 / 周限额）' and '99 AFP/张，与像素无关'."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "total_tokens": 154235,
+    "duration_ms": 374491,
+    "total_duration_seconds": 374.5,
+    "executor_duration_seconds": 374.5
+  },
+  "claims": [
+    {
+      "claim": "Agent Plan Key on /api/v3 or /api/coding/v3 returns 401",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md A1/A2: 401 AuthenticationError for both."
+    },
+    {
+      "claim": "doubao-seedream-5.0-lite rejects size '1K' with 400 'size must be one of WIDTHxHEIGHT, 2k, 3k, or 4k'; lowercase '2k' returns 200 with size 2048x2048",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md section D: POST /images/generations size 1K -> 400 with that message; size 2k -> 200, data[0].size 2048x2048, usage.generated_images 1."
+    },
+    {
+      "claim": "Medium tier video task creation returns 404 UnsupportedModel with the same message as an out-of-plan model",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md B10 / D: POST /contents/generations/tasks on Medium -> 404 UnsupportedModel."
+    },
+    {
+      "claim": "Each successful image costs a flat 99 AFP regardless of pixels; images/videos are exempt from the 5-hour and weekly caps and only bound by daily (= half monthly) and monthly caps",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Consistent with the skill's documentation transcription but not covered by any real-API measurement in verification-findings.md (the one 2k image was billed 99 AFP per the summary line, which supports the per-image figure but not the exemption claim). Treated as doc-transcribed, not contradicted."
+    },
+    {
+      "claim": "doubao-seedream-5.0-lite is the only image model in Agent Plan; Seedream 5.0 pro / 4.0 are not in the plan",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Not testable from the outputs; no probe of other image model names in verification-findings.md. Unverifiable, not contradicted."
+    },
+    {
+      "claim": "output_format: png and stream: false are accepted by the Plan images endpoint",
+      "type": "factual",
+      "verified": false,
+      "evidence": "The verified 200 request used only size/watermark/response_format; output_format was not exercised. Low risk (documented Seedream parameter) but unverified."
+    },
+    {
+      "claim": "The script was not actually run against the API",
+      "type": "process",
+      "verified": true,
+      "evidence": "NOTES.md §6: '本脚本本次没有真实调用（无 Key）'. Honest disclosure; consistent with grading from code only."
+    },
+    {
+      "claim": "Script handles 404 UnsupportedModel gracefully and exits 0 without charging AFP",
+      "type": "quality",
+      "verified": true,
+      "evidence": "run_video() returns None on is_unsupported_model; main() then returns 0. A failed task creation does not create a task, so no AFP is consumed per the documented billing-on-success rule."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "reason": "No assertion checks the size parameter, yet the prompt explicitly asks for '1K' and the real 5.0-lite rejects it with 400. A run that used /api/plan/v3 + 5.0-lite + size '1K' would pass all four assertions and still fail on every image. Add: 'size 不传 1K（5.0-lite 只接受 2k/3k/4k/WIDTHxHEIGHT），或说明 1K 不可用并给出替代'."
+      },
+      {
+        "assertion": "如给出视频代码，采用创建任务 + 轮询 GET /contents/generations/tasks/{id} 的异步模式",
+        "reason": "Passes for any generic Ark video snippet, including the baseline that posts to the wrong base URL with a standard Model ID. It does not discriminate skill value; consider requiring that a 404 UnsupportedModel on task creation be treated as 'plan does not include video' rather than a generic failure."
+      }
+    ],
+    "overall": "Assertions 1, 2 and 4 are discriminating and match verified API behaviour. Assertion 3 is nearly free. The most consequential verified fact for this prompt (size '1K' -> 400 on 5.0-lite) is not asserted."
+  }
+}

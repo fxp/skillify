@@ -1,0 +1,102 @@
+{
+  "expectations": [
+    {
+      "text": "Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3 且使用 Agent Plan 专属 Key",
+      "passed": true,
+      "evidence": "code_review_compare.py L45 `AGENT_PLAN_BASE_URL = \"https://ark.cn-beijing.volces.com/api/plan/v3\"`, L46 `API_KEY_ENV = \"ARK_AGENT_PLAN_API_KEY\"`; L359-363 missing-key message: \"需要的是 Agent Plan 控制台第 3 步生成的『专属 API Key』，不是方舟 API Key（后者打 /api/plan/v3 会 401）\". NOTES.md L9-10 explicitly rules out /api/v3 and /api/coding/v3. Matches verification A1-A3."
+    },
+    {
+      "text": "对 kimi-k3 限长用的是 max_completion_tokens（或明确说明 max_tokens 会把思维链算进去而预留了远大于 300 的额度），不会出现 max_tokens=300 导致空回答",
+      "passed": true,
+      "evidence": "L105 kimi-k3 `max_completion_tokens=TARGET_ANSWER_TOKENS + KIMI_REASONING_BUDGET` (=1800); L166 build_request sends only `\"max_completion_tokens\": budget` and never `max_tokens` (grep: `max_tokens` appears only in comments saying not to use it). L229-238 additionally detects finish_reason==length && empty content and doubles the budget for one retry. Consistent with verification C7 (max_tokens=64 → empty content; max_completion_tokens works)."
+    },
+    {
+      "text": "glm-5.3 关闭思维链没有使用 thinking: {type: disabled}（真实返回 400 thinking.type disabled is not supported by this model），而是 reasoning_effort=low 之类被接受的取值",
+      "passed": true,
+      "evidence": "L113 glm-5.3 `native_params={\"reasoning_effort\": \"low\"}`; L114 comment: \"不要写 extra_body={\\\"thinking\\\": {\\\"type\\\": \\\"disabled\\\"}} —— glm-5.3 返回 400\"; extra_body for glm-5.3 is empty. Matches verification C2 (disabled → 400) and C3 (low → 200, reasoning_tokens 0)."
+    },
+    {
+      "text": "没有使用 reasoning_effort=none（真实返回 400）",
+      "passed": true,
+      "evidence": "The only occurrences of `none` are in the docstring L14-15 and L115 note explaining that `reasoning_effort: \"none\"` returns 400 and must not be used. The request sends `reasoning_effort: \"low\"` only (L113)."
+    },
+    {
+      "text": "从 message.reasoning_content 与 message.content 分别取思维链与正文，而不是假设思维链混在 content 里",
+      "passed": true,
+      "evidence": "L220 `result.content = (msg.content or \"\").strip()`; L222 `result.reasoning_content = getattr(msg, \"reasoning_content\", None)`; L226-227 reads `usage.completion_tokens_details.reasoning_tokens`. print_reviews (L275-279) prints them under separate [思维链]/[回答] headers, and the comparison table computes answer tokens = completion_tokens - reasoning_tokens."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "total_tokens": 108680,
+    "duration_ms": 265771,
+    "total_duration_seconds": 265.8,
+    "executor_duration_seconds": 265.8
+  },
+  "claims": [
+    {
+      "claim": "kimi-k3 counts the chain of thought inside max_tokens; max_tokens=64 yields finish_reason=length and empty content",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md C7: `kimi-k3 max_tokens: 64` → finish_reason length, content \"\", reasoning 61; max_completion_tokens 400 works."
+    },
+    {
+      "claim": "glm-5.3 returns 400 for both thinking.type=disabled and reasoning_effort=none; reasoning_effort=low gives reasoning_tokens 0",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md C2, C3, C4 match exactly, including the quoted error messages in NOTES.md L31."
+    },
+    {
+      "claim": "Agent Plan key returns 401 on /api/v3 and /api/coding/v3; Plan entry rejects role=developer with 400",
+      "type": "factual",
+      "verified": true,
+      "evidence": "verification-findings.md A1, A2, C1."
+    },
+    {
+      "claim": "reasoning_effort and max_completion_tokens are native openai SDK kwargs, so no extra_body is needed",
+      "type": "factual",
+      "verified": false,
+      "evidence": "True on current SDKs, but requirements.txt pins `openai>=1.40,<3`. `max_completion_tokens` and `reasoning_effort` were added to chat.completions.create in later 1.x releases (roughly 1.45 and 1.58); on openai 1.40-1.5x the call would raise TypeError for an unexpected keyword. Lower bound is too permissive; behaviour is correct on any recent install."
+    },
+    {
+      "claim": "AFP deduction coefficients: kimi-k3 = 10, glm-5.3 = 4.5; neither supports post-paid overage",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Not covered by verification-findings.md; cannot be checked from available material (unverifiable, not contradicted)."
+    },
+    {
+      "claim": "No real API call was made while writing the script; --dry-run shows the request bodies",
+      "type": "process",
+      "verified": true,
+      "evidence": "NOTES.md L3 states this; --dry-run branch L348-355 prints base_url and per-model request kwargs without creating a client."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "kimi-k3 behaviour with thinking.disabled and with reasoning_effort was not tested, so the script leaves kimi-k3 thinking at default (NOTES.md L36, L50)."
+    ],
+    "needs_review": [
+      "NOTES.md L49 warns that Agent Plan text models are officially 'not for API use' and direct calls to /api/plan/v3 outside AI tools carry an abuse/suspension risk."
+    ],
+    "workarounds": [
+      "Answer length (~300 tokens) is enforced by prompt for kimi-k3, with max_completion_tokens=1800 as total budget and a one-shot doubling retry if the answer is truncated to empty."
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "没有使用 reasoning_effort=none（真实返回 400）",
+        "reason": "Negative-only assertion; any script that never touches reasoning_effort (e.g. the baseline that used thinking.disabled instead) passes it for free. Consider folding it into assertion 3 as 'glm-5.3 uses an accepted reasoning_effort value and neither thinking.disabled nor reasoning_effort=none'."
+      },
+      {
+        "reason": "No assertion covers SDK compatibility of the chosen kwargs. This run relies on native `max_completion_tokens`/`reasoning_effort` kwargs but pins `openai>=1.40`, which is older than the SDK versions that introduced them; the script would TypeError on such an install. A check like 'openai lower bound is compatible with the kwargs used, or they are passed via extra_body' would catch this."
+      }
+    ],
+    "overall": "Assertions are discriminating on the real API pitfalls (entry/key, kimi max_tokens, glm thinking switch) and this run passes them on substance. Assertion 4 is redundant/trivial, and SDK-version compatibility of the kwargs is an uncovered gap."
+  }
+}

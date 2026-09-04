@@ -1,0 +1,935 @@
+Split: 12 train, 8 test (holdout=0.4)
+
+============================================================
+Iteration 1/3
+Description: 接入火山引擎·火山方舟（Volcengine Ark，ark.cn-beijing.volces.com，豆包 Doubao / Seed / Seedream / Seedance 及 DeepSeek、GLM、Kimi、MiniMax 等第三方模型）的完整 API 使用手册，并且重点区分三套互不通用的入口：标准后付费 API（/api/v3 + 方舟 API Key + 带日期的 Model ID）、Coding Plan 编程套餐（/api/coding 或 /api/coding/v3 + 方舟 API Key + 小写 Model Name）、Agent Plan 订阅套餐（/api/plan 或 /api/plan/v3 + Agent Plan 专属 API Key + AFP 抵扣）。覆盖 Chat Completions、Responses API、深度思考、Function Calling、结构化输出、上下文缓存、多模态理解（图片/视频/文档/音频/文件）、图片生成、视频生成、向量化、语音 TTS/ASR、批量推理、应用 Bot、内置工具（联网搜索/MCP/图像处理）、管控面 API（AK/SK 签名，含 Agent/Coding Plan 套餐与用量查询）、在 Claude Code / Codex / OpenCode / OpenClaw / Cline / Cursor / TRAE 等工具里配置套餐、Ark CLI、错误码与限流。当用户提到"火山方舟""火山引擎大模型""方舟""Ark""volces""豆包 API""Doubao""Seedream""Seedance""Agent Plan""Coding Plan""AFP""ark-code-latest""arkcli""volcenginesdkarkruntime"，或者要用这些模型写代码、配置编程工具套餐、排查"用了套餐还被扣费""Key 不对""模型不存在"时，务必加载本技能，不要凭记忆编造 Base URL、Key 类型或模型名格式。
+============================================================
+Train: 19/36 correct, precision=100% recall=6% accuracy=53% (108.2s)
+  [FAIL] rate=0/3 expected=True: 我们团队想程序化查每个人 Agent Plan 席位还剩多少 AFP，火山那个管控面 API 怎么签名，Action 叫
+  [FAIL] rate=0/3 expected=True: 用 volcenginesdkarkruntime 还是直接 requests 好？我要调 doubao-seed-2-
+  [FAIL] rate=1/3 expected=True: kimi-k3 在方舟上 max_tokens 设 300 回复是空的 finish_reason 是 length，但
+  [FAIL] rate=0/3 expected=True: 帮我把 ~/.claude/settings.json 改成用火山方舟 agent plan，主模型 glm-5.3，s
+  [FAIL] rate=0/3 expected=True: 我买了火山方舟 Agent Plan 的 Medium 套餐，想在 Python 脚本里用套餐额度批量给 notes/ 
+  [FAIL] rate=0/3 expected=True: help me wire up the openai python sdk against volcengine ark
+  [PASS] rate=0/3 expected=False: 火山引擎云服务器 ECS 按量付费怎么改成包年包月，控制台在哪操作
+  [PASS] rate=0/3 expected=False: 写一个 LangChain 的 RAG demo，embedding 用 text-embedding-3-small，
+  [PASS] rate=0/3 expected=False: 智谱 GLM Coding Plan 的 key 在 Claude Code 里怎么配，base url 是 open.
+  [PASS] rate=0/3 expected=False: 帮我用 Anthropic 官方的 claude-sonnet-4-5 写一个 Claude Code hooks 配置
+  [PASS] rate=0/3 expected=False: 抖音开放平台的视频发布接口怎么拿 access_token，需要企业认证吗
+  [PASS] rate=0/3 expected=False: deepseek 官方 api 的 deepseek-reasoner 怎么关思维链，reasoning_content
+Test : 14/24 correct, precision=100% recall=17% accuracy=58% (0.0s)
+  [FAIL] rate=0/3 expected=True: seedance 2.0 生视频的任务一直 status 是 queued，用的是 /api/v3/contents/g
+  [FAIL] rate=0/3 expected=True: 写一段 Node 代码调豆包的 Seedream 5.0 lite 生成 2k 的图，然后把 url 下载到本地，用的是
+  [FAIL] rate=0/3 expected=True: claude code 配了火山的 coding plan 之后一直报 400 invalid value develo
+  [PASS] rate=2/3 expected=True: ark-code-latest 和直接填 doubao-seed-evolving 有什么区别，我在 opencode 
+  [PASS] rate=0/3 expected=False: 帮我看下这个 nginx 配置为什么 SSE 流式输出到浏览器会被缓冲，我后端是 FastAPI 转发大模型的 stre
+  [PASS] rate=0/3 expected=False: 我在字节的飞书多维表格里有一列公司名，想用 kimi 的 API（platform.moonshot.cn）批量补全公司
+  [PASS] rate=0/3 expected=False: 火山引擎 TOS 对象存储怎么用 Python SDK 分片上传一个 5GB 的视频文件，要带进度条
+  [PASS] rate=0/3 expected=False: 用 OpenAI 的 responses api 做一个带 web_search 工具的 agent，模型 gpt-5，
+
+Improving description...
+Proposed (27.6s): Use whenever a request touches a model hosted on 火山引擎·火山方舟 Volcengine Ark (ark.cn-beijing.volces.com) — 豆包 Doubao / Seed / Seedream / Seedance，或方舟上的 glm / kimi / deepseek / minimax（模型名形如 doubao-seed-2.0-lite、glm-5.3、kimi-k3、ark-code-latest）、ARK_API_KEY、volcenginesdkarkruntime、Agent Plan / Coding Plan 套餐与 AFP 额度。适用于：用 OpenAI / Anthropic SDK 或 requests 写调用代码（流式、开关深度思考、function calling、结构化输出、多模态、图片/视频/向量/语音、批量脚本）；选对 Base URL（/api/v3 vs /api/plan vs /api/coding）、哪把 Key、model 名格式，确保扣套餐额度而不是后付费余额；把套餐配进 Claude Code / Codex / Cline / Cursor 等工具（settings.json、ANTHROPIC_* 变量、主模型与 subagent 模型）；管控面 AK/SK 签名与 Action，程序化查套餐、席位、AFP 用量；排查 401、404 UnsupportedModel、空回复 finish_reason=length、参数不被支持、限流。不要凭记忆编 Base URL、Key 类型或模型名。Skip for 非模型的火山云产品（ECS 等）和其他厂商自家 API（open.bigmodel.cn、deepseek.com、api.anthropic.com）。
+
+============================================================
+Iteration 2/3
+Description: Use whenever a request touches a model hosted on 火山引擎·火山方舟 Volcengine Ark (ark.cn-beijing.volces.com) — 豆包 Doubao / Seed / Seedream / Seedance，或方舟上的 glm / kimi / deepseek / minimax（模型名形如 doubao-seed-2.0-lite、glm-5.3、kimi-k3、ark-code-latest）、ARK_API_KEY、volcenginesdkarkruntime、Agent Plan / Coding Plan 套餐与 AFP 额度。适用于：用 OpenAI / Anthropic SDK 或 requests 写调用代码（流式、开关深度思考、function calling、结构化输出、多模态、图片/视频/向量/语音、批量脚本）；选对 Base URL（/api/v3 vs /api/plan vs /api/coding）、哪把 Key、model 名格式，确保扣套餐额度而不是后付费余额；把套餐配进 Claude Code / Codex / Cline / Cursor 等工具（settings.json、ANTHROPIC_* 变量、主模型与 subagent 模型）；管控面 AK/SK 签名与 Action，程序化查套餐、席位、AFP 用量；排查 401、404 UnsupportedModel、空回复 finish_reason=length、参数不被支持、限流。不要凭记忆编 Base URL、Key 类型或模型名。Skip for 非模型的火山云产品（ECS 等）和其他厂商自家 API（open.bigmodel.cn、deepseek.com、api.anthropic.com）。
+============================================================
+Train: 20/36 correct, precision=100% recall=11% accuracy=56% (105.3s)
+  [FAIL] rate=0/3 expected=True: 我们团队想程序化查每个人 Agent Plan 席位还剩多少 AFP，火山那个管控面 API 怎么签名，Action 叫
+  [FAIL] rate=0/3 expected=True: 用 volcenginesdkarkruntime 还是直接 requests 好？我要调 doubao-seed-2-
+  [FAIL] rate=0/3 expected=True: 帮我把 ~/.claude/settings.json 改成用火山方舟 agent plan，主模型 glm-5.3，s
+  [FAIL] rate=1/3 expected=True: kimi-k3 在方舟上 max_tokens 设 300 回复是空的 finish_reason 是 length，但
+  [FAIL] rate=1/3 expected=True: help me wire up the openai python sdk against volcengine ark
+  [FAIL] rate=0/3 expected=True: 我买了火山方舟 Agent Plan 的 Medium 套餐，想在 Python 脚本里用套餐额度批量给 notes/ 
+  [PASS] rate=0/3 expected=False: 智谱 GLM Coding Plan 的 key 在 Claude Code 里怎么配，base url 是 open.
+  [PASS] rate=0/3 expected=False: 火山引擎云服务器 ECS 按量付费怎么改成包年包月，控制台在哪操作
+  [PASS] rate=0/3 expected=False: 写一个 LangChain 的 RAG demo，embedding 用 text-embedding-3-small，
+  [PASS] rate=0/3 expected=False: 帮我用 Anthropic 官方的 claude-sonnet-4-5 写一个 Claude Code hooks 配置
+  [PASS] rate=0/3 expected=False: 抖音开放平台的视频发布接口怎么拿 access_token，需要企业认证吗
+  [PASS] rate=0/3 expected=False: deepseek 官方 api 的 deepseek-reasoner 怎么关思维链，reasoning_content
+Test : 14/24 correct, precision=100% recall=17% accuracy=58% (0.0s)
+  [FAIL] rate=1/3 expected=True: seedance 2.0 生视频的任务一直 status 是 queued，用的是 /api/v3/contents/g
+  [FAIL] rate=1/3 expected=True: 写一段 Node 代码调豆包的 Seedream 5.0 lite 生成 2k 的图，然后把 url 下载到本地，用的是
+  [FAIL] rate=0/3 expected=True: claude code 配了火山的 coding plan 之后一直报 400 invalid value develo
+  [FAIL] rate=0/3 expected=True: ark-code-latest 和直接填 doubao-seed-evolving 有什么区别，我在 opencode 
+  [PASS] rate=0/3 expected=False: 帮我看下这个 nginx 配置为什么 SSE 流式输出到浏览器会被缓冲，我后端是 FastAPI 转发大模型的 stre
+  [PASS] rate=0/3 expected=False: 我在字节的飞书多维表格里有一列公司名，想用 kimi 的 API（platform.moonshot.cn）批量补全公司
+  [PASS] rate=0/3 expected=False: 火山引擎 TOS 对象存储怎么用 Python SDK 分片上传一个 5GB 的视频文件，要带进度条
+  [PASS] rate=0/3 expected=False: 用 OpenAI 的 responses api 做一个带 web_search 工具的 agent，模型 gpt-5，
+
+Improving description...
+Proposed (24.7s): Use this skill for ANY task that mentions 火山方舟 / Volcengine Ark / 方舟 / volces / ark.cn-beijing.volces.com, 豆包 Doubao·Seed·Seedream·Seedance, 方舟上的 glm / kimi / deepseek / minimax 模型, ARK_API_KEY, volcenginesdkarkruntime, Agent Plan / Coding Plan 套餐, AFP 额度, ark-code-latest, arkcli. Load it before you write or debug code calling these models (SDK 选型、流式、开关深度思考、function calling、结构化输出、多模态、图片/视频/向量/语音、批量脚本), before you pick a Base URL、Key 或 model 名, before you edit settings.json / 环境变量 让 Claude Code、Codex、Cline、Cursor 走方舟套餐（含主模型与 subagent、上下文长度）, before you touch 管控面 AK/SK 签名、Action、席位与用量查询, and when you diagnose 401、404 UnsupportedModel、空回复 finish_reason=length、参数不支持、扣错钱、限流。方舟的入口、Key 类型、模型名格式不能凭记忆写——先查本技能。Skip 非模型的火山云产品（ECS 等）与其他厂商自家 API（open.bigmodel.cn、deepseek.com、api.anthropic.com）。
+
+============================================================
+Iteration 3/3
+Description: Use this skill for ANY task that mentions 火山方舟 / Volcengine Ark / 方舟 / volces / ark.cn-beijing.volces.com, 豆包 Doubao·Seed·Seedream·Seedance, 方舟上的 glm / kimi / deepseek / minimax 模型, ARK_API_KEY, volcenginesdkarkruntime, Agent Plan / Coding Plan 套餐, AFP 额度, ark-code-latest, arkcli. Load it before you write or debug code calling these models (SDK 选型、流式、开关深度思考、function calling、结构化输出、多模态、图片/视频/向量/语音、批量脚本), before you pick a Base URL、Key 或 model 名, before you edit settings.json / 环境变量 让 Claude Code、Codex、Cline、Cursor 走方舟套餐（含主模型与 subagent、上下文长度）, before you touch 管控面 AK/SK 签名、Action、席位与用量查询, and when you diagnose 401、404 UnsupportedModel、空回复 finish_reason=length、参数不支持、扣错钱、限流。方舟的入口、Key 类型、模型名格式不能凭记忆写——先查本技能。Skip 非模型的火山云产品（ECS 等）与其他厂商自家 API（open.bigmodel.cn、deepseek.com、api.anthropic.com）。
+============================================================
+Train: 19/36 correct, precision=100% recall=6% accuracy=53% (102.4s)
+  [FAIL] rate=0/3 expected=True: 用 volcenginesdkarkruntime 还是直接 requests 好？我要调 doubao-seed-2-
+  [FAIL] rate=0/3 expected=True: 我们团队想程序化查每个人 Agent Plan 席位还剩多少 AFP，火山那个管控面 API 怎么签名，Action 叫
+  [FAIL] rate=1/3 expected=True: kimi-k3 在方舟上 max_tokens 设 300 回复是空的 finish_reason 是 length，但
+  [FAIL] rate=0/3 expected=True: 帮我把 ~/.claude/settings.json 改成用火山方舟 agent plan，主模型 glm-5.3，s
+  [FAIL] rate=0/3 expected=True: 我买了火山方舟 Agent Plan 的 Medium 套餐，想在 Python 脚本里用套餐额度批量给 notes/ 
+  [FAIL] rate=0/3 expected=True: help me wire up the openai python sdk against volcengine ark
+  [PASS] rate=0/3 expected=False: 智谱 GLM Coding Plan 的 key 在 Claude Code 里怎么配，base url 是 open.
+  [PASS] rate=0/3 expected=False: 写一个 LangChain 的 RAG demo，embedding 用 text-embedding-3-small，
+  [PASS] rate=0/3 expected=False: 火山引擎云服务器 ECS 按量付费怎么改成包年包月，控制台在哪操作
+  [PASS] rate=0/3 expected=False: 抖音开放平台的视频发布接口怎么拿 access_token，需要企业认证吗
+  [PASS] rate=0/3 expected=False: deepseek 官方 api 的 deepseek-reasoner 怎么关思维链，reasoning_content
+  [PASS] rate=0/3 expected=False: 帮我用 Anthropic 官方的 claude-sonnet-4-5 写一个 Claude Code hooks 配置
+Test : 14/24 correct, precision=100% recall=17% accuracy=58% (0.0s)
+  [FAIL] rate=1/3 expected=True: seedance 2.0 生视频的任务一直 status 是 queued，用的是 /api/v3/contents/g
+  [FAIL] rate=0/3 expected=True: 写一段 Node 代码调豆包的 Seedream 5.0 lite 生成 2k 的图，然后把 url 下载到本地，用的是
+  [FAIL] rate=0/3 expected=True: ark-code-latest 和直接填 doubao-seed-evolving 有什么区别，我在 opencode 
+  [FAIL] rate=1/3 expected=True: claude code 配了火山的 coding plan 之后一直报 400 invalid value develo
+  [PASS] rate=0/3 expected=False: 帮我看下这个 nginx 配置为什么 SSE 流式输出到浏览器会被缓冲，我后端是 FastAPI 转发大模型的 stre
+  [PASS] rate=0/3 expected=False: 我在字节的飞书多维表格里有一列公司名，想用 kimi 的 API（platform.moonshot.cn）批量补全公司
+  [PASS] rate=0/3 expected=False: 火山引擎 TOS 对象存储怎么用 Python SDK 分片上传一个 5GB 的视频文件，要带进度条
+  [PASS] rate=0/3 expected=False: 用 OpenAI 的 responses api 做一个带 web_search 工具的 agent，模型 gpt-5，
+
+Max iterations reached (3).
+
+Exit reason: max_iterations (3)
+Best score: 5/8 (iteration 1)
+{
+  "exit_reason": "max_iterations (3)",
+  "original_description": "\u63a5\u5165\u706b\u5c71\u5f15\u64ce\u00b7\u706b\u5c71\u65b9\u821f\uff08Volcengine Ark\uff0cark.cn-beijing.volces.com\uff0c\u8c46\u5305 Doubao / Seed / Seedream / Seedance \u53ca DeepSeek\u3001GLM\u3001Kimi\u3001MiniMax \u7b49\u7b2c\u4e09\u65b9\u6a21\u578b\uff09\u7684\u5b8c\u6574 API \u4f7f\u7528\u624b\u518c\uff0c\u5e76\u4e14\u91cd\u70b9\u533a\u5206\u4e09\u5957\u4e92\u4e0d\u901a\u7528\u7684\u5165\u53e3\uff1a\u6807\u51c6\u540e\u4ed8\u8d39 API\uff08/api/v3 + \u65b9\u821f API Key + \u5e26\u65e5\u671f\u7684 Model ID\uff09\u3001Coding Plan \u7f16\u7a0b\u5957\u9910\uff08/api/coding \u6216 /api/coding/v3 + \u65b9\u821f API Key + \u5c0f\u5199 Model Name\uff09\u3001Agent Plan \u8ba2\u9605\u5957\u9910\uff08/api/plan \u6216 /api/plan/v3 + Agent Plan \u4e13\u5c5e API Key + AFP \u62b5\u6263\uff09\u3002\u8986\u76d6 Chat Completions\u3001Responses API\u3001\u6df1\u5ea6\u601d\u8003\u3001Function Calling\u3001\u7ed3\u6784\u5316\u8f93\u51fa\u3001\u4e0a\u4e0b\u6587\u7f13\u5b58\u3001\u591a\u6a21\u6001\u7406\u89e3\uff08\u56fe\u7247/\u89c6\u9891/\u6587\u6863/\u97f3\u9891/\u6587\u4ef6\uff09\u3001\u56fe\u7247\u751f\u6210\u3001\u89c6\u9891\u751f\u6210\u3001\u5411\u91cf\u5316\u3001\u8bed\u97f3 TTS/ASR\u3001\u6279\u91cf\u63a8\u7406\u3001\u5e94\u7528 Bot\u3001\u5185\u7f6e\u5de5\u5177\uff08\u8054\u7f51\u641c\u7d22/MCP/\u56fe\u50cf\u5904\u7406\uff09\u3001\u7ba1\u63a7\u9762 API\uff08AK/SK \u7b7e\u540d\uff0c\u542b Agent/Coding Plan \u5957\u9910\u4e0e\u7528\u91cf\u67e5\u8be2\uff09\u3001\u5728 Claude Code / Codex / OpenCode / OpenClaw / Cline / Cursor / TRAE \u7b49\u5de5\u5177\u91cc\u914d\u7f6e\u5957\u9910\u3001Ark CLI\u3001\u9519\u8bef\u7801\u4e0e\u9650\u6d41\u3002\u5f53\u7528\u6237\u63d0\u5230\"\u706b\u5c71\u65b9\u821f\"\"\u706b\u5c71\u5f15\u64ce\u5927\u6a21\u578b\"\"\u65b9\u821f\"\"Ark\"\"volces\"\"\u8c46\u5305 API\"\"Doubao\"\"Seedream\"\"Seedance\"\"Agent Plan\"\"Coding Plan\"\"AFP\"\"ark-code-latest\"\"arkcli\"\"volcenginesdkarkruntime\"\uff0c\u6216\u8005\u8981\u7528\u8fd9\u4e9b\u6a21\u578b\u5199\u4ee3\u7801\u3001\u914d\u7f6e\u7f16\u7a0b\u5de5\u5177\u5957\u9910\u3001\u6392\u67e5\"\u7528\u4e86\u5957\u9910\u8fd8\u88ab\u6263\u8d39\"\"Key \u4e0d\u5bf9\"\"\u6a21\u578b\u4e0d\u5b58\u5728\"\u65f6\uff0c\u52a1\u5fc5\u52a0\u8f7d\u672c\u6280\u80fd\uff0c\u4e0d\u8981\u51ed\u8bb0\u5fc6\u7f16\u9020 Base URL\u3001Key \u7c7b\u578b\u6216\u6a21\u578b\u540d\u683c\u5f0f\u3002",
+  "best_description": "\u63a5\u5165\u706b\u5c71\u5f15\u64ce\u00b7\u706b\u5c71\u65b9\u821f\uff08Volcengine Ark\uff0cark.cn-beijing.volces.com\uff0c\u8c46\u5305 Doubao / Seed / Seedream / Seedance \u53ca DeepSeek\u3001GLM\u3001Kimi\u3001MiniMax \u7b49\u7b2c\u4e09\u65b9\u6a21\u578b\uff09\u7684\u5b8c\u6574 API \u4f7f\u7528\u624b\u518c\uff0c\u5e76\u4e14\u91cd\u70b9\u533a\u5206\u4e09\u5957\u4e92\u4e0d\u901a\u7528\u7684\u5165\u53e3\uff1a\u6807\u51c6\u540e\u4ed8\u8d39 API\uff08/api/v3 + \u65b9\u821f API Key + \u5e26\u65e5\u671f\u7684 Model ID\uff09\u3001Coding Plan \u7f16\u7a0b\u5957\u9910\uff08/api/coding \u6216 /api/coding/v3 + \u65b9\u821f API Key + \u5c0f\u5199 Model Name\uff09\u3001Agent Plan \u8ba2\u9605\u5957\u9910\uff08/api/plan \u6216 /api/plan/v3 + Agent Plan \u4e13\u5c5e API Key + AFP \u62b5\u6263\uff09\u3002\u8986\u76d6 Chat Completions\u3001Responses API\u3001\u6df1\u5ea6\u601d\u8003\u3001Function Calling\u3001\u7ed3\u6784\u5316\u8f93\u51fa\u3001\u4e0a\u4e0b\u6587\u7f13\u5b58\u3001\u591a\u6a21\u6001\u7406\u89e3\uff08\u56fe\u7247/\u89c6\u9891/\u6587\u6863/\u97f3\u9891/\u6587\u4ef6\uff09\u3001\u56fe\u7247\u751f\u6210\u3001\u89c6\u9891\u751f\u6210\u3001\u5411\u91cf\u5316\u3001\u8bed\u97f3 TTS/ASR\u3001\u6279\u91cf\u63a8\u7406\u3001\u5e94\u7528 Bot\u3001\u5185\u7f6e\u5de5\u5177\uff08\u8054\u7f51\u641c\u7d22/MCP/\u56fe\u50cf\u5904\u7406\uff09\u3001\u7ba1\u63a7\u9762 API\uff08AK/SK \u7b7e\u540d\uff0c\u542b Agent/Coding Plan \u5957\u9910\u4e0e\u7528\u91cf\u67e5\u8be2\uff09\u3001\u5728 Claude Code / Codex / OpenCode / OpenClaw / Cline / Cursor / TRAE \u7b49\u5de5\u5177\u91cc\u914d\u7f6e\u5957\u9910\u3001Ark CLI\u3001\u9519\u8bef\u7801\u4e0e\u9650\u6d41\u3002\u5f53\u7528\u6237\u63d0\u5230\"\u706b\u5c71\u65b9\u821f\"\"\u706b\u5c71\u5f15\u64ce\u5927\u6a21\u578b\"\"\u65b9\u821f\"\"Ark\"\"volces\"\"\u8c46\u5305 API\"\"Doubao\"\"Seedream\"\"Seedance\"\"Agent Plan\"\"Coding Plan\"\"AFP\"\"ark-code-latest\"\"arkcli\"\"volcenginesdkarkruntime\"\uff0c\u6216\u8005\u8981\u7528\u8fd9\u4e9b\u6a21\u578b\u5199\u4ee3\u7801\u3001\u914d\u7f6e\u7f16\u7a0b\u5de5\u5177\u5957\u9910\u3001\u6392\u67e5\"\u7528\u4e86\u5957\u9910\u8fd8\u88ab\u6263\u8d39\"\"Key \u4e0d\u5bf9\"\"\u6a21\u578b\u4e0d\u5b58\u5728\"\u65f6\uff0c\u52a1\u5fc5\u52a0\u8f7d\u672c\u6280\u80fd\uff0c\u4e0d\u8981\u51ed\u8bb0\u5fc6\u7f16\u9020 Base URL\u3001Key \u7c7b\u578b\u6216\u6a21\u578b\u540d\u683c\u5f0f\u3002",
+  "best_score": "5/8",
+  "best_train_score": "6/12",
+  "best_test_score": "5/8",
+  "final_description": "Use this skill for ANY task that mentions \u706b\u5c71\u65b9\u821f / Volcengine Ark / \u65b9\u821f / volces / ark.cn-beijing.volces.com, \u8c46\u5305 Doubao\u00b7Seed\u00b7Seedream\u00b7Seedance, \u65b9\u821f\u4e0a\u7684 glm / kimi / deepseek / minimax \u6a21\u578b, ARK_API_KEY, volcenginesdkarkruntime, Agent Plan / Coding Plan \u5957\u9910, AFP \u989d\u5ea6, ark-code-latest, arkcli. Load it before you write or debug code calling these models (SDK \u9009\u578b\u3001\u6d41\u5f0f\u3001\u5f00\u5173\u6df1\u5ea6\u601d\u8003\u3001function calling\u3001\u7ed3\u6784\u5316\u8f93\u51fa\u3001\u591a\u6a21\u6001\u3001\u56fe\u7247/\u89c6\u9891/\u5411\u91cf/\u8bed\u97f3\u3001\u6279\u91cf\u811a\u672c), before you pick a Base URL\u3001Key \u6216 model \u540d, before you edit settings.json / \u73af\u5883\u53d8\u91cf \u8ba9 Claude Code\u3001Codex\u3001Cline\u3001Cursor \u8d70\u65b9\u821f\u5957\u9910\uff08\u542b\u4e3b\u6a21\u578b\u4e0e subagent\u3001\u4e0a\u4e0b\u6587\u957f\u5ea6\uff09, before you touch \u7ba1\u63a7\u9762 AK/SK \u7b7e\u540d\u3001Action\u3001\u5e2d\u4f4d\u4e0e\u7528\u91cf\u67e5\u8be2, and when you diagnose 401\u3001404 UnsupportedModel\u3001\u7a7a\u56de\u590d finish_reason=length\u3001\u53c2\u6570\u4e0d\u652f\u6301\u3001\u6263\u9519\u94b1\u3001\u9650\u6d41\u3002\u65b9\u821f\u7684\u5165\u53e3\u3001Key \u7c7b\u578b\u3001\u6a21\u578b\u540d\u683c\u5f0f\u4e0d\u80fd\u51ed\u8bb0\u5fc6\u5199\u2014\u2014\u5148\u67e5\u672c\u6280\u80fd\u3002Skip \u975e\u6a21\u578b\u7684\u706b\u5c71\u4e91\u4ea7\u54c1\uff08ECS \u7b49\uff09\u4e0e\u5176\u4ed6\u5382\u5546\u81ea\u5bb6 API\uff08open.bigmodel.cn\u3001deepseek.com\u3001api.anthropic.com\uff09\u3002",
+  "iterations_run": 3,
+  "holdout": 0.4,
+  "train_size": 12,
+  "test_size": 8,
+  "history": [
+    {
+      "iteration": 1,
+      "description": "\u63a5\u5165\u706b\u5c71\u5f15\u64ce\u00b7\u706b\u5c71\u65b9\u821f\uff08Volcengine Ark\uff0cark.cn-beijing.volces.com\uff0c\u8c46\u5305 Doubao / Seed / Seedream / Seedance \u53ca DeepSeek\u3001GLM\u3001Kimi\u3001MiniMax \u7b49\u7b2c\u4e09\u65b9\u6a21\u578b\uff09\u7684\u5b8c\u6574 API \u4f7f\u7528\u624b\u518c\uff0c\u5e76\u4e14\u91cd\u70b9\u533a\u5206\u4e09\u5957\u4e92\u4e0d\u901a\u7528\u7684\u5165\u53e3\uff1a\u6807\u51c6\u540e\u4ed8\u8d39 API\uff08/api/v3 + \u65b9\u821f API Key + \u5e26\u65e5\u671f\u7684 Model ID\uff09\u3001Coding Plan \u7f16\u7a0b\u5957\u9910\uff08/api/coding \u6216 /api/coding/v3 + \u65b9\u821f API Key + \u5c0f\u5199 Model Name\uff09\u3001Agent Plan \u8ba2\u9605\u5957\u9910\uff08/api/plan \u6216 /api/plan/v3 + Agent Plan \u4e13\u5c5e API Key + AFP \u62b5\u6263\uff09\u3002\u8986\u76d6 Chat Completions\u3001Responses API\u3001\u6df1\u5ea6\u601d\u8003\u3001Function Calling\u3001\u7ed3\u6784\u5316\u8f93\u51fa\u3001\u4e0a\u4e0b\u6587\u7f13\u5b58\u3001\u591a\u6a21\u6001\u7406\u89e3\uff08\u56fe\u7247/\u89c6\u9891/\u6587\u6863/\u97f3\u9891/\u6587\u4ef6\uff09\u3001\u56fe\u7247\u751f\u6210\u3001\u89c6\u9891\u751f\u6210\u3001\u5411\u91cf\u5316\u3001\u8bed\u97f3 TTS/ASR\u3001\u6279\u91cf\u63a8\u7406\u3001\u5e94\u7528 Bot\u3001\u5185\u7f6e\u5de5\u5177\uff08\u8054\u7f51\u641c\u7d22/MCP/\u56fe\u50cf\u5904\u7406\uff09\u3001\u7ba1\u63a7\u9762 API\uff08AK/SK \u7b7e\u540d\uff0c\u542b Agent/Coding Plan \u5957\u9910\u4e0e\u7528\u91cf\u67e5\u8be2\uff09\u3001\u5728 Claude Code / Codex / OpenCode / OpenClaw / Cline / Cursor / TRAE \u7b49\u5de5\u5177\u91cc\u914d\u7f6e\u5957\u9910\u3001Ark CLI\u3001\u9519\u8bef\u7801\u4e0e\u9650\u6d41\u3002\u5f53\u7528\u6237\u63d0\u5230\"\u706b\u5c71\u65b9\u821f\"\"\u706b\u5c71\u5f15\u64ce\u5927\u6a21\u578b\"\"\u65b9\u821f\"\"Ark\"\"volces\"\"\u8c46\u5305 API\"\"Doubao\"\"Seedream\"\"Seedance\"\"Agent Plan\"\"Coding Plan\"\"AFP\"\"ark-code-latest\"\"arkcli\"\"volcenginesdkarkruntime\"\uff0c\u6216\u8005\u8981\u7528\u8fd9\u4e9b\u6a21\u578b\u5199\u4ee3\u7801\u3001\u914d\u7f6e\u7f16\u7a0b\u5de5\u5177\u5957\u9910\u3001\u6392\u67e5\"\u7528\u4e86\u5957\u9910\u8fd8\u88ab\u6263\u8d39\"\"Key \u4e0d\u5bf9\"\"\u6a21\u578b\u4e0d\u5b58\u5728\"\u65f6\uff0c\u52a1\u5fc5\u52a0\u8f7d\u672c\u6280\u80fd\uff0c\u4e0d\u8981\u51ed\u8bb0\u5fc6\u7f16\u9020 Base URL\u3001Key \u7c7b\u578b\u6216\u6a21\u578b\u540d\u683c\u5f0f\u3002",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "\u6211\u4eec\u56e2\u961f\u60f3\u7a0b\u5e8f\u5316\u67e5\u6bcf\u4e2a\u4eba Agent Plan \u5e2d\u4f4d\u8fd8\u5269\u591a\u5c11 AFP\uff0c\u706b\u5c71\u90a3\u4e2a\u7ba1\u63a7\u9762 API \u600e\u4e48\u7b7e\u540d\uff0cAction \u53eb\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 volcenginesdkarkruntime \u8fd8\u662f\u76f4\u63a5 requests \u597d\uff1f\u6211\u8981\u8c03 doubao-seed-2-1-pro-260628 \u505a function calling\uff0c\u591a\u8f6e\u628a tool \u7ed3\u679c\u56de\u4f20",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "kimi-k3 \u5728\u65b9\u821f\u4e0a max_tokens \u8bbe 300 \u56de\u590d\u662f\u7a7a\u7684 finish_reason \u662f length\uff0c\u4f46\u540c\u6837\u4ee3\u7801\u6362 doubao \u5c31\u6b63\u5e38\uff0c\u4e3a\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a ~/.claude/settings.json \u6539\u6210\u7528\u706b\u5c71\u65b9\u821f agent plan\uff0c\u4e3b\u6a21\u578b glm-5.3\uff0csubagent \u7528 doubao-seed-2.0-mini\uff0c\u8981\u5f00 1M \u4e0a\u4e0b\u6587",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86\u706b\u5c71\u65b9\u821f Agent Plan \u7684 Medium \u5957\u9910\uff0c\u60f3\u5728 Python \u811a\u672c\u91cc\u7528\u5957\u9910\u989d\u5ea6\u6279\u91cf\u7ed9 notes/ \u76ee\u5f55\u4e0b\u7684 markdown \u751f\u6210\u6458\u8981\uff0c\u6a21\u578b\u7528 doubao-seed-2.0-lite\uff0c\u522b\u4ece\u540e\u4ed8\u8d39\u4f59\u989d\u6263\u94b1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "help me wire up the openai python sdk against volcengine ark (ark.cn-beijing.volces.com), i have an ARK_API_KEY and want streaming with thinking turned off on doubao seed 2.0 lite",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce\u4e91\u670d\u52a1\u5668 ECS \u6309\u91cf\u4ed8\u8d39\u600e\u4e48\u6539\u6210\u5305\u5e74\u5305\u6708\uff0c\u63a7\u5236\u53f0\u5728\u54ea\u64cd\u4f5c",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a LangChain \u7684 RAG demo\uff0cembedding \u7528 text-embedding-3-small\uff0c\u5411\u91cf\u5e93\u7528 chroma\uff0c\u6587\u6863\u662f\u672c\u5730 pdf",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u667a\u8c31 GLM Coding Plan \u7684 key \u5728 Claude Code \u91cc\u600e\u4e48\u914d\uff0cbase url \u662f open.bigmodel.cn \u90a3\u4e2a\u5417\uff0c\u62a5 1113 \u4f59\u989d\u4e0d\u8db3",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 Anthropic \u5b98\u65b9\u7684 claude-sonnet-4-5 \u5199\u4e00\u4e2a Claude Code hooks \u914d\u7f6e\uff0c\u5728\u6bcf\u6b21 commit \u524d\u8dd1 lint",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6296\u97f3\u5f00\u653e\u5e73\u53f0\u7684\u89c6\u9891\u53d1\u5e03\u63a5\u53e3\u600e\u4e48\u62ff access_token\uff0c\u9700\u8981\u4f01\u4e1a\u8ba4\u8bc1\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u5b98\u65b9 api \u7684 deepseek-reasoner \u600e\u4e48\u5173\u601d\u7ef4\u94fe\uff0creasoning_content \u592a\u957f\u4e86\u60f3\u7701\u94b1",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 5,
+      "test_failed": 3,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "seedance 2.0 \u751f\u89c6\u9891\u7684\u4efb\u52a1\u4e00\u76f4 status \u662f queued\uff0c\u7528\u7684\u662f /api/v3/contents/generations/tasks\uff0c\u8f6e\u8be2\u4ee3\u7801\u600e\u4e48\u5199\u624d\u5bf9\uff0c\u8fd8\u6709 --resolution \u8fd9\u79cd\u53c2\u6570\u662f\u653e prompt \u91cc\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5199\u4e00\u6bb5 Node \u4ee3\u7801\u8c03\u8c46\u5305\u7684 Seedream 5.0 lite \u751f\u6210 2k \u7684\u56fe\uff0c\u7136\u540e\u628a url \u4e0b\u8f7d\u5230\u672c\u5730\uff0c\u7528\u7684\u662f\u65b9\u821f Agent Plan \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u914d\u4e86\u706b\u5c71\u7684 coding plan \u4e4b\u540e\u4e00\u76f4\u62a5 400 invalid value developer supported values are system assistant user tool\uff0copenclaw \u4e5f\u662f\uff0c\u600e\u4e48\u56de\u4e8b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "ark-code-latest \u548c\u76f4\u63a5\u586b doubao-seed-evolving \u6709\u4ec0\u4e48\u533a\u522b\uff0c\u6211\u5728 opencode \u91cc\u8be5\u914d\u54ea\u4e2a\uff0cbase url \u662f /api/coding/v3 \u5bf9\u5427",
+          "should_trigger": true,
+          "trigger_rate": 0.6666666666666666,
+          "triggers": 2,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e0b\u8fd9\u4e2a nginx \u914d\u7f6e\u4e3a\u4ec0\u4e48 SSE \u6d41\u5f0f\u8f93\u51fa\u5230\u6d4f\u89c8\u5668\u4f1a\u88ab\u7f13\u51b2\uff0c\u6211\u540e\u7aef\u662f FastAPI \u8f6c\u53d1\u5927\u6a21\u578b\u7684 stream",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u5728\u5b57\u8282\u7684\u98de\u4e66\u591a\u7ef4\u8868\u683c\u91cc\u6709\u4e00\u5217\u516c\u53f8\u540d\uff0c\u60f3\u7528 kimi \u7684 API\uff08platform.moonshot.cn\uff09\u6279\u91cf\u8865\u5168\u516c\u53f8\u7b80\u4ecb",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce TOS \u5bf9\u8c61\u5b58\u50a8\u600e\u4e48\u7528 Python SDK \u5206\u7247\u4e0a\u4f20\u4e00\u4e2a 5GB \u7684\u89c6\u9891\u6587\u4ef6\uff0c\u8981\u5e26\u8fdb\u5ea6\u6761",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 OpenAI \u7684 responses api \u505a\u4e00\u4e2a\u5e26 web_search \u5de5\u5177\u7684 agent\uff0c\u6a21\u578b gpt-5\uff0cPython \u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "\u6211\u4eec\u56e2\u961f\u60f3\u7a0b\u5e8f\u5316\u67e5\u6bcf\u4e2a\u4eba Agent Plan \u5e2d\u4f4d\u8fd8\u5269\u591a\u5c11 AFP\uff0c\u706b\u5c71\u90a3\u4e2a\u7ba1\u63a7\u9762 API \u600e\u4e48\u7b7e\u540d\uff0cAction \u53eb\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 volcenginesdkarkruntime \u8fd8\u662f\u76f4\u63a5 requests \u597d\uff1f\u6211\u8981\u8c03 doubao-seed-2-1-pro-260628 \u505a function calling\uff0c\u591a\u8f6e\u628a tool \u7ed3\u679c\u56de\u4f20",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "kimi-k3 \u5728\u65b9\u821f\u4e0a max_tokens \u8bbe 300 \u56de\u590d\u662f\u7a7a\u7684 finish_reason \u662f length\uff0c\u4f46\u540c\u6837\u4ee3\u7801\u6362 doubao \u5c31\u6b63\u5e38\uff0c\u4e3a\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a ~/.claude/settings.json \u6539\u6210\u7528\u706b\u5c71\u65b9\u821f agent plan\uff0c\u4e3b\u6a21\u578b glm-5.3\uff0csubagent \u7528 doubao-seed-2.0-mini\uff0c\u8981\u5f00 1M \u4e0a\u4e0b\u6587",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86\u706b\u5c71\u65b9\u821f Agent Plan \u7684 Medium \u5957\u9910\uff0c\u60f3\u5728 Python \u811a\u672c\u91cc\u7528\u5957\u9910\u989d\u5ea6\u6279\u91cf\u7ed9 notes/ \u76ee\u5f55\u4e0b\u7684 markdown \u751f\u6210\u6458\u8981\uff0c\u6a21\u578b\u7528 doubao-seed-2.0-lite\uff0c\u522b\u4ece\u540e\u4ed8\u8d39\u4f59\u989d\u6263\u94b1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "help me wire up the openai python sdk against volcengine ark (ark.cn-beijing.volces.com), i have an ARK_API_KEY and want streaming with thinking turned off on doubao seed 2.0 lite",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce\u4e91\u670d\u52a1\u5668 ECS \u6309\u91cf\u4ed8\u8d39\u600e\u4e48\u6539\u6210\u5305\u5e74\u5305\u6708\uff0c\u63a7\u5236\u53f0\u5728\u54ea\u64cd\u4f5c",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a LangChain \u7684 RAG demo\uff0cembedding \u7528 text-embedding-3-small\uff0c\u5411\u91cf\u5e93\u7528 chroma\uff0c\u6587\u6863\u662f\u672c\u5730 pdf",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u667a\u8c31 GLM Coding Plan \u7684 key \u5728 Claude Code \u91cc\u600e\u4e48\u914d\uff0cbase url \u662f open.bigmodel.cn \u90a3\u4e2a\u5417\uff0c\u62a5 1113 \u4f59\u989d\u4e0d\u8db3",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 Anthropic \u5b98\u65b9\u7684 claude-sonnet-4-5 \u5199\u4e00\u4e2a Claude Code hooks \u914d\u7f6e\uff0c\u5728\u6bcf\u6b21 commit \u524d\u8dd1 lint",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6296\u97f3\u5f00\u653e\u5e73\u53f0\u7684\u89c6\u9891\u53d1\u5e03\u63a5\u53e3\u600e\u4e48\u62ff access_token\uff0c\u9700\u8981\u4f01\u4e1a\u8ba4\u8bc1\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u5b98\u65b9 api \u7684 deepseek-reasoner \u600e\u4e48\u5173\u601d\u7ef4\u94fe\uff0creasoning_content \u592a\u957f\u4e86\u60f3\u7701\u94b1",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "description": "Use whenever a request touches a model hosted on \u706b\u5c71\u5f15\u64ce\u00b7\u706b\u5c71\u65b9\u821f Volcengine Ark (ark.cn-beijing.volces.com) \u2014 \u8c46\u5305 Doubao / Seed / Seedream / Seedance\uff0c\u6216\u65b9\u821f\u4e0a\u7684 glm / kimi / deepseek / minimax\uff08\u6a21\u578b\u540d\u5f62\u5982 doubao-seed-2.0-lite\u3001glm-5.3\u3001kimi-k3\u3001ark-code-latest\uff09\u3001ARK_API_KEY\u3001volcenginesdkarkruntime\u3001Agent Plan / Coding Plan \u5957\u9910\u4e0e AFP \u989d\u5ea6\u3002\u9002\u7528\u4e8e\uff1a\u7528 OpenAI / Anthropic SDK \u6216 requests \u5199\u8c03\u7528\u4ee3\u7801\uff08\u6d41\u5f0f\u3001\u5f00\u5173\u6df1\u5ea6\u601d\u8003\u3001function calling\u3001\u7ed3\u6784\u5316\u8f93\u51fa\u3001\u591a\u6a21\u6001\u3001\u56fe\u7247/\u89c6\u9891/\u5411\u91cf/\u8bed\u97f3\u3001\u6279\u91cf\u811a\u672c\uff09\uff1b\u9009\u5bf9 Base URL\uff08/api/v3 vs /api/plan vs /api/coding\uff09\u3001\u54ea\u628a Key\u3001model \u540d\u683c\u5f0f\uff0c\u786e\u4fdd\u6263\u5957\u9910\u989d\u5ea6\u800c\u4e0d\u662f\u540e\u4ed8\u8d39\u4f59\u989d\uff1b\u628a\u5957\u9910\u914d\u8fdb Claude Code / Codex / Cline / Cursor \u7b49\u5de5\u5177\uff08settings.json\u3001ANTHROPIC_* \u53d8\u91cf\u3001\u4e3b\u6a21\u578b\u4e0e subagent \u6a21\u578b\uff09\uff1b\u7ba1\u63a7\u9762 AK/SK \u7b7e\u540d\u4e0e Action\uff0c\u7a0b\u5e8f\u5316\u67e5\u5957\u9910\u3001\u5e2d\u4f4d\u3001AFP \u7528\u91cf\uff1b\u6392\u67e5 401\u3001404 UnsupportedModel\u3001\u7a7a\u56de\u590d finish_reason=length\u3001\u53c2\u6570\u4e0d\u88ab\u652f\u6301\u3001\u9650\u6d41\u3002\u4e0d\u8981\u51ed\u8bb0\u5fc6\u7f16 Base URL\u3001Key \u7c7b\u578b\u6216\u6a21\u578b\u540d\u3002Skip for \u975e\u6a21\u578b\u7684\u706b\u5c71\u4e91\u4ea7\u54c1\uff08ECS \u7b49\uff09\u548c\u5176\u4ed6\u5382\u5546\u81ea\u5bb6 API\uff08open.bigmodel.cn\u3001deepseek.com\u3001api.anthropic.com\uff09\u3002",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "\u6211\u4eec\u56e2\u961f\u60f3\u7a0b\u5e8f\u5316\u67e5\u6bcf\u4e2a\u4eba Agent Plan \u5e2d\u4f4d\u8fd8\u5269\u591a\u5c11 AFP\uff0c\u706b\u5c71\u90a3\u4e2a\u7ba1\u63a7\u9762 API \u600e\u4e48\u7b7e\u540d\uff0cAction \u53eb\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 volcenginesdkarkruntime \u8fd8\u662f\u76f4\u63a5 requests \u597d\uff1f\u6211\u8981\u8c03 doubao-seed-2-1-pro-260628 \u505a function calling\uff0c\u591a\u8f6e\u628a tool \u7ed3\u679c\u56de\u4f20",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a ~/.claude/settings.json \u6539\u6210\u7528\u706b\u5c71\u65b9\u821f agent plan\uff0c\u4e3b\u6a21\u578b glm-5.3\uff0csubagent \u7528 doubao-seed-2.0-mini\uff0c\u8981\u5f00 1M \u4e0a\u4e0b\u6587",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "kimi-k3 \u5728\u65b9\u821f\u4e0a max_tokens \u8bbe 300 \u56de\u590d\u662f\u7a7a\u7684 finish_reason \u662f length\uff0c\u4f46\u540c\u6837\u4ee3\u7801\u6362 doubao \u5c31\u6b63\u5e38\uff0c\u4e3a\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "help me wire up the openai python sdk against volcengine ark (ark.cn-beijing.volces.com), i have an ARK_API_KEY and want streaming with thinking turned off on doubao seed 2.0 lite",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86\u706b\u5c71\u65b9\u821f Agent Plan \u7684 Medium \u5957\u9910\uff0c\u60f3\u5728 Python \u811a\u672c\u91cc\u7528\u5957\u9910\u989d\u5ea6\u6279\u91cf\u7ed9 notes/ \u76ee\u5f55\u4e0b\u7684 markdown \u751f\u6210\u6458\u8981\uff0c\u6a21\u578b\u7528 doubao-seed-2.0-lite\uff0c\u522b\u4ece\u540e\u4ed8\u8d39\u4f59\u989d\u6263\u94b1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u667a\u8c31 GLM Coding Plan \u7684 key \u5728 Claude Code \u91cc\u600e\u4e48\u914d\uff0cbase url \u662f open.bigmodel.cn \u90a3\u4e2a\u5417\uff0c\u62a5 1113 \u4f59\u989d\u4e0d\u8db3",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce\u4e91\u670d\u52a1\u5668 ECS \u6309\u91cf\u4ed8\u8d39\u600e\u4e48\u6539\u6210\u5305\u5e74\u5305\u6708\uff0c\u63a7\u5236\u53f0\u5728\u54ea\u64cd\u4f5c",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a LangChain \u7684 RAG demo\uff0cembedding \u7528 text-embedding-3-small\uff0c\u5411\u91cf\u5e93\u7528 chroma\uff0c\u6587\u6863\u662f\u672c\u5730 pdf",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 Anthropic \u5b98\u65b9\u7684 claude-sonnet-4-5 \u5199\u4e00\u4e2a Claude Code hooks \u914d\u7f6e\uff0c\u5728\u6bcf\u6b21 commit \u524d\u8dd1 lint",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6296\u97f3\u5f00\u653e\u5e73\u53f0\u7684\u89c6\u9891\u53d1\u5e03\u63a5\u53e3\u600e\u4e48\u62ff access_token\uff0c\u9700\u8981\u4f01\u4e1a\u8ba4\u8bc1\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u5b98\u65b9 api \u7684 deepseek-reasoner \u600e\u4e48\u5173\u601d\u7ef4\u94fe\uff0creasoning_content \u592a\u957f\u4e86\u60f3\u7701\u94b1",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "seedance 2.0 \u751f\u89c6\u9891\u7684\u4efb\u52a1\u4e00\u76f4 status \u662f queued\uff0c\u7528\u7684\u662f /api/v3/contents/generations/tasks\uff0c\u8f6e\u8be2\u4ee3\u7801\u600e\u4e48\u5199\u624d\u5bf9\uff0c\u8fd8\u6709 --resolution \u8fd9\u79cd\u53c2\u6570\u662f\u653e prompt \u91cc\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5199\u4e00\u6bb5 Node \u4ee3\u7801\u8c03\u8c46\u5305\u7684 Seedream 5.0 lite \u751f\u6210 2k \u7684\u56fe\uff0c\u7136\u540e\u628a url \u4e0b\u8f7d\u5230\u672c\u5730\uff0c\u7528\u7684\u662f\u65b9\u821f Agent Plan \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u914d\u4e86\u706b\u5c71\u7684 coding plan \u4e4b\u540e\u4e00\u76f4\u62a5 400 invalid value developer supported values are system assistant user tool\uff0copenclaw \u4e5f\u662f\uff0c\u600e\u4e48\u56de\u4e8b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "ark-code-latest \u548c\u76f4\u63a5\u586b doubao-seed-evolving \u6709\u4ec0\u4e48\u533a\u522b\uff0c\u6211\u5728 opencode \u91cc\u8be5\u914d\u54ea\u4e2a\uff0cbase url \u662f /api/coding/v3 \u5bf9\u5427",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e0b\u8fd9\u4e2a nginx \u914d\u7f6e\u4e3a\u4ec0\u4e48 SSE \u6d41\u5f0f\u8f93\u51fa\u5230\u6d4f\u89c8\u5668\u4f1a\u88ab\u7f13\u51b2\uff0c\u6211\u540e\u7aef\u662f FastAPI \u8f6c\u53d1\u5927\u6a21\u578b\u7684 stream",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u5728\u5b57\u8282\u7684\u98de\u4e66\u591a\u7ef4\u8868\u683c\u91cc\u6709\u4e00\u5217\u516c\u53f8\u540d\uff0c\u60f3\u7528 kimi \u7684 API\uff08platform.moonshot.cn\uff09\u6279\u91cf\u8865\u5168\u516c\u53f8\u7b80\u4ecb",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce TOS \u5bf9\u8c61\u5b58\u50a8\u600e\u4e48\u7528 Python SDK \u5206\u7247\u4e0a\u4f20\u4e00\u4e2a 5GB \u7684\u89c6\u9891\u6587\u4ef6\uff0c\u8981\u5e26\u8fdb\u5ea6\u6761",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 OpenAI \u7684 responses api \u505a\u4e00\u4e2a\u5e26 web_search \u5de5\u5177\u7684 agent\uff0c\u6a21\u578b gpt-5\uff0cPython \u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "\u6211\u4eec\u56e2\u961f\u60f3\u7a0b\u5e8f\u5316\u67e5\u6bcf\u4e2a\u4eba Agent Plan \u5e2d\u4f4d\u8fd8\u5269\u591a\u5c11 AFP\uff0c\u706b\u5c71\u90a3\u4e2a\u7ba1\u63a7\u9762 API \u600e\u4e48\u7b7e\u540d\uff0cAction \u53eb\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 volcenginesdkarkruntime \u8fd8\u662f\u76f4\u63a5 requests \u597d\uff1f\u6211\u8981\u8c03 doubao-seed-2-1-pro-260628 \u505a function calling\uff0c\u591a\u8f6e\u628a tool \u7ed3\u679c\u56de\u4f20",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a ~/.claude/settings.json \u6539\u6210\u7528\u706b\u5c71\u65b9\u821f agent plan\uff0c\u4e3b\u6a21\u578b glm-5.3\uff0csubagent \u7528 doubao-seed-2.0-mini\uff0c\u8981\u5f00 1M \u4e0a\u4e0b\u6587",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "kimi-k3 \u5728\u65b9\u821f\u4e0a max_tokens \u8bbe 300 \u56de\u590d\u662f\u7a7a\u7684 finish_reason \u662f length\uff0c\u4f46\u540c\u6837\u4ee3\u7801\u6362 doubao \u5c31\u6b63\u5e38\uff0c\u4e3a\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "help me wire up the openai python sdk against volcengine ark (ark.cn-beijing.volces.com), i have an ARK_API_KEY and want streaming with thinking turned off on doubao seed 2.0 lite",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86\u706b\u5c71\u65b9\u821f Agent Plan \u7684 Medium \u5957\u9910\uff0c\u60f3\u5728 Python \u811a\u672c\u91cc\u7528\u5957\u9910\u989d\u5ea6\u6279\u91cf\u7ed9 notes/ \u76ee\u5f55\u4e0b\u7684 markdown \u751f\u6210\u6458\u8981\uff0c\u6a21\u578b\u7528 doubao-seed-2.0-lite\uff0c\u522b\u4ece\u540e\u4ed8\u8d39\u4f59\u989d\u6263\u94b1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u667a\u8c31 GLM Coding Plan \u7684 key \u5728 Claude Code \u91cc\u600e\u4e48\u914d\uff0cbase url \u662f open.bigmodel.cn \u90a3\u4e2a\u5417\uff0c\u62a5 1113 \u4f59\u989d\u4e0d\u8db3",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce\u4e91\u670d\u52a1\u5668 ECS \u6309\u91cf\u4ed8\u8d39\u600e\u4e48\u6539\u6210\u5305\u5e74\u5305\u6708\uff0c\u63a7\u5236\u53f0\u5728\u54ea\u64cd\u4f5c",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a LangChain \u7684 RAG demo\uff0cembedding \u7528 text-embedding-3-small\uff0c\u5411\u91cf\u5e93\u7528 chroma\uff0c\u6587\u6863\u662f\u672c\u5730 pdf",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 Anthropic \u5b98\u65b9\u7684 claude-sonnet-4-5 \u5199\u4e00\u4e2a Claude Code hooks \u914d\u7f6e\uff0c\u5728\u6bcf\u6b21 commit \u524d\u8dd1 lint",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6296\u97f3\u5f00\u653e\u5e73\u53f0\u7684\u89c6\u9891\u53d1\u5e03\u63a5\u53e3\u600e\u4e48\u62ff access_token\uff0c\u9700\u8981\u4f01\u4e1a\u8ba4\u8bc1\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u5b98\u65b9 api \u7684 deepseek-reasoner \u600e\u4e48\u5173\u601d\u7ef4\u94fe\uff0creasoning_content \u592a\u957f\u4e86\u60f3\u7701\u94b1",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "description": "Use this skill for ANY task that mentions \u706b\u5c71\u65b9\u821f / Volcengine Ark / \u65b9\u821f / volces / ark.cn-beijing.volces.com, \u8c46\u5305 Doubao\u00b7Seed\u00b7Seedream\u00b7Seedance, \u65b9\u821f\u4e0a\u7684 glm / kimi / deepseek / minimax \u6a21\u578b, ARK_API_KEY, volcenginesdkarkruntime, Agent Plan / Coding Plan \u5957\u9910, AFP \u989d\u5ea6, ark-code-latest, arkcli. Load it before you write or debug code calling these models (SDK \u9009\u578b\u3001\u6d41\u5f0f\u3001\u5f00\u5173\u6df1\u5ea6\u601d\u8003\u3001function calling\u3001\u7ed3\u6784\u5316\u8f93\u51fa\u3001\u591a\u6a21\u6001\u3001\u56fe\u7247/\u89c6\u9891/\u5411\u91cf/\u8bed\u97f3\u3001\u6279\u91cf\u811a\u672c), before you pick a Base URL\u3001Key \u6216 model \u540d, before you edit settings.json / \u73af\u5883\u53d8\u91cf \u8ba9 Claude Code\u3001Codex\u3001Cline\u3001Cursor \u8d70\u65b9\u821f\u5957\u9910\uff08\u542b\u4e3b\u6a21\u578b\u4e0e subagent\u3001\u4e0a\u4e0b\u6587\u957f\u5ea6\uff09, before you touch \u7ba1\u63a7\u9762 AK/SK \u7b7e\u540d\u3001Action\u3001\u5e2d\u4f4d\u4e0e\u7528\u91cf\u67e5\u8be2, and when you diagnose 401\u3001404 UnsupportedModel\u3001\u7a7a\u56de\u590d finish_reason=length\u3001\u53c2\u6570\u4e0d\u652f\u6301\u3001\u6263\u9519\u94b1\u3001\u9650\u6d41\u3002\u65b9\u821f\u7684\u5165\u53e3\u3001Key \u7c7b\u578b\u3001\u6a21\u578b\u540d\u683c\u5f0f\u4e0d\u80fd\u51ed\u8bb0\u5fc6\u5199\u2014\u2014\u5148\u67e5\u672c\u6280\u80fd\u3002Skip \u975e\u6a21\u578b\u7684\u706b\u5c71\u4e91\u4ea7\u54c1\uff08ECS \u7b49\uff09\u4e0e\u5176\u4ed6\u5382\u5546\u81ea\u5bb6 API\uff08open.bigmodel.cn\u3001deepseek.com\u3001api.anthropic.com\uff09\u3002",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "\u7528 volcenginesdkarkruntime \u8fd8\u662f\u76f4\u63a5 requests \u597d\uff1f\u6211\u8981\u8c03 doubao-seed-2-1-pro-260628 \u505a function calling\uff0c\u591a\u8f6e\u628a tool \u7ed3\u679c\u56de\u4f20",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u56e2\u961f\u60f3\u7a0b\u5e8f\u5316\u67e5\u6bcf\u4e2a\u4eba Agent Plan \u5e2d\u4f4d\u8fd8\u5269\u591a\u5c11 AFP\uff0c\u706b\u5c71\u90a3\u4e2a\u7ba1\u63a7\u9762 API \u600e\u4e48\u7b7e\u540d\uff0cAction \u53eb\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "kimi-k3 \u5728\u65b9\u821f\u4e0a max_tokens \u8bbe 300 \u56de\u590d\u662f\u7a7a\u7684 finish_reason \u662f length\uff0c\u4f46\u540c\u6837\u4ee3\u7801\u6362 doubao \u5c31\u6b63\u5e38\uff0c\u4e3a\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a ~/.claude/settings.json \u6539\u6210\u7528\u706b\u5c71\u65b9\u821f agent plan\uff0c\u4e3b\u6a21\u578b glm-5.3\uff0csubagent \u7528 doubao-seed-2.0-mini\uff0c\u8981\u5f00 1M \u4e0a\u4e0b\u6587",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86\u706b\u5c71\u65b9\u821f Agent Plan \u7684 Medium \u5957\u9910\uff0c\u60f3\u5728 Python \u811a\u672c\u91cc\u7528\u5957\u9910\u989d\u5ea6\u6279\u91cf\u7ed9 notes/ \u76ee\u5f55\u4e0b\u7684 markdown \u751f\u6210\u6458\u8981\uff0c\u6a21\u578b\u7528 doubao-seed-2.0-lite\uff0c\u522b\u4ece\u540e\u4ed8\u8d39\u4f59\u989d\u6263\u94b1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "help me wire up the openai python sdk against volcengine ark (ark.cn-beijing.volces.com), i have an ARK_API_KEY and want streaming with thinking turned off on doubao seed 2.0 lite",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u667a\u8c31 GLM Coding Plan \u7684 key \u5728 Claude Code \u91cc\u600e\u4e48\u914d\uff0cbase url \u662f open.bigmodel.cn \u90a3\u4e2a\u5417\uff0c\u62a5 1113 \u4f59\u989d\u4e0d\u8db3",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a LangChain \u7684 RAG demo\uff0cembedding \u7528 text-embedding-3-small\uff0c\u5411\u91cf\u5e93\u7528 chroma\uff0c\u6587\u6863\u662f\u672c\u5730 pdf",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce\u4e91\u670d\u52a1\u5668 ECS \u6309\u91cf\u4ed8\u8d39\u600e\u4e48\u6539\u6210\u5305\u5e74\u5305\u6708\uff0c\u63a7\u5236\u53f0\u5728\u54ea\u64cd\u4f5c",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6296\u97f3\u5f00\u653e\u5e73\u53f0\u7684\u89c6\u9891\u53d1\u5e03\u63a5\u53e3\u600e\u4e48\u62ff access_token\uff0c\u9700\u8981\u4f01\u4e1a\u8ba4\u8bc1\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u5b98\u65b9 api \u7684 deepseek-reasoner \u600e\u4e48\u5173\u601d\u7ef4\u94fe\uff0creasoning_content \u592a\u957f\u4e86\u60f3\u7701\u94b1",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 Anthropic \u5b98\u65b9\u7684 claude-sonnet-4-5 \u5199\u4e00\u4e2a Claude Code hooks \u914d\u7f6e\uff0c\u5728\u6bcf\u6b21 commit \u524d\u8dd1 lint",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "seedance 2.0 \u751f\u89c6\u9891\u7684\u4efb\u52a1\u4e00\u76f4 status \u662f queued\uff0c\u7528\u7684\u662f /api/v3/contents/generations/tasks\uff0c\u8f6e\u8be2\u4ee3\u7801\u600e\u4e48\u5199\u624d\u5bf9\uff0c\u8fd8\u6709 --resolution \u8fd9\u79cd\u53c2\u6570\u662f\u653e prompt \u91cc\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5199\u4e00\u6bb5 Node \u4ee3\u7801\u8c03\u8c46\u5305\u7684 Seedream 5.0 lite \u751f\u6210 2k \u7684\u56fe\uff0c\u7136\u540e\u628a url \u4e0b\u8f7d\u5230\u672c\u5730\uff0c\u7528\u7684\u662f\u65b9\u821f Agent Plan \u7684 key",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "ark-code-latest \u548c\u76f4\u63a5\u586b doubao-seed-evolving \u6709\u4ec0\u4e48\u533a\u522b\uff0c\u6211\u5728 opencode \u91cc\u8be5\u914d\u54ea\u4e2a\uff0cbase url \u662f /api/coding/v3 \u5bf9\u5427",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u914d\u4e86\u706b\u5c71\u7684 coding plan \u4e4b\u540e\u4e00\u76f4\u62a5 400 invalid value developer supported values are system assistant user tool\uff0copenclaw \u4e5f\u662f\uff0c\u600e\u4e48\u56de\u4e8b",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u770b\u4e0b\u8fd9\u4e2a nginx \u914d\u7f6e\u4e3a\u4ec0\u4e48 SSE \u6d41\u5f0f\u8f93\u51fa\u5230\u6d4f\u89c8\u5668\u4f1a\u88ab\u7f13\u51b2\uff0c\u6211\u540e\u7aef\u662f FastAPI \u8f6c\u53d1\u5927\u6a21\u578b\u7684 stream",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u5728\u5b57\u8282\u7684\u98de\u4e66\u591a\u7ef4\u8868\u683c\u91cc\u6709\u4e00\u5217\u516c\u53f8\u540d\uff0c\u60f3\u7528 kimi \u7684 API\uff08platform.moonshot.cn\uff09\u6279\u91cf\u8865\u5168\u516c\u53f8\u7b80\u4ecb",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce TOS \u5bf9\u8c61\u5b58\u50a8\u600e\u4e48\u7528 Python SDK \u5206\u7247\u4e0a\u4f20\u4e00\u4e2a 5GB \u7684\u89c6\u9891\u6587\u4ef6\uff0c\u8981\u5e26\u8fdb\u5ea6\u6761",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u7528 OpenAI \u7684 responses api \u505a\u4e00\u4e2a\u5e26 web_search \u5de5\u5177\u7684 agent\uff0c\u6a21\u578b gpt-5\uff0cPython \u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "\u7528 volcenginesdkarkruntime \u8fd8\u662f\u76f4\u63a5 requests \u597d\uff1f\u6211\u8981\u8c03 doubao-seed-2-1-pro-260628 \u505a function calling\uff0c\u591a\u8f6e\u628a tool \u7ed3\u679c\u56de\u4f20",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u56e2\u961f\u60f3\u7a0b\u5e8f\u5316\u67e5\u6bcf\u4e2a\u4eba Agent Plan \u5e2d\u4f4d\u8fd8\u5269\u591a\u5c11 AFP\uff0c\u706b\u5c71\u90a3\u4e2a\u7ba1\u63a7\u9762 API \u600e\u4e48\u7b7e\u540d\uff0cAction \u53eb\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "kimi-k3 \u5728\u65b9\u821f\u4e0a max_tokens \u8bbe 300 \u56de\u590d\u662f\u7a7a\u7684 finish_reason \u662f length\uff0c\u4f46\u540c\u6837\u4ee3\u7801\u6362 doubao \u5c31\u6b63\u5e38\uff0c\u4e3a\u4ec0\u4e48",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a ~/.claude/settings.json \u6539\u6210\u7528\u706b\u5c71\u65b9\u821f agent plan\uff0c\u4e3b\u6a21\u578b glm-5.3\uff0csubagent \u7528 doubao-seed-2.0-mini\uff0c\u8981\u5f00 1M \u4e0a\u4e0b\u6587",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86\u706b\u5c71\u65b9\u821f Agent Plan \u7684 Medium \u5957\u9910\uff0c\u60f3\u5728 Python \u811a\u672c\u91cc\u7528\u5957\u9910\u989d\u5ea6\u6279\u91cf\u7ed9 notes/ \u76ee\u5f55\u4e0b\u7684 markdown \u751f\u6210\u6458\u8981\uff0c\u6a21\u578b\u7528 doubao-seed-2.0-lite\uff0c\u522b\u4ece\u540e\u4ed8\u8d39\u4f59\u989d\u6263\u94b1",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "help me wire up the openai python sdk against volcengine ark (ark.cn-beijing.volces.com), i have an ARK_API_KEY and want streaming with thinking turned off on doubao seed 2.0 lite",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u667a\u8c31 GLM Coding Plan \u7684 key \u5728 Claude Code \u91cc\u600e\u4e48\u914d\uff0cbase url \u662f open.bigmodel.cn \u90a3\u4e2a\u5417\uff0c\u62a5 1113 \u4f59\u989d\u4e0d\u8db3",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a LangChain \u7684 RAG demo\uff0cembedding \u7528 text-embedding-3-small\uff0c\u5411\u91cf\u5e93\u7528 chroma\uff0c\u6587\u6863\u662f\u672c\u5730 pdf",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u706b\u5c71\u5f15\u64ce\u4e91\u670d\u52a1\u5668 ECS \u6309\u91cf\u4ed8\u8d39\u600e\u4e48\u6539\u6210\u5305\u5e74\u5305\u6708\uff0c\u63a7\u5236\u53f0\u5728\u54ea\u64cd\u4f5c",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6296\u97f3\u5f00\u653e\u5e73\u53f0\u7684\u89c6\u9891\u53d1\u5e03\u63a5\u53e3\u600e\u4e48\u62ff access_token\uff0c\u9700\u8981\u4f01\u4e1a\u8ba4\u8bc1\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u5b98\u65b9 api \u7684 deepseek-reasoner \u600e\u4e48\u5173\u601d\u7ef4\u94fe\uff0creasoning_content \u592a\u957f\u4e86\u60f3\u7701\u94b1",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 Anthropic \u5b98\u65b9\u7684 claude-sonnet-4-5 \u5199\u4e00\u4e2a Claude Code hooks \u914d\u7f6e\uff0c\u5728\u6bcf\u6b21 commit \u524d\u8dd1 lint",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}
+Report: /var/folders/7h/spcmv2b17nb8whfjnslyx__40000gn/T/skill_description_report_volcengine-ark_20260904_102922.html
+

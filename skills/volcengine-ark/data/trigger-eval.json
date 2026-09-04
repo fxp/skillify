@@ -1,0 +1,22 @@
+[
+  {"query": "我买了火山方舟 Agent Plan 的 Medium 套餐，想在 Python 脚本里用套餐额度批量给 notes/ 目录下的 markdown 生成摘要，模型用 doubao-seed-2.0-lite，别从后付费余额扣钱", "should_trigger": true},
+  {"query": "help me wire up the openai python sdk against volcengine ark (ark.cn-beijing.volces.com), i have an ARK_API_KEY and want streaming with thinking turned off on doubao seed 2.0 lite", "should_trigger": true},
+  {"query": "claude code 配了火山的 coding plan 之后一直报 400 invalid value developer supported values are system assistant user tool，openclaw 也是，怎么回事", "should_trigger": true},
+  {"query": "写一段 Node 代码调豆包的 Seedream 5.0 lite 生成 2k 的图，然后把 url 下载到本地，用的是方舟 Agent Plan 的 key", "should_trigger": true},
+  {"query": "帮我把 ~/.claude/settings.json 改成用火山方舟 agent plan，主模型 glm-5.3，subagent 用 doubao-seed-2.0-mini，要开 1M 上下文", "should_trigger": true},
+  {"query": "用 volcenginesdkarkruntime 还是直接 requests 好？我要调 doubao-seed-2-1-pro-260628 做 function calling，多轮把 tool 结果回传", "should_trigger": true},
+  {"query": "我们团队想程序化查每个人 Agent Plan 席位还剩多少 AFP，火山那个管控面 API 怎么签名，Action 叫什么", "should_trigger": true},
+  {"query": "seedance 2.0 生视频的任务一直 status 是 queued，用的是 /api/v3/contents/generations/tasks，轮询代码怎么写才对，还有 --resolution 这种参数是放 prompt 里吗", "should_trigger": true},
+  {"query": "ark-code-latest 和直接填 doubao-seed-evolving 有什么区别，我在 opencode 里该配哪个，base url 是 /api/coding/v3 对吧", "should_trigger": true},
+  {"query": "kimi-k3 在方舟上 max_tokens 设 300 回复是空的 finish_reason 是 length，但同样代码换 doubao 就正常，为什么", "should_trigger": true},
+  {"query": "帮我用 Anthropic 官方的 claude-sonnet-4-5 写一个 Claude Code hooks 配置，在每次 commit 前跑 lint", "should_trigger": false},
+  {"query": "智谱 GLM Coding Plan 的 key 在 Claude Code 里怎么配，base url 是 open.bigmodel.cn 那个吗，报 1113 余额不足", "should_trigger": false},
+  {"query": "火山引擎 TOS 对象存储怎么用 Python SDK 分片上传一个 5GB 的视频文件，要带进度条", "should_trigger": false},
+  {"query": "我在字节的飞书多维表格里有一列公司名，想用 kimi 的 API（platform.moonshot.cn）批量补全公司简介", "should_trigger": false},
+  {"query": "用 OpenAI 的 responses api 做一个带 web_search 工具的 agent，模型 gpt-5，Python 怎么写", "should_trigger": false},
+  {"query": "帮我看下这个 nginx 配置为什么 SSE 流式输出到浏览器会被缓冲，我后端是 FastAPI 转发大模型的 stream", "should_trigger": false},
+  {"query": "deepseek 官方 api 的 deepseek-reasoner 怎么关思维链，reasoning_content 太长了想省钱", "should_trigger": false},
+  {"query": "火山引擎云服务器 ECS 按量付费怎么改成包年包月，控制台在哪操作", "should_trigger": false},
+  {"query": "写一个 LangChain 的 RAG demo，embedding 用 text-embedding-3-small，向量库用 chroma，文档是本地 pdf", "should_trigger": false},
+  {"query": "抖音开放平台的视频发布接口怎么拿 access_token，需要企业认证吗", "should_trigger": false}
+]

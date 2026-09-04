@@ -1,0 +1,110 @@
+{
+  "expectations": [
+    {
+      "text": "代码的 Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3（或 /api/plan 走 Anthropic 协议），而不是 /api/v3 或 /api/coding/v3",
+      "passed": false,
+      "evidence": "summarize_notes.py: `DEFAULT_PLAN_BASE_URL = f\"{ARK_HOST}/api/coding/v3\"`; .env.example ships `ARK_BASE_URL=\"https://ark.cn-beijing.volces.com/api/coding/v3\"`. NOTES.md admits: `我没有联网核对当前 Agent Plan 页面的具体路径`. Per verification-findings A2, an Agent Plan Key against /api/coding/v3/chat/completions returns 401 `{\"error\":{\"code\":\"AuthenticationError\",\"message\":\"The API key or AK/SK in the request is missing or invalid. ...\"}}` — the script fails on its first request with the default configuration. /api/plan is never mentioned anywhere in the outputs."
+    },
+    {
+      "text": "代码把 Agent Plan 专属 Key 和普通方舟 API Key 区分开（环境变量命名或注释明确这是 Agent Plan 控制台里的专属 Key）",
+      "passed": false,
+      "evidence": "Env var is the generic `ARK_API_KEY`. The outputs explicitly assert the opposite of the assertion: NOTES.md `Key 本身仍是标准方舟 Key`; .env.example `It is an Ark API key that the plan is bound to`. Although the comment says the key is 'shown on the Agent Plan page', it tells the user a standard Ark key and the plan key are the same thing. Findings A1/A2 show the Agent Plan key is a distinct credential (401 everywhere except /api/plan*), so the guidance is factually wrong and would lead a user holding a standard key to a 401 (or, on /api/v3, to postpaid billing)."
+    },
+    {
+      "text": "model 字段是 Plan 入口接受的小写 Model Name（doubao-seed-2.0-lite），不是带日期的 Model ID",
+      "passed": true,
+      "evidence": "`DEFAULT_MODEL = \"doubao-seed-2.0-lite\"`, passed as `model=self.s.model`; ARK_PLAN_MODELS allow-list defaults to the same name. Findings B1 confirms this value is accepted at the Plan entry."
+    },
+    {
+      "text": "messages 里没有 developer role",
+      "passed": true,
+      "evidence": "Summarizer.summarize builds `[{\"role\": \"system\", ...}, {\"role\": \"user\", ...}]` only. Consistent with findings C1."
+    },
+    {
+      "text": "代码或说明提到了 Agent Plan 的 5 小时 / 周 / 月额度限制或超额后付费开关（至少不会把额度耗尽误判为余额不足去提示充值）",
+      "passed": true,
+      "evidence": "NOTES.md 其他防坑 table: `套餐有 RPM / TPM / 5 小时窗口限额，并发太高直接 429`; quota handling row: `402/403/429 且报文含 \"quota\" 时立即抛错终止整批`. Code raises `plan quota appears exhausted ... Stopping so nothing falls through to postpaid billing` and never prompts to recharge. Weak pass: only the 5-hour window is named (no weekly/monthly, no 超额后付费 switch), and the 429-quota branch is unreachable because `except RateLimitError` catches every 429 first and retries it up to 5 times — but the findings do not cover quota exhaustion, so this cannot be graded against real behaviour."
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 2,
+    "total": 5,
+    "pass_rate": 0.6
+  },
+  "timing": {
+    "executor_duration_seconds": 208.1,
+    "total_duration_seconds": 208.1,
+    "duration_ms": 208100,
+    "total_tokens": 66206
+  },
+  "claims": [
+    {
+      "claim": "Coding Plan 上线时使用的是 /api/coding/v3，Agent Plan 应以控制台为准",
+      "type": "factual",
+      "verified": false,
+      "evidence": "The /api/coding/v3 path exists, but findings A2 show the Agent Plan key gets 401 there; the Agent Plan path is /api/plan/v3 (A3). Default is wrong for this user's plan."
+    },
+    {
+      "claim": "方舟是 Key + 套餐接入点 绑定套餐，Key 本身仍是标准方舟 Key",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Contradicted by findings A1-A3: the Agent Plan key is a dedicated credential valid only on /api/plan*."
+    },
+    {
+      "claim": "套餐接入点接受 model 名，不需要 ep-xxx",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Findings B1: `doubao-seed-2.0-lite` -> 200 at /api/plan/v3."
+    },
+    {
+      "claim": "thinking: {type: disabled} 是 doubao-seed 2.0 的参数写法，套餐接入点应一致",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Findings C5: thinking.disabled works on doubao-seed-2.0-lite at the Plan entry (reasoning_tokens 0)."
+    },
+    {
+      "claim": "doubao-seed-2.0-lite 是否包含在 Medium 套餐内需在套餐页确认",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Findings A3/B1 (Medium account) confirm it is included; the uncertainty was unnecessary but not wrong."
+    },
+    {
+      "claim": "额度用尽时 402/403/429 含 quota 会立即终止整批",
+      "type": "quality",
+      "verified": false,
+      "evidence": "Code-level: RateLimitError (all 429s) is caught in an earlier except clause and retried, so a 429 quota error would be retried 5 times rather than stopping. Real quota-exhaustion response is not in the findings."
+    },
+    {
+      "claim": "用套餐接入点调用不在套餐内的模型可能回落到按量计费",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Findings B5/B6/B10 show out-of-plan models return 404 UnsupportedModel at /api/plan/v3, not silent postpaid fallback. Claim is overly cautious speculation."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "Agent Plan Base URL path guessed as /api/coding/v3; author says to check console.",
+      "Whether doubao-seed-2.0-lite is in the Medium plan.",
+      "Whether thinking.disabled is accepted at the plan endpoint."
+    ],
+    "needs_review": [
+      "User must manually verify Base URL, Key, and model list on the console before running."
+    ],
+    "workarounds": [
+      "Auto-retry without `thinking` param if the endpoint returns 400 mentioning thinking."
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "代码或说明提到了 Agent Plan 的 5 小时 / 周 / 月额度限制或超额后付费开关",
+        "reason": "Passed here on a single generic '5 小时窗口限额' mention despite a code path where quota 429s are retried instead of stopping. The assertion should require quota exhaustion to be treated as a distinct stop condition, not just mentioned."
+      },
+      {
+        "reason": "No assertion checks whether the output would actually authenticate: this run ships a default config that gets 401 on first call (findings A2). An assertion like 'default configuration with the Agent Plan key returns 200 per findings A3' would make the billing-safety outcome directly gradable."
+      }
+    ],
+    "overall": "Assertions 1-2 correctly caught the production-breaking mistakes. Assertion 5 is too lenient to discriminate."
+  }
+}

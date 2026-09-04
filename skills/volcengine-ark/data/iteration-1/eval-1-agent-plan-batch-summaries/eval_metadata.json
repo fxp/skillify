@@ -1,0 +1,12 @@
+{
+  "eval_id": 1,
+  "eval_name": "agent-plan-batch-summaries",
+  "prompt": "我买了火山方舟的 Agent Plan（Medium 套餐），想在自己的 Python 脚本里用套餐额度跑一个批量摘要任务：读取 notes/ 目录下的 .md 文件，每个文件用 doubao-seed-2.0-lite 生成三句话摘要写到 summaries/ 目录。Key 请从环境变量读。要求跑起来不能从我的后付费余额扣钱。",
+  "assertions": [
+    "代码的 Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3（或 /api/plan 走 Anthropic 协议），而不是 /api/v3 或 /api/coding/v3",
+    "代码把 Agent Plan 专属 Key 和普通方舟 API Key 区分开（环境变量命名或注释明确这是 Agent Plan 控制台里的专属 Key）",
+    "model 字段是 Plan 入口接受的小写 Model Name（doubao-seed-2.0-lite），不是带日期的 Model ID",
+    "messages 里没有 developer role",
+    "代码或说明提到了 Agent Plan 的 5 小时 / 周 / 月额度限制或超额后付费开关（至少不会把额度耗尽误判为余额不足去提示充值）"
+  ]
+}

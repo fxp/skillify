@@ -10,6 +10,7 @@
 | :-- | :-- | :-- | :-- |
 | 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层、**GLM Coding Plan 编程套餐**（专用 Key / Base URL / 可用模型 / 1113 排错 / Claude Code 配置） | ✅ 已生成，7 轮共 25 个场景真实 API 对照验证（第 7 轮为真实执行的端到端成功率），9 处文档偏差已修正 |
 | 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ✅ 账户 + 容器实例 Pro API 全部接口、弹性部署全部只读接口已用真实 Token 验证；⚠️ 弹性部署创建/管理类接口仍未验证（测试账号没有企业认证，这是账号资质的硬性限制，不是没测） |
+| 3 | [`volcengine-ark`](skills/volcengine-ark) | [火山引擎·火山方舟](https://www.volcengine.com/docs/82379)（`ark.cn-beijing.volces.com`）—— 豆包 Doubao / Seed / Seedream / Seedance 及方舟上的 GLM、Kimi、DeepSeek、MiniMax；Chat Completions、Responses API、多模态理解、图片与视频生成、向量化、语音、批量推理、内置工具、管控面 AK/SK 接口，**以及三套互不通用的入口**：标准后付费 API、**Coding Plan** 与 **Agent Plan** 两种订阅套餐（各自的 Base URL / Key / model 名格式 / 计费单位都不同） | ✅ 已生成，Agent Plan 入口用真实专属 Key 实测约 45 次调用；8 个场景对照评测 7 胜 1 平，8 处文档 / SDK 错误已修正；⚠️ 标准 `/api/v3` 与 Coding Plan 套餐内行为未实测（测试账号只有 Agent Plan，没有标准 Key、未订阅 Coding Plan） |
 
 每个 skill 目录下都是一份可以直接安装使用的 SKILL.md + `references/`，外加一个 `data/` 目录留档对照测试的完整过程（prompt、打分依据、报错原文），不只是一个"通过率"数字。`autodl` 一开始是刻意保留的反例（没有 Token，只做了文档保真度测试），拿到真实 Token 后先测了只读接口，账号完成实名认证后又补测了完整的"创建实例 → 运行 → 关机 → 保存镜像 → 重新开机 → 释放"生命周期（真实花费不到 5 元）——过程中发现了 9 处文档本身的错误或遗漏，已全部修正并推动了三轮针对性的 with/without 对照评测。
 
@@ -39,6 +40,15 @@
 **create-doc-skill**（方法论本身的重写版，对照对象是重写前的旧版快照）：
 
 - 2 个"没有 key 的草稿模式"场景（Resend：有 llms.txt 但 OpenAPI 链接写错；Kimi 开放平台：根路径没有 llms.txt，测 fallback），新旧两版按断言都是 18/18，**平局**。差异在过程而不是终态：新版用自带的 `fetch_docs.sh` / `openapi_summary.py`，抓取次数更少，references 里 endpoint 级的"未验证"标记密度高得多（132 处 vs 26 处），代价是更多 token 和内容量。评测中顺手修正了 9 条 skill 指引。另外用 skill-creator 的描述优化循环跑了 3 轮触发准确率评测（`data/description-opt/`）。详见 [`skills/create-doc-skill/data/comparison-report.md`](skills/create-doc-skill/data/comparison-report.md)。
+
+**volcengine-ark**（用真实 Agent Plan 专属 Key 的调用结果打分；标准 API 与管控面这两个场景按文档保真度打分，报告里逐条标注）：
+
+- 火山方舟最大的坑不是某个字段写错，而是**同一个域名下有三套互不通用的入口**：标准后付费 `/api/v3`（方舟 API Key + 带日期的 Model ID）、Coding Plan `/api/coding[/v3]`（同一把方舟 API Key + 小写 Model Name）、Agent Plan `/api/plan[/v3]`（**另一把专属 Key** + AFP 抵扣）。Base URL、Key、model 名三者必须配套，配错的后果不是报错，而是 401、或者把钱扣到后付费余额上。8 个场景里有 5 个的 baseline 就死在这一步。
+- 8 个场景 **7 胜 1 平**，断言通过率 **37/37 vs 18/37**。唯一的平局是标准 API 的流式对话——`/api/v3`、`stream_options.include_usage`、`thinking: {"type":"disabled"}` 这些在公开语料里够常见，baseline 全做对了，如实记录，没有为了好看去挑场景。
+- 真实调用抓到 8 处**只读文档抓不到**的问题，已全部修正并升到 SKILL.md 永远加载的那一层。举三个最贵的：控制台把 `auto` 列成可以直接填的 Model Name，实测直填返回 `404 UnsupportedModel`（只能填 `ark-code-latest` 再去控制台切）；Plan 入口**接受**带日期的 Model ID 却静默按 Name 路由（传 `260428` 实际服务的是 `260215`，只能看响应里的 `model` 字段确认）；Anthropic 协议入口把 `claude-*` 模型名**静默换成** `doubao-seed-2-1-turbo`（抵扣系数 2.5）——Claude Code 只配了 Base URL 和 Token、忘了设 `ANTHROPIC_MODEL` 时不会报错，只是悄悄烧额度。
+- 另外五处：文档说"向量化模型不支持 OpenAI API"，实测 Plan 入口 `POST /embeddings` 可用（只是 `input` 只收字符串），而 `/embeddings/multimodal` 的响应是 `data.embedding` **单个对象**不是数组；向量默认维度三处文档写法不一，实测都是 2048；套餐表给 Medium 勾了生视频、正文却说不支持，实测 404 是正文对；`doubao-seedream-5.0-lite` 的 `size` 不认旧写法 `1K`；官方 `volcengine-python-sdk` 的 `ARKApi` 根本没有 `get_afp_usage` 这类方法，套餐与用量查询必须走 `UniversalApi`。
+- 触发描述优化跑了 3 轮，结论是**保留原描述**——两个改写版在留出集上都更差。三轮精确率都是 100%、召回率只有 6-17%，即模型经常自己直接作答而不去查 skill；这是 skill 触发机制的已知特性，不是描述写得差，但也说明这份 skill 的实际收益取决于用户明确点名"火山方舟 / Agent Plan"。
+- 完整的分场景判词、逐条断言评分与真实请求 / 响应留档，见 [`comparison-report.md`](skills/volcengine-ark/data/comparison-report.md)、[`verification-findings.md`](skills/volcengine-ark/data/verification-findings.md) 与 [`verification-log.jsonl`](skills/volcengine-ark/data/verification-log.jsonl)；探测脚本 [`probe.py`](skills/volcengine-ark/data/probe.py)（Key 只走环境变量），交付前的自检脚本 [`verify_skill.py`](skills/volcengine-ark/data/verify_skill.py)。
 
 ## 用法
 

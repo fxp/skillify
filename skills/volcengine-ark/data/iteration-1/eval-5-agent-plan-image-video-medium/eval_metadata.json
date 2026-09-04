@@ -1,0 +1,11 @@
+{
+  "eval_id": 5,
+  "eval_name": "agent-plan-image-video-medium",
+  "prompt": "帮我用火山方舟 Agent Plan 的额度写一个 Python 脚本：把 prompts.txt 里每行文案生成一张 1K 的图，保存到 out/；如果还能用视频模型，再把第一张图做成 5 秒视频。我是 Medium 套餐。",
+  "assertions": [
+    "图片生成用 Agent Plan 入口 /api/plan/v3/images/generations 与 Model Name doubao-seedream-5.0-lite",
+    "明确指出 Medium 套餐不支持视频生成模型（视频仅 Large / Max 档），而不是直接写视频代码假定能跑",
+    "如给出视频代码，采用创建任务 + 轮询 GET /contents/generations/tasks/{id} 的异步模式",
+    "提到每张图消耗 99 AFP 或图片模型不受 5 小时 / 周限额约束、只受日 / 月限额"
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "expectations": [
+    {
+      "text": "ANTHROPIC_BASE_URL 是 https://ark.cn-beijing.volces.com/api/plan（Anthropic 协议入口，不带 /v3，也不是 /api/coding）",
+      "passed": false,
+      "evidence": "settings.json: \"ANTHROPIC_BASE_URL\": \"https://ark.cn-beijing.volces.com/api/coding\". ANSWER.md §一 admits '这是 Coding Plan 的地址，Agent Plan 大概率沿用同一网关' and suggests /api/v3 as the alternative — never mentions /api/plan. Real API (verification-findings A2): an Agent Plan Key against /api/coding/... returns 401 {\"error\":{\"code\":\"AuthenticationError\",\"message\":\"The API key or AK/SK in the request is missing or invalid. ...\",\"type\":\"Unauthorized\"}}. This settings file cannot make a single successful request."
+    },
+    {
+      "text": "说明 ANTHROPIC_AUTH_TOKEN 要填 Agent Plan 控制台的专属 API Key，而不是方舟 API Key",
+      "passed": false,
+      "evidence": "The placeholder says '<在这里填你的火山方舟 Agent Plan API Key>' but the prose repeatedly says the opposite: header note '把 ANTHROPIC_AUTH_TOKEN 占位符换成你的方舟 API Key', and the §一 table row 'env.ANTHROPIC_AUTH_TOKEN | 你的方舟 API Key'. It never states that the Agent Plan console issues a separate 专属 Key that is not interchangeable with the 方舟 API Key (verification-findings A: Agent Plan Key only works on /api/plan*). The answer conflates the two key types instead of distinguishing them."
+    },
+    {
+      "text": "设置了 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 并解释是为了不让遥测占额度",
+      "passed": false,
+      "evidence": "The variable IS set (\"CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC\": \"1\"), but the required explanation is inverted. ANSWER.md §五: 'Claude Code 的遥测本身（Statsig 事件、Sentry 错误报告）是发到 Anthropic 的，不走你的方舟 Key，不消耗额度', and it files the flag under §5.2 '不吃额度但也没必要往外发的'. The official doc (tools-setup.md §3.1) says the opposite: '遥测请求默认会走 ANTHROPIC_BASE_URL 并占用 Plan 配额'. The assertion requires the quota rationale; the answer explicitly denies it. (The answer does separately set DISABLE_NON_ESSENTIAL_MODEL_CALLS=1 with a quota rationale, which is a reasonable extra, but that is a different variable.)"
+    },
+    {
+      "text": "开启思考用 CLAUDE_CODE_EXTRA_BODY={\"thinking\":{\"type\":\"enabled\"}}（并可指出 glm-5.3 本身默认开思考不可关）",
+      "passed": false,
+      "evidence": "CLAUDE_CODE_EXTRA_BODY does not appear anywhere in settings.json or ANSWER.md. Thinking is instead enabled via top-level \"alwaysThinkingEnabled\": true plus \"MAX_THINKING_TOKENS\": \"32000\" (§三). glm-5.3's default-on / cannot-disable behaviour is not mentioned; §八 even lists 'doubao-seed-2.0-mini 是否接受 thinking 参数' as unknown. The documented mechanism (tools-setup.md §3.3) is not used."
+    },
+    {
+      "text": "1M 上下文的开启方式与官方文档一致（按 tools-setup.md 记载的模型名后缀或环境变量写法）",
+      "passed": false,
+      "evidence": "Partially matches: glm-5.3[1m] suffix is used. But the documented recipe (tools-setup.md §3.4) is suffix + \"CLAUDE_CODE_AUTO_COMPACT_WINDOW\": \"1000000\"; the baseline omits the window variable from settings.json and only mentions it as a hedged fallback ('不同版本名称不同，以 claude --help / 文档为准'). Its stated mechanism — Claude Code strips the suffix and adds an anthropic-beta: context-1m-2025-08-07 header — is an unverified guess, and §七 advises removing [1m] if a 400 appears. Half the documented recipe is missing and the rest is hedged, so this cannot be called consistent with the doc; failing per burden-of-proof."
+    }
+  ],
+  "summary": { "passed": 0, "failed": 5, "total": 5, "pass_rate": 0.0 },
+  "timing": {
+    "total_tokens": 60173,
+    "duration_ms": 149944,
+    "total_duration_seconds": 149.9
+  },
+  "claims": [
+    {
+      "claim": "Agent Plan probably shares the /api/coding gateway with Coding Plan",
+      "type": "factual",
+      "verified": false,
+      "evidence": "False. Agent Plan's Anthropic entry is /api/plan; an Agent Plan Key against /api/coding returns 401 AuthenticationError (verification-findings A2; tools-setup.md §3 table)."
+    },
+    {
+      "claim": "Claude Code telemetry does not go through the Ark key and does not consume quota",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Contradicts the official doc transcribed in tools-setup.md §3.1 ('遥测请求默认会走 ANTHROPIC_BASE_URL 并占用 Plan 配额'). Not live-verified either way; graded against the doc."
+    },
+    {
+      "claim": "Without explicit model mapping, Ark returns 404 for claude-* model names",
+      "type": "factual",
+      "verified": false,
+      "evidence": "False. Live test (verification-findings B11/E5): model claude-sonnet-4-5 on /api/plan/v1/messages returns 200 and is silently routed to doubao-seed-2-1-turbo-260628 (2.5x AFP). The baseline's conclusion (map all tiers) is right, but the reasoning is wrong in a way that hides the real risk."
+    },
+    {
+      "claim": "Ark model IDs may carry a version suffix like doubao-seed-2.0-mini-2xxxxx and may need to be enabled in the console",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Plan entries take lowercase Model Names (glm-5.3, doubao-seed-2.0-mini); dated IDs are accepted but the version is silently ignored (verification-findings B2). No console enablement is needed for Plan-included models."
+    },
+    {
+      "claim": "The [1m] suffix makes Claude Code strip the suffix and send anthropic-beta: context-1m-2025-08-07, and Ark ignores unknown beta headers",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Not verified by the skill's live tests; the author itself flags it with ⚠️. The official doc's recipe is suffix + CLAUDE_CODE_AUTO_COMPACT_WINDOW, with no mention of beta headers."
+    },
+    {
+      "claim": "glm-5.3 on Ark may only have 200K/256K context",
+      "type": "factual",
+      "verified": false,
+      "evidence": "glm-5.3 is 1024k / 128k on Agent Plan (agent-plan.md line 106). Hedge is unnecessary but harmless."
+    },
+    {
+      "claim": "Mapping Opus/Sonnet/Haiku tiers explicitly and pointing Haiku at doubao-seed-2.0-mini to save quota",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Matches the doc's advice ('ANTHROPIC_DEFAULT_HAIKU_MODEL 建议设置为小尺寸模型') and mini's 0.25 coefficient. This part of the settings is correct."
+    },
+    {
+      "claim": "No live documentation was consulted",
+      "type": "process",
+      "verified": true,
+      "evidence": "ANSWER.md header: '基于我对 Claude Code 与火山方舟 Anthropic 兼容接口的既有认知（没有查阅最新文档）'. §八 lists four points the user must verify themselves, including the Base URL."
+    }
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "设置了 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 并解释是为了不让遥测占额度",
+        "reason": "This is the only failure here with no production consequence — the variable is set, so nothing breaks or over-bills; only the stated rationale contradicts the doc. If the eval is meant to measure production impact, consider splitting 'variable set' from 'rationale matches doc' so a mis-explained-but-correct config is not counted the same as a 401-producing Base URL."
+      },
+      {
+        "assertion": "1M 上下文的开启方式与官方文档一致（按 tools-setup.md 记载的模型名后缀或环境变量写法）",
+        "reason": "The baseline got the [1m] suffix right and missed only CLAUDE_CODE_AUTO_COMPACT_WINDOW; the '或' wording could be read as passing it. Spell out that both are required."
+      }
+    ],
+    "overall": "Assertions 1, 2 and 4 discriminate sharply and correspond to real failures (401) or a non-documented mechanism. Assertions 3 and 5 partially overlap with correct baseline behaviour and would benefit from tighter wording."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "eval_id": 7,
+  "eval_name": "plan-embeddings-text-and-images",
+  "prompt": "我用 OpenAI 的 Python SDK 接火山方舟 Agent Plan 做一个本地笔记语义搜索：把 notes/*.md 向量化存进 numpy 数组，再对查询做向量化算余弦相似度返回 top5。另外有几张截图 imgs/*.png 也想一起入库。请给完整代码。",
+  "assertions": [
+    "Base URL 是 https://ark.cn-beijing.volces.com/api/plan/v3，Key 是 Agent Plan 专属 Key",
+    "图片向量化没有塞进 OpenAI 形态的 /embeddings 的 input 数组里（该写法真实返回 400 expected a string），而是走 /embeddings/multimodal",
+    "解析 /embeddings/multimodal 响应时按 data.embedding（单对象）取向量，而不是 data[0].embedding",
+    "文本与图片向量维度一致（都默认 2048，或都显式指定 dimensions=1024）后再算余弦相似度",
+    "model 为 doubao-embedding-vision（Plan 的 Model Name），不是带日期的 doubao-embedding-vision-251215 之外的编造名"
+  ]
+}

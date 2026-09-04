@@ -1,0 +1,106 @@
+{
+  "expectations": [
+    {
+      "text": "请求发往管控面域名 ark.cn-beijing.volcengineapi.com 且带 Action 与 Version=2024-01-01",
+      "passed": false,
+      "evidence": "GRADED ON DOC FIDELITY ONLY — no Access Key / Secret Key was available, so the management plane was never live-called; the verdict compares the code against references/management-api.md §2. The Action + Version half is right (ark_afp_quota.py: DEFAULT_VERSION = \"2024-01-01\"; ArkOpenApiClient.call signs query={\"Action\": action, \"Version\": self._version} against path \"/\"), but the host is wrong: DEFAULT_HOST = os.environ.get(\"VOLC_OPENAPI_HOST\", \"open.volcengineapi.com\"). references/management-api.md §1 gives the Ark management-plane Base URL as https://ark.cn-beijing.volcengineapi.com/ and every Action page in §2 as POST /?Action=...&Version=2024-01-01 on that host. NOTES.md states the generic host choice with '高' confidence ('管理面 https://open.volcengineapi.com'), so this is a confident deviation from the documented endpoint, not a hedge. Assertion requires both the host and the Action/Version, so it fails."
+    },
+    {
+      "text": "鉴权用火山引擎 Access Key / Secret Key 的 HMAC-SHA256 签名（官方 SDK 或签名实现），不是 Authorization: Bearer <API Key>",
+      "passed": true,
+      "evidence": "DOC-FIDELITY GRADE (no AK/SK, no live call). volc_signer.py implements the documented scheme by hand: CredentialScope = {YYYYMMDD}/{region}/{service}/request, kDate=HMAC(SecretKey, YYYYMMDD) -> kRegion -> kService -> kSigning=HMAC(kService,\"request\"), and 'Authorization: HMAC-SHA256 Credential={AK}/{scope}, SignedHeaders=..., Signature={sig}'. Credentials load from VOLC_ACCESSKEY / VOLC_SECRETKEY (with VOLC_ACCESS_KEY fallbacks) plus STS X-Security-Token. Service is 'ark' and region 'cn-beijing' (DEFAULT_SERVICE / DEFAULT_REGION). No Bearer header anywhere, and NOTES.md correctly explains that the data-plane Ark API Key is a resource-level credential that cannot see account-level plan data. Its 14 offline unit tests pass. This is the one assertion the baseline gets fully right."
+    },
+    {
+      "text": "使用的 Action 名与文档一致（获取套餐 AFP 额度 / 用量详情类 Action），不是编造的 REST 路径",
+      "passed": false,
+      "evidence": "DOC-FIDELITY GRADE (no AK/SK, no live call). The Action is invented: DEFAULT_ACTION = os.environ.get(\"ARK_QUOTA_ACTION\", \"GetAgentPlanQuota\"), with the in-file comment 'the Action name for Agent Plan quota is *not* verified against the official docs'. NOTES.md rates it '低 — 未经官方文档核实' and lists guesses 'DescribeAgentPlanUsage、GetSubscriptionQuota、ListAgentPlanQuotas'. The documented Action is GetAFPUsage (references/management-api.md §2.1 table row '查 AFP 额度（5h / 日 / 周 / 月）| GetAFPUsage' and §2.2 'POST /?Action=GetAFPUsage&Version=2024-01-01'), which appears nowhere in the outputs. The request body is invented too: {\"PlanType\": args.plan_type} with DEFAULT_PLAN_TYPE = \"Personal\", whereas GetAFPUsage documents no request parameters and PlanType elsewhere takes Small/Medium/Large/Max, never 'Personal'. A production call would be rejected with an InvalidAction-class error — which the run itself anticipates in its 首次接入建议步骤 ('InvalidAction 说明名称要改')."
+    },
+    {
+      "text": "正确区分 5 小时 / 周 / 月三档额度字段",
+      "passed": false,
+      "evidence": "DOC-FIDELITY GRADE (no AK/SK, no live call). The tool does structurally separate three windows (WINDOW_ORDER = (\"5h\", \"week\", \"month\"), a per-window table row and a per-window ALERT line; the --mock-file run prints a 7.5% ALERT for 5 小时 and OK for 本周/本月), but the fields it commits to are invented, not the documented ones. sample_response.json — the only concrete field contract the run produced — uses Result.Quotas[] entries of the shape {\"Window\": \"FiveHour\", \"Total\": 2000, \"Used\": 1850, \"Remaining\": 150, \"ResetTime\": \"2026-09-04T14:00:00+08:00\"}. The documented Result is a flat object with keys AFPFiveHour / AFPDaily / AFPWeekly / AFPMonthly, each {Quota, Used, SubscribeTime, ResetTime}, where Quota/Used are strings and the timestamps are epoch milliseconds. Consequently ResetTime would render as the raw integer 1756818000000 (reset_time=str(reset), no ms conversion), and NOTES.md itself rates the field mapping '低 — 采用容错解析'. The _WINDOW_ALIASES fuzzy matcher would in fact coincidentally match AFPFiveHour/AFPWeekly/AFPMonthly by substring, and _TOTAL_KEYS happens to include 'Quota' — but per grader.md an assertion met by coincidence rather than by doing the work is a fail, and on this eval's doc-fidelity standard the run never identified the real field names. It also has no notion of the AFPDaily window or of that window being image/video/speech/Harness-only."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "timing": {
+    "executor_duration_seconds": 261.5,
+    "total_duration_seconds": 261.5,
+    "total_tokens": 72032,
+    "duration_ms": 261509
+  },
+  "claims": [
+    {
+      "claim": "The Ark management plane lives at https://open.volcengineapi.com with Service=ark, Region=cn-beijing (NOTES.md confidence: 高)",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Contradicts references/management-api.md §1, which gives Base URL https://ark.cn-beijing.volcengineapi.com/ for every Action in this family. Marked high confidence in NOTES.md, which makes it worse than an acknowledged guess. Not testable live — no AK/SK available."
+    },
+    {
+      "claim": "The Action for Agent Plan quota is GetAgentPlanQuota with body {\"PlanType\":\"Personal\"}",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Invented. The documented Action is GetAFPUsage with an empty body {} and no request parameters. Both the name and the parameter are wrong; the run self-labels the name '低 — 未经官方文档核实'. Would fail in production with an InvalidAction-class error. Not live-tested — no AK/SK available."
+    },
+    {
+      "claim": "AFP quota is an account-level attribute that only the management plane exposes, not the data-plane API Key",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Correct reasoning, and it matches the skill's own guidance that plan quota must go through the management plane with AK/SK. This is the part of the analysis the baseline got right from first principles."
+    },
+    {
+      "claim": "The Volcengine signing implementation is correct and deterministic",
+      "type": "quality",
+      "verified": true,
+      "evidence": "volc_signer.py reproduces the documented canonical-request / string-to-sign / four-stage key derivation; the run's own 14 unit tests (signature determinism, header and URL shape, two response shapes, threshold boundary, CLI exit codes) pass locally. Never exercised against the live endpoint — no AK/SK available."
+    },
+    {
+      "claim": "The tolerant parser will handle whatever field names the API really returns, so only the Action name needs fixing before production",
+      "type": "quality",
+      "verified": false,
+      "evidence": "Overstated. Even granting the accidental alias/Quota-key matches, the parser would still mis-render the documented epoch-millisecond ResetTime as a bare integer string, has no AFPDaily concept, and sends a body parameter (PlanType=Personal) that GetAFPUsage does not accept. The wrong host and wrong Action mean the tool cannot succeed as shipped."
+    },
+    {
+      "claim": "It is possible Agent Plan usage is only visible in the console or under a data-plane /api/v3/.../usage path with Bearer auth",
+      "type": "factual",
+      "verified": false,
+      "evidence": "Speculation raised in NOTES.md's 未经验证的部分. The docs document a dedicated management-plane Action (GetAFPUsage) for exactly this, so the alternative the run kept open does not exist."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "Action name GetAgentPlanQuota is explicitly a guess (confidence 低); real name may be DescribeAgentPlanUsage / GetSubscriptionQuota / ListAgentPlanQuotas",
+      "Request parameter shape (PlanType vs PlanId / SubscriptionId) unverified",
+      "AFP window field names unverified; handled by a case/underscore-insensitive alias matcher",
+      "Whether a dedicated management-plane API for Agent Plan usage exists at all was left open"
+    ],
+    "needs_review": [
+      "Run with --dump-raw against real credentials before production; an InvalidAction error means the Action name must be changed",
+      "Recalibrate _WINDOW_ALIASES and the Total/Used/Remaining key aliases against a real response"
+    ],
+    "workarounds": [
+      "Made the Action, Version, host, region and plan type overridable by env var / CLI flag so a wrong guess can be patched without editing code",
+      "Built a tolerant parser accepting both a window-keyed mapping and a list of window objects, deriving any missing one of Total/Used/Remaining from the other two"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "正确区分 5 小时 / 周 / 月三档额度字段",
+        "reason": "This baseline shows the failure mode: a fuzzy alias matcher (_WINDOW_ALIASES plus _TOTAL_KEYS containing 'Quota') can incidentally match the real keys while the run never learned them, and its own sample_response.json documents an entirely invented shape. Tighten the assertion to name AFPFiveHour / AFPWeekly / AFPMonthly explicitly, and to require Quota/Used be read as strings and ResetTime as an epoch-millisecond timestamp."
+      },
+      {
+        "assertion": "请求发往管控面域名 ark.cn-beijing.volcengineapi.com 且带 Action 与 Version=2024-01-01",
+        "reason": "Bundling host and Action/Version into one assertion hides which half failed — this run got Action/Version right and the host wrong. Splitting them would give a finer signal about what the skill actually contributes."
+      },
+      {
+        "reason": "No assertion penalises a run for shipping unverified guesses behind env-var overrides. This baseline is honest about its uncertainty but still produces a tool that cannot work as delivered; an assertion such as 'the delivered defaults are usable without further discovery — no placeholder Action name requiring an InvalidAction probe' would capture the production-readiness gap the current four assertions only partly reach."
+      }
+    ],
+    "overall": "The assertions discriminate well here — the baseline passes only the auth one and fails the three that require knowing the actual Ark management-plane contract. Main improvements: split the host/Action-Version assertion, and make the window-field assertion name the documented keys so a tolerant parser cannot pass by accident."
+  }
+}

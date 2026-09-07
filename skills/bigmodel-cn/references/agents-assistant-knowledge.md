@@ -290,6 +290,34 @@ print(resp.json())
 
 ## 三、GLM 全模态知识库 / RAG 检索增强
 
+> ### ⚠️ 使用这套知识库 API 前必须先读的两条（2026-09-07 用真实调用验证）
+>
+> **1）这一族接口出错时 HTTP 状态码依然是 200，真实结果在响应体的 `code` 里。**
+> `llm-application/open/*` 下的所有端点（以及 `/zrag/*`）实测均如此：查一个不存在的知识库，
+> 返回的是 `HTTP 200` + `{"code":100013,"message":"知识库不存在"}`；上传时字段名写错，
+> 返回的是 `HTTP 200` + `{"code":400,"message":"Required request part 'files' is not present"}`。
+> **`resp.raise_for_status()` 在这里永远不会触发**，必须判断 `resp.json()["code"] == 200`，
+> 否则整条 RAG 流水线会带着错误继续跑下去。
+>
+> **2）上传成功 ≠ 文档可检索。向量化是后台异步的，失败时没有任何主动通知。**
+> 实测：上传返回 `HTTP 200` 且 `data.successInfos` 里带回了 `documentId`（看起来完全成功），
+> 但随后 `POST /knowledge/retrieve` **持续返回 `HTTP 200` + `{"code":200,"data":[]}`**——
+> 空数组，不报错，无限等下去也不会有结果。唯一能看出真相的地方是 `GET /document/{id}`：
+>
+> | 字段 | 含义 |
+> | :--- | :--- |
+> | `embedding_stat` | `0`=处理中 `1`=成功 `2`=失败 |
+> | `failInfo.embedding_code` / `failInfo.embedding_msg` | 失败原因，例如 `10001` / `知识不可用，文档损坏` |
+>
+> **正确写法是：上传后轮询 `GET /document/{id}` 直到 `embedding_stat == 1` 再去检索**，
+> 拿到 `2` 就直接报错给用户，不要靠"检索为空"去推断——那和"确实没有相关内容"无法区分。
+>
+> 附一条如实记录的实测结果：在一个个人版账号上（存储用量 6196/5,000,000 字，远未超限），
+> 分别上传 `.pdf`、`.md`、`.txt` 三种格式，**三份文档最终都是 `embedding_stat=2`、
+> `embedding_msg="知识不可用，文档损坏"`**，检索始终为空。这可能是账号级权限或服务端当时的问题，
+> 未必对所有账号成立——但它恰恰说明了为什么**必须检查 `embedding_stat` 而不能假设上传成功就万事大吉**。
+
+
 平台托管的 RAG 服务：上传文本/图片/音频/视频文件，平台自动完成切分、向量化、索引构建，开发者通过 `knowledge_id` 检索或问答，无需自建 embedding+向量库+rerank 管线。个人免费存储 1GB。若要自己掌控每个环节，见 `references/tools.md` 的 Embeddings（`/paas/v4/embeddings`）与 Rerank 接口。
 
 ### 知识库管理

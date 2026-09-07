@@ -10,7 +10,7 @@
 | Where the unskilled agent's code fails against the real API | 11 / 25 |
 | Round 7 end-to-end execution success, Coding Plan key, 21 runs per side | skill 21 / 21 · baseline 21 / 21 |
 | Pass rate for the skilled agent, every round | 100% |
-| Real documentation errors found and fixed mid-audit | 12 |
+| Real documentation errors found and fixed mid-audit | 14 |
 
 ---
 
@@ -284,6 +284,12 @@ Confirmed rejections for glm-4.6, glm-5.1's newer siblings, and both 5.2 and 5.3
 
 ### `files-batch.md` — Two smaller Batch corrections
 Request counts live under a nested `request_counts` object, not top-level fields as the old example showed. Separately, `custom_id` has an undocumented 6-character minimum — anything shorter fails upload with error `1214`.
+
+### `agents-assistant-knowledge.md` — the knowledge-base API never returns a failing HTTP status
+Every endpoint under `llm-application/open/*` and `/zrag/*` answers `HTTP 200` even when the call failed; the real outcome sits in the body's `code`. Querying a non-existent knowledge base returns `200` + `{"code":100013,"message":"知识库不存在"}`; a wrong multipart field name returns `200` + `{"code":400,...}`. `raise_for_status()` never fires, so a RAG pipeline built the obvious way carries the error forward silently. Recorded with the contract spelled out.
+
+### `agents-assistant-knowledge.md` — a successful upload does not mean a retrievable document
+Uploading returns `200` with a `documentId` in `data.successInfos`, which reads as complete success. Vectorisation then runs in the background, and when it fails nothing tells you: `POST /knowledge/retrieve` keeps returning `200` + `{"code":200,"data":[]}` forever — indistinguishable from "no relevant content". The only signal is `GET /document/{id}`, whose `embedding_stat` (0 pending / 1 ready / 2 failed) and `failInfo.embedding_msg` carry the truth. On the test account all three uploaded formats — `.pdf`, `.md`, `.txt` — ended at `embedding_stat=2` with `知识不可用，文档损坏` while storage sat at 6,196 of 5,000,000 words, so this may be account-scoped; either way the lesson is to poll for `embedding_stat == 1` rather than assume. The skill now says so.
 
 ### `agents-assistant-knowledge.md` — the Assistant example fails if copied verbatim
 The reference said `stream` defaults to `true` and showed a synchronous example with `"stream": false`. Measured 2026-09-07 against `glm-4-assistant`: omitting `stream` **and** passing `false` both return `1212 当前模型不支持SYNC调用方式`; only `true` yields the `text/event-stream` response. So the documented default is wrong in the direction that breaks code, and the shipped example was one of the two failing forms. Corrected in the parameter table and both examples.

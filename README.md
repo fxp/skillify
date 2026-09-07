@@ -8,7 +8,7 @@
 
 | # | Skill | 覆盖范围 | 状态 |
 | :-- | :-- | :-- | :-- |
-| 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层、**GLM Coding Plan 编程套餐**（专用 Key / Base URL / 可用模型 / 1113 排错 / Claude Code 配置） | ✅ 已生成，基准由 **GLM-5.3 执行**：**9 个场景 / 92 次真实执行的对照运行**，其中 **4 个统计显著**（p = .008/.048/.048/.048），15 处文档错误已修正；含 GLM Coding Plan 编程套餐 |
+| 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层、**GLM Coding Plan 编程套餐**（专用 Key / Base URL / 可用模型 / 1113 排错 / Claude Code 配置） | ✅ 已生成，基准由 **GLM-5.3 执行**：**8 个场景 / 82 次真实执行的对照运行**，其中 **4 个统计显著**（p = .008/.048/.048/.048），15 处文档错误已修正；含 GLM Coding Plan 编程套餐 |
 | 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ✅ 账户 + 容器实例 Pro API 全部接口、弹性部署全部只读接口已用真实 Token 验证；⚠️ 弹性部署创建/管理类接口仍未验证（测试账号没有企业认证，这是账号资质的硬性限制，不是没测） |
 | 3 | [`volcengine-ark`](skills/volcengine-ark) | [火山引擎·火山方舟](https://www.volcengine.com/docs/82379)（`ark.cn-beijing.volces.com`）—— 豆包 Doubao / Seed / Seedream / Seedance 及方舟上的 GLM、Kimi、DeepSeek、MiniMax；Chat Completions、Responses API、多模态理解、图片与视频生成、向量化、语音、批量推理、内置工具、管控面 AK/SK 接口，**以及三套互不通用的入口**：标准后付费 API、**Coding Plan** 与 **Agent Plan** 两种订阅套餐（各自的 Base URL / Key / model 名格式 / 计费单位都不同） | ✅ 已生成，Agent Plan 入口用真实专属 Key 实测约 45 次调用；8 个场景对照评测 7 胜 1 平，8 处文档 / SDK 错误已修正；⚠️ 标准 `/api/v3` 与 Coding Plan 套餐内行为未实测（测试账号只有 Agent Plan，没有标准 Key、未订阅 Coding Plan） |
 
@@ -18,8 +18,8 @@
 
 **bigmodel-cn**（执行 Agent 全部为 **GLM-5.3**，判分 100% 由脚本真实调用 `open.bigmodel.cn` 决定，不是靠代码审查猜测）：
 
-- **9 个场景 / 92 次运行**，n=3~5，两侧都能联网查文档，唯一差异是有没有读技能包。判分标准在开跑前冻结于各轮 `PROTOCOL.md`。
-- **4 个场景统计显著**（Fisher 双尾 p < 0.05），**5 个打平**。四个区分场景合并 **skill 18/20 vs baseline 1/20，p = 5.8×10⁻⁸**。
+- **8 个场景 / 82 次运行**，n=3~5，两侧都能联网查文档，唯一差异是有没有读技能包。判分标准在开跑前冻结于各轮 `PROTOCOL.md`。
+- **4 个场景统计显著**（Fisher 双尾 p < 0.05），**4 个打平**。四个区分场景合并 **skill 18/20 vs baseline 1/20，p = 5.8×10⁻⁸**。
 - 打平的 5 个如实记录，不为了好看去挑场景——它们同时也划出了技能的价值边界：**响亮报错 + 常识可解**的坑（embeddings 64 条上限、Coding Plan 的 `1113` 换端点）必然打平。
 
 详见 [`skills/bigmodel-cn/data/comparison-report.md`](skills/bigmodel-cn/data/comparison-report.md)；实测脚本在 [`coding-plan-probe.py`](skills/bigmodel-cn/data/coding-plan-probe.py) 与 [`kb-probe.py`](skills/bigmodel-cn/data/kb-probe.py)。
@@ -62,9 +62,10 @@
 | 带引用的联网问答 | 0.933 | 0.600 | 4/5 vs 0/5 | **0.048** |
 | RAG 建索引（64 条上限） | 1.000 | 1.000 | 5/5 vs 5/5 | 打平 |
 | Coding Plan 的 `1113` 排错 | 1.000 | 1.000 | 5/5 vs 5/5 | 打平 |
-| 知识库上传就绪校验 | 0.900 | 0.850 | 3/5 vs 3/5 | 打平 |
 | Batch 流水线（未加模型约束） | 1.000 | 1.000 | 3/3 vs 3/3 | 打平 |
 | PDF 合同抽取（未加复用约束） | 1.000 | 1.000 | 3/3 vs 3/3 | 打平 |
+
+另有一个场景 `kb-upload-readiness` 已从基准中剔除——测试账号的知识库向量化间歇性失败，两侧同分，测出来的是账号状态而不是技能差异（原始记录保留，不计入统计）。
 
 反例值得一并记录：embeddings 单次 64 条上限会**响亮报错**，而"分批"是任何工程师的默认习惯——这类"响亮且符合常识"的坑没有区分度。Coding Plan 的 `1113` 同理，虽然文案误导，但它响亮，两边都能靠试错跑通。
 

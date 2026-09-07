@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "[尝试 1/4] model=kimi-k3, max_tokens=64, reasoning_effort=none\n  失败：HTTP 401 code=AuthenticationError message=The API key or AK/SK in the request is missing or invalid. Request id: 0217887816769976e3e18ada636ec3efb106459ed37f592100da0\n",
+  "stderr": "\n[失败] 未能拿到分类结果，各次尝试的原因如下：\n  1. HTTP 401 code=AuthenticationError message=The API key or AK/SK in the request is missing or invalid. Request id: 0217887816769976e3e18ada636ec3efb106459ed37f592100da0\n建议排查：1) API Key 是否有效、Agent Plan 是否包含 kimi-k3（Medium 档及以上）；2) 模型 ID 是否正确（可用 ARK_MODEL 环境变量覆盖，确切 ID 请在火山方舟控制台「模型广场」确认）；3) 是否触发限流（Agent Plan 额度按 5 小时/周/月周期刷新）。\n",
+  "timed_out": false,
+  "seconds": 3.5
+}

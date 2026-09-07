@@ -1,0 +1,19 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/get-params-style/with_skill/run-3/outputs/main.py`，编译通过，缺环境变量时的提示分支也实测正常（输出末尾那条 urllib3 警告来自本机 Python 3.9 + LibreSSL 环境，与脚本本身无关）。
+
+**脚本做法**（依据技能包 + 官方文档交叉确认）：
+
+- **接口**：`GET https://api.autodl.com/api/v1/dev/instance/pro/status`，`instance_uuid` 走 URL 查询字符串——官方文档示例把 GET 传参误写成了 JSON body，技能包实测放 body 会直接报 `RequestParameterIsWrong`，所以这里用 `params=` 而非 `json=`。
+- **鉴权**：`Authorization: <token>` 直传，**不带 `Bearer` 前缀**（这是 AutoDL 和多数平台不一样的地方）。
+- **成功**：`code == "Success"` 时 `data` 直接就是状态字符串，除展示原值外还附上含义提示（含文档没列、实测发现的 `starting`/`shutting_down` 中间态，并提示此时不能释放/存镜像）。
+
+**核心要求——两类错误的区分**（官方没有错误码表，按技能包实测的 `code`/`msg` 组合匹配，双保险）：
+
+| 情况 | 识别特征 | 提示方向 | 退出码 |
+|---|---|---|---|
+| 实例不存在 | `RecordNotFoundError` / msg 含「未查询到」「不存在」 | 请求合法，查 UUID 是否复制错、是否已被释放（释放后查不回）、是否属于别的账号，建议用实例列表接口交叉确认 | 2 |
+| 请求写错了 | `RequestParameterIsWrong` / msg 含「参数」 | 实例不一定有问题，查 UUID 格式是否合法、是否误用 JSON body 传参 | 3 |
+
+另外单独处理了鉴权失败（HTTP 401/403，退出码 4）、网络错误（6）、未实名/无权限等其他错误类型（5），出错时都会附上 `request_id` 方便找官方排查。运行方式：`AUTODL_TOKEN=xxx AUTODL_INSTANCE_UUID=pro-xxxx python3 main.py`。

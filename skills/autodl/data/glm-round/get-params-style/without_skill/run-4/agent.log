@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，可直接 `python3 main.py` 运行。
+
+## 接口依据（官方文档确认）
+
+- Host `https://api.autodl.com`，鉴权头 `Authorization: <token>`（裸 token，无 Bearer 前缀）
+- 查状态：`GET /api/v1/dev/instance/pro/status`，请求 Body `{"instance_uuid": "..."}`（文档明确是 GET + JSON body）
+- 响应信封 `{"code": "Success", "data": ..., "msg": "", "request_id": "..."}`，**官方没有枚举错误码**——所以脚本不靠猜错误码字符串来分类
+
+## 核心设计：交叉验证区分两类失败
+
+「实例不存在」和「请求写错了」单看一次报错分不开（错误码没文档），所以状态接口失败后，脚本用**同一个 token** 再调一次「实例列表」接口（`POST /api/v1/dev/instance/pro/list`，同样有官方文档，且只依赖 token、不涉及这台实例）：
+
+| 交叉验证结果 | 结论 | 退出码 |
+|---|---|---|
+| 列表也失败 | **请求本身有误**（token 无效/未实名/格式错，换任何 UUID 都不会成功） | 3 |
+| 列表成功、无此 UUID | **实例不存在**（凭证没问题，UUID 抄错/已释放/属于别的账号） | 2 |
+| 列表成功、且有此 UUID | 用列表里的状态作答，附专用接口错误原文 | 0 |
+
+另有独立分类：环境变量缺失 → 3；连不上服务器（网络层，两者都不是）→ 4；服务端 5xx → 5。每次错误都打印 `code`/`msg`/`request_id` 原文，方便反馈给 AutoDL。
+
+## 验证情况
+
+- `python3 -m py_compile` 通过；无环境变量实跑过（正确报「请求本身有误」并退出码 3）
+- 用桩 `requests` 模块跑了 9 个分支（成功 / 实例不存在 / token 失效 / 网络断 / 5xx 但列表有实例 / 5xx 且无实例 / 404 非信封 / 空 data / 跨页查找），退出码 `0 2 3 4 0 5 3 0 0` 全部符合设计——过程中还揪出并修掉了一个分页 bug（原 `for range` 写法只会拉第一页，会把第二页上的实例误判为不存在，已改为 while 循环）
+- 未调用真实 API（环境无可用 token）
+
+Sources: [容器实例Pro API](https://www.autodl.com/docs/instance_pro_api/) · [API文档（通用）](https://www.autodl.com/docs/common_api/) · [弹性部署API](https://www.autodl.com/docs/esd_api_doc/)

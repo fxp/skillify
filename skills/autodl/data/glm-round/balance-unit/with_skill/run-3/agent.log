@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/balance-unit/with_skill/run-3/outputs/main.py`，`python3 -m py_compile` 编译通过，单位换算和阈值逻辑也做了离线自测（未调用真实 API）。
+
+## 交接要点
+
+**接口**（SKILL.md + 技能包 references/account.md + 官方文档三方一致）：
+- `POST https://api.autodl.com/api/v1/dev/wallet/balance`，无请求参数
+- 鉴权头是 `Authorization: <token>`，**没有 Bearer 前缀**（AutoDL 的特殊之处）
+
+**“数字必须准”的三道保险**（对应上次单位搞错的事故）：
+1. **单位**：API 返回的金额是「元 × 1000」的整数（实测 29.29 元对应 `assets=29290`）。脚本内部全程保持整数，仅在打印时用 `Decimal` 精确换算成元（`29290 → '29.29'`），全程不经过 float，不会出现精度偏差。
+2. **“可用”口径**：技能包实测发现真实响应里有官方文档没列的 `blocked_asset`（冻结金额），可用余额按 `(assets - blocked_asset) / 1000` 计算；字段取不到时按 0 兜底。
+3. **阈值比较**：`可用余额(整数) < 20000`（20 元 = 20000），整数比较零浮点误差；恰好 20.00 元不算“低于”，不告警。
+
+**监控友好性**：
+- 退出码区分三种结局：`0` 正常 / `1` 低余额告警 / `2` 脚本自身出错（Token 缺失、网络失败、API 返回非 `Success`、响应字段异常都会走 `2`）——查不到余额时绝不会静默当成“余额正常”，这正是上次“告警一直没响”的反面。
+- 告警是 `!!!` 包围的多行醒目横幅；正常时打印 `AutoDL 可用余额: XX.XX 元`，有冻结金额时附注说明。
+- 仅依赖 `requests`（其余为标准库），直接 `AUTODL_TOKEN=xxx python3 main.py` 即可运行。

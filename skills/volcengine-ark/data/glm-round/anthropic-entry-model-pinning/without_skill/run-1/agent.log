@@ -1,0 +1,36 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过。交付完成，说明如下：
+
+## 交付内容
+
+脚本已保存到 `outputs/main.py`（仅此一个文件），验证结果：
+- `python3 -m py_compile` 通过
+- 本机 `requests 2.32.5` 可用
+- 无 Key 时跑 `python3 main.py` 会给出明确提示并以退出码 2 结束（未发起任何 API 调用）
+
+## 关键设计
+
+**入口（Anthropic 协议）**：Agent Plan 专用 Anthropic 兼容入口，主用官方给 Claude Code 的配置 `https://ark.cn-beijing.volces.com/api/plan` + `/v1/messages`；镜像写法 `/api/plan/v3/anthropic/v1/messages` 作为备选，**仅在返回 404 时自动切换**。鉴权同时带 `Authorization: Bearer` 和 Anthropic 标准的 `x-api-key` 头。
+
+**模型钉死（核心需求）**：
+- `model` 显式填 `doubao-seed-2.0-lite`（官方写法：点号、无日期后缀），并刻意**不用 `ark-code-latest` 这类路由别名**——查证中发现官方提示该别名会让方舟按当前启用情况自行路由，正是被换模型的隐患；
+- 跑完同时打印「我请求的模型」和「服务端实际回给我的模型」（取自响应的 `model` 字段），并打印回复内容和 token 用量；
+- 核对逻辑三级：完全一致 ✅；仅写法/带日期版本号差异（如 `doubao-seed-2-0-lite-250902`）✅ 并注明；**其它任何模型（pro / kimi / glm 等）→ 🚨 显著报警（stderr）+ 退出码 1**；响应缺 `model` 字段无法核对时也按失败处理。
+
+**退出码**：0 一致 / 1 不一致或无法核对 / 2 请求或配置出错。
+
+## 查证依据（成本背景已证实）
+
+第三方 35 天 Medium 套餐实测确认了抵扣系数差距：`doubao-seed-2.0-mini` 0.25、`doubao-seed-2.0-lite` 0.5、`doubao-seed-2.0-pro` 2.5、`kimi-k2.6`/`glm-5.2` 4.5、`deepseek-v4-pro` 5.5——被换成 kimi/glm 会多烧约 9 倍额度，报警逻辑确实必要。
+
+Sources:
+- [火山方舟 · 套餐概览（官方文档）](https://www.volcengine.com/docs/82379/2366394)
+- [火山方舟 · 套餐内 AFP 抵扣规则（官方文档）](https://www.volcengine.com/docs/82379/2516287)
+- [Agent Plan 怎么用？49.9 元 Medium 套餐 35 天实测报告（腾讯云）](https://cloud.tencent.com/developer/article/2714722)
+- [Ark Coding Plan Guide（codepick，基于官方文档导出）](https://codepick.dev/en/guides/ark-coding-plan-guide/)
+- [字节方舟 Coding Plan 接入（菜鸟教程）](https://www.runoob.com/claude-code/volcengine-coding-plan.html)
+- [方舟 Agent Plan 官方活动页](https://www.volcengine.com/activity/agentplan)
+
+一点如实说明：官方文档站正文是纯前端渲染抓不全，入口路径是官方导出配置 + 多来源交叉确认的；两种写法并存是唯一残留不确定性，脚本已用「404 才切备选」消化掉它，配好 Key 即可直接跑。

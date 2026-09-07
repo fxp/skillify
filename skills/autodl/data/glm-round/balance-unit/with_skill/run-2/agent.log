@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录下仅此一个文件），`python3 -m py_compile` 编译通过，可直接 `AUTODL_TOKEN=xxx python3 main.py` 运行。
+
+## 接口依据
+
+按 SKILL.md → `references/account.md` 的指引写的，并用 WebFetch 对照了官方文档（`www.autodl.com/docs/common_api/`），两边一致：
+
+- **Endpoint**：`POST https://api.autodl.com/api/v1/dev/wallet/balance`
+- **鉴权**：`Authorization: <token>`，**没有 Bearer 前缀**（AutoDL 的特殊之处）
+- **金额单位**：返回的是「元 × 1000」的整数，技能包实测 29.29 元对应 `assets: 29290`
+
+## 针对“数字必须准”做的几处设计
+
+1. **阈值比较全程整数运算**：告警判断用 `assets - blocked_asset < 20000`（原始单位），不经过浮点数，从根上杜绝单位和精度错误——上次同事的事故就是单位搞错导致告警不响。
+2. **可用余额扣除了冻结金额**：`blocked_asset`（冻结中的钱不能花）官方文档没列，但技能包经真实调用确认存在。只看 `assets` 会把余额报高。
+3. **打印保留 3 位小数**：API 精度是 0.001 元。如果四舍五入到 2 位，19.999 元会显示成“20.00 元”却同时告警，看着像误报。
+4. **“查不到”不等于“正常”**：网络失败、HTTP 非 200、`code != "Success"`、字段异常都显式报错并退非零码，不会静默当作余额充足。
+5. **监控友好的退出码**：`0` 正常 / `1` 低余额告警 / `2` 脚本出错，另有 `available_balance_yuan=xx.xxx` 纯数字行方便采集。如果你们的监控把任何非零退出都当脚本故障，把告警分支的 `sys.exit(1)` 去掉即可。
+
+## 验证情况（离线 mock，未真调 API）
+
+用假响应测过：29290→29.290 元不告警、19999→19.999 元告警、恰好 20000（20 元）不告警、“低于”按严格小于处理、assets 25 元 + 冻结 6 元→按 19 元告警、鉴权头无 Bearer、API 报错和缺 Token 各自正确退出。测试期间我的 mock 写错过两次（构造参数反了、pop 掉了环境变量没恢复），均已修正后重跑通过——那是测试代码的问题，脚本本身没改过。

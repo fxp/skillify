@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，无 Key 时能干净退出（exit 1 并给出提示，那条 urllib3 警告来自本机环境，与脚本无关）。
+
+**关键接入点**（均来自 skill 的 2026-09-04 真实 API 验证记录）：
+
+| 项 | 取值 | 依据 |
+|---|---|---|
+| Base URL | `https://ark.cn-beijing.volces.com/api/plan/v3` | Agent Plan 专属入口；打 `/api/v3` 会 401 |
+| Key | 环境变量 `ARK_AGENT_PLAN_API_KEY`（Bearer） | 与方舟 API Key 不通用 |
+| Endpoint | `POST /embeddings`（OpenAI 形态） | Plan 入口实测 200，响应取 `data[0].embedding` |
+| model | `doubao-embedding-vision` | Plan 入口 Model Name，实际解析到 `doubao-embedding-vision-251215` |
+| dimensions | `1024` | 实测生效；不传默认 2048 |
+
+**两个设计决策**：
+1. **逐条请求而非批量**——`input` 传对象数组实测 400（`expected a string`），字符串数组批量形态在 skill 里标注未实测，所以三条文本各发一次单字符串请求，这是唯一完全落在实测通过范围内的形态。
+2. **取值兼容**——`data` 按数组取 `[0].embedding`，同时保留单对象兜底（`/embeddings/multimodal` 的响应形态），与 skill 推荐写法一致。
+
+输出格式：每条打印 `文本 -> 向量实际长度 1024（期望 1024，一致）`，末尾汇总核对，有任何一条不符会以非零码退出。
+
+一点提醒：Agent Plan 官方口径是“文本/向量化模型不可用于 API 调用”，在工具之外程序直连理论上有被判滥用的风险（图片/视频/语音模型则明确允许 API 调用），自用测试没问题，长期跑建议留意。
+
+WebFetch 说明：官方文档页是 JS 渲染，抓取拿到空内容（web_reader 又限流），本次以 skill 内的真实 API 验证记录为准——它比文档页更新且更可靠。

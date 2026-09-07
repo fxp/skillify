@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 实现要点
+
+先读了 `SKILL.md` → `references/account.md`，并抓取官方文档（`www.autodl.com/docs/common_api/`）交叉确认，接口细节以真实验证过的技能包为准：
+
+- **接口**：`POST https://api.autodl.com/api/v1/dev/wallet/balance`，无请求参数；鉴权头是 `Authorization: <token>`，**没有 Bearer 前缀**（AutoDL 特殊之处）。
+- **单位（上次事故的根源）**：`assets`/`blocked_asset` 是「元 × 1000」的整数（真实验证：余额 29.29 元 → `assets=29290`）。脚本**全程用整数毫元运算和比较**，仅在展示时用整数除法精确换算，不经过浮点。
+- **可用余额 = assets − blocked_asset**：冻结金额不能花，只看 `assets` 会虚高。
+- **阈值比较用整数** `available < 20000`，避免 20 元边界的浮点误差；「低于 20 元」按严格小于处理（恰好 20.000 元不告警）。
+
+## 运维细节
+
+- Token 从 `AUTODL_TOKEN` 读取，缺失时报错退出（exit=2）；请求带 15 秒超时 + 3 次重试，防止网络挂起卡住监控、偶发抖动误报。
+- **退出码区分三种状态**：`0` 正常 / `1` 低余额告警 / `2` 脚本故障——故障时绝不打印余额数字，监控不会把失败误读成余额正常。响应结构异常（字段缺失/类型不对）也按故障处理，不猜数字。
+- 告警输出为醒目横幅；并强制 stdout/stderr 为 UTF-8，避免 cron 的 ASCII locale 下打印告警字符崩溃。
+
+## 验证（均未真实调用 API）
+
+- `py_compile` 编译通过；
+- 无 Token 运行 → 报错 exit=2 ✓；
+- mock 响应离线跑通四条路径：低余额 14.640 元 → 告警横幅 exit=1 ✓；正常 29.290 元 → exit=0 ✓；恰好 20.000 元 → 不告警 exit=0 ✓；API 业务失败 → 重试 3 次后报错 exit=2 ✓（测试末尾的 AssertionError 是我测试脚本的断言只允许调用 1 次，而失败重试 3 次本来就是设计行为，与 main.py 无关）。
+
+测试产生的 `__pycache__` 已清理，交付目录只剩 `main.py`。

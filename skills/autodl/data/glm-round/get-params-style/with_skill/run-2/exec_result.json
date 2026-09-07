@@ -1,0 +1,7 @@
+{
+  "exit_code": 2,
+  "stdout": "",
+  "stderr": "[实例不存在] code='RecordNotFoundError', msg='未查询到相关实例'\n请求本身是合法的，只是 API 查不到这台实例。可能原因：\n  1. AUTODL_INSTANCE_UUID（00000000-0000-0000-0000-00000000dead）抄错或复制不完整；\n  2. 实例已被释放——已释放的实例不会再出现在任何查询里；\n  3. 实例属于其他账号，当前 Token 无权查看。\n排查建议：用「获取实例列表」接口核对当前账号还能看到哪些实例。\n",
+  "timed_out": false,
+  "seconds": 2.7
+}

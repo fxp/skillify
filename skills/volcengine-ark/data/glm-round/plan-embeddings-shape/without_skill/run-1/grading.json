@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 2.4s :: he API key or AK/SK in the request is missing or invalid. Request id: 0217887817119286cfe2b229f965c4fa1752fa8f08fea791c3ed5\",\"param\":\"\",\"type\":\"Unauthorized\"}}\n"
+    },
+    {
+      "text": "真的拿到了向量（打印出了向量长度）",
+      "passed": false,
+      "evidence": "n1024=0 got_2048=False"
+    },
+    {
+      "text": "维度确实是 1024（没走成 2048 维的 multimodal 端点）",
+      "passed": false,
+      "evidence": "n1024=0 got_2048=False"
+    },
+    {
+      "text": "三段文本都处理了",
+      "passed": false,
+      "evidence": "len_1024_occurrences=0"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

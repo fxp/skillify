@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，并用 mock 干跑了全部执行路径（未打真实 API）。
+
+**接入依据**（来自 SKILL.md → `references/agent-plan.md` §8.1、`references/embeddings-speech.md` §2.3，均有 2026-09-04 真实 API 验证记录）：
+
+| 要点 | 取值 | 说明 |
+|---|---|---|
+| Base URL | `https://ark.cn-beijing.volces.com/api/plan/v3` | Agent Plan 专属入口；这把 Key 打 `/api/v3` 会直接 401 |
+| 鉴权 | `Authorization: Bearer $ARK_AGENT_PLAN_API_KEY` | Agent Plan 专属 Key，与方舟 API Key 不通用 |
+| 端点 | `POST /embeddings`（OpenAI 形态） | Plan 入口实测可用，响应取 `data[i].embedding` |
+| model | `doubao-embedding-vision` | Plan 入口用不带日期的 Model Name，实际服务 `…-251215` |
+| dimensions | `1024` | **默认是 2048**，必须显式传才是 1024 维 |
+
+**官方文档核实**：WebFetch 抓文档页因 JS 渲染失败，改走 `docs.volcengine.com` 的文档原文 API 拿到了「多模态向量化 API」原文，确认 `dimensions` 取值范围就是 1024 / 2048、默认 2048，与技能记录一致。
+
+**一个设计决策**：`input` 传字符串数组（一次请求批量 3 条）是 OpenAI 标准形态、OpenClaw 官方在 Plan 入口就这么配置，但技能标注该形态在 Plan 入口**未实测**（实测背书的只有单字符串输入，且 `/embeddings/multimodal` 有把多条输入融合成一条向量的前科）。所以脚本主路径用批量数组，若服务端报错或返回条数与输入不符，自动回退为逐条请求（实测验证过的形态），保证第一次就能跑通。
+
+**验证情况**：编译通过；mock 干跑覆盖了 5 条路径——批量成功（1 次请求）、批量融合成 1 条→回退、批量 400→回退、批量响应结构异常→回退、缺环境变量→中文提示退出；完整运行的打印格式如下：
+
+```
+[1] 今天天气很好 -> 向量实际长度: 1024
+[2] 这部电影非常精彩 -> 向量实际长度: 1024
+[3] 服务器响应超时了 -> 向量实际长度: 1024
+确认: 3 条向量实际长度均为 1024 -> 通过
+```
+
+一点提醒：Agent Plan 官方口径是向量化模型“不可用于 API 调用”（指在 AI 工具之外程序直连有被判滥用的风险），本脚本是按任务要求写的演示代码，实际使用请知悉此合规提示。

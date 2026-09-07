@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 4.5s :: ng.volces.com/api/plan/v3 -> HTTP 200\n[info] 模型 kimi-k3 @ https://ark.cn-beijing.volces.com/api/plan/v3；finish_reason=stop，completion_tokens=11/64（含思考 token 0）\n"
+    },
+    {
+      "text": "真的拿到了非空的分类结果",
+      "passed": true,
+      "evidence": "label=True"
+    },
+    {
+      "text": "没有把空回答当成完成",
+      "passed": true,
+      "evidence": "truncated_empty=False"
+    },
+    {
+      "text": "脚本检查了 finish_reason",
+      "passed": true,
+      "evidence": "checks_finish_reason=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

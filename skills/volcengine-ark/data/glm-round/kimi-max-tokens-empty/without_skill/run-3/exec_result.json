@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "负面\n",
+  "stderr": "[尝试1] model=kimi-k3, thinking=disabled, max_tokens=64\n[尝试1] 返回：content='负面'（completion_tokens=11, reasoning_tokens=0, finish_reason=stop）\n[尝试1] 成功解析出标签：负面（精确匹配）\n",
+  "timed_out": false,
+  "seconds": 4.3
+}

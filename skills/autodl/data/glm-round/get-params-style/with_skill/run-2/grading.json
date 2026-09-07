@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=2 2.7s :: UTODL_INSTANCE_UUID（00000000-0000-0000-0000-00000000dead）抄错或复制不完整；\n  2. 实例已被释放——已释放的实例不会再出现在任何查询里；\n  3. 实例属于其他账号，当前 Token 无权查看。\n排查建议：用「获取实例列表」接口核对当前账号还能看到哪些实例。\n"
+    },
+    {
+      "text": "传参方式正确（拿到的是'实例不存在'而不是'参数错误'）",
+      "passed": true,
+      "evidence": "notfound=True paramerr=False"
+    },
+    {
+      "text": "结论指向实例不存在，而非请求写错",
+      "passed": true,
+      "evidence": "verdict_notfound=True"
+    },
+    {
+      "text": "代码对 GET 使用 params= 而非 json=",
+      "passed": true,
+      "evidence": "get_uses_params=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live AutoDL API (read-only)"
+}

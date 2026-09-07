@@ -1,0 +1,7 @@
+{
+  "exit_code": 2,
+  "stdout": "请求端点: https://ark.cn-beijing.volces.com/api/plan/v1/messages\n我请求的模型: doubao-seed-2.0-lite\n------------------------------------------------------------\n模型回复: Python是一种强调代码简洁易读的高级通用解释型编程语言，支持多种编程范式，拥有丰富庞大的开发生态，目前广泛应用于Web开发、数据科学、人工智能、自动化运维等众多技术领域。\ntoken 用量: input=53 output=394\n------------------------------------------------------------\n我请求的模型: doubao-seed-2.0-lite\n服务端实际回给我的模型: 'doubao-seed-2-0-lite-260215'\n",
+  "stderr": "[警告] ⚠️  模型不一致!请求的是 doubao-seed-2.0-lite,服务端实际服务的是 doubao-seed-2-0-lite-260215。两者抵扣系数不同,继续使用将产生额外成本,请立即排查。\n",
+  "timed_out": false,
+  "seconds": 9.5
+}

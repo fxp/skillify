@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "[策略1 thinking=disabled + max_completion_tokens=64] 成功，模型输出：'负面'\n  实际用量：completion_tokens=11（其中思维链 reasoning_tokens=0）\n  [成本] 输出上限 ≤64 token 的要求已满足。\n\n情感分类结果：\n负面\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 4.6
+}

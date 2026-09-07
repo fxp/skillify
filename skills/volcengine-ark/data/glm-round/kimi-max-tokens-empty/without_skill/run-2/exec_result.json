@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "负面\n",
+  "stderr": "[info] https://ark.cn-beijing.volces.com/api/plan/v3 -> HTTP 200\n[info] 模型 kimi-k3 @ https://ark.cn-beijing.volces.com/api/plan/v3；finish_reason=stop，completion_tokens=11/64（含思考 token 0）\n",
+  "timed_out": false,
+  "seconds": 4.5
+}

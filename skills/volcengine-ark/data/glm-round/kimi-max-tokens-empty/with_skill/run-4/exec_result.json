@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "负面\n",
+  "stderr": "=== 策略1｜关闭思考 thinking.disabled + max_completion_tokens=64 ===\n[调用成功] 实际服务模型=kimi-k3，finish_reason=stop\n[用量] completion_tokens=11（思维链 0 + 回答 11）\n[成本] 满足要求：输出上限压在 64 token 内，且拿到了分类结果。\n",
+  "timed_out": false,
+  "seconds": 4.5
+}

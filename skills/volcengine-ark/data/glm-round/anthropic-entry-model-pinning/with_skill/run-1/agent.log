@@ -1,0 +1,18 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/anthropic-entry-model-pinning/with_skill/run-1/outputs/main.py`（仅此一个文件），未调用真实 API。
+
+## 交付说明
+
+**脚本做的事**：从 `ARK_AGENT_PLAN_API_KEY` 读 Key → 用 Anthropic 协议入口 `POST https://ark.cn-beijing.volces.com/api/plan/v1/messages` 问「用一句话介绍 Python」→ 同时打印「我请求的模型」和「服务端实际回给我的模型」（响应体 `model` 字段）→ 比对不一致时打出醒目报警块并以退出码 1 结束。
+
+**关键设计决策**（均来自技能里 2026-09-04 Agent Plan Medium 的真实 API 实测记录，我另外核对了 `verification-log.jsonl` 里的原始请求/响应）：
+
+1. **核对用「归一化家族比对」，不是裸字符串相等**。实测 Plan 入口会把点分 Model Name `doubao-seed-2.0-lite` 解析成固定日期版本，响应回显 `doubao-seed-2-0-lite-260215`——逐字比对**永远不等**，裸比较会让脚本次次误报。归一化规则：点→连字符、剥掉结尾 6 位日期段，两边都变成 `doubao-seed-2-0-lite` 再比。这样即使方舟日后把 lite 解析到 `260428` 等新日期版本，也仍判定为同一家族（Name→版本映射由方舟维护，代码不硬依赖日期）；而被路由到 turbo、mini、glm 等任何其他家族都会报警。
+2. **绝不请求 `claude-*`**。实测 Anthropic 入口传 `claude-sonnet-4-5` 会 **HTTP 200 静默路由**到 `doubao-seed-2-1-turbo-260628`（系数 2.5，是 lite 0.5 的 5 倍），不报错。脚本硬编码只填 `doubao-seed-2.0-lite`，报警文案里也写了这条排查提示。
+3. **`thinking: {"type": "disabled"}`**：lite 默认开思考，实测该参数在 Anthropic 入口生效（响应只剩 text block），省掉思维链 token 的 AFP 抵扣；`max_tokens: 512` 必填。
+4. **鉴权**：`x-api-key` + `anthropic-version: 2023-06-01`（实测 `Authorization: Bearer` 也可，二者等价）。专属 Key 打 `/api/v3`、`/api/coding/v3` 会直接 401，不存在静默扣费风险。
+5. **错误处理**：Key 缺失→清晰提示后退出；非 2xx 按 `error.code` 判别打印（`type` 可能为空串；404 空 body 先判空再解析），并附 401/404/429 的常见原因提示。
+
+**已验证**：`python3 -m py_compile` 通过；归一化比对逻辑跑了 5 组离线用例全过（含「方舟换日期版本→仍一致」和「被路由到 turbo/mini/glm→报警」）；缺 Key 路径实测退出码 1、提示清晰。真实 API 调用按你的要求未执行——有 Key 时 `export ARK_AGENT_PLAN_API_KEY=... && python3 main.py` 即可跑通。

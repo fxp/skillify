@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，且用 mock 响应把三条分支都离线验证过（未真实调用 API）。
+
+## 脚本要点
+
+依据 `SKILL.md` → `references/agent-plan.md`，并核对了 workspace 里 2026-09-04 的真实 API 验证记录（`verification-log.jsonl` 中 `/api/plan/v1/messages` 的原始请求/响应），另用官方文档搜索交叉确认了入口写法：
+
+- **入口**：`POST https://ark.cn-beijing.volces.com/api/plan/v1/messages`（Agent Plan 的 Anthropic 协议入口；专属 Key 打 `/api/v3`、`/api/coding` 会直接 401）
+- **鉴权**：`x-api-key` + `anthropic-version: 2023-06-01`（`Authorization: Bearer` 实测同样接受）；Key 从 `ARK_AGENT_PLAN_API_KEY` 读取，缺失时报错退出
+- **model 核对（本任务核心坑）**：响应里的 `model` 是 Plan 入口解析后的**带日期版本 ID**（实测 `doubao-seed-2.0-lite` → `doubao-seed-2-0-lite-260215`），不会与请求名逐字相等。脚本先归一化（小写、点转连字符、去 `-YYMMDD` 后缀）再比对，并打印两者原始值；若被静默路由到别的模型（如 `claude-*` → `doubao-seed-2-1-turbo`，系数 2.5 是 lite 的 5 倍）会打显眼报警块到 stderr 并以退出码 1 结束
+- **成本侧**：关掉了 lite 默认开启的深度思考（思维链按输出 token 扣 AFP，实测该模型接受 `thinking: {"type":"disabled"}`）；打印实际服务模型的 AFP 系数与本次用量估算
+- **退出码**：0 一致 / 1 不一致（报警）/ 2 环境或请求错误（401、404 附带针对性排查提示）
+
+## 验证结果（离线，mock `requests.post`）
+
+| 场景 | 输出 | 退出码 |
+|---|---|---|
+| 响应 `model: doubao-seed-2-0-lite-260215` | 打印两侧模型 + 系数 0.5 + 「通过」 | 0 ✅ |
+| 响应 `model: doubao-seed-2-1-turbo-260628`（静默路由） | 报警块 + 系数 2.5 对比 | 1 ✅ |
+| 未设 `ARK_AGENT_PLAN_API_KEY` | 明确报错，不触网 | 2 ✅ |
+
+## 一点需要知悉的风险
+
+官方口径是 Agent Plan 的**文本模型「不可用于 API 调用」**（仅限 AI 编程工具内使用），在工具外用套餐 Base URL + Key 直调文本模型有被判定滥用、停用订阅的风险（图片/视频/语音模型则官方允许 API 调用）。这个脚本按你的要求实现了直调并做模型核对，适合做验证/排查用途；若要长期跑生产流量，建议评估这一条款。
+
+Sources: [火山方舟 Coding Plan 快速开始（官方文档）](https://www.volcengine.com/docs/82379/1928261)、[Claude Code 接入火山方舟 Coding Plan（51CTO）](https://blog.51cto.com/u_11884324/14470576)、[Claude Code 使用字节方舟 Coding Plan（菜鸟教程）](https://www.runoob.com/claude-code/volcengine-coding-plan.html)、[Claude Code+方舟 Coding Plan 编程实践（知乎）](https://zhuanlan.zhihu.com/p/2003400705701085972)

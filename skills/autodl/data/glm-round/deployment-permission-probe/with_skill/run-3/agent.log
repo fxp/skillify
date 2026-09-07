@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付并通过验证。交付物：`outputs/main.py`（仅此一个文件），可直接 `export AUTODL_TOKEN=... && python3 main.py` 运行。
+
+## 探测思路（为什么不用创建就能探明“能不能创建”）
+
+依据技能包 2026-09 的真实调用验证 + 官方文档确认：**弹性部署的权限门槛按接口区分，不是一刀切**——“创建部署”和只读的“部署列表/调度黑名单”共用同一道**企业认证**门槛，而“GPU 库存/镜像列表”不需要企业认证。所以脚本用只读接口就能回答全部问题，全程零创建：
+
+| 步骤 | 接口 | 作用 |
+|---|---|---|
+| 1 | `POST /wallet/balance` | 验证 Token 有效 + 顺带查余额（任何认证等级可调） |
+| 2 | `POST /deployment/list` + `GET /deployment/blacklist` | **核心探针**：与创建部署同门槛，能调通 == 具备企业认证（两个探针交叉验证） |
+| 3 | `POST /machine/region/gpu_stock` | 逐区扫描 11 个可调度地区的 RTX 4090 库存，不受认证等级影响 |
+
+## 失败原因三类判定（应对各不相同）
+
+- **账号资质问题**：`BadRequest`+“无当前资源访问权限”（未企业认证，弹性部署门槛比容器实例 Pro 的高）或 `TORealName`（未实名）→ 去控制台做认证；
+- **接口用错了**：`RequestParameterIsWrong`、HTTP 404 等 → 修代码/参数；
+- **服务本身问题**：超时、连接失败、5xx、`InternalError`、非 JSON 响应 → 重试/找平台；
+- 另设 **Token 无效**（401 / 未设置环境变量）单独一类，先修凭证再谈其他。
+
+关键细节都按文档和验证记录处理了：鉴权头 `Authorization: <token>` 不带 Bearer 前缀、`gpu_stock` 的 `region_sign` 必填且 `data` 每项是以 GPU 型号为键的对象（`{"RTX 4090": {"idle_gpu_num": ...}}`，解析对实测多出的 `chip_corp`/`cpu_arch` 字段容错）、库存区分“无此型号”vs“有型号但空闲为 0”、末尾附“单卡口径统计”的多卡调度提示。退出码：0 结论明确（含“不能创建”）、2 Token 未设置、3 无法判断。
+
+## 验证情况
+
+- `python3 -m py_compile` 通过；
+- 无 Token 运行 → 正确提示并 exit 2，未触网；
+- 用 monkeypatch 离线模拟三种返回跑通主流程（**未调用真实 API**）：未企业认证 → “不能——账号资质问题”且给出企业认证指引（exit 0）；全部成功 → “能（推定）”并汇总库存（exit 0）；502 → “无法判断——服务问题”（exit 3）。
+
+一点提醒：脚本未实际调用创建接口，“能创建”是权限前提满足的推定结论；真实创建时的库存、余额等运行时条件仍需届时确认。若你们账号未做企业认证，大概率会命中第一种结论——技能包测试账号当时就是这个返回。

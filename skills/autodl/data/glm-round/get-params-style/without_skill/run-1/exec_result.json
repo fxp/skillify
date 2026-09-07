@@ -1,0 +1,7 @@
+{
+  "exit_code": 2,
+  "stdout": "[实例不存在] 状态接口报错,且账号实例列表里也找不到这个 UUID —— 问题在实例侧,不是请求写错了。\n    原始响应: HTTP 200, code='RecordNotFoundError', msg='未查询到相关实例', request_id=dacfb3e94a255876f3bdeb3f6ca38cc5\n    交叉验证: 已遍历账号下实例列表共 1 页,未见该 UUID\n排查建议(问题在实例侧,不用改脚本):\n    - 到 AutoDL 控制台核对环境变量 AUTODL_INSTANCE_UUID 是否抄错;\n    - 实例可能已被释放,或属于其他账号/子账号;\n    - 该开放接口面向「容器实例 Pro」,若实例是普通容器实例,请到控制台确认实例类型。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.7
+}

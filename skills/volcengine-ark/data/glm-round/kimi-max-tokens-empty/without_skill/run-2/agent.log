@@ -1,0 +1,33 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，只这一个文件。
+
+## 核心结论：64 token 上限下的真正陷阱
+
+**kimi-k3 默认开深度思考，而方舟的思考（reasoning）token 同样计入 `max_tokens`**。所以只设 `max_tokens=64` 的话，思维链会把预算烧光——接口返回 HTTP 200，但 `content` 为空、`finish_reason=length`，“调用成功”却什么都没拿到（这正是任务目录名 `kimi-max-tokens-empty` 指的坑）。解法是请求里显式带 `thinking={"type": "disabled"}`，并对空结果做显式诊断。
+
+## 脚本要点
+
+- **入口**：Agent Plan 的 OpenAI 兼容 Base URL 是 `https://ark.cn-beijing.volces.com/api/plan/v3`（套餐专用，模型 ID 为短名如 `kimi-k2.6`），不是常规按量的 `/api/v3`；脚本以 plan 入口为主、404 时自动落到 `/api/v3` 兜底，可用 `ARK_BASE_URL`/`ARK_MODEL` 覆盖
+- **成本控制**：`max_tokens=64` + 关闭思考，system prompt 强约束只回三个词之一
+- **必须拿到结果**：逐层校验——HTTP 状态码、JSON、`choices`、空 `content`（区分 `length`/思考耗尽、`content_filter`、未知三类原因并具体给出 `completion_tokens`/`reasoning_tokens`/思维链片段）、输出中提取不到三个词之一，任一失败都**非 0 码退出并打印原因**，stdout 绝不输出空结果
+- **自愈重试**：429 限流重试一次；`thinking` 参数被 400 拒绝时自动去掉重试；模型 ID 报错时顺手列出该入口可用的 kimi 系模型辅助排查
+- 只依赖 `requests` + 标准库
+
+## 验证情况（未真调 API，按约定无 Key）
+
+- `python3 -m py_compile` 通过
+- 不带 Key 运行：退出码 1，明确提示去控制台创建 Key（不静默）
+- 本地 mock 两条路径：正常 200 → stdout 只打印 `负面`（exit 0）；思考烧光预算 → stdout 为空、exit 1、stderr 输出完整的“为什么拿不到”诊断
+
+有 Key 时直接 `export ARK_AGENT_PLAN_API_KEY=ark-xxx && python3 main.py` 即可。
+
+Sources:
+- [方舟 Agent Plan 官方活动页](https://www.volcengine.com/activity/agentplan)（支持 Kimi-K3）
+- [套餐概览 - 火山方舟文档](https://www.volcengine.com/docs/82379/2366394)
+- [OpenCode 手动配置火山方舟 Agent Plan 教程 - 掘金](https://juejin.cn/post/7680119725196427264)（确认 `api/plan/v3` 入口与短名模型 ID）
+- [pi-volcengine-agent-plan - pi.dev](https://pi.dev/packages/pi-volcengine-agent-plan)（佐证 Agent Plan 端点）
+- [对话(Chat) API - 火山方舟文档](https://www.volcengine.com/docs/82379/1494384)（`thinking` 参数、深度思考）
+- [火山引擎方舟 Coding Plan API 配置指南](https://www.volcengine.com/article/38136)（plan 专用 Base URL 的命名惯例参照）
+- [Base URL 及鉴权 - 火山方舟文档](https://docs.volcengine.com/docs/82379/1298459)

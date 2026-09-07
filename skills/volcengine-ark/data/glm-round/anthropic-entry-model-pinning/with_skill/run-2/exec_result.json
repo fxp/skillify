@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "回答：Python是一种跨平台的高级编程语言，语法简洁清晰，具有丰富且强大的库生态，广泛应用于数据分析、人工智能、Web开发、自动化运维等诸多领域。\n请求的模型：doubao-seed-2.0-lite\n服务端实际返回的模型：doubao-seed-2-0-lite-260215\ntoken 用量：输入 49，输出 37\n[OK] 模型核对一致：实际服务的确实是 doubao-seed-2.0-lite 系列（响应里带日期版本号，如 -260215，属该入口的正常现象）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 3.8
+}

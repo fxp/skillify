@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,编译通过；无 Key 时会友好报错退出(没调 API,环境里也没有 Key)。本机运行时那条 `NotOpenSSLWarning` 来自你本地 Python 3.9 的 urllib3,与脚本本身无关。
+
+**脚本要点**(`outputs/main.py`):
+
+| 项 | 值 | 依据 |
+|---|---|---|
+| Base URL | `https://ark.cn-beijing.volces.com/api/plan/v3` | 官方"其他工具"文档写明 Agent Plan 专属 Base URL(区别于标准 `/api/v3`),Embeddings 端点在其下拼 `/embeddings` |
+| 鉴权 | `Authorization: Bearer $ARK_AGENT_PLAN_API_KEY` | 方舟 API 统一 Bearer 认证 |
+| 模型 | `doubao-embedding-text-240515` | Agent Plan 支持的文本向量化模型(默认 2048 维) |
+| 维度 | 请求体 `"dimensions": 1024` + `"encoding_format": "float"` | 该模型支持 512/1024 降维，`dimensions` 为官方参数 |
+
+流程：读环境变量 → 一次批量 POST 三条文本 → 按 `data[].index` 归位对齐输入顺序 → 打印每条文本对应向量的**实际长度**(`len(vector)`)和前 5 个分量 → 三条都等于 1024 才输出“校验通过”，否则退出码 1。依赖仅 `requests` + 标准库,`python3 main.py` 直接跑。
+
+一个提醒：如果实际账号开通的是更新的 `doubao-embedding-text-240715`(最高 2560 维，同样支持 1024),只需改脚本顶部的 `MODEL` 常量，其余逻辑不用动。
+
+Sources:
+- [火山方舟 - 其他工具配置(Agent Plan Base URL)](https://www.volcengine.com/docs/82379/2374473)
+- [火山方舟 - 向量化(Embedding)文档](https://docs.volcengine.com/docs/82379/1409291?lang=zh)
+- [火山方舟 - 多模态向量化 API(dimensions/encoding_format 参数)](https://www.volcengine.com/docs/82379/1409290)
+- [火山方舟 - 接入向量化模型(Agent Plan)](https://docs.volcengine.com/docs/ark/agent-plan-personal-vectorized-models?lang=zh)
+- [文本向量化 API 镜像(Apifox,响应结构)](https://doubao.apifox.cn/265901295e0)
+- [VikingDB embedding v2(doubao-embedding 维度规格)](https://www.volcengine.com/docs/84313/1254568)

@@ -1,0 +1,38 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付并通过验证：`py_compile` 编译 OK，无 Token 时正常报错退出（exit 2），全程未发起任何真实 API 调用。
+
+## 交付物
+
+`outputs/main.py`（约 380 行，仅依赖 `requests` + 标准库），运行方式：
+
+```bash
+export AUTODL_TOKEN="你的开发者Token"   # 控制台 -> 设置 -> 开发者Token
+python3 main.py
+```
+
+## 探测设计（全部只读，绝不创建资源）
+
+只调用三个查询类接口（语义均为查询，虽是 POST 但无副作用），依据 [弹性部署 API 官方文档](https://www.autodl.com/docs/esd_api_doc/) 和 [API 总入口](https://www.autodl.com/docs/common_api/)：
+
+| 步骤 | 接口 | 作用 |
+|---|---|---|
+| 1 | `POST /api/v1/dev/wallet/balance` | 验证 Token 本身有效（该接口与企业认证无关，作交叉对照基线） |
+| 2 | `POST /api/v1/dev/deployment/list`（`page_index=1, page_size=10`） | 部署权限探针——官方原文"使用弹性部署API需先认证企业"，**可读即资质门槛已过** |
+| 3 | `POST /api/v1/dev/machine/region/gpu_stock`（带 `gpu_name_set=["RTX 4090"]`） | 逐区查 4090 库存（文档附录全部 11 个 `region_sign`），输出各区 `idle_gpu_num / total_gpu_num` |
+
+## 三类原因的判定逻辑
+
+官方没公开错误码枚举，所以脚本用 **HTTP 状态码 + msg 关键词 + 跨接口对照** 三层判定，并始终打印原始证据供复核：
+
+- **账号资质问题**：HTTP 403，或 200 但 msg 含"企业/实名/资质/认证/开通"等（如"请先完成企业认证"）；最有力的信号是**余额接口成功、部署接口被拒**——直接排除 Token 问题
+- **接口用法问题**：HTTP 404/405（路径或方法不对），或 msg 判定为参数/格式错误（说明文档与线上版本不一致）
+- **服务本身问题**：HTTP 5xx / 网关返回非 JSON，且对照账户接口是否正常来区分局部还是全面故障
+- 另外单列了两类不属用户三分类但必须报告的：**Token 无效**（401，连余额接口都过不了，尚谈不上资质）和**本地网络不通**（超时/连接失败，此时结论为"无法判定"而非硬归类）
+
+结论块会明确输出"能否创建 + 原因分类 + 判定依据 + 对应应对建议"，退出码：`0`=可创建、`1`=不可创建（已分类）、`2`=无法判定。
+
+一个诚实的边界说明：脚本验证到的是"部署 API 可访问、可读"，即企业认证门槛已通过；实际创建还会受余额、库存、镜像参数等运行时因素影响——这只有真创建时才能验证，脚本已在结论里注明，未越界替你下"创建必成功"的结论。
+
+Sources: [AutoDL 弹性部署 API 文档](https://www.autodl.com/docs/esd_api_doc/) · [AutoDL API 总入口](https://www.autodl.com/docs/common_api/) · [弹性部署功能介绍](https://www.autodl.com/docs/elastic_deploy/)

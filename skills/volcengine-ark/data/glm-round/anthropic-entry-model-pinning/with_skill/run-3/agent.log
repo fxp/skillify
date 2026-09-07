@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/anthropic-entry-model-pinning/with_skill/run-3/outputs/main.py`（仅此一个文件），`python3 -m py_compile` 编译通过，核对逻辑另做了 7 组用例验证全部 PASS。
+
+## 关键设计
+
+**接入细节**（依据 SKILL.md → references/agent-plan.md、models.md 的 2026-09-04 真实 API 实测记录，官方文档页是 JS 渲染抓不到正文，实测日志 `verification-log.jsonl` 里有 `/api/plan/v1/messages` 的原始请求/响应可直接对照）：
+
+- 入口：`POST https://ark.cn-beijing.volces.com/api/plan/v1/messages`（Agent Plan 的 Anthropic 协议 Base URL 是 `/api/plan`，不是 `/api/v3`——专属 Key 打错入口直接 401）
+- 鉴权：`x-api-key` + `anthropic-version: 2023-06-01`（实测 Bearer 头也行）
+- Key：只从 `ARK_AGENT_PLAN_API_KEY` 读
+- `thinking: {"type": "disabled"}`：lite 默认开思考，思维链按输出 token 计 AFP，一句话介绍的问题没必要烧思维链（实测该参数在 Anthropic 入口生效）
+
+**为什么核对逻辑不能做朴素字符串相等**——两个实测确认的坑：
+
+1. **`claude-*` 静默路由**：该入口把任何 `claude-*` 名字悄悄换成 `doubao-seed-2-1-turbo`（系数 2.5，是 lite 0.5 的 5 倍），返回 200 不报错。所以 `model` 必须显式写 `doubao-seed-2.0-lite`。
+2. **回显名带日期版本**：请求 `doubao-seed-2.0-lite`，响应 `model` 回显的是 `doubao-seed-2-0-lite-260215`（点→连字符 + 日期后缀），朴素相等会永远误报；而日期由方舟维护随时可能换（260428 已存在），硬编码 260215 也会哪天突然误报。
+
+因此脚本做**归一化比对**：lowercase + 点转连字符 + 去掉尾部 6 位日期后缀，按「模型系列」比。同系列换日期版本不报警，跨系列（turbo/mini/glm/auto）立即报警——上面 7 组用例就是验证这两个方向都不误判。
+
+**报警方式**：打印「我请求的模型」「服务端实际回给我的模型」两侧对照；不一致时输出 ⚠️ 警告块（含系数差提示）并以 `sys.exit(1)` 非零退出，方便接入 CI 或脚本判断。
+
+**一句提醒**：Agent Plan 文本模型官方口径是「不可用于 API 调用」——这是使用条款限制而非接口限制（技术上调得通），在工具外大量直调有被判滥用停用的风险；本脚本单次最小请求仅用于验证模型路由，这一点也写进了脚本文件头的注释里。

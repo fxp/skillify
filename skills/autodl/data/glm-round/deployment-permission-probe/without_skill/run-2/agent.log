@@ -1,0 +1,39 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,没有其他文件。
+
+## 脚本做什么
+
+三步探测，**全部只读**，创建部署的接口 `POST /api/v1/dev/deployment` 不会被调用(脚本头注释和运行输出里都明确标注了这一点)：
+
+1. **验证 Token** — `POST /api/v1/dev/wallet/balance`(通用接口，任何有效 Token 都能调)。作用是把“Token 失效”从“账号资质问题”里剥离出来
+2. **探测弹性部署权限(核心)** — `POST /api/v1/dev/deployment/list`。官方文档明确“使用弹性部署 API 需先认证企业”且**没有独立的权限查询接口**，所以用这个只读列表接口代替：能查到 → 账号已具备创建资格；被拦 → 进入分类诊断
+3. **RTX 4090 库存** — `POST /api/v1/dev/machine/region/gpu_stock`,遍历文档附录的 11 个 `region_sign`(westDC2、beijingDC1 等)，客户端按 "4090" 匹配(可覆盖 4090D),汇总各地区的 `idle_gpu_num / total_gpu_num`
+
+## 三分类诊断(你要的核心)
+
+| 分类 | 判定信号 | 结论区的应对提示 |
+|---|---|---|
+| 账号资质/凭据 | 401(Token 无效)、403、或业务错误命中“认证/企业/资质/权限”关键词 | Token 有效但被拦 → 去完成**企业认证**；Token 无效 → 重新获取 |
+| 接口用法 | 400/404/405、或命中“参数/param/not found”关键词 | 对照官方文档核对路径/参数 |
+| 服务端 | 5xx、超时(已重试)、200 但返回非 JSON | 稍后重试或提工单 |
+
+说明：官方文档**未公布错误码枚举**，所以 HTTP 状态码是硬判定，业务错误码靠关键词保守归类，归类不了会按“无法归类”原样打印 `code/msg`,不瞎猜。退出码：0=可以创建 / 1=缺 Token / 2=不能创建(附原因)/ 3=无法归类。
+
+## 从官方文档确认的接口细节
+
+- Base URL `https://api.autodl.com`;鉴权头是 `Authorization: <Token>`,**无 Bearer 前缀**
+- 弹性部署 API 前置条件是**企业认证**——这是“账号资质”分支的主要预期原因
+- 库存接口必填 `region_sign`,按单卡调度口径计数；返回形如 `{"RTX 4090": {"idle_gpu_num": 215, "total_gpu_num": 2285}}`
+
+## 验证情况
+
+- `python3 -m py_compile` 通过；无 Token 运行正常给出指引并退出(不发任何请求)
+- 用本地 mock 服务端跑了 **7 个场景**全部符合预期：全部成功、未企业认证、部署接口 404、服务端 502、Token 全 401、余额接口失败但部署接口成功(边界，修掉了由此发现的结论矛盾)、余额不足警告
+- 未真实调用 AutoDL API(环境无 Token),真实判据需你带上 Token 跑一次
+
+Sources:
+- [弹性部署API - AutoDL帮助文档](https://www.autodl.com/docs/esd_api_doc/)
+- [通用API - AutoDL帮助文档](https://www.autodl.com/docs/common_api/)
+- [弹性部署 - AutoDL帮助文档](https://www.autodl.com/docs/elastic_deploy/)

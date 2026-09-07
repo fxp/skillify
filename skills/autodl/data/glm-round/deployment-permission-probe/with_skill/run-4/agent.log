@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 通过；无 Token 直接运行也能干净退出（exit=4，且在发起任何网络请求之前就拦截，不会误调 API）。
+
+## 探测方案：不创建任何东西，怎么知道“能不能创建部署”
+
+脚本只调 3 个**只读**接口（技能包里实测确认过权限门槛按接口区分，这正是探路的钥匙）：
+
+| 步骤 | 接口 | 作用 |
+|---|---|---|
+| 1 | `POST /api/v1/dev/wallet/balance` | 校验 Token 有效 + 看余额（余额不足会单独提示，但不混入三类归因） |
+| 2 | `POST /api/v1/dev/deployment/list` | **权限探针**：它和“创建部署”同属部署资源类接口、门槛一致（需企业认证），返回 `Success` = 账号已过企业认证、具备创建资格；被拒则按错误归因 |
+| 3 | `POST /api/v1/dev/machine/region/gpu_stock` | 逐个地区（官方附录 11 个 `region_sign` 全表）查 `gpu_name_set=["RTX 4090"]` 库存；该接口未企业认证也能调，所以即使权限被拒，库存照样查得到 |
+
+## 三类归因逻辑（你要的核心）
+
+平台没有稳定错误码枚举表，只能按 `code`/`msg` 文本 + HTTP 状态判：
+
+- **账号资质问题** → `TORealName`/"未完成实名认证"（连实名都没做）或 `BadRequest`/"无当前资源访问权限"（已实名但**未企业认证**——弹性部署的硬门槛；建议里附带了替代方案：改用容器实例 Pro API，个人实名即可）
+- **接口用错** → `RequestParameterIsWrong`/"请求参数错误"（说明脚本请求构造和平台不符，建议对照官方文档核对，可能是接口改版）
+- **服务本身有问题** → 网络连不通 / HTTP ≥ 500 / 响应不是 JSON（建议重试或查平台状态）
+- 另外两类边界情况也单独处理：**Token 无效**（第 1 步查余额对任何有效 Token 都开放，它失败基本就是 Token 问题，exit=4）和**无法归类**（文档未覆盖的错误码，原样打印不硬猜，exit=5）
+
+## 其他要点
+
+- 鉴权头**无 Bearer 前缀**（`Authorization: <token>`，从 `AUTODL_TOKEN` 读取）；金额除以 1000 才是元；网络错误自动重试一次
+- 库存按“调度 1 张卡”口径统计，结论里明确提示了这个 caveat；若返回中出现 `RTX 4090 D` 之类变体型号也会原样列出并提示可放进 `gpu_name_set`
+- 退出码可做自动化判断：`0` 可创建 / `1` 资质 / `2` 接口用错 / `3` 服务故障 / `4` Token 问题 / `5` 未知
+- 代码里有显式安全声明：绝不触碰 `POST /api/v1/dev/deployment`（创建）及任何 PUT/DELETE 管理接口
+
+拿到真实 Token 后 `AUTODL_TOKEN=xxx python3 main.py` 即可跑出完整结论。

@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": false,
+      "evidence": "exit=1 2.4s :: //www.volcengine.com/docs/82379/2366394 to select a compatible model. Request id: 02178878172358313e3cfc91b78ae8df851b156ce35e24d60831f\",\"param\":\"\",\"type\":\"\"}}\n"
+    },
+    {
+      "text": "真的拿到了向量（打印出了向量长度）",
+      "passed": true,
+      "evidence": "n1024=1 got_2048=False"
+    },
+    {
+      "text": "维度确实是 1024（没走成 2048 维的 multimodal 端点）",
+      "passed": true,
+      "evidence": "n1024=1 got_2048=False"
+    },
+    {
+      "text": "三段文本都处理了",
+      "passed": false,
+      "evidence": "len_1024_occurrences=1"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

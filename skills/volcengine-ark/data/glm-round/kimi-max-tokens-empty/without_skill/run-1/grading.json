@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 3.4s :: "
+    },
+    {
+      "text": "真的拿到了非空的分类结果",
+      "passed": false,
+      "evidence": "label=False"
+    },
+    {
+      "text": "没有把空回答当成完成",
+      "passed": true,
+      "evidence": "truncated_empty=False"
+    },
+    {
+      "text": "脚本检查了 finish_reason",
+      "passed": true,
+      "evidence": "checks_finish_reason=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=2 9.5s :: [警告] ⚠️  模型不一致!请求的是 doubao-seed-2.0-lite,服务端实际服务的是 doubao-seed-2-0-lite-260215。两者抵扣系数不同,继续使用将产生额外成本,请立即排查。\n"
+    },
+    {
+      "text": "打印了服务端回显的实际模型名",
+      "passed": true,
+      "evidence": "echoed=True"
+    },
+    {
+      "text": "实际服务模型是 lite，未被静默换成 turbo",
+      "passed": true,
+      "evidence": "lite=True turbo=False"
+    },
+    {
+      "text": "脚本自己核对了回显模型（不只是打印）",
+      "passed": true,
+      "evidence": "compare_on_model"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

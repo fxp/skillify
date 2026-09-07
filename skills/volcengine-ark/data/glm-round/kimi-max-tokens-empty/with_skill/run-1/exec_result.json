@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "—— 尝试1 max_tokens=64 + thinking=disabled ——\nfinish_reason=stop, completion_tokens=11（其中思维链 0），回答原文='负面'\n\n情感分类结果：负面\n（出自尝试1 max_tokens=64 + thinking=disabled；本次实际输出 11 token，其中思维链 0、回答本体 11 token）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 7.6
+}

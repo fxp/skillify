@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 6.8s :: "
+    },
+    {
+      "text": "真的拿到了向量（打印出了向量长度）",
+      "passed": true,
+      "evidence": "n1024=4 got_2048=False"
+    },
+    {
+      "text": "维度确实是 1024（没走成 2048 维的 multimodal 端点）",
+      "passed": true,
+      "evidence": "n1024=4 got_2048=False"
+    },
+    {
+      "text": "三段文本都处理了",
+      "passed": true,
+      "evidence": "len_1024_occurrences=4"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

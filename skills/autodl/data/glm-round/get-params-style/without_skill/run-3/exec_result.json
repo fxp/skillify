@@ -1,0 +1,7 @@
+{
+  "exit_code": 3,
+  "stdout": "[失败] 实例不存在: 服务端查不到这台实例 \n  响应/错误详情: HTTP 200, code='RecordNotFoundError', msg='未查询到相关实例', request_id=df92fa673426965b5b5b89f7a815cf3b\n  排查建议:\n    1. 到 AutoDL 控制台核对实例 ID 是否抄对(多余空格、复制不全会导致查不到)。\n    2. 确认实例没有被释放——释放后的实例无法再查询。\n    3. 确认这台实例属于 AUTODL_TOKEN 对应的账号, 别人账号的实例你查不到。\n    4. 若以上都排除, 携带 request_id 咨询 AutoDL 客服确认接口是否有变更。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 2.8
+}

@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已写好并验证编译通过。
+
+## 交付
+
+`/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/anthropic-entry-model-pinning/with_skill/run-2/outputs/main.py`（仅此一个文件，`python3 main.py` 直接可跑）
+
+## 关键设计（均来自 SKILL.md 及其 2026-09-04 的真实 API 验证记录）
+
+| 项 | 取值 | 原因 |
+|---|---|---|
+| 入口 | `POST https://ark.cn-beijing.volces.com/api/plan/v1/messages` | Agent Plan 的 **Anthropic 协议**入口；`/api/v3`、`/api/coding*` 用这把 Key 会直接 401，`/api/plan/v3` 是 OpenAI 协议入口 |
+| 鉴权 | `x-api-key: $ARK_AGENT_PLAN_API_KEY` + `anthropic-version: 2023-06-01` | 两种头实测都行，取其一 |
+| `model` | `doubao-seed-2.0-lite` | Plan 入口用不带日期的 Model Name；带日期 ID 版本号会被静默忽略，锁不了版本 |
+| `thinking` | `{"type": "disabled"}` | lite 默认开思考，实测一句话回答能烧 190 个思维链 token（0.5 系数也是钱）；此写法在该入口实测 200 |
+| 重试 | 无，只发一次 | 成本敏感，重试会重复扣 AFP |
+
+## 「模型核对」是本脚本的核心，有两个非显然的处理
+
+1. **不能做裸字符串相等比较**：该入口会把 model 静默改写——请求 `doubao-seed-2.0-lite`，响应 `model` 是 `doubao-seed-2-0-lite-260215`（点号变连字符 + 日期后缀）。裸比较会天天误报。脚本用 `normalize_model()` 归一（去 6 位日期后缀、点号统一成连字符）后再比对。
+2. **真正要抓的坑**：`claude-*` 名字会被此入口静默路由到 `doubao-seed-2-1-turbo-260628`（系数 2.5，是 lite 0.5 的 **5 倍**），返回 200 不报错。归一化比对能正确抓住这种情况——报警横幅会打印两个模型名、各自的 AFP 系数和倍数差，并写 stderr + 退出码 2（一致退出 0，请求失败退出 1）。
+
+## 已验证
+
+- `python3 -m py_compile` 通过；
+- 归一化/系数查找逻辑单测通过：`doubao-seed-2.0-lite` → `doubao-seed-2-0-lite-260215` 判一致；→ `doubao-seed-2-1-turbo-260628` 正确触发报警；`glm-5.3` 点号保留场景也覆盖。
+- 未实际调 API（本环境无 Key）。
+
+一句提醒：官方口径 Agent Plan 的文本模型「不可用于 API 调用」（仅限 AI 编程工具内），脚本 docstring 里已注明仅作单次连通性/模型核对用途，别拿去高频跑。

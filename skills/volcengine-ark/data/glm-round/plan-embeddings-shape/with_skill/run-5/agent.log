@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已写好并通过编译，保存在 `outputs/main.py`。
+
+## 关键接入要点（来自 SKILL.md + 官方文档双重确认）
+
+| 项 | 取值 | 依据 |
+|---|---|---|
+| Base URL | `https://ark.cn-beijing.volces.com/api/plan/v3` | Agent Plan 专属入口；用 `/api/v3` 会被收后付费，专属 Key 打其他入口直接 401 |
+| 接口 | `POST /embeddings`（OpenAI 形态） | Plan 入口实测可用；`/embeddings/multimodal` 的响应是 `data.embedding` 单对象，不适合这里的场景 |
+| model | `doubao-embedding-vision` | Plan 入口用不带日期的 Model Name，响应回显 `doubao-embedding-vision-251215` |
+| 维度 | 请求体带 `"dimensions": 1024` | 默认 2048 维；`dimensions: 1024` 已被真实 API 验证生效，可选值仅 1024/2048 |
+| 鉴权 | `Authorization: Bearer $ARK_AGENT_PLAN_API_KEY` | 只认 Agent Plan 专属 Key |
+
+## 脚本设计说明
+
+- **每条文本单独请求**：reference 明确标注「`input` 传字符串数组」这条形态官方未实测，而单字符串输入是实测 200 的形态，按已验证路径写最稳；响应取 `data[0]["embedding"]`。
+- **维度自检**：每条打印实际长度并和 1024 比对，全部一致才正常退出，有不符合时以非零码退出。
+- **错误可排查**：非 2xx 时把响应体原样抛出（401 = Key/入口配错，404 UnsupportedModel = 套餐不含该模型）。
+- 只依赖 `requests` + 标准库，`python3 main.py` 直接跑（设好环境变量后）。
+
+一个需要留意的合规提示：Agent Plan 官方口径是「文本生成与向量化模型不可用于 API 调用」（图片/视频/语音模型才可以），在非 AI 工具里程序直连有被判滥用的风险——这个脚本是按任务要求写的验证性示例，正式业务建议走标准后付费入口。

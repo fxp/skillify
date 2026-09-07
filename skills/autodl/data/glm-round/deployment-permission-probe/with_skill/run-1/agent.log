@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，无 Token 环境下运行验证了入口逻辑（未发起任何 API 调用）。
+
+## 探测方案：不创建任何资源，怎么回答“能不能创建部署”
+
+脚本只调 4 个**只读**接口（全程不触碰创建/停止/删除类接口），分四步：
+
+| 步骤 | 接口 | 作用 |
+|---|---|---|
+| 1/4 | `POST /api/v1/dev/wallet/balance` | 验证 Token 有效性、服务是否可达（任何认证等级都能调） |
+| 2/4 | `POST /api/v1/dev/image/private/list` | **免企业认证**的只读接口，交叉验证“请求格式正确 + 服务正常” |
+| 3/4 | `POST /api/v1/dev/deployment/list` | **核心权限探针** |
+| 4/4 | `POST /api/v1/dev/machine/region/gpu_stock` | 逐地区查 RTX 4090 库存（同样免企业认证） |
+
+第 3 步是关键：技能包的实测结论是「部署列表」和「创建部署」同属“账号自己的部署资源”类接口，**共享同一道企业认证门槛，且鉴权拦截发生在参数校验之前**——所以查列表成功 = 创建部署的资质门槛已通过；被拦 = 账号资质不够。不需要真建一个部署来试。
+
+## 三类原因的判定逻辑（对应你们三种不同应对）
+
+- **A. 账号资质问题**：部署列表返回 `BadRequest`/「无当前资源访问权限」（未企业认证）或 `TORealName`（未实名）→ 应对：去控制台补认证（弹性部署要求**企业认证**，个人实名不够）。此时第 2 步的免认证接口正常，可确证不是代码或服务的问题
+- **B. 接口用法问题**：返回 `RequestParameterIsWrong` → 应对：改代码（脚本已按验证过的正确姿势写：鉴权头**无 Bearer 前缀**、POST 接口参数放 JSON body、`page_index`/`page_size` 必填）
+- **C. 服务端问题**：网络超时 / 5xx / 非 JSON 响应 → 应对：稍后重试或找客服
+
+另有两个前置分支单独报出来，不硬塞进三类：**Token 无效**（第 1 步就失败，先换 Token）、**未知错误**（打印原始 `code`/`msg` 留给人工判断——平台没有稳定的错误码枚举表，脚本不假装能归类）。
+
+## 库存查询
+
+对全部 11 个地区逐个查 `RTX 4090`，打印每地区「空闲/总量」并标出有货地区、汇总总空闲张数。结论里附带了官方文档的两个口径提醒：库存按**单容器 1 张卡**统计（多卡容器不保证能调度）、库存随时变化。
+
+退出码：`0`=可以创建；`1`=不能（账号资质）；`2`=未定论（Token/接口/服务）。拿到真实 Token 后 `export AUTODL_TOKEN=... && python3 main.py` 即可，另注意脚本输出会提醒：后续真创建时若报「当前算力规格暂无库存」属良性库存问题，别和权限错误混淆。

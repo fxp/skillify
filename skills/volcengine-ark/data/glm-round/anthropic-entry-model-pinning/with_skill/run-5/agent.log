@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过。脚本已保存到指定路径，交付完成。
+
+## 交付说明
+
+**文件**：`outputs/main.py`（仅此一个文件），`python3 -m py_compile` 编译通过，缺 Key 时正常运行并给出明确提示（exit 2，不发请求）。
+
+**关键接入决策**（依据 skill 的 references + 2026-09-04 真实 API 验证日志 + Anthropic 官方文档三方印证）：
+
+| 项 | 取值 | 依据 |
+|---|---|---|
+| Endpoint | `POST https://ark.cn-beijing.volces.com/api/plan/v1/messages` | Agent Plan 的 Anthropic 协议 Base URL 是 `/api/plan`；专属 Key 打 `/api/v3`、`/api/coding` 都是 401 |
+| 鉴权 | `Authorization: Bearer <Key>` + `anthropic-version: 2023-06-01` | 实测 Bearer 与 `x-api-key` 都接受；Key 从 `ARK_AGENT_PLAN_API_KEY` 读取 |
+| model | 显式填 `doubao-seed-2.0-lite`（小写 Model Name，系数 0.5） | 不能留空/填 `claude-*`——该入口会**静默路由**到 `doubao-seed-2-1-turbo`（系数 2.5，5 倍扣费）；`auto` 直填是 404 |
+| thinking | `{"type": "disabled"}` | lite 默认开思考，思维链按输出计费；实测该入口+该模型支持 disabled，成本敏感场景关掉 |
+| max_tokens | 1024（协议必填） | 一句话回答足够 |
+
+**模型核对逻辑**（本任务的核心）：Plan 入口会把 Model Name 解析成带日期的版本返回——请求 `doubao-seed-2.0-lite`，实测响应 `model` 是 `doubao-seed-2-0-lite-260215`（点→连字符 + 日期，版本随平台漂移）。所以脚本用**系列匹配**：接受「原样名」或「连字符化名 + 6~8 位日期后缀」，其他任何值都报警。脚本会打印「我请求的模型」和「服务端实际返回的模型」，不一致时向 stderr 输出 `⚠️ 模型不一致报警`（附可能原因提示）并 `exit 1`。
+
+**离线自测**（未真正调 API）：11 个用例全过，覆盖实测真值 `260215`、未来版本漂移、`doubao-seed-2-1-turbo-260628`（claude-* 静默路由坑）、`auto`、`glm-5.3`、mini 系列、非日期后缀伪装（`-evil`、`prefix`）、空值。
+
+**一个提醒**：Agent Plan 官方口径是文本模型「不可用于 API 调用」（图片/视频/语音模型才可以），在 AI 工具之外直连文本入口有被判滥用的风险——这个脚本是按你的任务要求写的核对/演示脚本，正式高频使用建议注意该约束。

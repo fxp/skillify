@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/plan-embeddings-shape/with_skill/run-3/outputs/main.py`，`py_compile` 编译通过，无 Key 时报错路径也验证正常（那个 urllib3 警告是本机 Python 环境的提示，与脚本无关）。
+
+**关键接入点（均依据 skill 的 2026-09-04 真实 API 验证记录，非文档转录）：**
+
+| 项 | 值 |
+|---|---|
+| 入口 | `POST https://ark.cn-beijing.volces.com/api/plan/v3/embeddings`（Agent Plan 专属，不能用 `/api/v3`） |
+| 鉴权 | `Authorization: Bearer $ARK_AGENT_PLAN_API_KEY`（专属 Key，与方舟 API Key 不通用） |
+| model | `doubao-embedding-vision`（Plan 入口用 Model Name，响应回显 `doubao-embedding-vision-251215`） |
+| 维度 | `dimensions: 1024`——不传默认是 **2048**，这是本任务最容易踩的坑；1024 实测生效 |
+| 响应 | OpenAI 形态 `data[0]["embedding"]` |
+
+**两个刻意的设计决策：**
+
+1. **三条文本逐条请求，而非一次传 `input` 数组**——skill 明确标注 `/embeddings` 传字符串数组的形态“未测”，单字符串输入是实测 200 的形态，逐条发最稳。
+2. **非 2xx 时抛出完整响应体**——方便对照排查两类最常见错误：401（Plan Key 打错入口）和 404 UnsupportedModel（model 名写错）。
+
+**输出形态**（有 Key 环境下运行时）：
+
+```
+[0] 今天天气很好 -> 向量实际长度: 1024
+[1] 这部电影非常精彩 -> 向量实际长度: 1024
+[2] 服务器响应超时了 -> 向量实际长度: 1024
+期望维度: 1024，实际: [1024, 1024, 1024]，全部一致 ✓
+```
+
+一个需要知悉的合规提示：skill 记录了官方口径“向量化模型不可用于 API 调用”（指在 AI 工具之外直连 Plan 入口可能被判滥用），此脚本按任务要求编写，实际使用风险自负。

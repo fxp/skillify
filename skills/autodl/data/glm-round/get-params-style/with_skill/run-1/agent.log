@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，缺环境变量的本地路径也实测跑通（正确给出「请求有误」提示、退出码 3）。那条 `NotOpenSSLWarning` 是本机 Python 3.9 + LibreSSL 环境下 urllib3 自带的警告，与脚本本身无关。
+
+## 实现要点
+
+**接口与传参**（来自技能包实测结论，并用 WebFetch 对照了官方文档）：
+- `GET https://api.autodl.com/api/v1/dev/instance/pro/status`，成功时 `data` 直接是状态字符串（如 `"running"`）
+- 鉴权头是 `Authorization: <token>`，**没有 Bearer 前缀**
+- GET 参数必须走 URL 查询字符串（`requests.get(..., params=...)`）——官方文档的示例把传参写成 JSON body 是错的，实测那样会直接报「请求参数错误」（WebFetch 确认官方文档至今仍展示错误的 body 示例，印证了技能包的提醒）
+
+**核心需求——两类错误严格分开**，提示文案和退出码都不同：
+
+| 判定 | 依据 | 提示方向 | 退出码 |
+| :--- | :--- | :--- | :--- |
+| 【实例不存在】 | `RecordNotFoundError` 或 msg 含「未查询到」 | 明确告知「请求本身没问题」，去核对 UUID 完整性 / 是否已释放 / 是否属于这个 token 的账号 | 2 |
+| 【请求有误】 | `RequestParameterIsWrong` 或 msg 含「请求参数错误」；HTTP 401/403；本地缺环境变量 | 明确告知「实例存不存在还无从谈起」，检查 Token、环境变量值、传参方式 | 3 |
+| 【无法判定】 | 网络故障、非 JSON 响应、未识别错误码 | 原样上报 `code`/`msg`/`request_id`，附已知错误码参考（`TORealName`、`BadRequest`、`InternalError`） | 4 |
+
+因为平台没有公开的错误码枚举表，识别逻辑是 code 精确匹配 + msg 文本匹配双保险，匹配不出的不硬猜、原样打印。另外做了两个小防御：环境变量值自动去引号/空白（常见抄写事故，会打印提示）；成功时对 `starting`/`shutting_down` 这类文档没列的中间态给出中文说明，未知状态原样展示不报错。

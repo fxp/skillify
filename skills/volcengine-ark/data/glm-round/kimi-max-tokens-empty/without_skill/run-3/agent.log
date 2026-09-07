@@ -1,0 +1,39 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，另外用离线 mock（不发真实请求）跑了 8 个场景 28 项断言全部通过。
+
+## 核心结论：为什么“64 token + kimi-k3”容易拿到空结果
+
+kimi-k3 是**深度思考模型**，而方舟 Chat API 有两个要命的细节：
+
+1. `thinking` 参数不传时**深度思考默认开启**；
+2. `max_tokens` 是**思维链 token 和最终回答共用**的上限。
+
+所以直接设 `max_tokens=64`，64 个 token 会全部被思维链耗尽——返回 `content=""`、`finish_reason="length"`，看起来"调用成功”其实是空结果。解法是显式传 `thinking: {"type": "disabled"}`，把 64 个 token 全部留给最终回答（回答只需 1~2 个 token）。
+
+## 脚本行为
+
+- **首选请求**：`https://ark.cn-beijing.volces.com/api/plan/v3/chat/completions`（Agent Plan 专属 OpenAI 兼容地址，404 时自动退回标准 `/api/v3`），`model="kimi-k3"`，`max_tokens=64`，`thinking.type="disabled"`，Key 从 `ARK_AGENT_PLAN_API_KEY` 读取，只用 requests。
+- **严格校验**：`content` 必须解析出「正面/负面/中性」之一（精确匹配，容错处理 `「负面」`、`情感：负面` 这类多余文字）才算成功；成功时 stdout 只打印分类词。
+- **拿不到结果时**：结合 `finish_reason`/`reasoning_content`/`usage.completion_tokens_details.reasoning_tokens` 打印明确的中文原因；若是预算被思考吃掉或输出被截断，做**一次**兜底重试（保持思考关闭、上限放宽到 2048，并如实报告成本变化）；两次都失败则打印完整诊断、**非零退出码**，绝不打印空结果说完成。HTTP 401/403/429 等硬错误直接报错退出，不做无意义重试。
+
+预期输出（stderr 带诊断，stdout 只有一行）：
+
+```
+[尝试1] model=kimi-k3, thinking=disabled, max_tokens=64
+[尝试1] 返回：content='负面'（completion_tokens=2, reasoning_tokens=0, finish_reason=stop）
+[尝试1] 成功解析出标签：负面（精确匹配）
+负面
+```
+
+说明：本环境没有可用 Key，真实链路未实际调用，接口细节（Base URL、模型名、thinking 参数语义）均来自官方文档与官方配置教程的交叉确认。
+
+Sources:
+- [套餐概览 - 火山方舟](https://docs.volcengine.com/docs/82379/2366394)
+- [方舟 Agent Plan 活动页](https://www.volcengine.com/activity/agentplan)
+- [对话(Chat) API - 火山方舟](https://docs.volcengine.com/docs/82379/1494384)
+- [深度思考 - 火山方舟](https://docs.volcengine.com/docs/82379/1449737)
+- [OpenCode 手动配置火山方舟 Agent Plan 教程 - 掘金](https://juejin.cn/post/7680119725196427264)
+- [思考模型 - Kimi API 开放平台](https://platform.kimi.com/docs/guide/use-thinking-models)
+- [Kimi K3 发布报道 - 中国科技网](https://www.stdaily.com/web/gdxw/2026-07/17/content_548916.html)

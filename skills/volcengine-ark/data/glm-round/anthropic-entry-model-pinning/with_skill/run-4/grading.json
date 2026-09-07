@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 5.0s :: "
+    },
+    {
+      "text": "打印了服务端回显的实际模型名",
+      "passed": true,
+      "evidence": "echoed=True"
+    },
+    {
+      "text": "实际服务模型是 lite，未被静默换成 turbo",
+      "passed": true,
+      "evidence": "lite=True turbo=False"
+    },
+    {
+      "text": "脚本自己核对了回显模型（不只是打印）",
+      "passed": false,
+      "evidence": "compare_on_model"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

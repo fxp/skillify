@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已完成并保存到 `outputs/main.py`，`python3 -m py_compile` 验证通过。按你的要求**没有实际调用任何 API**（本地也没有执行脚本，只做了编译检查）。
+
+## 探路思路：不创建部署，也能判定“能不能创建”
+
+技能手册里有一条实测验证过的关键情报：AutoDL 弹性部署的权限门槛**按接口区分**——`deployment/list`（查部署列表）和“创建部署”同属“账号部署资源”权限域、共用同一道企业认证闸门，且鉴权先于参数/资源校验（传不存在的 UUID 也报同样的权限错）。所以脚本用三次**纯只读**调用完成探路：
+
+| 探针 | 接口 | 作用 |
+|---|---|---|
+| 1. 查余额 | `POST /api/v1/dev/wallet/balance` | 验证 token 有效、服务在线（任何认证等级都能调） |
+| 2. 查部署列表 | `POST /api/v1/dev/deployment/list` | **创建权限探针**：通过 → 有资格创建；被“无当前资源访问权限”拒 → 账号未企业认证 |
+| 3. 查库存 | `POST /api/v1/dev/machine/region/gpu_stock` | 遍历全部 11 个地区，按 `gpu_name_set=["RTX 4090"]` 筛选，输出每地区空闲/总卡数并汇总 |
+
+## 三种原因的判定逻辑（交叉验证）
+
+- **账号资质问题**：余额正常（token 有效）＋ 库存可查（接口用法对）＋ 唯独部署类接口返回 `BadRequest`/`1502`“无当前资源访问权限” → 未完成企业认证，去控制台认证即可，代码不用改。`TORealName`（未实名）也归入此类。
+- **接口用错**：`RequestParameterIsWrong`/404/参数类报错 → 检查传参方式（脚本已按手册规避了两个大坑：`Authorization` 头**不带 Bearer 前缀**；本平台 GET 接口一律 query string 传参——不过本脚本三个接口全是 POST + JSON body，与官方文档核实一致）。
+- **服务本身问题**：5xx/超时/连接失败，若同一时刻余额接口正常则注明“可能仅部署类接口单独故障”。
+
+另有一种独立情况：token 本身无效（401/403）→ 提前中止并提示换 token，不误判为以上三种。
+
+## 库存查询的两个实现细节
+
+- 官方文档核实：库存响应的 `data` 每项是 `{"RTX 4090": {"idle_gpu_num": .., "total_gpu_num": ..}}` 单键对象（手册补充实测还有 `chip_corp`/`cpu_arch` 字段），解析按此结构防御式处理；`region_sign` 为必填，所以逐地区各查一次。
+- 输出会带上文档原生的提醒：库存按“单容器调度 1 张卡”口径统计，查到 2 张不代表能同时调度到同机 2 张卡。
+
+跑法：`AUTODL_TOKEN=你的token python3 main.py`。退出码：0 探路完成、1 token 无效中止、2 缺少环境变量。

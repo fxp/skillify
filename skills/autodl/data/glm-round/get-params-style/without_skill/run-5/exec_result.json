@@ -1,0 +1,7 @@
+{
+  "exit_code": 3,
+  "stdout": "",
+  "stderr": "[请求有误] AutoDL 拒绝了本次请求：code=RequestParameterIsWrong，msg=请求参数错误，request_id=aa00c52e06e38bc535e4cee1e3930b1b。问题出在请求侧而不是实例：请检查 Token 权限、UUID 参数格式，以及账号是否满足容器实例Pro API 要求的实名/企业认证。\n",
+  "timed_out": false,
+  "seconds": 2.6
+}

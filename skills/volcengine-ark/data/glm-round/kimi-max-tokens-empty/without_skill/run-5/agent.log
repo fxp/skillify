@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/kimi-max-tokens-empty/without_skill/run-5/outputs/main.py`,编译通过，无 Key 时正确报错并以非零码退出，标签解析的边界情况(空串、截断、无标签)全部验证不会误判成功。
+
+## 关键设计：为什么不能 `max_tokens=64` 一把梭
+
+查文档确认了两个决定性事实：
+
+1. **kimi-k3 思考无法关闭**——Kimi 官方文档明确 "kimi-k3 always reasons and does not support the `thinking` parameter",只能用 `reasoning_effort` 调低思考量；
+2. **思考 token 计入 max_tokens**——`reasoning_content + content ≤ max_tokens`,官方建议思考模型 `max_tokens ≥ 16000`。
+
+所以直接压 64 的话，思考极可能吃光预算，返回 `content` 为空、`finish_reason="length"` —— 这正是你说的“打印一个空结果就说完成”的坑。
+
+## 脚本的策略
+
+按 `(reasoning_effort, max_tokens)` 四级尝试，顺序是 `(none, 64) → (low, 64) → (low, 1024) → (low, 16384)`:
+
+- **前两步严格在 64 预算内**，把推理强度压到最低档，力求预算内拿到；
+- **预算内拿不到就如实打印原因**(含 `finish_reason`、`usage`、思考字数)，若 400 报文点名 `reasoning_effort` 则后续自动移除该参数；
+- 你要求“必须真的拿到分类结果”优先，所以后两步**逐级放宽兜底**，拿到结果时明确标注“超出 64 预算 + 原因 + 实际消耗 token”,成本代价透明；
+- **任何一步失败都记录具体原因**；全部失败则汇总每步原因 + 排查建议(鉴权/模型 ID/限流)后以非零码退出，绝不打印空标签。成功时最后一行干净输出 `情感分类结果：负面` 这类结果。
+
+其他细节:Key 从 `ARK_AGENT_PLAN_API_KEY` 读取；端点用 Agent Plan 的 OpenAI 兼容地址 `https://ark.cn-beijing.volces.com/api/v3/chat/completions`;模型 ID 默认 `kimi-k3`,可用 `ARK_MODEL` 覆盖(方舟上第三方模型的确切 ID 字符串官方文档正文抓不到，若 404 可在控制台「模型广场」确认后覆盖);不传 `temperature` 以免 K 系模型拒收；读取超时放宽到 300s 适配思考模型。
+
+Sources:
+- [Thinking Models - Kimi API Platform](https://platform.kimi.ai/docs/guide/use-thinking-models)
+- [推理强度 - Kimi API 开放平台](https://platform.kimi.com/docs/guide/use-reasoning-effort)
+- [模型支持的参数列表 - 火山方舟](https://www.volcengine.com/docs/82379/2662855)
+- [套餐概览 - 火山方舟 Agent Plan](https://www.volcengine.com/docs/82379/2366394)
+- [其他工具(OpenAI/Anthropic 协议接入)- 火山方舟 Agent Plan](https://www.volcengine.com/docs/82379/2374473)
+- [火山方舟 Agent Plan 活动页](https://www.volcengine.com/activity/agentplan)

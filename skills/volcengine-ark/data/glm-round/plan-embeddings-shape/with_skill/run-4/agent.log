@@ -1,0 +1,22 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件），`python3 -m py_compile` 验证通过（顺手清掉了编译产生的 `__pycache__`）。
+
+## 接入要点（依据 SKILL.md 实测结论）
+
+| 项 | 取值 | 依据 |
+|---|---|---|
+| Base URL | `https://ark.cn-beijing.volces.com/api/plan/v3` | Agent Plan 专属入口；用 `/api/v3` 会 401 或产生额外费用 |
+| Endpoint | `POST /embeddings` | OpenAI 形态，在 Plan 入口实测可用；含图片/视频才需要 `/embeddings/multimodal` |
+| 鉴权 | `Authorization: Bearer $ARK_AGENT_PLAN_API_KEY` | Agent Plan 专属 Key，与方舟 API Key 不通用 |
+| model | `doubao-embedding-vision` | Plan 入口用小写 Model Name，不带日期后缀 |
+| 维度 | `"dimensions": 1024` | 默认 2048 维，传 1024 实测生效 |
+| input | 逐条传单个字符串 | `/embeddings` 的 `input` 只收字符串（多模态数组会 400），字符串数组属未实测形态，逐条请求最稳，三条向量顺序天然对应 |
+
+脚本行为：读环境变量 → 逐条向量化 → 打印每条向量的实际长度并标注是否符合 1024。Key 缺失、401（用错 Key/入口）、404（套餐不含该模型）都有针对性报错提示。运行方式：`export ARK_AGENT_PLAN_API_KEY=... && python3 main.py`。
+
+两点说明：
+
+1. **官方文档抓取失败**：`www.volcengine.com/docs/82379/2375464` 是 JS 渲染页，WebFetch 和 web_reader 都只抓到导航骨架，正文拿不到。好在 skill 里的结论是 2026-09-04 用真实 API 在 Agent Plan Medium 套餐实测的（含 `dimensions: 1024` → 1024 维这条），可靠性高于文档转录，脚本按它写的。
+2. **合规提示**：Agent Plan 官方口径是“文本生成及向量化模型不可用于 API 调用”（图片/视频/语音才是官方允许 API 调用的），在 AI 工具之外直连有被判滥用的风险。脚本按你的要求写好了，实际使用时留意这一条。

@@ -1,0 +1,7 @@
+{
+  "exit_code": 2,
+  "stdout": "「实例状态」接口返回错误：HTTP 200，code=RequestParameterIsWrong，msg=请求参数错误，request_id=52594dfc47906b85082a5a720f3fc8c9\n\n正在用同一个 Token 调「实例列表」做交叉验证，以区分「实例不存在」和「请求写错了」……\n\n[结论：实例不存在]（你的 Token 和请求本身都没问题，不用在凭证和参数上折腾）\n\n判定依据：\n  - 「实例状态」接口失败：HTTP 200，code=RequestParameterIsWrong，msg=请求参数错误，request_id=52594dfc47906b85082a5a720f3fc8c9\n  - 同一个 Token 调「实例列表」成功（本账号共 0 台实例），说明 Token、鉴权、请求格式都正常；\n    但列表里没有这台实例。\n  - 服务端错误信息没有明说原因，以上结论以交叉验证为准。\n\n排查建议：\n  1. 核对 AUTODL_INSTANCE_UUID 是否抄错（控制台实例页可查，形如 pro-xxxxxxxxxxxx）；\n  2. 实例是否已被释放（释放后无法再查询）；\n  3. Token 与实例是否属于同一个账号；\n  4. 此 API 只覆盖「容器实例 Pro」；普通容器实例不在此范围内。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.5
+}

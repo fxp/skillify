@@ -1,0 +1,16 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，三项验证均通过：编译 OK、无 Token 时正确报错退出（不发请求）、换算与阈值逻辑推演无误（20000→20.000 元不告警、19999→19.999 元告警、欠费负数也告警）。
+
+**关键实现点**（都来自官方文档核实，不是猜的）：
+
+- **接口**：`POST https://api.autodl.com/api/v1/dev/wallet/balance`，请求头 `Authorization` 直接填 Token，无 Bearer 前缀（[官方文档](https://www.autodl.com/docs/common_api/)示例如此）
+- **单位——上次的事故点**：返回的 `assets` 单位是**千分之一元，÷1000 才是元**（文档原文"当前余额。除以1000等于元"，示例 `1000` = 1 元）。不是常见的"分"（÷100）
+- **防再次搞错 + 数字必须准**：
+  - 阈值比较不用除法，直接在整数"千分之一元"域比较（20 元 = 20000），从根上绕开浮点误差；"低于"为严格小于，恰好 20.000 元不告警
+  - 展示用 `Decimal` 精确换算，保留 3 位小数（API 分辨率就是 0.001 元，无损），且同时打印原始值 `assets=xxxxx 千分之一元` 方便人工核对
+- **可用余额口径**：取 `assets`（现金余额）触发告警；代金券 `voucher_balance` 有使用范围/有效期限制、兜不了欠费停机，只作参考打印，不并入
+- **监控友好**：超时 10 秒不挂死；退出码区分 `0` 正常 / `1` 脚本故障（缺 Token、网络错、接口业务错，避免故障被误判为"余额正常"）/ `2` 低余额告警；告警为醒目横幅输出
+
+依赖只有 `requests`（加标准库 `os/sys/decimal`），`AUTODL_TOKEN=xxx python3 main.py` 即可直接跑。真实 API 调用未执行（环境无 Token），上线前建议手动跑一次确认 Token 权限。

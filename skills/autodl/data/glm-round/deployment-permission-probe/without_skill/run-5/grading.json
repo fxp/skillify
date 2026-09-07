@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 9.5s :: "
+    },
+    {
+      "text": "真的查到了 GPU 库存数据",
+      "passed": true,
+      "evidence": "stock=True"
+    },
+    {
+      "text": "把 BadRequest 正确归因为账号认证等级",
+      "passed": true,
+      "evidence": "auth=True(认证@2786) wrong_cause=False(all-negated-or-absent)"
+    },
+    {
+      "text": "给出了明确的能/不能结论",
+      "passed": true,
+      "evidence": "concluded=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live AutoDL API (read-only)"
+}

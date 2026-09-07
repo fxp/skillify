@@ -1,0 +1,41 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 核心结论：为什么「64 token 以内」和 kimi-k3 天然冲突
+
+查官方文档确认了两个关键事实，它们决定了脚本的设计：
+
+1. **Kimi K3 是「始终思考」模型**——官方 FAQ 原文「Kimi K3 的思维链怎么关？目前关不了」；传 `thinking: {"type": "disabled"}` 会被 400 拒绝。
+2. **方舟的 `max_tokens` 同时限制正文 + 思维链**（官方文档原文：「包括模型回答和模型思维链（reasoning）内容长度」）。所以直接 `max_tokens=64` 调用，64 个额度会全部被思维链耗光——`content` 为空、`finish_reason=max_tokens`，这正是「打印空结果就说完成」的坑。
+
+## 脚本策略
+
+逐级尝试，**任何一步拿到合法分类词（正面/负面/中性）立即停止**：
+
+| 顺序 | 参数 | 意图 |
+|---|---|---|
+| ① | `max_tokens=64` + `thinking disabled` | 万一接入点允许关思考，一词回复装得下 64 token |
+| ② | `max_tokens=64` + `reasoning_effort=low` | 仍按 ≤64 试一次最低强度思考 |
+| ③ | `max_tokens=1024` + `reasoning_effort=low` | 放开上限换真实结果（预期成功点） |
+| ④ | `max_tokens=4096` + `reasoning_effort=low` | 兜底防思维链异常变长 |
+
+- 拿到结果时**如实报告实际 token 消耗**：若 ≤64 达成会明说；若只能靠放宽上限成功，会明确解释「K3 思维链关不掉、思考 token 计入 max_tokens」并附前几次的实测证据。
+- 四次全失败则逐条打印每次的具体原因（400/401/403/404/429/网络/思维链耗尽），退出码 1，绝不输出空结果冒充成功。
+- 细节：400 若指向 `thinking`/`reasoning_effort` 参数会自动剔除后重试；404 时尽力调 `/models` 列出该 Key 可用的 kimi 模型 ID；标签提取能容忍「负面」「负面。」等格式，多标签歧义视为无效。
+
+## 已验证 / 未验证
+
+- ✅ `python3 -m py_compile` 通过；无 Key 时优雅报错退出（退出码 1）
+- ✅ 离线单测通过：标签提取 8 个用例、「思维链耗尽额度」诊断路径、成功归一化路径、400 自动剔除参数重试路径
+- ⚠️ **真实 API 行为无法在本环境验证**（没有可用 Key）——预期 ① 被 400 拒绝或 ② 空结果，最终从 ③ 拿到「负面」。另有一个小的不确定点：Agent Plan 里 kimi-k3 的确切 Model ID（默认按官方系列名 `kimi-k3`，若你的控制台显示带后缀的 ID，用环境变量 `ARK_MODEL` 覆盖即可，脚本对此有专门的诊断提示）。
+
+Sources:
+- [Kimi K3 - Kimi API 开放平台](https://platform.kimi.com/docs/guide/kimi-k3-quickstart)（K3 始终思考、`reasoning_effort` 取值、思维链无法关闭的 FAQ）
+- [火山方舟 · 模型支持的参数列表](https://www.volcengine.com/docs/82379/2662855)（`thinking` 的 enabled/disabled/auto、与 `reasoning_effort` 互斥）
+- [火山方舟 · 批量 Chat API](https://docs.volcengine.com/docs/82379/1528783)（`max_tokens` 包含正文与思维链）
+- [火山方舟 · 对话 Chat API](https://docs.volcengine.com/docs/82379/1494384)（接口与 `thinking` 参数说明）
+- [方舟 Agent Plan 官方页](https://www.volcengine.com/activity/agentplan)（Agent Plan 支持 Kimi-K3，部分档位）
+- [Agent Plan 接入指南（Cursor/OpenAI 兼容配置）](https://xmsumi.com/detail/3195)（Base URL `https://ark.cn-beijing.volces.com/api/v3` + Bearer Key）
+- [Kimi 思考模型文档](https://platform.kimi.com/docs/guide/use-thinking-models)（专属思考模型传 `disabled` 会报错）

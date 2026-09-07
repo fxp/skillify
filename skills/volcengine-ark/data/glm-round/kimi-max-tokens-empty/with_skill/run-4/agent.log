@@ -1,0 +1,34 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过。交付完成，最终总结如下。
+
+## 交付
+
+脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，可直接 `python3 main.py` 运行。
+
+## 核心结论：为什么不能直接 `max_tokens: 64`
+
+这是本任务最大的坑，SKILL.md 里有 2026-09-04 对 Agent Plan 入口的**真实 API 实测记录**，我又用官方文档站 API（`getDocDetail` 取深度思考、Chat API 两页原文）复核确认：
+
+- **kimi-k3 默认开启思考**（实测简单问题思维链就有 61 token），且它的输出上限**把思维链也计入**——实测 `max_tokens: 64` 的结果是 `finish_reason: "length"`、`content: ""`，64 个额度全被思维链吃光，回答为空；
+- 正确写法是 `max_completion_tokens`（限“思维链+回答”总长，官方原文："控制模型输出的最大长度（包括模型回答和模型思维链内容长度）"、"**不可与 max_tokens 字段同时设置**"）；
+- `thinking.disabled` 的官方支持模型清单里**没有 kimi-k3**（glm-5.3 实测传了直接 400），所以不能假设思考能关掉。
+
+## 脚本设计
+
+```
+策略1  thinking.disabled + max_completion_tokens=64   ← 严格 64 内拿到结果（若 kimi-k3 支持关思考）
+策略2  reasoning_effort=low + max_completion_tokens=64 ← 仍压在 64 内
+策略3  默认思考 + max_completion_tokens=512            ← 结果优先，如实报告为什么 64 做不到
+```
+
+按你的要求“必须拿到结果 > 压到 64”：只有 400（参数被 kimi-k3 拒绝）才降级；401/404/429 直接失败并翻译原因（Key 不是 Agent Plan 专属 Key / Small 档用不了 kimi-k3 / 额度耗尽）。拿到结果后打印实际 `completion_tokens`（思维链 + 回答分列）；若最终走了策略 3，stderr 会明确说明“64 以内拿不到结果是因为思维链本身超限且关不掉”，**绝不会打印空结果就退出**。stdout 只有一行分类词，诊断全走 stderr。
+
+## 验证程度（如实说明）
+
+- ✅ `py_compile` 通过；无 Key 环境实跑，启动即给出明确的 Key 配置指引并 exit 1；
+- ✅ 用 mock 把 6 条路径全部走通：三级降级链、严格 64 成功、全失败、401 不乱降级、杂字输出提取、请求体检查（URL 是 `/api/plan/v3/chat/completions`、Bearer 鉴权、**确认不含 `max_tokens`**）；
+- ⚠️ **未做真实 API 调用**（本环境无可用 Key），真实行为以 skill 的实测记录 + 官方文档为准；kimi-k3 对 `thinking.disabled` / `reasoning_effort=low` 的接受度官方未记录，脚本的降级链正是为这两种不确定性准备的。
+
+另外两点使用提醒：kimi-k3 需要 Agent Plan **Medium 及以上**档位（Small 不可用）；Agent Plan 官方条款对文本模型“不可用于 API 调用”（技术上可调，条款限制已在脚本注释中注明）。

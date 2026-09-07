@@ -1,0 +1,34 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录只有这一个文件），`py_compile` 编译验证通过。
+
+## 实现说明
+
+**接口调研结论**（基于官方文档与实测资料交叉确认）：
+- Agent Plan 使用专属 Base URL：`https://ark.cn-beijing.volces.com/api/plan/v3`（区别于按量付费的 `/api/v3`），embeddings 端点为 `/embeddings`
+- 向量化模型选 `doubao-embedding-vision-251215`：官方模型列表标注最高 2048 维、**支持降维到 1024 使用**，通过 `dimensions: 1024` 参数指定
+- 该模型单次请求仅支持一段文本，所以三段文本**逐条调用**；响应取 `data[0]["embedding"]`（代码里同时兼容了 data 为数组和单对象两种返回格式）
+
+**脚本要点**：
+- API Key 从 `ARK_AGENT_PLAN_API_KEY` 环境变量读取，缺失时给出明确提示并退出
+- 只依赖 `requests`（其余为标准库），`python3 main.py` 直接可跑
+- 每条文本打印实际向量长度，并与 1024 比对标注“符合预期/不符”
+- HTTP 错误带状态码和响应体片段、网络异常单独捕获，均输出到 stderr
+
+**预期输出**（配置真实 Key 后）：
+
+```
+模型：doubao-embedding-vision-251215，目标维度：1024
+
+[1/3] 文本：今天天气很好
+       向量长度：1024（符合预期），前 3 个分量：[...]
+[2/3] 文本：这部电影非常精彩
+       向量长度：1024（符合预期），前 3 个分量：[...]
+[3/3] 文本：服务器响应超时了
+       向量长度：1024（符合预期），前 3 个分量：[...]
+
+完成：三段文本均已向量化。
+```
+
+按任务要求未真实调用 API。一点备注：`dimensions` 降维参数在多模态 embeddings 文档中有明确说明（“是否支持可变维度以模型详情页为准”），模型详情页确认支持 1024；若运行时服务端返回参数不支持的错误，脚本会带出原始报错信息，也可通过 `ARK_EMBEDDING_MODEL` 环境变量换用 `doubao-embedding-vision-250615` 验证。

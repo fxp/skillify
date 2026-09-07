@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/balance-unit/with_skill/run-5/outputs/main.py`，目录里只有这一个文件。
+
+## 关键设计（都是针对“数字必须准”这一点）
+
+| 要点 | 处理方式 |
+| :--- | :--- |
+| **单位换算** | API 返回的金额是「元 × 1000」的整数（如 `29290` = 29.29 元）——已同时对照技能包和官方文档确认。脚本**全程在整数域**做减法和阈值比较（20 元 = 20000），只在最后展示时用 `Decimal(毫元) / 1000` 精确换算，完全避开浮点误差，杜绝上次那种单位事故 |
+| **可用余额定义** | 用 `(assets - blocked_asset) / 1000`，扣除了冻结金额——`blocked_asset` 官方文档没写，但技能包用真实调用验证过它存在且不可消费；字段缺失时按 0 兜底 |
+| **鉴权** | `Authorization: <token>`，**没有 `Bearer` 前缀**（AutoDL 的特殊之处），Token 从 `AUTODL_TOKEN` 环境变量读取 |
+| **告警** | 可用余额 `< 20` 元（整数域 `< 20000`，恰好 20.00 元不触发）时打印 `!!!` 包裹的醒目告警块 |
+| **监控友好** | 请求设了 10 秒超时防挂死；退出码区分三种状态：`0` 正常 / `1` 低余额告警 / `2` 查询失败（余额未知，不会误报为正常）；网络错误、HTTP 非 200、非 JSON、`code != "Success"`、字段类型异常都有明确报错 |
+
+## 验证情况（未调用真实 API）
+
+- `python3 -m py_compile` 编译通过；
+- 用 `unittest.mock` 在本地注入假响应跑了 5 个场景，全部符合预期：低余额（29.29 − 15 = 14.29 元 → 告警、退出码 1）、正常（29.29 元 → 退出码 0）、边界（恰好 20.00 元 → 不告警）、业务错误（退出码 2）、响应缺 `blocked_asset`（按 0 处理）。同时断言了请求头无 Bearer 前缀、带超时。
+
+真实 Token 到位后 `AUTODL_TOKEN=xxx python3 main.py` 即可直接挂到监控上。

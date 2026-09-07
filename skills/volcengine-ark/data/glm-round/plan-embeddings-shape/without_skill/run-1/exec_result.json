@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "调用向量化接口失败：HTTP 401 {\"error\":{\"code\":\"AuthenticationError\",\"message\":\"The API key or AK/SK in the request is missing or invalid. Request id: 0217887817119286cfe2b229f965c4fa1752fa8f08fea791c3ed5\",\"param\":\"\",\"type\":\"Unauthorized\"}}\n",
+  "timed_out": false,
+  "seconds": 2.4
+}

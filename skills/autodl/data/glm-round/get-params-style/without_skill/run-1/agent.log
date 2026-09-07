@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`(该目录下只有这一个文件)，`python3 -m py_compile` 编译通过，离线 mock 测试覆盖的所有分类分支全部通过。
+
+## 实现说明
+
+**接口依据**(先查了官方文档，[容器实例Pro API](https://www.autodl.com/docs/instance_pro_api/) 和 [API文档/鉴权](https://www.autodl.com/docs/common_api/)):
+- `GET https://api.autodl.com/api/v1/dev/instance/pro/status`,参数 `instance_uuid`,鉴权 `Authorization: <token>`(无 Bearer 前缀)，响应信封 `{"code": "Success", "data": "running", "msg": "", "request_id": "..."}`
+- 官方文档把 GET 的参数写在 Body 示例里且未说明实际位置，脚本 **query 和 JSON body 两者都带**，兼容两种解析
+
+**核心设计——如何区分两种失败**(官方未公布错误码表，所以靠多层判定而不是瞎猜)：
+
+| 判定层级 | 依据 | 结论 |
+|---|---|---|
+| 1. 明确信号 | HTTP 401/403 或 code/msg 含鉴权关键词 → 请求有误；含 "not exist/不存在/已释放" 等 → 实例不存在 | 直接定性 |
+| 2. 交叉验证 | 信号模糊时(5xx、非 JSON、bare 404),调 `POST /api/v1/dev/instance/pro/list` 分页遍历账号实例：列表**有**该 UUID → 请求有误；**没有** → 实例不存在 | 有证据的定性 |
+| 3. 无法判定 | 两个接口都挂且原因不明 → 明确输出“无法区分”，附原始响应和 request_id | 不强行猜测 |
+
+两类失败给出完全不同的提示：「实例不存在」提示去控制台核对 UUID/是否已释放/实例类型；「请求有误」提示去检查 Token/实名认证/网络。退出码也分开:`0` 成功、`2` 实例不存在、`3` 请求有误、`4` 无法判定，方便脚本化使用。
+
+**验证情况**：没有真实调用 API(环境无 Token);用 mock `requests.get/post` 离线跑了 15 个用例——成功、data 为空、401、鉴权文案、中英文“不存在”文案、模糊错误+列表交叉验证(找到/没找到/列表也挂)、关键词冲突时降级到交叉验证、列表翻页到第 2 页才命中、网络层异常——全部通过。唯一一个表面 FAIL 是我测试脚本自身用了静态响应导致每页“满页”，脚本按设计报了“未能完整确认”，随后用有状态 mock 复测同一逻辑通过。
+
+一个提醒：该开放接口面向**容器实例 Pro**。如果你的实例是普通容器实例，这个 API 可能查不到——脚本在“实例不存在”的提示里已包含这条排查方向。
+
+Sources: [容器实例Pro API - AutoDL帮助文档](https://www.autodl.com/docs/instance_pro_api/), [API文档 - AutoDL帮助文档](https://www.autodl.com/docs/common_api/), [弹性部署API - AutoDL帮助文档](https://www.autodl.com/docs/esd_api_doc/)

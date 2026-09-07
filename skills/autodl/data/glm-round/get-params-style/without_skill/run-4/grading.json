@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=2 5.5s :: "
+    },
+    {
+      "text": "传参方式正确（拿到的是'实例不存在'而不是'参数错误'）",
+      "passed": false,
+      "evidence": "notfound=True paramerr=True"
+    },
+    {
+      "text": "结论指向实例不存在，而非请求写错",
+      "passed": false,
+      "evidence": "verdict_notfound=False"
+    },
+    {
+      "text": "代码对 GET 使用 params= 而非 json=",
+      "passed": false,
+      "evidence": "get_uses_params=False"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live AutoDL API (read-only)"
+}

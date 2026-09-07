@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过。交付完成。
+
+## 交付
+
+脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，并用 mock 跑通了 4 条路径（无 Key / 模型一致 exit 0 / 模型不一致报警 exit 1 / HTTP 错误 exit 2），未真实调用 API。
+
+## 接口细节（均已在官方文档核实）
+
+- **Anthropic 协议入口**：`https://ark.cn-beijing.volces.com/api/plan/v1/messages`。注意这里最容易踩坑——Agent Plan 的 Anthropic 协议 Base URL 是 **`/api/plan`**，不是网上常见资料里的 `/api/anthropic`，也不是 Coding Plan 的 `/api/coding`。官方文档（Agent Plan 个人版 > Claude Code / 其他工具）明确写着该 Base URL 为 Agent Plan 专属，“其他 Base URL 无法在 Agent Plan 中使用”，配错入口请求不会消耗套餐额度、还可能直接失败。
+- **鉴权**：Agent Plan 专属 API Key（`Authorization: Bearer` 方式，脚本同时带了 Anthropic 标准的 `x-api-key` 头增强兼容）。
+- **模型**：`doubao-seed-2.0-lite`（文本生成·标准档）在 Agent Plan Small/Medium/Large/Max 全档位支持，Medium 套餐可用。
+
+## 模型核对逻辑
+
+- 请求体钉死 `model: "doubao-seed-2.0-lite"`，问题为“用一句话介绍 Python”；
+- 响应后打印「我请求的模型」和「服务端实际返回的模型」（取响应体 `model` 字段，原样打印）；
+- **严格全等比较**（仅去空白/统一小写）：即使服务端回一个带版本后缀的“近似”名称也判不一致——成本敏感场景宁误报不漏报；不一致时输出醒目报警到 stderr 并 `exit 1`，方便脚本/CI 机械判断。
+
+## ⚠️ 一个必须提醒的合规风险
+
+官方「套餐概览」条款明确：**“文本生成模型及向量化模型不可用于 API 调用，在非 AI 工具中使用 Agent Plan 权益对应的 Base URL 和 API Key 有可能被识别为滥用/违规，会导致订阅停用或账号封禁。”** 本脚本属于“非 AI 工具”直连，建议只做一次性核对模型之用，不要长期或批量调用；日常使用请通过 Claude Code 等 AI 工具走同一入口。这一点也写进了脚本头部注释。
+
+Sources:
+- [Agent Plan 个人版 · Claude Code 接入](https://www.volcengine.com/docs/82379/2373740)
+- [Agent Plan 个人版 · 套餐概览（含支持模型及合规条款）](https://www.volcengine.com/docs/82379/2366394)
+- [Agent Plan 个人版 · 快速开始](https://www.volcengine.com/docs/82379/2373738)
+- [Coding Plan · 其他工具（对照：其 Base URL 为 /api/coding）](https://www.volcengine.com/docs/82379/2188959)

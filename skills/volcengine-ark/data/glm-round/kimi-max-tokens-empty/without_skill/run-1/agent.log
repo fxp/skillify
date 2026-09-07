@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，无 Key 时的守卫路径、标签解析、空结果诊断逻辑也都离线验证过。
+
+## 脚本怎么处理“64 token 上限”这个约束
+
+抓取官方文档后确认了三个关键事实，脚本就是围绕它们设计的：
+
+1. **kimi-k3 思考无法关闭**——K3 不支持 `thinking` 参数（`{"type":"disabled"}` 只有 kimi-k2.6 等模型支持），官方 FAQ 明确“始终进行推理，目前关不了”
+2. **思考 token 计入 `max_tokens`**——文档原文：“reasoning_content 的 Tokens 数加上 content 的 Tokens 数应小于等于 max_tokens”
+3. **唯一档位开关是顶层 `reasoning_effort`**（`low`/`high`/`max`，默认 `max`）
+
+所以 `max_tokens=64` 的直接风险是：思考先吃光 64 个 token，`content` 为空、`finish_reason="length"`——脚本对此有三层处理：
+
+- **尽力争取**：`reasoning_effort="low"` + 极短提示词（“不要展开思考，立即作答”），给答案留出预算；若网关 400 拒绝 `reasoning_effort` 参数，自动降级为不带该参数重试一次（最多 2 次请求，每次输出都封顶 64 token）
+- **如实报告**：拿到结果就打印标签 + token 用量（成本有据可查）；拿不到就打印完整诊断——`finish_reason`、`usage`（含 `reasoning_tokens` 占用）、`reasoning_content` 摘要，并明确说明是“64 上限与必须思考的模型物理不兼容”，附上出路（提额或换可关思考的模型），然后以非零码退出
+- **不造假**：输出里同时出现多个标签、或完全不含标签时按失败处理，绝不硬猜
+
+其他细节：Key 从 `ARK_AGENT_PLAN_API_KEY` 读取，只依赖 `requests`；401/403/404/429/5xx/超时/非 JSON 响应都有可读的错误提示；`ARK_MODEL`、`ARK_BASE_URL` 环境变量可覆盖（404 时提示去控制台核对 Agent Plan 的准确模型 ID）。
+
+Sources:
+- [思考模型 - Kimi API 开放平台](https://platform.kimi.com/docs/guide/use-thinking-models)
+- [Kimi K3 快速开始 - Kimi API 开放平台](https://platform.kimi.com/docs/guide/kimi-k3-quickstart)
+- [深度思考 - 火山方舟文档](https://docs.volcengine.com/docs/82379/1956279)
+- [kimi-cli Issue #1124（火山引擎侧 kimi 模型 max_tokens 上限）](https://github.com/MoonshotAI/kimi-cli/issues/1124)

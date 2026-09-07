@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,17 个本地 mock 分支用例全部通过，未调用真实 API。
+
+## 实现要点
+
+**接口**(按官方文档，已在线核对)：`GET https://api.autodl.com/api/v1/dev/instance/pro/status`,Body 传 `instance_uuid`,成功返回 `{"code": "Success", "data": "<状态>", ...}`;鉴权为 `Authorization: <裸token>`(无 Bearer 前缀，按官方示例)。文档的 GET 参数写在 Body 里，脚本同时带了 query 参数兜底(防中间层丢弃 GET body)。
+
+**核心：两类失败严格分开**，提示语和退出码都不同：
+
+| 情况 | 提示方向 | 退出码 |
+|---|---|---|
+| 实例不存在 | UUID 抄错 / 已释放 / 不在该 Token 账号下——明确说明“不是 Token 或请求格式的问题” | 2 |
+| 请求本身有误(401/403 鉴权、400/422 参数、429 限流) | 先修 Token/参数，“此时还没轮到判断实例是否存在” | 3 |
+| 另外单独归类：缺环境变量(请求未发出) | 1 | |
+| 网络故障 / 服务端 5xx | 4 / 5 | |
+
+分类依据 = HTTP 状态码 + 业务 `code`/`msg` 语义关键字(如 `NotFound`/`不存在`/`已释放` → 实例不存在;`Unauthorized`/`token`/`参数` → 请求有误)，因为**官方文档未公布错误码表**——所以每条失败提示都会附上服务器原始响应和 `request_id`,语义匹配不上时走“未归类”并原样打印，不会误判。鉴权判断放在 404 之前，避免把“无权查看”误报成“实例不存在”。
+
+**验证**:`python3 -m py_compile` 通过；用本地 mock 服务器跑了 17 个场景(成功、NotFound、404 JSON/非 JSON、401、token 过期、400、429、500/502、缺环境变量、连接失败、请求形态核验)全部符合预期。
+
+一个诚实的提醒:`STATUS_ZH` 中文对照里官方文档只示例了 `running`,其余取值是按常见状态补的，遇到未收录值会原样显示原始值，不会瞎猜。
+
+Sources:
+- [容器实例 Pro API - AutoDL 帮助文档](https://www.autodl.com/docs/instance_pro_api/)
+- [API 文档(通用)- AutoDL 帮助文档](https://www.autodl.com/docs/common_api/)

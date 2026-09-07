@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,编译通过，缺 Key 时的报错路径也实测正常(未真实调用 API)。
+
+## 脚本要点
+
+**接口细节(均查证自官方文档)**
+- **端点**:`https://ark.cn-beijing.volces.com/api/plan/v1/messages` —— [Agent Plan 个人版 Claude Code 接入文档](https://docs.volcengine.com/docs/82379/2373740)明确 `https://ark.cn-beijing.volces.com/api/plan` 是 Anthropic 协议专属 Base URL,且注明“其他 Base URL 无法在 Agent Plan 中使用”；`/v1/messages` 是 Anthropic Messages 协议的标准路径
+- **鉴权**：按文档的 `ANTHROPIC_AUTH_TOKEN` 语义用 `Authorization: Bearer <key>`,同时附带 `x-api-key` 和 `anthropic-version: 2023-06-01`,兼容 Anthropic 协议原生鉴权写法
+- **模型锁定**:`model` 字段直接传裸模型名 `doubao-seed-2.0-lite`(套餐内模型按名指定，无日期后缀)
+
+**模型核对逻辑(成本敏感的核心)**
+- 请求前打印「我请求的模型」；响应后取 Anthropic Messages 响应体的 `model` 字段打印「服务端实际回给我的模型」
+- 三种情况都会明确处理：两者**不一致** → stderr 打印 `⚠️ 模型不一致` 警告并退出码 2;响应**缺失 model 字段**(无法核对)→ 同样报警退出码 2,并提示去控制台用量明细人工核实；一致 → 打印 `✅` 退出码 0
+- 请求失败(网络/HTTP 非 200/非法 JSON)→ 退出码 1,并输出响应体片段便于排查
+
+**运行方式**
+```bash
+export ARK_AGENT_PLAN_API_KEY=<你的 Agent Plan API Key>
+python3 main.py
+```
+只用 `requests` + 标准库，退出码语义写在文件头部注释里，方便接入 CI 或巡检脚本。
+
+Sources:
+- [Agent Plan 个人版 Claude Code 接入(火山方舟官方文档)](https://docs.volcengine.com/docs/82379/2373740)
+- [Agent Plan 快速开始(火山方舟官方文档)](https://docs.volcengine.com/docs/82379/2373738)
+- [Agent Plan 其他工具适配(火山方舟官方文档)](https://www.volcengine.com/docs/82379/2374473)
+- [Agent Plan Medium 套餐实测(含 doubao-seed-2.0-lite 抵扣系数)](https://cloud.tencent.com/developer/article/2714722)
+- [Hermes Agent issue(佐证 /api/plan/v1/messages 端点)](https://github.com/NousResearch/hermes-agent/issues/29331)

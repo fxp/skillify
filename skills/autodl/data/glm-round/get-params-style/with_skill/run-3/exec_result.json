@@ -1,0 +1,7 @@
+{
+  "exit_code": 2,
+  "stdout": "[实例不存在] AutoDL 说查不到这台实例：未查询到相关实例 （request_id: 8f62865fc36953055146bf8e5c11118a）\n请求本身是合法的，问题出在实例上，建议按这个方向排查：\n  1. 核对 AUTODL_INSTANCE_UUID（当前值：00000000-0000-0000-0000-00000000dead）是否复制完整、\n     有没有多余的空格/引号/错位字符；\n  2. 这台实例是否已经被释放——已释放的实例查询接口查不回来；\n  3. 该 UUID 是否属于当前 Token 对应的账号（别的账号的实例查不到）。\n  可调用 POST /api/v1/dev/instance/pro/list 列出本账号现存实例来交叉确认。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 3.0
+}

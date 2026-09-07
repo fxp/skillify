@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,`py_compile` 编译通过,无 Key 时能直接 `python3 main.py` 运行并给出明确提示(退出码 2;输出里的 `NotOpenSSLWarning` 是本机 Python 3.9 + LibreSSL 的环境警告，与脚本无关)。
+
+## 脚本要点
+
+**接口确认**(经官方文档线索 + 多方实测文章交叉验证)：
+- Agent Plan 的 **Anthropic 协议**入口是 `https://ark.cn-beijing.volces.com/api/plan`,Messages 端点拼上 `/v1/messages`(注意不是 OpenAI 兼容的 `/api/plan/v3`,也不是 Coding Plan 的 `/api/coding`)
+- `doubao-seed-2.0-lite` 确认是 Agent Plan 文本生成「标准」档模型名，请求体 `model` 字段直接填模型名即可
+
+**成本护栏的实现**：
+1. 请求体硬编码 `model="doubao-seed-2.0-lite"`;
+2. 收到响应后读取 Anthropic 协议响应体的 `model` 字段(即服务端实际服务模型的回显)，与请求值**精确比对**；
+3. 结束前同时打印「我请求的模型」和「服务端实际返回的模型」；一致则打印 `[核对通过]`,不一致则打印 `[报警]`(提示抵扣系数差异、意外费用风险，并注明若回显是带日期后缀的同名快照需人工确认)，并以非零退出码结束，方便 CI/脚本层面拦截；
+4. 顺带打印 token 用量，便于套餐积分核算。
+
+**其他细节**：
+- API Key 只从 `ARK_AGENT_PLAN_API_KEY` 读取，缺失时给出 export 提示后退出
+- 鉴权同时带 `x-api-key`(Anthropic 标准)和 `Authorization: Bearer`(Claude Code 接入风格)，兼容方舟兼容层两种校验方式；外加 `anthropic-version: 2023-06-01`
+- 仅依赖 `requests`,网络错误、非 200、非法 JSON 均有明确错误输出
+
+Sources: [火山方舟 Agent Plan 其他工具接入文档](https://www.volcengine.com/docs/82379/2374473) · [Agent Plan 套餐概览](https://www.volcengine.com/docs/82379/2366394) · [Agent Plan Medium 套餐实测(腾讯云)](https://cloud.tencent.com/developer/article/2714722) · [方舟 Coding Plan 配置指南(codepick)](https://codepick.dev/zh/guides/ark-coding-plan-guide/)

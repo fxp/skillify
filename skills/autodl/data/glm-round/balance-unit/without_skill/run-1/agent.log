@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/balance-unit/without_skill/run-1/outputs/main.py`,`python3 -m py_compile` 通过，并用伪造响应离线验证了换算和告警逻辑(未调用真实 API)。
+
+**关键设计——数字必须准：**
+
+- **单位陷阱已处理**：AutoDL 官方文档明确 `data.assets` 是整数，**1000 = 1 元**。脚本用 `Decimal(assets) / 1000` 精确换算，阈值比较全程不经过 float(20 元阈值判断是精确的，恰好 20.00 元不告警)
+- **接口与鉴权**(按官方文档)：`POST https://api.autodl.com/api/v1/dev/wallet/balance`,请求头 `Authorization: <Token>`(不带 `Bearer` 前缀)，Token 只从环境变量 `AUTODL_TOKEN` 读取
+- **只依赖 requests**,带 15 秒超时
+
+**监控友好：**
+
+- 可用余额始终按元打印(如 `AutoDL 可用余额: 19.42 元`)，代金券余额单独列出、不计入可用余额
+- 低于 20 元打印醒目星号横幅告警
+- 退出码区分状态:`0` 正常 / `2` 低余额告警 / `1` 脚本出错(Token 缺失、网络失败、响应格式异常都会打到 stderr 并返回 1,不会把异常静默吞掉)
+
+用法:`AUTODL_TOKEN=你的token python3 main.py`
+
+Sources: [AutoDL API 文档](https://www.autodl.com/docs/common_api/)

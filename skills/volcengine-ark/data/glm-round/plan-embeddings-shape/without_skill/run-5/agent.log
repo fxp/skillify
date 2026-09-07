@@ -1,0 +1,44 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 编译通过，无 Key 时运行也能干净地报错退出（exit=1，那行 urllib3 警告来自本机 Python 3.9 的 LibreSSL 环境，与脚本无关）。
+
+**脚本要点**（接口细节均经官方/社区文档核实）：
+
+| 项 | 值 |
+|---|---|
+| Base URL | `https://ark.cn-beijing.volces.com/api/plan/v3`（Agent Plan 订阅专属，区别于按量付费的 `/api/v3`） |
+| 端点 | `POST /embeddings`，OpenAI 兼容格式，`Authorization: Bearer <key>` |
+| 模型 | `doubao-embedding-vision` |
+| 维度参数 | 请求体里 `"dimension": 1024` —— 该模型默认输出 **2048** 维，靠此参数降维到 1024（也支持 512） |
+
+脚本逐条文本调用（每条单独请求，稳妥不依赖批量行为），打印每条向量的 `len(embedding)` 实际长度，最后统一校验是否全部等于 1024：一致则打印确认，不一致会打印实际维度列表并以 exit=2 退出——这样如果服务端忽略 `dimension` 参数，一眼就能看出来。
+
+设置好 Key 即可跑通：
+
+```bash
+export ARK_AGENT_PLAN_API_KEY="你的 Agent Plan API Key"
+python3 main.py
+```
+
+预期输出形如：
+
+```
+模型: doubao-embedding-vision | 请求维度: 1024
+----------------------------------------
+[1] 今天天气很好
+    实际向量长度 = 1024
+[2] 这部电影非常精彩
+    实际向量长度 = 1024
+[3] 服务器响应超时了
+    实际向量长度 = 1024
+----------------------------------------
+确认：3 条向量全部为 1024 维
+```
+
+Sources:
+- [火山方舟 - 接入向量化模型（Agent Plan 文档）](https://docs.volcengine.com/docs/ark/agent-plan-personal-vectorized-models?lang=zh)
+- [火山方舟 - 多模态向量化 API](https://www.volcengine.com/docs/82379/1409290)
+- [VikingDB embedding 文档（doubao-embedding-vision 维度说明：2048，支持 1024 降维）](https://www.volcengine.com/docs/84313/1254554)
+- [OpenViking 配置指南（`"dimension": 1024` 参数用法）](https://github.com/volcengine/OpenViking/blob/main/docs/zh/guides/01-configuration.md)
+- [腾讯云社区：Agent Plan + Embedding 实测（专属 Base URL `/api/plan/v3` 与示例代码）](https://cloud.tencent.com/developer/article/2714722)

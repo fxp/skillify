@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "情感分类结果:负面\n[调用详情] 模型=kimi-k3;关闭思考 + 总输出上限 64;finish_reason=stop;总输出 11 token(其中思维链 0 token);max_completion_tokens=64\n[成本] 输入 63 token + 输出 11 token;kimi-k3 的 AFP 抵扣系数为 10/10,本次约消耗 0.074 AFP\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 4.9
+}

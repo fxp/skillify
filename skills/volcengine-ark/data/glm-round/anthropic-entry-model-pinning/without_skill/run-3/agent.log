@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，无 Key 时报错正常退出（`exit_code=1`）。
+
+## 关键接口事实（均已从官方文档/接入指南核实）
+
+| 项 | 值 | 依据 |
+|---|---|---|
+| Agent Plan **Anthropic 协议**入口 | `https://ark.cn-beijing.volces.com/api/plan` | [Agent Plan 接入文档](https://www.volcengine.com/docs/82379/2374473)、[腾讯云文章](https://developer.cloud.tencent.com/article/2716220)：Anthropic 兼容用 `/api/plan`，OpenAI 兼容才是 `/api/plan/v3`，按量付费的 `/api/v3/anthropic` **不是**套餐入口 |
+| Messages 端点 | `{BASE_URL}/v1/messages` | Anthropic 协议标准拼法（Claude Code 设 `ANTHROPIC_BASE_URL` 即此路径） |
+| 认证 / 协议头 | `x-api-key`（同时携带 `Authorization: Bearer` 兼容两种网关行为）+ `anthropic-version: 2023-06-01` | [知乎搬家方案](https://zhuanlan.zhihu.com/p/1947418395759866678)、[接入参考](https://deepseekv4pro.com/coding-plan-integration/claude-code) |
+| 模型名 | `doubao-seed-2.0-lite` | [套餐概览](https://www.volcengine.com/docs/82379/2366394)、[知乎对比文](https://zhuanlan.zhihu.com/p/2071912855008438239)：它是 Agent Plan 套餐内支持的通用模型名 |
+
+## 核对逻辑（这个任务的核心）
+
+官方[创建 Response 文档](https://docs.volcengine.com/docs/82379/1569618)明确：响应的 `model` 字段**可能带版本号后缀，与请求传入的通用模型名不完全一致**；且存在模型名无效时服务端静默回退到其他模型的风险（抵扣系数差数倍的真正来源）。所以脚本对 `响应.model` 做三档判定：
+
+- **完全一致** → ✅ 通过；
+- **同模型带纯数字版本/日期后缀**（如 `doubao-seed-2-0-lite-250815`）→ ✅ 通过但明确展示差异——这不是被换模型，避免误报；
+- **其他任何名字**（`-pro`、`doubao-seed-1-6`、`kimi-k3`、接入点 ID、甚至 `-lite-thinking` 变体）→ 🚨 明确报警并以非零码退出；响应缺失 `model` 字段同样报警。
+
+判定逻辑已用 8 组用例单测验证全过（含 `2.0`/`2-0` 两种写法、日期快照、上下文规格后缀 `204800`、同族不同型号等）。
+
+## 运行
+
+```bash
+export ARK_AGENT_PLAN_API_KEY=<你的 Agent Plan API Key>
+python3 main.py
+```
+
+输出包含：模型回答、token 用量（可对照套餐扣减）、「我请求的模型」与「服务端实际回给我的模型」的核对结论。依赖仅 `requests` + 标准库（本机 Python 3.9 可用；编译时那条 LibreSSL 警告来自环境自带 urllib3，与脚本无关）。

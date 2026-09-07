@@ -1,0 +1,14 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/get-params-style/with_skill/run-5/outputs/main.py`，`python3 -m py_compile` 通过，未真实调用 API（用 mock 响应离线验证了各分支，输出见上）。
+
+**核心实现要点**（依据技能包 `references/instances.md` + WebFetch 对照官方文档确认）：
+
+1. **接口**：`GET https://api.autodl.com/api/v1/dev/instance/pro/status`，参数 `instance_uuid` 用 `params=` 走 URL 查询字符串。这一步有个关键坑：官方文档把该 GET 接口的参数写在“请求 Body 示例”里，但技能包已实测验证那是文档写错——放 JSON body 会直接返回 `RequestParameterIsWrong`。
+2. **鉴权**：`Authorization: <token>`，无 `Bearer` 前缀。
+3. **两类错误的区分**（任务的核心要求），通过 `code` + `msg` 双重匹配（平台无稳定错误码枚举表）：
+   - **实例不存在**（`RecordNotFoundError` / “未查询到相关实例”）→ 提示请求本身没问题，排查方向是 UUID 是否抄错、实例是否已释放（已释放实例不会再出现在任何查询里）、是否属于当前账号；exit=3
+   - **请求本身写错**（`RequestParameterIsWrong` / “请求参数错误”）→ 提示接口没查库就拒绝了请求，排查方向是传参方式（查询字符串 vs body）和 UUID 格式；exit=4
+4. **顺带处理的相邻情况**，避免排查时互相干扰：缺环境变量（exit=2）、网络错误（exit=6）、非 JSON 响应、其他 API 错误如未实名/无权限（exit=5，原样透出 code/msg 不做猜测）。
+5. **状态输出**：成功时打印 `data` 里的状态串，已知状态（`starting`/`running`/`shutting_down`/`shutdown`）附中文说明；未知状态原样打印并注明不代表出错——避免把平台新增的中间态误判成异常。

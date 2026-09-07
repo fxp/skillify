@@ -1,0 +1,74 @@
+{
+  "anthropic-entry-model-pinning/with_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      0.75,
+      1.0
+    ],
+    "mean": 0.95,
+    "stdev": 0.1
+  },
+  "anthropic-entry-model-pinning/without_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "kimi-max-tokens-empty/with_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "kimi-max-tokens-empty/without_skill": {
+    "runs": 5,
+    "scores": [
+      0.75,
+      1.0,
+      1.0,
+      1.0,
+      0.75
+    ],
+    "mean": 0.9,
+    "stdev": 0.122
+  },
+  "plan-embeddings-shape/with_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "plan-embeddings-shape/without_skill": {
+    "runs": 5,
+    "scores": [
+      0.25,
+      1.0,
+      0.5,
+      1.0,
+      0.5
+    ],
+    "mean": 0.65,
+    "stdev": 0.3
+  }
+}

@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已完成并验证（`py_compile` 通过；无 Token 时第 0 步即退出、不发任何网络请求，exit code 2）。
+
+**文件**：`outputs/main.py`，运行方式 `AUTODL_TOKEN=你的token python3 main.py`
+
+**接口依据（已从官方文档确认）**
+- Host `https://api.autodl.com`，鉴权头 `Authorization: <token>`（裸 token，无 Bearer），响应为 `{code, msg, data}`，成功 code 为 `"Success"`
+- 弹性部署 API **仅对企业认证账号开放**（官方原话“使用弹性部署API需先认证企业”）——这是三种原因里最常见的资质类失败
+- 全部 11 个数据中心代码（`westDC2` 西北企业区 等）来自 ESD 文档附录
+
+**探测逻辑（只读，绝不创建）**
+1. **第 0 步** 检查 `AUTODL_TOKEN` 是否存在（缺 Token = 本地配置问题，直接退出）
+2. **第 1 步** 用通用只读接口 `POST /api/v1/dev/wallet/balance`（必要时加 `instance/pro/list`）验证 Token 本身有效性——401 归为 Token 问题，和那三类无关
+3. **第 2 步** 调弹性部署自己的只读接口 `POST /api/v1/dev/deployment/list` + `GET /api/v1/dev/deployment/ddp/overview` 探权限：成功 = 具备创建权限；403/含“企业、认证、权限”→ **账号资质问题**；404/405/参数错 → **接口用错**；5xx/超时 → **服务问题**。特判“Token 对通用接口有效但弹性部署 401”→ 归为资质问题
+4. **第 3 步** 逐个数据中心调 `POST /api/v1/dev/machine/region/gpu_stock`（参数 `gpu_name_set: ["RTX 4090"]`）汇总空闲/总卡数；若权限被拒会自动跳过后续区域并说明原因
+
+脚本只引用 5 个查询类接口，创建/停止/删除部署的写接口在代码中刻意完全不出现（文件头有安全声明）。退出码：0=可创建、1=不能创建（附原因归类+建议）、2=缺 Token。归类基于 HTTP 状态 + 业务码 + 报错关键词，且每步都会打印原始响应供人工复核。
+
+Sources:
+- [弹性部署API - AutoDL帮助文档](https://www.autodl.com/docs/esd_api_doc/)
+- [API文档 - AutoDL帮助文档](https://www.autodl.com/docs/common_api/)
+- [容器实例Pro API - AutoDL帮助文档](https://www.autodl.com/docs/instance_pro_api/)
+- [弹性部署功能说明 - AutoDL帮助文档](https://www.autodl.com/docs/elastic_deploy/)

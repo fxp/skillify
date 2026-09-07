@@ -1,0 +1,22 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，且实跑验证了配置缺失路径（正确退出码 2，那行 urllib3 警告来自本机 Python 3.9 + LibreSSL 环境，与脚本无关）。没有实际调用 API（按约定，环境无 Token）。
+
+## 实现说明
+
+**接口细节（已对照官方文档确认）**
+- Base URL：`https://api.autodl.com`；鉴权头 `Authorization: <token>`，直接填 Token，不带 `Bearer` 前缀
+- 接口：`GET /api/v1/dev/instance/pro/status`，`instance_uuid` 按文档的「请求 Body 示例」放 JSON body（同时挂了一份到 query string 兼容网关取参）；成功时 `code == "Success"`，`data` 就是状态字符串
+- 错误统一放在响应体的 `code`/`msg` 里，官方未枚举错误码，所以「实例不存在」靠业务码 + 错误文案关键词（`not found` / `不存在` / `已释放` 等）识别
+
+**核心要求：两类错误严格分开，提示与退出码都不同**
+
+| 情况 | 判定 | 退出码 | 排查方向 |
+|---|---|---|---|
+| 实例不存在 | 业务码/文案命中 not-found 关键词，或 HTTP 404 | 3 | 核对 UUID、确认未释放、确认属于该 Token 账号 |
+| 请求本身有问题 | 401/403 或 Token/鉴权类文案；400/405/422 或其他业务错误码 | 5 / 4 | 重取 Token、检查 UUID 格式、按 `msg` 修正 |
+
+另外细分了本地配置错误（2）、服务端 5xx（6，明确说明「与参数无关」）、网络错误（7），所有失败输出都带 `HTTP 状态码 / code / msg / request_id`，方便拿去找客服。成功路径直接打印 `实例 xxx 当前状态: running`。
+
+参考文档：[容器实例 Pro API（状态接口）](https://www.autodl.com/docs/instance_pro_api/)、[API 文档（base URL 与鉴权头）](https://www.autodl.com/docs/common_api/)

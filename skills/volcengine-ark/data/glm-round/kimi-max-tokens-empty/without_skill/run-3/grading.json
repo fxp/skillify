@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 4.3s :: 尝试1] model=kimi-k3, thinking=disabled, max_tokens=64\n[尝试1] 返回：content='负面'（completion_tokens=11, reasoning_tokens=0, finish_reason=stop）\n[尝试1] 成功解析出标签：负面（精确匹配）\n"
+    },
+    {
+      "text": "真的拿到了非空的分类结果",
+      "passed": true,
+      "evidence": "label=True"
+    },
+    {
+      "text": "没有把空回答当成完成",
+      "passed": true,
+      "evidence": "truncated_empty=False"
+    },
+    {
+      "text": "脚本检查了 finish_reason",
+      "passed": true,
+      "evidence": "checks_finish_reason=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

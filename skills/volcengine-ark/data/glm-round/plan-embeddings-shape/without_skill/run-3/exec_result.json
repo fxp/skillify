@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "模型: doubao-embedding-text-240515\n目标维度: 1024\n----------------------------------------\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/plan-embeddings-shape/without_skill/run-3/work/main.py\", line 106, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/plan-embeddings-shape/without_skill/run-3/work/main.py\", line 86, in main\n    vectors = embed_texts(api_key, TEXTS)\n  File \"/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/plan-embeddings-shape/without_skill/run-3/work/main.py\", line 61, in embed_texts\n    raise RuntimeError(\nRuntimeError: Embeddings API 调用失败: HTTP 404 {\"error\":{\"code\":\"UnsupportedModel\",\"message\":\"The requested model does not support the agent plan feature. Please refer to the documentation at https://www.volcengine.com/docs/82379/2366394 to select a compatible model. Request id: 02178878172358313e3cfc91b78ae8df851b156ce35e24d60831f\",\"param\":\"\",\"type\":\"\"}}\n",
+  "timed_out": false,
+  "seconds": 2.4
+}

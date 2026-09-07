@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "Endpoint: https://ark.cn-beijing.volces.com/api/plan/v1/messages\n我请求的模型: doubao-seed-2.0-lite\n\n回答: Python是一种高级、通用、解释型编程语言，语法简洁清晰，具有丰富的第三方库和庞大的社区支持，广泛应用于web开发、数据科学、人工智能、自动化等领域。\n用量: input_tokens=49, output_tokens=41\n\n================================================================\n我请求的模型:         doubao-seed-2.0-lite\n服务端实际返回的模型: doubao-seed-2-0-lite-260215\n================================================================\n[OK] 模型核对通过：实际服务的确实是 doubao-seed-2.0-lite 系列（AFP 系数 0.5）。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 4.7
+}

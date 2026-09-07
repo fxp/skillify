@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过。
+
+## 脚本要点（均经官方文档核实）
+
+| 项目 | 值 | 依据 |
+|---|---|---|
+| Base URL | `https://ark.cn-beijing.volces.com/api/plan/v3` | Agent Plan 官方文档：OpenAI 协议兼容的专属接入点，必须用 Agent Plan 专属 API Key |
+| 端点 | `POST {base}/embeddings`，响应取 `data[0]["embedding"]` | Plan 端点走 OpenAI 兼容 embeddings 接口 |
+| 模型 | `doubao-embedding-vision` | Agent Plan 套餐概览：向量化模型，各档位均支持（对应 doubao-embedding-vision-251215） |
+| 1024 维 | 请求体加 `"dimensions": 1024` | 官方向量化教程：doubao-embedding-vision-250615 及之后版本支持 `dimensions` 参数降维（默认 2048，可降 1024），官方记忆增强文档的生态配置也用 `dimension: 1024` |
+
+## 行为说明
+
+- **API Key**：从 `ARK_AGENT_PLAN_API_KEY` 读取，缺失时报错退出（不硬编码）。
+- **逐条请求**：对 3 段文本各发一次请求（这是 plan 端点已验证的调用形态），只依赖 `requests`。
+- **维度校验**：打印每条向量的实际长度并与 1024 比对，全部一致输出「符合预期」；任何一条不符（比如端点忽略 `dimensions` 返回了 2048 维）会以 `MISMATCH` 标出并以非零码退出，不会静默通过。
+- 按要求未真实调用 API（环境无 Key）；出错时会打印 HTTP 状态码和响应体，方便你拿到 Key 后排查。
+
+一个值得留意的点：`doubao-embedding-vision` 在 plan 端点是别名，实际解析到 251215 版本（250615+），所以 `dimensions: 1024` 是支持的；如果实际运行时返回维度不是 1024，脚本会明确报出来而不是猜。
+
+Sources:
+- [使用 Agent Plan 开发短视频网站（Base URL/专属 Key）](https://docs.volcengine.com/docs/82379/2391246)
+- [Agent Plan 套餐概览（含向量化模型 doubao-embedding-vision）](https://docs.volcengine.com/docs/82379/2366394)
+- [向量化教程（dimensions 参数指定 1024 维）](https://docs.volcengine.com/docs/82379/1409291)
+- [图文向量化 API（multimodal embeddings）](https://www.volcengine.com/docs/82379/1409290)
+- [记忆增强-Embedding 模型（Plan 端点 embeddings 用法）](https://docs.volcengine.com/docs/82379/2279748)
+- [Agent Plan 49.9 元实测（/api/plan/v3/embeddings 实调记录）](https://cloud.tencent.com/developer/article/2714722)
+- [模型列表（向量化模型维度 2048/支持 1024 降维）](https://www.volcengine.com/docs/82379/1330310)

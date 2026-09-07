@@ -1,0 +1,37 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件），`python3 -m py_compile` 编译通过，未调用过任何真实 API。
+
+## 官方文档查证结果（写代码前先确认的接口事实）
+
+| 项目 | 结论 | 来源 |
+|---|---|---|
+| Base URL / 鉴权 | `https://api.autodl.com`，请求头 `Authorization: <token>`（**无 Bearer 前缀**） | [common_api](https://www.autodl.com/docs/common_api/) / [esd_api_doc](https://www.autodl.com/docs/esd_api_doc/) |
+| 权限探测 | 只读接口 `POST /api/v1/dev/deployment/list`（AutoDL 查询类接口本身就是 POST，POST ≠ 创建） | 弹性部署 API 文档 |
+| 库存查询 | `POST /api/v1/dev/machine/region/gpu_stock`，按 `region_sign` 逐区查，返回 `{"RTX 4090": {"idle_gpu_num": .., "total_gpu_num": ..}}` | 同上，附录含 11 个区域码 |
+| **关键资质要求** | 文档明写 **「使用弹性部署API需先认证企业」**——未企业认证是最常见的“账号资质”类失败 | 同上 |
+| 错误码表 | **官方未公开**，只能按 HTTP 状态 + code/msg 关键词启发式归类 | — |
+
+## 脚本设计
+
+三步只读探测，逻辑上把三类原因切开：
+
+1. **`wallet/balance`（验 Token + 服务）**——连不上/超时/5xx → 服务端问题；401/token 关键词 → Token 无效（第 1 步不过，后面结论无从谈起，直接止损）
+2. **`deployment/list`（权限探测）**——成功 ⇒ 账号可创建部署（顺带报出现有部署数和余额）；失败则归类：403 或“企业认证/无权限/未开通”等关键词 → **账号资质**；404/405/400/参数词 → **接口用错**；5xx/超时 → **服务问题**。因为 Token 已在第 1 步验证过，此处再报鉴权错会重新归为权限不足。归类不出时原样打印服务端返回，归为“无法自动归类”供人工判断
+3. **`gpu_stock`（4090 库存）**——遍历 11 个区域，本地匹配含 "4090" 的型号（覆盖 4090D 等），输出每区空闲/总卡数和合计；若第 2 步已失败，只试查 1 个区域确认行为，不浪费请求。注意文档提示库存按单卡容器估算
+
+**安全性**：只调用上述 3 个只读接口，绝不触碰创建接口 `POST /api/v1/dev/deployment` 和任何 PUT/DELETE（停/删部署）接口，脚本头尾都有显式声明。
+
+**验证**：编译通过；无 Token 时正确拦截（退出码 50，零网络请求）；另用本地 mock 服务器离线跑了 5 个场景（正常 / 未企业认证 / Token 无效 / 路径 404 / 500），三类归因和库存解析全部符合预期。
+
+**用法与退出码**：
+
+```bash
+export AUTODL_TOKEN="控制台->设置->开发者Token"
+python3 main.py
+```
+
+`0`=可以创建｜`10`=账号资质（去完成企业认证）｜`20`=接口用错｜`30`=服务端问题｜`40`=Token 无效｜`50`=本地配置｜`60`=无法归类。退出码可直接接 CI 判断。
+
+一个提醒：官方没公开错误码表，关键词归类是基于常见返回格式的启发式，遇到没见过的报错时脚本会打印原始返回并退出码 60——那一份原始返回就是人工定性的依据。

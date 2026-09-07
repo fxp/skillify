@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "[尝试] 方案1：关闭思考 + max_tokens=64 ...\n\n分类结果：负面\n待分类句子：这家店的服务态度太差了，再也不来了\n命中方案：方案1：关闭思考 + max_tokens=64\n实际输出用量：completion_tokens=11，其中思维链 reasoning_tokens=0\n✓ 输出 ≤ 64 token 的成本目标达成（思考已关，64 上限只作用在回答上）。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 4.5
+}

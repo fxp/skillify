@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+验证通过。脚本已按要求交付到 `.../with_skill/run-3/outputs/main.py`(仅此一个文件)，`python3 -m py_compile` 编译通过；以无 Key 环境实测运行，正确打印指引并以退出码 1 结束，**未发起任何真实 API 调用**(那行 NotOpenSSLWarning 是本机 urllib3 的环境警告，与本脚本无关)。
+
+## 设计说明
+
+**核心问题：为什么不能直接 `max_tokens: 64`**
+
+这是 kimi-k3 的一个实测陷阱(skill 2026-09-04 用真实 API 验证过)：kimi-k3 默认开启思考，且**把思维链算进 `max_tokens` 额度**——设 `max_tokens: 64` 会得到 `finish_reason: "length"`、`content: ""`(思维链先吃光 64 token,回答被截成空)。这正是“打印一个空结果”的典型来源。
+
+**脚本的渐进策略**(每级只传 `max_completion_tokens`,绝不与 `max_tokens` 同传——两者互斥;`thinking` 与 `reasoning_effort` 也不同传)：
+
+| 顺位 | 参数组合 | 目的 |
+|---|---|---|
+| 1 | `thinking: disabled` + 上限 64 | 尝试真正关思考，压进 64 |
+| 2 | `reasoning_effort: low` + 上限 64 | 退一档压思考(glm-5.3 上实测 low 可把思维链降到 0,kimi-k3 未测) |
+| 3 | `reasoning_effort: low` + 上限 512 | 关不掉就把总额度放宽到实测 400 即可正常返回的水平 |
+| 4 | 默认思考 + 上限 2048 | 最后兜底，保证拿到结果 |
+
+**“必须拿到结果”优先于“64 上限”**：成功判定为「回答命中候选词 且 `finish_reason != "length"`」。若最终是靠放宽上限拿到的，会明确打印未压进 64 的原因(思维链占满额度)、前序各级尝试的具体失败信息，以及实际 token 用量和 AFP 成本估算(kimi-k3 系数 10/10,计费按实际输出而非上限)。全部尝试失败则逐条列出原因并给出排查建议(401 Key 用错 / 404 档位或套餐 / 429 额度限流)，退出码 1。
+
+入口用 Agent Plan 专属 `https://ark.cn-beijing.volces.com/api/plan/v3/chat/completions` + `ARK_AGENT_PLAN_API_KEY`,`model` 填小写 Model Name `kimi-k3`;指令直接放 user 消息(思考模型建议少用 system),提示词约束只输出三个词之一。
+
+## 三点提醒
+
+1. **条款风险**：Agent Plan 官方条款写明“文本生成模型不可用于 API 调用”(条款限制而非接口限制，技术上直调是 200)。本脚本这种单次调用无碍，但若做成高频自动化直调，有被判滥用停用套餐的风险。
+2. **档位要求**：kimi-k3 需 Agent Plan **Medium 及以上**档位(Small 档返回 404 UnsupportedModel),且不支持超额后付费。
+3. **依据来源**：官方文档站是 JS 渲染页面，WebFetch/web reader 抓不到正文；以上接口结论均以 skill 里 2026-09-04 的真实 API 验证记录为准(仅 3 天前，含原始报错)。唯一未实测的是 kimi-k3 对 `thinking: disabled` 的反应，脚本已通过 400 自动降级来兼容两种结果。

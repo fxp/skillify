@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/volcengine-ark-workspace/glm-round/kimi-max-tokens-empty/with_skill/run-5/outputs/main.py`，`py_compile` 通过，无 Key 时给出明确指引（exit 1），未发起任何真实 API 调用。
+
+## 核心设计：这个任务的坑在哪
+
+接入说明书中有一条 2026-09-04 的**真实 API 验证**直接命中本任务：kimi-k3 默认开启深度思考，且**思维链 token 计入 `max_tokens` 额度**——`max_tokens: 64` 会返回 `finish_reason: "length"`、`content: ""`（思维链就吃掉 61 token，回答被截空）。所以「一把梭 `max_tokens=64`」必然打印空结果，正是用户明令禁止的假完成。
+
+而「64 token 上限」与「必须拿到结果」能否兼得，取决于两个**官方未说明、对 kimi-k3 未实测**的开关（glm-5.3 上 `thinking.disabled` 直接 400，`reasoning_effort: low` 则等效关思考）。因此脚本用三级策略阶梯，运行时逐个验证而非写死假设：
+
+| 策略 | 参数 | 目的 |
+|---|---|---|
+| 1 | `thinking: {"type":"disabled"}` + `max_completion_tokens: 64` | 若 kimi-k3 支持关思考 → 64 上限内直接出结果 |
+| 2 | `reasoning_effort: "low"` + `max_completion_tokens: 64` | 压低思考后仍守 64 上限 |
+| 3 | 默认思考 + `max_completion_tokens: 512` | 实测可稳定拿到回答的写法；放宽上限保结果，**如实报告原因** |
+
+## 诚实性保障（“拿不到就说明白”）
+
+- **每步都校验结果真实存在**：HTTP 200 不算数，还要 `finish_reason != "length"` 且 `content` 非空且能唯一映射到「正面/负面/中性」，否则绝不打印结果。
+- **错误分类解读**：401（Key/入口用错）、404 `UnsupportedModel`（kimi-k3 需 Medium+ 档位）、429 `QuotaExceeded`（额度耗尽且 kimi-k3 不支持超额后付费）等都附排查指引 + API 原文。
+- **参数被拒 ≠ 崩溃**：400 且指向 `thinking`/`reasoning_effort` 的错误视为“该策略不可用”，自动降级；其余错误换参数也救不了，直接终止并解释。
+- **成本报告**：成功时打印实际 `completion_tokens`（含思维链拆分），64 上限守住与否、为什么没守住都会写明；三个策略全失败时汇总每条失败原因后退出，不输出空结果。
+
+其他按说明书钉死的细节：入口只用 `/api/plan/v3`（专属 Key 打 `/api/v3` 会 401）、role 只用 `system`/`user`（`developer` 会 400）、全程不带 `max_tokens`（与 `max_completion_tokens` 互斥）。真实跑时预期路径：策略 1 若被 400 拒绝 → 策略 2 若被截断 → 策略 3 拿到「负面」并报告放宽上限的原因。
+
+**说明**：官方文档页是 JS 渲染的（WebFetch 只拿到 "Please wait..."），未能二次核对；但 skill 中的验证记录来自真实 API 实测，比文档原文更可靠，脚本据此编写。本机实测仅覆盖编译、无 Key 守卫和标签提取逻辑，API 行为部分无法在此环境验证。

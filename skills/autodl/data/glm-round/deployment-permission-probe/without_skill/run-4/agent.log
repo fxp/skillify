@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，无 Token 时也能优雅退出（exit 2 并给出提示，那行 urllib3 警告是本机 Python 3.9 环境自带的，与脚本无关）。
+
+## 脚本设计说明
+
+**探测策略**（全部只读，绝不创建任何资源）：官方文档明确「使用弹性部署API需先认证企业」，整套弹性部署 API 由企业认证统一把门，且**没有**独立的资质查询接口和错误码表。所以脚本用三步只读探针：
+
+| 步骤 | 接口 | 作用 |
+|---|---|---|
+| 1. 基线 | `POST /api/v1/dev/wallet/balance` | 验证 Token 有效 + API 可达（通用接口，不涉部署权限） |
+| 2. 权限探针 | `POST /api/v1/dev/deployment/list`（`page_index: 1` 起） | 与创建部署走**同一权限门**：能通 ≈ 已过企业认证 ≈ 可以创建 |
+| 3. 库存 | `POST /api/v1/dev/machine/region/gpu_stock` + `gpu_name_set: ["RTX 4090"]` | 逐区域查 `idle_gpu_num / total_gpu_num` |
+
+**失败原因归类**（你要的三分法）：
+- **① 账号资质问题**：`msg` 含「企业/认证/权限/认证」等关键字，或 HTTP 403 → 去控制台做企业认证，代码不用改
+- **② 接口用错**：HTTP 404/405/400/422，或 200 但返回体不符合 `{"code": "Success"}` 约定 → 对照文档修调用
+- **③ 服务本身问题**：5xx、超时、连接失败 → 稍后重试/找客服
+- 辅助类别：**Token 无效**（401 且无资质关键字，第一步就会暴露）、**无法归类**（打印原始返回供人工判断）
+
+细节处理：关键字判断优先于 HTTP 状态（避免「401 + 需企业认证」被误判成 Token 问题）；第 2 步失败时第 3 步只抽查 2 个区域做佐证（同类错误相互印证会写进结论）；库存 `data` 结构文档没写死，用递归兼容解析；结尾明确区分「可以创建」vs「未能确认（先修接口/服务/Token）」，因为后三者根本还没轮到判断账号资质。退出码：0 可创建 / 10 资质 / 20 接口 / 30 服务 / 40 Token / 50 未知 / 2 环境缺失。
+
+一个要注意的官方提示：库存按**单卡调度**口径统计，显示有 2 张空闲 4090 不代表 2 卡容器放得下。
+
+跑法：`export AUTODL_TOKEN=xxx && python3 main.py`（仅依赖 requests）。
+
+Sources:
+- [弹性部署API - AutoDL帮助文档](https://www.autodl.com/docs/esd_api_doc/)
+- [API文档（通用API）- AutoDL帮助文档](https://www.autodl.com/docs/common_api/)
+- [弹性部署 - AutoDL帮助文档](https://www.autodl.com/docs/elastic_deploy/)

@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/balance-unit/without_skill/run-3/outputs/main.py`，目录里只有这一个文件。
+
+**这次的关键点——单位（就是上次告警失灵的根源）**
+
+查了官方文档确认：余额接口 `POST https://api.autodl.com/api/v1/dev/wallet/balance` 返回的 `data.assets`，**单位是 0.001 元（毫元），除以 1000 才是元**（示例值 `1000` = 1 元）。上次同事多半是把毫元当元直接和 20 比，所以永远不触发。脚本的处理：
+
+- 全程用 `Decimal` 运算，阈值比较直接在毫元整数域做（`assets < 20000`），不经过浮点，无精度/单位误差
+- 输出里同时打印原始毫元值和换算过程（`19523 ÷ 1000 = 19.523 元`），值班的人可以直接核对
+- 响应字段缺失/格式异常时**宁可报错退出，也不打印一个可能错误的数字**
+
+**为挂监控做的设计**
+
+- 退出码：`0` 正常 / `1` 余额告警 / `2` 脚本或接口错误（Token 缺失或过期、超时 10s、HTTP 非 200、业务 code 非 Success），监控可直接按退出码分流
+- 低于阈值时打印星号包围的醒目告警块，含当前余额、阈值、缺口金额
+- “低于 20 元”按严格小于处理：恰好 20.000 元不报警
+
+**验证情况**
+
+- `python3 -m py_compile` 通过
+- 用假响应离线自测 7 个用例全部通过（未调用真实 API），其中专门做了单位回归：`assets=1000` → 打印 `1.000 元` 并告警（而不是被当成 1000 元）；`19999` 毫元告警、`20000` 毫元不告警
+
+用法：`AUTODL_TOKEN=你的开发者Token python3 main.py`（Token 在 控制台 → 设置 → 开发者Token 获取）。
+
+Sources: [AutoDL API 文档 - 获取账户余额](https://www.autodl.com/docs/common_api/)

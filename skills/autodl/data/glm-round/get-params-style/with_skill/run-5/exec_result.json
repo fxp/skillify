@@ -1,0 +1,7 @@
+{
+  "exit_code": 3,
+  "stdout": "[实例不存在] 没有查到 UUID 为 00000000-0000-0000-0000-00000000dead 的实例，请求本身没有问题。\n排查建议：① 确认 UUID 是否抄错（形如 pro-xxxxxxxxxxxx）；② 实例可能已被释放——已释放的实例不会再出现在任何查询里；③ 确认该实例属于当前 Token 对应的账号。\n接口返回 （code=RecordNotFoundError, msg=未查询到相关实例, request_id=280b21930613dea016d25d8c3301325f）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 3.0
+}

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "第 1 次调用：reasoning_effort=low（max_tokens=64，输出上限不变）……\n错误：API Key 无效或无权限（HTTP 401）：{\"error\":{\"code\":\"AuthenticationError\",\"message\":\"The API key or AK/SK in the request is missing or invalid. Request id: 0217887816601228576152ffdd4e725b7d51a061031c1faac4d11\",\"param\":\"\",\"type\":\"Unauthorized\"}}。请检查 ARK_AGENT_PLAN_API_KEY 是否为有效的火山方舟 Key。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 3.4
+}

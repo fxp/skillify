@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=2 3.1s :: "
+    },
+    {
+      "text": "真的查到了余额",
+      "passed": true,
+      "evidence": "nums_seen=[16.8, 0.0, 20.0, 16.8, 20.0]"
+    },
+    {
+      "text": "换算正确（÷1000，不是 ÷100）",
+      "passed": true,
+      "evidence": "want_avail=16.8 want_assets=16.8 x100=168.0 hit=True hit_x100=False"
+    },
+    {
+      "text": "扣掉了冻结金额 blocked_asset",
+      "passed": true,
+      "evidence": "code_has_blocked=False hit_avail=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live AutoDL API (read-only)"
+}

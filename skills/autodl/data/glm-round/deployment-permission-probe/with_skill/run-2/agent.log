@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录仅此一个文件），`python3 -m py_compile` 通过。
+
+## 探针思路（关键：不创建任何资源也能判断“能否创建部署”）
+
+技能包 2026-09 的实测结论是：弹性部署的企业认证门槛**按接口类别生效**——只读的 `POST /api/v1/dev/deployment/list`（查部署列表）和创建部署 `POST /api/v1/dev/deployment` 同属“账号部署资源”类，共用同一道门槛。所以脚本用 **deployment/list 当主探针**，再用 `GET /api/v1/dev/deployment/blacklist`（同样被这道门槛拦截）做交叉验证，全程只读。
+
+脚本流程（4 步）：
+1. **查余额**（`wallet/balance`）——先验证 Token 有效，否则后续任何结论都不可靠；余额按 `(assets - blocked_asset)/1000` 换算成元
+2. **主探针** `deployment/list`（page_index 先按 1 试、报参数错误自动退回 0 重试一次，避免把分页基数误判成“接口用错”）
+3. **交叉验证** `blacklist`
+4. **RTX 4090 库存**——逐个地区调 `gpu_stock`（`gpu_name_set: ["RTX 4090"]`，弹性部署用型号名字符串而非 `gpu_spec_uuid`）；此接口**不需要企业认证**，即使权限被拒库存数据依然有效，所以无论结论如何都照常查询
+
+## 三类原因的诊断规则
+
+| 探针返回 | 归类 | 结论与应对 |
+|---|---|---|
+| `Success` | — | ✅ 权限层面**可以**创建（企业认证门槛已过；真正创建仍可能因库存/参数失败，脚本会注明） |
+| `无当前资源访问权限` / `TORealName` | **账号资质问题** | ❌ 不能创建——需企业认证（或先实名）；改参数、换接口、加余额都绕不过 |
+| `RequestParameterIsWrong` / 404 / 405 | **接口用错** | ⚠️ 是调用姿势问题，不代表账号没权限，修正后重跑 |
+| 5xx / 超时 / 非 JSON 响应 | **服务本身问题** | ⚠️ 稍后重试或查平台状态，不用改代码 |
+
+平台没有稳定错误码枚举，分类以 `msg` 文本匹配为主，匹配不到一律归“无法归类”并打印原始响应，不瞎猜。退出码：`0`=可创建、`1`=资质问题、`2`=接口用错/服务问题、`3`=Token 无效或网络不通。
+
+## 已做的验证
+
+- 编译通过；无 Token 直接运行正常（友好提示、exit 3、无堆栈）
+- 用 /tmp 下的本地 mock 服务器跑了 4 个场景（未触碰真实 API）：个人认证被拒→exit 1 且结论正确、企业账号→exit 0、分页参数先错后对→自动重试成功、未实名→exit 1，交叉验证不一致时也会提示
+
+运行方式：`export AUTODL_TOKEN="..." && python3 main.py`。脚本已按平台惯例处理了几个坑：鉴权头**无 Bearer 前缀**、金额单位是元×1000、库存按“调度 1 张卡”口径统计（数字为 2 不等于能同时占 2 张卡，输出里有提醒）。

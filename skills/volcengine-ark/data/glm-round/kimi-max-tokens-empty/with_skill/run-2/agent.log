@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已交付到 `outputs/main.py`（该目录只有这一个文件），`py_compile` 编译通过，未调用真实 API。
+
+## 交付说明
+
+**入口与鉴权**（Agent Plan 专属，与另两套入口不通用）：
+- `POST https://ark.cn-beijing.volces.com/api/plan/v3/chat/completions`
+- `Authorization: Bearer $ARK_AGENT_PLAN_API_KEY`（专属 Key，打 `/api/v3` 会直接 401）
+- `model: "kimi-k3"`（小写 Model Name；需 Medium 及以上套餐，Small 档 404）
+
+**核心矛盾——“输出压到 64 token”在 kimi-k3 上是个陷阱**。skill 里 2026-09-04 的真实 API 验证记录：kimi-k3 默认开思考，且它的 `max_tokens` **把思维链计入上限**——`max_tokens: 64` 实测返回 `finish_reason: "length"`、`content: ""`（思维链就吃了 61 token，回答被截空）。所以直接压 64 必然拿到空结果，这正是任务要求“不要打印空结果就说完成”的场景。
+
+**脚本的两级策略**：
+
+| | 参数 | 逻辑 |
+|---|---|---|
+| 方案 1 | `thinking: {"type":"disabled"}` + `max_tokens: 64` | 唯一可能真正 ≤64 的路（思考关掉后 64 只限回答）。但 kimi-k3 能否关思考**未经实测**（glm-5.3 实测被 400 拒绝），所以失败就降级 |
+| 方案 2（兜底） | `max_completion_tokens: 512`（不传 `max_tokens`，二者互斥） | 实测验证过的有效写法，上限含“思维链+回答”，512 为思维链留余量；计费按实际生成 token，不按上限 |
+
+**结果校验与输出行为**：
+- 成功：校验内容非空且**恰好**含 正面/负面/中性 之一，打印分类结果、命中方案、实际 `completion_tokens` 和 `reasoning_tokens`；并如实标注 ≤64 目标是否达成——走方案 2 成功时会明确说明“64 达不成，因为 kimi-k3 的输出上限计入思维链，思维链起步 61+ token 会吃光预算”
+- 失败（绝不装完成）：按 401/403（Key 无效或非专属 Key）、404（套餐档位不含 kimi-k3）、400（参数被拒，附 API 原始 message）、`finish_reason=length`/空内容（思维链吃光额度）、网络超时分类打印具体原因，退出码 1
+- 401/404 这类换参数救不回的错误直接短路结束，不浪费第二次调用
+
+**运行**：`export ARK_AGENT_PLAN_API_KEY=<专属Key> && python3 main.py`。缺 Key 时已实测：打印明确提示、退出码 1、不发任何请求。另外两点已写进注释：Agent Plan 文本模型官方口径“不可用于 API 调用”（条款风险，技术上可调通）；非流式调用思考模型可能较慢，timeout 设了 300s。

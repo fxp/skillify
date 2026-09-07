@@ -1,0 +1,7 @@
+{
+  "exit_code": 2,
+  "stdout": "实例不存在：请求本身是合法的，但这个 instance_uuid 对应不到任何实例。\n  原始返回：（code='RecordNotFoundError', msg='未查询到相关实例', request_id='6918d07cdb8cd21d2e774ffc17940c7e'）\n排查建议：UUID 是否抄错（形如 pro-xxxxxxxxxxxx）；实例是否已被释放（已释放的实例查不到）。可调用 POST /api/v1/dev/instance/pro/list 列出账号下现存的实例核对 UUID。代码和传参方式不需要改。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 3.5
+}

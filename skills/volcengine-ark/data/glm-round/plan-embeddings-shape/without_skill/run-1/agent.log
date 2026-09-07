@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，无 Key 运行时也能正常给出提示退出（未发起任何 API 调用；那条 OpenSSL 警告是本机 urllib3 的环境提示，与脚本无关）。
+
+## 实现要点
+
+**核心结论（查证官方文档后确定）：**
+
+| 项目 | 值 |
+|---|---|
+| 接口 | `POST https://ark.cn-beijing.volces.com/api/v3/embeddings/multimodal` |
+| 鉴权 | `Authorization: Bearer $ARK_AGENT_PLAN_API_KEY`（Agent Plan 用标准数据面地址，不是 Coding Plan 的专用地址） |
+| 模型 | `doubao-embedding-vision-251215`（当前方舟唯一的向量化模型系列，支持纯文本输入） |
+| 维度参数 | **`dimensions: 1024`** —— 取值只能是 1024 或 2048（默认 2048） |
+| 响应取值 | `data[i].embedding` 为 float 数组，顺序与 input 一致 |
+
+两个容易踩的坑，脚本都规避了：
+
+1. **参数名是 `dimensions`，不是 OpenAI 风格的 `dim`**。方舟的向量化走的是多模态向量化 API，input 也不是字符串数组，而是对象数组（`{"type": "text", "text": ...}`）。用 OpenAI 兼容的老写法 `/api/v3/embeddings` + `dim=1024` 对不上当前接口。
+2. **Agent Plan 与 Coding Plan 的 Base URL 不同**：Coding Plan 必须用 `/api/coding` 系列地址，而 Agent Plan 用标准 `/api/v3` 地址，Key 统一走 Bearer 鉴权。
+
+脚本行为：读取环境变量 `ARK_AGENT_PLAN_API_KEY` → 一次请求批量向量化三段文本 → 逐条打印实际向量长度（含前 3 维预览）→ 最后输出「3 条向量全部为 1024 维」的确认；数量不一致或维度不符会以非零码退出，HTTP 错误会带服务端返回的报文，方便排查。
+
+Sources:
+- [火山方舟 · 多模态向量化 API](https://www.volcengine.com/docs/82379/1523520)
+- [火山方舟 · Base URL 及鉴权](https://www.volcengine.com/docs/82379/1298459)
+- [火山方舟 · Coding Plan Base URL（与 Agent Plan 的区别）](https://www.volcengine.com/docs/82379/1928261)
+- [火山引擎方舟 Agent Plan 上手指南（苏米客）](https://www.xmsumi.com/detail/3195)

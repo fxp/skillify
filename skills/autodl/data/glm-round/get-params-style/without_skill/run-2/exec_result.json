@@ -1,0 +1,7 @@
+{
+  "exit_code": 2,
+  "stdout": "",
+  "stderr": "[实例不存在] 请求已正常发出并到达 AutoDL,但服务器找不到这台实例——问题不在 Token 或请求格式上。\n  请沿这个方向排查:\n    1. AUTODL_INSTANCE_UUID 是否抄错(Pro 实例 ID 形如 pro-xxxxxxxxxxxx,控制台实例列表可查);\n    2. 该实例是否已被释放/删除(释放后原 UUID 即作废);\n    3. 该实例是否属于 AUTODL_TOKEN 对应的账号(须用实例所在账号的 Token 查询)。\n  服务器响应: HTTP 200, code=RecordNotFoundError, msg=未查询到相关实例\n  request_id: c0028084307421ef2741f3e6b4d50943(向客服反馈时可附上)\n",
+  "timed_out": false,
+  "seconds": 3.2
+}

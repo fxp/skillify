@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/balance-unit/without_skill/run-2/outputs/main.py`，`py_compile` 通过，并用 mock 响应验证了告警逻辑（15 元 → 醒目告警 + exit 2；200 元 → 正常 exit 0）。
+
+## 上次事故的根因就在单位上
+
+查了官方文档确认：余额接口返回的 `data.assets` 是**整数，单位是「千分之一元」**，文档原文备注「当前余额。除以1000等于元」（示例 `assets=1000` 即 1 元）。你们同事大概率是把这个原始值直接当「元」用了——数值虚高 1000 倍，`< 20` 永远不成立，告警自然一直不响。
+
+## 脚本怎么保证数字准
+
+- **整数域比较**：阈值先换算成同一单位（20 元 = 20000 千分之一元），`assets < 20000` 全程整数比较，零浮点误差；`Decimal` 仅用于显示换算，固定 3 位小数（与接口精度一致）。
+- **输出自带审计信息**：每次运行都打印原始值 `assets` 及其单位说明，值班同学一眼能核对换算对不对。
+- **「低于 20 元」按严格小于处理**：恰好 20.000 元不告警。
+
+## 其他要点（挂监控相关）
+
+- 接口：`POST https://api.autodl.com/api/v1/dev/wallet/balance`；鉴权是 `Authorization` 头**直接填 token，不带 Bearer 前缀**（文档明确如此，带了反而 401）。
+- 退出码：`0` 正常 / `2` 余额告警 / `1` 执行出错（缺 Token、网络失败、接口返回非 `Success`）——监控除了看打印还能看退出码。
+- 网络瞬时失败自动重试 3 次（间隔 2 秒），单次超时 10 秒，不会挂死监控。
+- 代金券余额 `voucher_balance` 会单独打印，但**不计入告警阈值**（保守起见只看现金余额，代金券通常不能完全抵扣）。
+
+依赖只有 `requests` + 标准库，`AUTODL_TOKEN` 从环境变量读取，`python3 main.py` 直接跑。
+
+Sources:
+- [AutoDL API 文档 - 获取账户余额](https://www.autodl.com/docs/common_api/)

@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过。交付完成。
+
+## 交付说明
+
+脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/balance-unit/without_skill/run-5/outputs/main.py`，用 `AUTODL_TOKEN=xxx python3 main.py` 即可直接运行。
+
+**接口确认**（抓取官方文档交叉验证）：`POST https://api.autodl.com/api/v1/dev/wallet/balance`，`Authorization` 头放裸 Token（不加 Bearer），成功标志是响应 `code == "Success"`（HTTP 200 不代表业务成功）。
+
+**防单位事故的核心设计**——官方文档明确 `data.assets` 是整数，单位是**千分之一元**（原文「除以1000等于元」，`assets=1000` 才是 1 元；实例 Pro API 的 `payg_price: 1970` = 1.97 元/小时也佐证了这套单位约定）。上次告警不响的根因大概率就在这：把它当「元」会错 1000 倍，当「分」会错 10 倍。对策：
+
+- **全程用整数（千分之一元）保存和比较**，阈值写死 `20 元 = 20000`，彻底避免浮点误差和单位换算错误；只在打印时才换算成元。
+- 打印函数保证显示值与真实值一致（如 `19.998` 元显示三位小数），不会出现「打印 20.00 元却在告警」的自相矛盾。
+- 文件头部注释写明单位约定，方便后来人审计。
+
+**监控友好的其他处理**：
+
+- 退出码：`0` 正常 / `1` 余额低于 20 元 / `2` 脚本出错（Token 缺失、网络失败、API 返回异常）——出错时余额未知，`2` 不是「正常」，监控可据此区分「真欠费」和「查不到」。
+- 查询失败绝不静默、绝不猜测余额（上次就是静默失败导致的）；10 秒超时防止挂死。
+- 强制 UTF-8 输出，防 C locale 的 cron 环境打中文报错；代金券余额单独一行展示、不参与告警判断。
+
+**已验证**：`py_compile` 编译通过；单位换算（1000→1.00 元、20000→20.00 元等 6 组）和阈值边界（19.999 元告警 / 20.00 元整不告警）离线自测全过；无 Token 时正确报错并退出码 2。按约定未真实调用 API。
+
+Sources: [AutoDL API 文档](https://www.autodl.com/docs/common_api/) · [AutoDL 容器实例 Pro API](https://www.autodl.com/docs/instance_pro_api/)

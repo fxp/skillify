@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "模型: doubao-embedding-vision  目标维度: 1024\n[1] 「今天天气很好」 向量实际长度: 1024  OK\n[2] 「这部电影非常精彩」 向量实际长度: 1024  OK\n[3] 「服务器响应超时了」 向量实际长度: 1024  OK\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 6.8
+}

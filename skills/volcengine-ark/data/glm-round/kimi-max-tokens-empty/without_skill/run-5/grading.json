@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 3.5s :: a0\n建议排查：1) API Key 是否有效、Agent Plan 是否包含 kimi-k3（Medium 档及以上）；2) 模型 ID 是否正确（可用 ARK_MODEL 环境变量覆盖，确切 ID 请在火山方舟控制台「模型广场」确认）；3) 是否触发限流（Agent Plan 额度按 5 小时/周/月周期刷新）。\n"
+    },
+    {
+      "text": "真的拿到了非空的分类结果",
+      "passed": false,
+      "evidence": "label=False"
+    },
+    {
+      "text": "没有把空回答当成完成",
+      "passed": true,
+      "evidence": "truncated_empty=False"
+    },
+    {
+      "text": "脚本检查了 finish_reason",
+      "passed": true,
+      "evidence": "checks_finish_reason=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "请求端点: https://ark.cn-beijing.volces.com/api/plan/v1/messages\n\n--- 模型回答 ---\nPython是一种语法简洁易读、易学易用的跨平台高级解释型编程语言，同时支持面向对象、函数式编程等多种编程范式，依托庞大丰富的第三方开源生态，被广泛应用于数据分析、人工智能、Web开发、自动化运维等众多领域。\n--- Token 用量（可用于对照套餐额度扣减）---\ninput_tokens=53, output_tokens=237\n\n--- 模型核对 ---\n我请求的模型       : doubao-seed-2.0-lite\n服务端实际回给我的模型: doubao-seed-2-0-lite-260215\n✅ 核对通过：实际服务模型与请求模型为同一模型（服务端返回了带版本/日期后缀的具体模型名，前缀与请求模型一致）。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 9.7
+}

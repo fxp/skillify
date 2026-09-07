@@ -1,0 +1,19 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/autodl-workspace/glm-round/get-params-style/with_skill/run-2/outputs/main.py`，`py_compile` 通过，环境变量缺失分支实测正常（那条 urllib3 警告来自本机 Python 3.9 环境，与脚本无关）；按你的要求没有发起真实 API 调用。
+
+**脚本要点**（依据技能包 + 官方文档核实）：
+
+- 调 `GET https://api.autodl.com/api/v1/dev/instance/pro/status`，参数用 `params=` 走 query string——技能包里明确记录官方文档把这两个 GET 接口的示例误写成 JSON body，实测放 body 会直接报参数错误，这是最容易踩的坑；
+- 鉴权头是裸 Token：`Authorization: <token>`，**没有** `Bearer` 前缀；
+- `AUTODL_TOKEN` / `AUTODL_INSTANCE_UUID` 从环境变量读取，只依赖 `requests`。
+
+**两种情况的区分**（核心需求）：
+
+| 情况 | 判定依据（真实调用验证过的错误码） | 提示方向 | 退出码 |
+|---|---|---|---|
+| 实例不存在 | `code == "RecordNotFoundError"` / msg「未查询到相关实例」 | 请求本身合法，去核对 UUID 抄写、实例是否已释放（已释放的实例查不到）、是否属于别的账号 | 2 |
+| 请求写错了 | `code == "RequestParameterIsWrong"` / msg「请求参数错误」 | 问题在请求构造：UUID 格式非法，或传参方式被改坏 | 3 |
+
+另外补了两类容易混淆的旁路分支：Token 无效（HTTP 401 / msg 含 token，退出码 4）和账号资质不足（`TORealName` / `BadRequest`，退出码 4）——这两类都不属于上面任何一种，混进去会误导排障。由于 AutoDL 没有稳定的错误码枚举表，判定以 `code` 为主、`msg` 文本兜底，未枚举到的错误会原样打印 `code`/`msg` 供人工判断。成功时打印状态字符串，`starting`/`shutting_down` 等中间态属正常现象，脚本不会误报。

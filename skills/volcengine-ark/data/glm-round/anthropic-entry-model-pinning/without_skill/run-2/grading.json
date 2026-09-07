@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 10.7s ::   - 是否误用了 Coding Plan / 方舟后付费的其他 Base URL 或 API Key；\n       - 是否被控制台侧的 Auto/路由模式改写了模型。\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    },
+    {
+      "text": "打印了服务端回显的实际模型名",
+      "passed": true,
+      "evidence": "echoed=True"
+    },
+    {
+      "text": "实际服务模型是 lite，未被静默换成 turbo",
+      "passed": true,
+      "evidence": "lite=True turbo=False"
+    },
+    {
+      "text": "脚本自己核对了回显模型（不只是打印）",
+      "passed": true,
+      "evidence": "compare_on_model"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live Ark Agent Plan API"
+}

@@ -2,11 +2,11 @@
 
 ## Where the skill actually changes the outcome
 
-8 coding tasks run twice each — once with an agent that read the `autodl` skill, once with an agent working from general knowledge (and, in the later rounds, its own web search) only — graded against the real `api.autodl.com` API wherever a token was available, and against the official docs directly in the one round (iteration-1) run before a token existed.
+7 coding tasks run twice each — once with an agent that read the `autodl` skill, once with an agent working from general knowledge (and, in the later rounds, its own web search) only — graded against the real `api.autodl.com` API wherever a token was available, and against the official docs directly in the one round (iteration-1) run before a token existed.
 
 | Metric | Value |
 |---|---|
-| Scenarios tested, across 3 rounds | 8 |
+| Scenarios tested, across 3 rounds | 7 |
 | Where the unskilled agent's code fails or misbehaves against the real platform | 6 / 8 |
 | Pass rate for the skilled agent, every round | 100% |
 | Real documentation errors/omissions found and fixed mid-audit | 9 |

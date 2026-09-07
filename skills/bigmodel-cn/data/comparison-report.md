@@ -10,7 +10,7 @@
 | Where the unskilled agent's code fails against the real API | 11 / 25 |
 | Round 7 end-to-end execution success, Coding Plan key, 21 runs per side | skill 21 / 21 · baseline 21 / 21 |
 | Pass rate for the skilled agent, every round | 100% |
-| Real documentation errors found and fixed mid-audit | 11 |
+| Real documentation errors found and fixed mid-audit | 12 |
 
 ---
 
@@ -284,6 +284,9 @@ Confirmed rejections for glm-4.6, glm-5.1's newer siblings, and both 5.2 and 5.3
 
 ### `files-batch.md` — Two smaller Batch corrections
 Request counts live under a nested `request_counts` object, not top-level fields as the old example showed. Separately, `custom_id` has an undocumented 6-character minimum — anything shorter fails upload with error `1214`.
+
+### `agents-assistant-knowledge.md` — the Assistant example fails if copied verbatim
+The reference said `stream` defaults to `true` and showed a synchronous example with `"stream": false`. Measured 2026-09-07 against `glm-4-assistant`: omitting `stream` **and** passing `false` both return `1212 当前模型不支持SYNC调用方式`; only `true` yields the `text/event-stream` response. So the documented default is wrong in the direction that breaks code, and the shipped example was one of the two failing forms. Corrected in the parameter table and both examples.
 
 ### `tools.md` / `chat.md` — the search engine decides whether you get any links at all
 Sources come back with a `link` field either way, but measured live on 2026-09-07 it is an **empty string** for `search_std` and `search_pro`, and a real URL for `search_pro_sogou` (50 results), `search_pro_quark`, `search_pro_jina` and `search_pro_bing`. The last two aren't in the official parameter table. The skill had been recommending `search_pro` — corrected, with the comparison table in place, because any product that promises checkable citations breaks silently on the wrong engine.

@@ -179,7 +179,7 @@ print(resp.json())
 | `model` | string | 是 | `glm-4-assistant` | `glm-4-assistant`/`glm-4-alltools` |
 | `messages` | array | 是 | - | **`role` 仅支持 `user`**（不接受 assistant/system 历史）；content 为字符串或多模态数组（text/image_url） |
 | `conversation_id` | string | 否 | - | 传入以继续之前对话 |
-| `stream` | boolean | 否 | `true` | 流式响应 |
+| `stream` | boolean | 否 | 见下方警告 | 流式响应。**实测（2026-09-07）`glm-4-assistant` 只能 `stream: true`**：不传或传 `false` 都会返回 `1212 当前模型不支持SYNC调用方式`。文档声称默认 `true`，但实测不传就走同步并失败——请显式传 `true` |
 | `request_id` | string | 否 | - | 6-64 位 |
 | `user_id` | string | 否 | - | 终端用户ID，6-128 位 |
 | `do_sample` | boolean | 否 | - | 是否稳定输出 |
@@ -192,14 +192,14 @@ print(resp.json())
 ```bash
 curl -X POST https://open.bigmodel.cn/api/paas/v4/assistant -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"assistant_id":"65940acff94777010aa6b796","model":"glm-4-assistant","messages":[{"role":"user","content":"总结一下量子计算原理"}],"stream":false}'
+  -d '{"assistant_id":"65940acff94777010aa6b796","model":"glm-4-assistant","messages":[{"role":"user","content":"总结一下量子计算原理"}],"stream":true}'
 ```
 ```python
 import requests
 resp = requests.post("https://open.bigmodel.cn/api/paas/v4/assistant",
     headers={"Authorization": "Bearer YOUR_API_KEY"},
     json={"assistant_id": "65940acff94777010aa6b796", "model": "glm-4-assistant",
-          "messages": [{"role": "user", "content": "总结一下量子计算原理"}], "stream": False})
+          "messages": [{"role": "user", "content": "总结一下量子计算原理"}], "stream": True})  # 必须 true，见下
 print(resp.json())
 ```
 
@@ -211,7 +211,7 @@ print(resp.json())
  "usage":{"prompt_tokens":15,"completion_tokens":120,"total_tokens":135}}
 ```
 
-**注意事项**：`stream` 默认 `true`，同步需显式传 `false`；流式响应为 `text/event-stream`；`messages.role` 严格只允许 `user`，多轮上下文靠 `conversation_id` 维护而非传历史消息；`GLM-4.5V` 系列可能返回 `<think></think>`/`<|begin_of_box|>` 标签，`reasoning_content` 仅 `glm-4.5`/`glm-4.1v-thinking` 系列返回。
+**注意事项**：**必须显式传 `stream: true`**——已用真实 API 验证（2026-09-07）：`glm-4-assistant` 不传 `stream` 或传 `false`，都会返回 `{"code":"1212","message":"当前模型不支持SYNC调用方式。"}`；只有 `true` 能拿到 `text/event-stream` 响应。官方文档把默认值写作 `true`，但实测省略该字段时走的是同步分支并直接失败，**照抄「同步调用」示例必然报错**；流式响应为 `text/event-stream`；`messages.role` 严格只允许 `user`，多轮上下文靠 `conversation_id` 维护而非传历史消息；`GLM-4.5V` 系列可能返回 `<think></think>`/`<|begin_of_box|>` 标签，`reasoning_content` 仅 `glm-4.5`/`glm-4.1v-thinking` 系列返回。
 
 ### 5. 助手列表
 

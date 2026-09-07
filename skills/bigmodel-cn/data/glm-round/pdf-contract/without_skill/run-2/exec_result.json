@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "合同编号: HT-2026-0917-XJ\n合同总金额: 人民币 肆佰捌拾柒万元整（¥4,870,000.00）\n",
+  "stderr": "# 模型 glm-4.6v 正在读取 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round/pdf-contract/without_skill/run-2/work/contract.pdf ...\n",
+  "timed_out": false,
+  "seconds": 9.9
+}

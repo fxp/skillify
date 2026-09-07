@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 5.2s :: 已构造 20 条请求 -> batch_requests.jsonl（模型: glm-5.1）\n文件上传成功: 1788753924_9d7180c14ec64636bc02191a617523b3\nbatch 任务创建成功，状态: validating（任务通常 24 小时内完成，结果文件保留 30 天）\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": true,
+      "evidence": "matched=batch_2096812062211444736"
+    },
+    {
+      "text": "全程未出现 1210（模型不在 Batch 白名单）",
+      "passed": true,
+      "evidence": "no_1210=True model=?"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

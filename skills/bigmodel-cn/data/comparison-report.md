@@ -10,7 +10,7 @@
 | Where the unskilled agent's code fails against the real API | 11 / 25 |
 | Round 7 end-to-end execution success, Coding Plan key, 21 runs per side | skill 21 / 21 · baseline 21 / 21 |
 | Pass rate for the skilled agent, every round | 100% |
-| Real documentation errors found and fixed mid-audit | 9 |
+| Real documentation errors found and fixed mid-audit | 11 |
 
 ---
 
@@ -226,6 +226,33 @@ Across all four recalibrated scenarios — 24 executions — the skilled side sc
 
 ---
 
+## Round 9 — a different executor, and the first significant win
+
+Rounds 1-8 all ran Claude as the executing agent. Round 9 swaps the brain for **GLM-5.3** — Claude Code CLI kept purely as the harness, pointed at `…/api/anthropic` with a Coding Plan key, which is one of Zhipu's officially supported tools for the plan. WebFetch still works in that configuration, so both sides keep researching the docs. n=5, graded purely by execution.
+
+The first two scenarios tied, and the reason is instructive: **a trap only discriminates when the task closes the detour**. Both sides picked cheap older models for a batch job (all whitelisted), and 5 of 6 skipped the upload path entirely by inlining the PDF as base64. Rewriting the tasks to close those routes — "quality matters, use the best model you can" and "we'll ask many rounds, upload once and reuse the file_id" — produced the first significant separation in the whole audit.
+
+| Scenario | Skill | Baseline | Full marks | Fisher p |
+|---|---|---|---|---|
+| Batch job, "use the best model" | **1.000 ± 0.000** | **0.000 ± 0.000** | 5/5 vs 0/5 | **0.0079** |
+| PDF, upload once and reuse file_id | **0.900 ± 0.200** | **0.250 ± 0.000** | 4/5 vs 0/5 | **0.0476** |
+| Cited web answers (after fixing the skill) | **0.933 ± 0.133** | **0.600 ± 0.133** | 4/5 vs 0/5 | **0.0476** |
+| RAG indexing (64-item embedding cap) | 1.000 | 1.000 | tie | — |
+
+### Where the separation comes from
+- **Batch**: both sides honestly chased "the best model". Skilled runs picked `glm-5.1` 5/5 — the strongest model *inside Batch's separate whitelist*. Baselines picked `glm-5.3`, the platform flagship, 5/5 — rejected at **file upload** with `1210 模型名称错误`. That whitelist exists only in the error message, not in the docs prose.
+- **PDF**: skilled runs used `purpose=user_data` 5/5. Baselines used `file-extract` / `agent` / nothing, and every upload **succeeded** — one even printed the `file_id` and suggested reusing it next time — before failing at reference time with `1210 文件解析失败`.
+
+### The round that found a bug in the skill itself
+The citation scenario first came out *against* the skill (0.600 vs 0.667). All ten scripts were written correctly — `search_result: true` set, `link` field read — yet no run produced a URL. The cause was the skill's own advice to "pass `search_engine` explicitly (e.g. `search_pro`)": measured live, `search_pro` and `search_std` return ten sources whose `link` is an **empty string**, while `search_pro_bing` / `_jina` / `_quark` / `_sogou` return real URLs. Two of those working engines aren't listed in the official parameter table at all. The skilled runs failed *because they followed the skill faithfully*.
+
+After correcting `tools.md` and `chat.md`, the same scenario re-ran with complete separation in engine choice: skilled runs picked bing/quark/sogou, baselines picked `search_pro` 5/5. **A wrong manual is worse than none — it makes the agent fail consistently.**
+
+### Two grader bugs, caught and fixed
+Execution-based grading is more objective than assertions, but the grader needs auditing too. Naive substring matching produced a false positive (scripts whose comments said "we do *not* use PyPDF2" were flagged as using it — fixed with AST import detection) and a false negative plus a false positive on error codes (a successful batch id `batch_2096812104876032000` contains `1210`; a real failure printed the message without the code — fixed by matching `code: 1210` structurally or the known error text). Correcting them moved the batch scenario's skilled mean from 0.933 to 1.000.
+
+---
+
 ## Documentation fixed along the way
 
 Every audit round tested the skill's own claims against the live API. Seven turned out to be wrong or incomplete — corrected in place, dated, with the exact error text that proved it.
@@ -257,6 +284,12 @@ Confirmed rejections for glm-4.6, glm-5.1's newer siblings, and both 5.2 and 5.3
 
 ### `files-batch.md` — Two smaller Batch corrections
 Request counts live under a nested `request_counts` object, not top-level fields as the old example showed. Separately, `custom_id` has an undocumented 6-character minimum — anything shorter fails upload with error `1214`.
+
+### `tools.md` / `chat.md` — the search engine decides whether you get any links at all
+Sources come back with a `link` field either way, but measured live on 2026-09-07 it is an **empty string** for `search_std` and `search_pro`, and a real URL for `search_pro_sogou` (50 results), `search_pro_quark`, `search_pro_jina` and `search_pro_bing`. The last two aren't in the official parameter table. The skill had been recommending `search_pro` — corrected, with the comparison table in place, because any product that promises checkable citations breaks silently on the wrong engine.
+
+### `chat.md` / `models.md` — the async endpoint silently swaps the model
+Verified 2026-09-07 by reading back the echoed `model`: `POST /async/chat/completions` turns `glm-4.6` into `glm-4.7` and `glm-4.7` into `glm-4.7-ali`, a name that appears nowhere in the docs; `glm-4.5-air` and `glm-5.3` pass through untouched. The synchronous endpoint never substitutes. Anything needing reproducibility or billing reconciliation has to read the echoed model rather than trust the request.
 
 ### `coding-plan.md` (new) — The Coding Plan is a separate key + endpoint, not a discount tier
 The skill's front page, `sdk-and-compat.md`, `errors-and-limits.md` and `models.md` all assumed one key family and one base URL. Official Coding Plan pages document a second family: `…/api/coding/paas/v4` (OpenAI-compatible) and the shared `…/api/anthropic` (Anthropic-compatible), keys from `bigmodel.cn/coding-plan/personal/overview` or the team plan page, `glm-5.3` / `glm-5.3-flash` only, quota on a 5-hour + 7-day cycle, usage restricted to designated coding tools. Live probe confirmed: plan key on the standard endpoint → `429 / 1113`; plan key on embeddings, rerank, tokenizer, async chat, standalone web search, images → the same `1113`; plan key on `reader` → works. Three things the docs do not say: a **standard** key works on the coding endpoint for everything (it is not plan-only); `glm-4.6` and `glm-4.5-air` are silently rerouted to `glm-5.3-flash` alongside the four documented aliases; vision models `glm-4.6v` / `glm-5v-turbo` answer under the plan.

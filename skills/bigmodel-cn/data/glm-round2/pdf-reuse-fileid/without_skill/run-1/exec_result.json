@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "[上传] contract.pdf（52.2 KB）...\n[上传] 完成，file_id = 1788754070_c1f1bedc554b422db4b54b6c5836721c\n[提示] 后续运行可 export ZHIPUAI_FILE_ID=1788754070_c1f1bedc554b422db4b54b6c5836721c 免上传\n[模型] glm-4.6v\n[错误] 提问 失败：HTTP 400 {\"error\": {\"code\": \"1210\", \"message\": \"文件解析失败，请检查文件可访问性和格式\"}}\n",
+  "timed_out": false,
+  "seconds": 5.0
+}

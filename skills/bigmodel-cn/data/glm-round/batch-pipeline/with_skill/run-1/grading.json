@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 3.7s :: 件 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round/batch-pipeline/with_skill/run-1/work/batch_requests.jsonl（20 条评论）\n上传成功，input_file_id=1788750487_11039a0f45d44b798a4116c500becd86\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": true,
+      "evidence": "matched=batch_2096797644136255488"
+    },
+    {
+      "text": "全程未出现 1210（模型白名单 / custom_id 长度）",
+      "passed": true,
+      "evidence": "no_1210=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

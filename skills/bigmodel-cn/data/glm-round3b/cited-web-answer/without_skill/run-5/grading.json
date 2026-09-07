@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 41.6s :: \"\",\n      \"link\": \"\",\n      \"media\": \"\",\n      \"publish_date\": \"2026-08-31\",\n      \"refer\": \"ref_10\",\n      \"title\": \"灵初智能获超亿美元新一轮融资；智谱“认领”神秘AI模型Ox Alpha；《国家人形机器人产业标准体系建设指南（2026版）》公开征求意见\"\n    }\n  ]\n}\n"
+    },
+    {
+      "text": "stdout 至少出现 2 条 http(s) 来源链接",
+      "passed": false,
+      "evidence": "找到 0 条: []"
+    },
+    {
+      "text": "来源取自接口返回（读了 web_search / search_result 数组）",
+      "passed": true,
+      "evidence": "reads_api_sources=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.333
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

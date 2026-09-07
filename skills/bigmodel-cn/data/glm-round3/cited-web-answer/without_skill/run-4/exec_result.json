@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "问题：2026 年智谱 BigModel 发布了哪些新模型\n\n答案：\n# 2026 年智谱 BigModel 发布的新模型\n\n根据 2026 年的公开信息，智谱（Z.ai）今年发布的重磅新模型主要有两款，均集中在 8 月：\n\n## 一、GLM-5.3（2026 年 8 月 19 日上线）\n\n- 定位主攻**智能上界**，聚焦代码与 Agent 能力，可独立完成数小时级的工程任务（Agentic Engineering）\n- 在智谱的“智能—成本”曲线图上，与 Flash 版本一起取代 DeepSeek 成为新的性价比第一\n\n## 二、GLM-5.3-Flash（2026 年 8 月 26 日发布并开源）\n\n即此前在 OpenRouter 上匿名刷榜、引发开发者大量猜测的神秘模型 **Ox Alpha（“牛来”）**：\n\n- **定位**：GLM-5 系列首个**原生多模态**模型，训练阶段即面向文本、图像等多模态输入设计；主打“Frontier Intelligence, Flash Cost”（前沿智能、Flash 成本），主攻成本下界\n- **架构**：MoE 架构，总参数 320B，每次推理仅激活 18B（相比 GLM-4.5 的 355B 总参/32B 激活，推理成本大幅降低）\n- **技术细节**：稀疏注意力与线性注意力混合架构，引入流形约束超连接（mHC）；层数由 GLM-4.5 的 92 层缩减至 45 层；采用约 30T Token 最新多模态预训练数据；上下文窗口约 100 万 Token\n- **性能**：Artificial Analysis Intelligence Index 获 57 分，追平 Anthropic Claude Opus 4.8；编程能力（Z.ai Code Bench）与 Opus 4.8 相当，整体能力超过参数规模更大的 GLM-5.2\n- **成本**：单任务成本约 0.045 美元，价格低于 DeepSeek-V4-Flash\n- **市场表现**：以匿名身份上线 OpenRouter 后数日登顶调用量榜首，终结了 DeepSeek 连续 56 天的霸榜，并带动平台整体调用量提升超 20%；身份揭晓当天即以 **MIT 协议开源**\n\n## 补充背景\n\n智谱 GLM 系列在过去 11 个月迭代了六代，GLM-5.3 与 GLM-5.3-Flash 分别对应“智能上界”和“成本下界”，共同推进“智能—成本”Pareto 前沿。智谱管理层透露，下一代模型的方向不再是单纯堆参数，而是让模型学会**自我停止、自我纠错**，向 Scaling Fully Self Training 的自主 AI 演进。\n\n============================================================\n参考来源（共 0 条，均取自接口真实返回的 web_search 字段）：\n（本次接口未返回任何搜索来源）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 48.3
+}

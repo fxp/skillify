@@ -1,0 +1,42 @@
+{
+  "batch-pipeline/with_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "batch-pipeline/without_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "pdf-contract/with_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "pdf-contract/without_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  }
+}

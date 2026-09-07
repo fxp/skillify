@@ -32,6 +32,8 @@
 
 套餐 Key 走 `…/api/coding/paas/v4` 或 `…/api/anthropic` 时，所有档位都支持 `glm-5.3`、`glm-5.3-flash`；传旧模型代码 `glm-5.2` / `glm-5.1` / `glm-5-turbo` / `glm-4.7` 会被自动路由到新版本。下表其余模型（视觉、生图、生视频、语音、embedding、rerank 等）**不在套餐内**，要用标准 API Key 走 `…/api/paas/v4`。详见 `references/coding-plan.md`。
 
+> **异步端点会换模型（实测 2026-09-07）**：走 `POST /paas/v4/async/chat/completions` 时，`glm-4.6` 实际跑的是 `glm-4.7`，`glm-4.7` 实际跑的是文档里不存在的 `glm-4.7-ali`；`glm-4.5-air`、`glm-5.3` 原样透传。同步端点没有这个问题。详见 `references/chat.md`。
+
 ## 文本模型全表
 
 | 模型代码 | 特点 | 上下文 | 最大输出 |

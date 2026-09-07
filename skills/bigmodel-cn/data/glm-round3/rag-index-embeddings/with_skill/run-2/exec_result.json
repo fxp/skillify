@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "从 faq.txt 读到 150 条 FAQ\n已向量化 64/150\n已向量化 128/150\n已向量化 150/150\n向量索引已写入 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/rag-index-embeddings/with_skill/run-2/work/vectors.json\n\n查询「发票怎么开」最相近的 3 条：\n1. 如何申请发票相关的服务？（相似度 0.7859）\n2. 发票失败了怎么办？（相似度 0.7833）\n3. 发票需要提供哪些材料？（相似度 0.7802）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 13.2
+}

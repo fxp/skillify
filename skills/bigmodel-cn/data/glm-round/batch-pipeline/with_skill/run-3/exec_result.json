@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "batch_2096797675123900416\n",
+  "stderr": "已构造 20 条情感分类请求 -> /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round/batch-pipeline/with_skill/run-3/work/batch_requests.jsonl\n文件上传成功：1788750495_4e4ae9bf66ec4c2bba54b8ae8fc0b896\nbatch 任务已创建：status=validating\n",
+  "timed_out": false,
+  "seconds": 3.5
+}

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "[准备] 上传 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/pdf-reuse-fileid/without_skill/run-2/work/contract.pdf（53485 字节）\n[准备] file_id=1788754075200-b2560f704aa3469a92a1d895c43c8d0b.pdf，三问复用，不再重复上传\n[准备] 模型：glm-5.3-flash\n[错误] 请求失败 HTTP 400：{\"error\":{\"code\":\"1210\",\"message\":\"文件解析失败，请检查文件可访问性和格式\"}}\n",
+  "timed_out": false,
+  "seconds": 3.4
+}

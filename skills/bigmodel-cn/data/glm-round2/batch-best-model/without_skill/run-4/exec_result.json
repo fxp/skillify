@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "[信息] 从 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/batch-best-model/without_skill/run-4/work/comments.txt 读取到 20 条评论\n[信息] 已生成 batch 请求文件 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/batch-best-model/without_skill/run-4/work/batch_requests.jsonl（模型 glm-5.3）\n[错误] 上传请求文件失败：HTTP 400 [logID=202609071205564a989c1b41334928] 模型名称错误: glm-5.3, 目前支持的模型: glm-5.1, glm-5-turbo, glm-4, glm-4-0520, glm-4-plus, glm-4-long, glm-4-plus-0111, glm-4-air, glm-4-air-0111, glm-4-air-250414, glm-4-flash, glm-4-flashx-250414, glm-3-turbo, glm-4v, glm-4v-plus, glm-5v-turbo, glm-4v-plus-0111, cogview-3, cogview-3-plus, cogview-4-250304, embedding-2, embedding-3, cogvideox, cogvideox-2\n",
+  "timed_out": false,
+  "seconds": 2.9
+}

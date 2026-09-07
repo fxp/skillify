@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "合同文件：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/pdf-reuse-fileid/without_skill/run-3/work/contract.pdf（0.05 MB）\n文件已上传，file_id = 1788754078_d20a3154adce4badaa3bd988bc85987b（以下问题均复用该 file_id，不再重复上传文件）\n============================================================\n",
+  "stderr": "[错误] 提问「这份合同的合同编号是什么？」失败：HTTP 400 {\"error\":{\"code\":\"1210\",\"message\":\"文件解析失败，请检查文件可访问性和格式\"}}\n",
+  "timed_out": false,
+  "seconds": 4.6
+}

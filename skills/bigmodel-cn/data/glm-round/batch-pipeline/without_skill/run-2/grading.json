@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 3.6s :: eng/Workspace/Skillify/bigmodel-cn-workspace/glm-round/batch-pipeline/without_skill/run-2/work/batch_requests.jsonl\n[info] 上传成功 file_id=1788750502_9622e671509d4de5b233fb862225c258\n[info] batch 任务创建成功\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": true,
+      "evidence": "matched=batch_2096797704907653120"
+    },
+    {
+      "text": "全程未出现 1210（模型白名单 / custom_id 长度）",
+      "passed": true,
+      "evidence": "no_1210=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

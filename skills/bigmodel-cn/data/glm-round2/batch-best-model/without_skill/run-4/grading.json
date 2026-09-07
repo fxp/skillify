@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 2.9s :: 0414, glm-4-flash, glm-4-flashx-250414, glm-3-turbo, glm-4v, glm-4v-plus, glm-5v-turbo, glm-4v-plus-0111, cogview-3, cogview-3-plus, cogview-4-250304, embedding-2, embedding-3, cogvideox, cogvideox-2\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": false,
+      "evidence": "matched=None"
+    },
+    {
+      "text": "全程未出现 1210（模型不在 Batch 白名单）",
+      "passed": false,
+      "evidence": "no_1210=False model=?"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 3,
+    "total": 3,
+    "pass_rate": 0.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

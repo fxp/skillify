@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "问题：2026 年智谱 BigModel 发布了哪些新模型\n\n# 2026年智谱（BigModel / Z.ai）发布的新模型\n\n## GLM-5.3（2026年8月19日上线）\n- 主要聚焦**代码和 Agent 能力**，主攻“智能上界”\n- 定位为前沿旗舰模型，上线后在“智能—成本”对比图中取代 DeepSeek-V4-Pro 成为新领先者\n\n## GLM-5.3-Flash（2026年8月26日正式发布并开源）\n这是智谱2026年最受关注的模型，代号 **Ox Alpha（“牛来”）**，曾于8月20日以匿名模型身份登陆 OpenRouter 引发热议：\n\n- **架构**：MoE 架构，总参数 320B，每次推理仅激活 18B（320B-A18B），采用稀疏注意力与线性注意力混合架构及流形约束超连接（mHC）技术，层数从 GLM-4.5 的 92 层缩减至 45 层\n- **原生多模态**：GLM-5 系列首个原生多模态模型，可统一处理文本、图像等输入，拥有约 100 万 Token 上下文窗口\n- **性能**：在 Artificial Analysis Intelligence Index 中获得 57 分，与 Anthropic Claude Opus 4.8 持平；整体能力超过参数规模更大的 GLM-5.2\n- **成本**：主打\"Frontier Intelligence, Flash Cost\"，单任务成本约 0.045 美元，价格低于 DeepSeek-V4-Flash\n- **市场表现**：匿名上线 6 天累计调用超 62T Token（一说 42 万亿 Token），登顶 OpenRouter 和 OpenCode 双平台调用量榜首，终结 DeepSeek 连续 56 天的霸榜；身份揭晓当天以 MIT 协议开源\n- **预训练数据**：约 30T Token 的最新多模态数据\n\n## 其他动态\n- 2026 年上半年 GLM 系列共迭代六代（11 个月内完成），GLM-5.3 主攻智能上界、GLM-5.3-Flash 主攻成本下界，共同推进“智能—成本”Pareto Frontier\n- 下一代基座模型已在推进中，方向从“堆参数”转向让模型学会**自我停止、自我纠错**，并迈向 Fully Self Training / Autonomous AI\n\n============================================================\n参考来源：本次响应未返回 web_search 来源数组，无法提供可核对的链接，请谨慎采信上述回答。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 14.7
+}

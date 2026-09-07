@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "batch_2096812104876032000\n",
+  "stderr": "已构造 20 条请求 -> /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/batch-best-model/with_skill/run-3/work/batch_requests.jsonl\n文件上传成功：1788753935_fb4b1eb501a9416da05c4927dec97a9c\nbatch 任务已创建，状态：validating\n",
+  "timed_out": false,
+  "seconds": 5.1
+}

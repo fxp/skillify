@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "从 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/rag-index-embeddings/with_skill/run-5/work/faq.txt 读取 150 条 FAQ，开始向量化……\n  已向量化 64/150 条\n  已向量化 128/150 条\n  已向量化 150/150 条\n向量已写入 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/rag-index-embeddings/with_skill/run-5/work/vectors.json\n\n查询：发票怎么开\n最相近的 Top 3 条 FAQ：\n1. [0.7880] 发票需要提供哪些材料？\n2. [0.7865] 发票失败了怎么办？\n3. [0.7799] 如何申请发票相关的服务？\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 14.9
+}

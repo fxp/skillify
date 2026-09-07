@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "待读取文件：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/pdf-reuse-fileid/without_skill/run-5/work/contract.pdf（52.2 KB）\n文件上传成功：file_id=1788754087561-a9a660b99eca47fd9bc07a81d44457a3.pdf（purpose=agent），后续提问复用该 file_id，不再重复上传。\n\n",
+  "stderr": "对话请求失败：HTTP 400: 1210 文件解析失败，请检查文件可访问性和格式\n",
+  "timed_out": false,
+  "seconds": 2.9
+}

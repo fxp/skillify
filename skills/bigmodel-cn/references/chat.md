@@ -228,6 +228,20 @@ print("task_id:", task_id, "status:", task["task_status"])
 
 ### 查询异步结果
 
+> **⚠️ 已用真实 API 验证（2026-09-07）：异步端点会静默替换模型，同步端点不会。** 同一个 `model` 值，两个端点的行为不一致——
+> 实测对照（看响应体回显的 `model` 字段，以及轮询结果里的 `model`）：
+>
+> | 请求的 model | `POST /chat/completions` 回显 | `POST /async/chat/completions` 回显 | 异步结果回显 |
+> | :--- | :--- | :--- | :--- |
+> | `glm-4.6` | `glm-4.6` | **`glm-4.7`** | `GLM-4.7` |
+> | `glm-4.7` | `glm-4.7` | **`glm-4.7-ali`** | `glm-4.7-ali` |
+> | `glm-4.5-air` | `glm-4.5-air` | `glm-4.5-air` | `GLM-4.5-Air` |
+> | `glm-5.3` | `glm-5.3` | `glm-5.3` | `GLM-5.3` |
+>
+> 注意 `glm-4.7-ali` 这个名字**在官方文档里完全不存在**，只能从响应里看到。含义：**异步任务不能假设"我传什么就跑什么"**——
+> 需要结果可复现、或有审计/计费对账要求时，必须读回响应里的 `model` 字段做核对，不要相信请求体。
+> 受影响的是较旧的型号（`glm-4.6`/`glm-4.7`）；`glm-4.5-air`、`glm-5.3` 实测原样透传。这份对照随平台更新会变，重要场景请自行复测。
+
 **Endpoint**: `GET /paas/v4/async-result/{id}`
 
 **用途**: 用提交异步任务返回的 `id` 轮询获取最终结果（对话补全与视频生成共用此接口）。
@@ -432,12 +446,12 @@ print(final_tool_calls)
 | :-- | :-- | :-- |
 | `function` | `function.name`、`function.description`、`function.parameters`（JSON Schema 对象） | 自定义函数调用，`name` 需匹配 `^[a-zA-Z0-9_-]+$`，长度 ≤64；`description`、`parameters` 均必填 |
 | `retrieval` | `retrieval.knowledge_id`（必填）、`retrieval.prompt_template` | 知识库检索，`knowledge_id` 从平台知识库功能创建获取；`prompt_template` 可自定义，需包含 `{{ knowledge }}` 与 `{{ question }}` 占位符 |
-| `web_search` | `web_search.enable`、`search_engine`（`search_std`/`search_pro`/`search_pro_sogou`/`search_pro_quark`）、`search_query`、`search_intent`、`count`（1-50）、`search_domain_filter`、`search_recency_filter`、`content_size`、`result_sequence`、`search_result`、`require_search`、`search_prompt` | 联网搜索工具。**必须显式传 `web_search.search_result: true`**，响应体顶层才会带 `web_search` 引用来源数组（`icon`/`title`/`link`/`media`/`publish_date`/`content`/`refer`）——已用真实 API 验证：不传这个字段（默认 `false`）时搜索依然会正常执行、结果依然会被用于生成回答，但响应体里完全没有 `web_search` 这个顶层字段，代码里如果读 `response.get("web_search")` 期望拿到引用列表，默认情况下永远是 `None`，不会报错，只是"想展示信息来源"这个需求会静默失效 |
+| `web_search` | `web_search.enable`、`search_engine`（`search_std`/`search_pro`/`search_pro_sogou`/`search_pro_quark`）、`search_query`、`search_intent`、`count`（1-50）、`search_domain_filter`、`search_recency_filter`、`content_size`、`result_sequence`、`search_result`、`require_search`、`search_prompt` | 联网搜索工具。**必须显式传 `web_search.search_result: true`**，响应体顶层才会带 `web_search` 引用来源数组（`icon`/`title`/`link`/`media`/`publish_date`/`content`/`refer`；注意 `link` 是否为空取决于 `search_engine`，见 `references/tools.md`）——已用真实 API 验证：不传这个字段（默认 `false`）时搜索依然会正常执行、结果依然会被用于生成回答，但响应体里完全没有 `web_search` 这个顶层字段，代码里如果读 `response.get("web_search")` 期望拿到引用列表，默认情况下永远是 `None`，不会报错，只是"想展示信息来源"这个需求会静默失效 |
 | `mcp` | `mcp.server_label`（必填）、`mcp.server_url`、`mcp.transport_type`（`sse`/`streamable-http`，默认 `streamable-http`）、`mcp.allowed_tools`、`mcp.headers` | 调用外部 MCP Server 上的工具；若连接智谱官方 MCP Server，`server_label` 填 MCP Code 即可，无需 `server_url` |
 
 `tools` 最多 128 个函数；`tool_choice` 目前默认且仅支持字符串 `"auto"`（不支持强制指定某个函数）。视觉模型的 `tools` 只支持 `function` 类型，且仅 GLM-5.3-Flash / GLM-4.6V / AutoGLM-Phone 支持。
 
-> **已用真实 API 调用验证（2026-09）**：OpenAPI 规范把 `web_search.search_engine` 标记为必填字段，但实测对 `chat/completions` 里的 `web_search` 工具类型省略该字段**并不会报错**——平台会静默套用一个默认搜索引擎，联网检索依然生效。这与下方 `references/tools.md` 里**独立的** `POST /paas/v4/web_search` 端点不同：那个端点已实测确认省略 `search_engine` 会直接返回 `{"error":{"code":"1214","message":"search_engine:The search_engine cannot both be empty."}}`。也就是说同一个字段名，在两个不同入口的必填程度并不一致（规范文档本身也存在类似的不一致）。**实践建议**：无论走哪个入口，都显式传 `search_engine`（如 `search_pro`），不要依赖未文档化的默认值——省略在今天可用不代表未来仍然可用。
+> **已用真实 API 调用验证（2026-09）**：OpenAPI 规范把 `web_search.search_engine` 标记为必填字段，但实测对 `chat/completions` 里的 `web_search` 工具类型省略该字段**并不会报错**——平台会静默套用一个默认搜索引擎，联网检索依然生效。这与下方 `references/tools.md` 里**独立的** `POST /paas/v4/web_search` 端点不同：那个端点已实测确认省略 `search_engine` 会直接返回 `{"error":{"code":"1214","message":"search_engine:The search_engine cannot both be empty."}}`。也就是说同一个字段名，在两个不同入口的必填程度并不一致（规范文档本身也存在类似的不一致）。**实践建议**：无论走哪个入口，都显式传 `search_engine`，不要依赖未文档化的默认值。**但不要随手填 `search_pro`**——实测 `search_pro` 与 `search_std` 返回的来源 `link` 恒为空字符串，只有 `search_pro_bing` / `search_pro_jina` / `search_pro_quark` / `search_pro_sogou` 才带真实链接；需要展示可点击来源时必须选后面这几个，详见 `references/tools.md` 里的对照表。
 
 响应中的 `tool_calls[].type` 目前只会是 `function` 或 `mcp`（`web_search`/`retrieval` 是平台侧直接执行并把结果注入 `web_search` 字段或正文，不会作为 `tool_calls` 让你二次执行）。
 

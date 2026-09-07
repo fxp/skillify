@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "读取 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/rag-index-embeddings/without_skill/run-2/work/faq.txt，共 150 条 FAQ\n向量已写入 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/rag-index-embeddings/without_skill/run-2/work/vectors.json\n查询：发票怎么开\n最相近的 3 条：\n1. 发票需要提供哪些材料？（相似度 0.7880）\n2. 发票失败了怎么办？（相似度 0.7865）\n3. 如何申请发票相关的服务？（相似度 0.7799）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 14.4
+}

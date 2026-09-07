@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "batch_2096812122370473984\n",
+  "stderr": "已生成 20 条请求 -> batch_requests.jsonl\n请求文件上传成功: 1788753939_cbc425da367442b1953e0308c2c44a0c\nbatch 任务创建成功,初始状态: validating\n",
+  "timed_out": false,
+  "seconds": 4.2
+}

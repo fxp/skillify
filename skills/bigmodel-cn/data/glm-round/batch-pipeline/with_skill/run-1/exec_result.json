@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "batch_2096797644136255488\n",
+  "stderr": "已生成请求文件 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round/batch-pipeline/with_skill/run-1/work/batch_requests.jsonl（20 条评论）\n上传成功，input_file_id=1788750487_11039a0f45d44b798a4116c500becd86\n",
+  "timed_out": false,
+  "seconds": 3.7
+}

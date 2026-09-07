@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 2.2s :: py\", line 1026, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/files\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": false,
+      "evidence": "matched=None"
+    },
+    {
+      "text": "全程未出现 1210（模型不在 Batch 白名单）",
+      "passed": false,
+      "evidence": "no_1210=False model=?"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 3,
+    "total": 3,
+    "pass_rate": 0.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

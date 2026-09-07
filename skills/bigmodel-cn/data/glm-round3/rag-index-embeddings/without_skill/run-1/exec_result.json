@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "查询：发票怎么开\n最相近的 top-3：\n1. 0.7880  发票需要提供哪些材料？\n2. 0.7865  发票失败了怎么办？\n3. 0.7799  如何申请发票相关的服务？\n",
+  "stderr": "正在向量化 150 条 FAQ ...\n向量索引已写入 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/rag-index-embeddings/without_skill/run-1/work/vectors.json\n",
+  "timed_out": false,
+  "seconds": 18.1
+}

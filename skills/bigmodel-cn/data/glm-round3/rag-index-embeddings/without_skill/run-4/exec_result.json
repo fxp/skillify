@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "读取到 150 条 FAQ，开始调用 embedding-3 向量化……\n向量已写入 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/rag-index-embeddings/without_skill/run-4/work/vectors.json\n与「发票怎么开」最相近的 top-3：\n1. 0.7880 发票需要提供哪些材料？\n2. 0.7865 发票失败了怎么办？\n3. 0.7799 如何申请发票相关的服务？\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 12.4
+}

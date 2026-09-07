@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "batch_2096812062211444736\n",
+  "stderr": "已构造 20 条请求 -> batch_requests.jsonl（模型: glm-5.1）\n文件上传成功: 1788753924_9d7180c14ec64636bc02191a617523b3\nbatch 任务创建成功，状态: validating（任务通常 24 小时内完成，结果文件保留 30 天）\n",
+  "timed_out": false,
+  "seconds": 5.2
+}

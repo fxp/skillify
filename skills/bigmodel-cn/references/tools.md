@@ -309,7 +309,7 @@ print(resp.json())
 | 参数名 | 类型 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |
 | search_query | string | 是 | 无 | 搜索内容，建议不超过 70 字符 |
-| search_engine | string | 是 | 无 | `search_std`（智谱基础版）、`search_pro`（智谱高阶版）、`search_pro_sogou`（搜狗）、`search_pro_quark`（夸克） |
+| search_engine | string | 是 | 无 | `search_std`（智谱基础版）、`search_pro`（智谱高阶版）、`search_pro_sogou`（搜狗）、`search_pro_quark`（夸克）；实测另有未列入文档的 `search_pro_jina`、`search_pro_bing` 可用。**注意 `search_std` / `search_pro` 返回的来源 `link` 恒为空**，见下方说明 |
 | search_intent | boolean | 是 | `false` | 是否先做搜索意图识别，识别到意图后才执行搜索；`false` 则跳过识别直接搜索 |
 | count | integer | 否 | `10` | 返回结果条数，1-50；`search_pro_sogou` 仅支持 10/20/30/40/50 |
 | search_domain_filter | string | 否 | 无 | 限定返回结果的白名单域名（如 `www.example.com`），支持 `search_std`/`search_pro`/`search_pro_sogou` |
@@ -378,6 +378,24 @@ print(resp.json())
 **何时使用 / 最佳实践**
 
 - 智谱提供三层联网检索能力：① 本接口 `web_search`（直接拿结构化搜索结果，自己决定如何拼接进 prompt）；② `chat/completions` 中通过 `tools: [{"type": "web_search", ...}]` 让模型自动检索并生成带来源标注的回答（意图判断、检索、生成一体化，更省心）；③ 智能体对话（Assistant API）中的 Search Agent，会对复杂问题做 query 拆解、多轮检索并综合生成报告，适合"全面分析报告"类深度问题。三者可按需要的自动化程度和控制粒度选用。
+> **⚠️ 已用真实 API 验证（2026-09-07）：想拿到可点击的来源链接，搜索引擎选错了就一条都拿不到。** 返回的每条来源都有 `link` 字段，
+> 但**它是不是空字符串完全取决于 `search_engine`**——实测同一个查询、两条入口（`chat/completions` 的 `web_search` 工具 与独立的 `POST /paas/v4/web_search`）表现一致：
+>
+> | search_engine | 返回条数 | 其中 `link` 非空 |
+> | :--- | :--- | :--- |
+> | `search_std` | 10 | **0** |
+> | `search_pro` | 10 | **0** |
+> | `search_pro_sogou` | 50 | 50 |
+> | `search_pro_quark` | 10 | 10 |
+> | `search_pro_jina` | 10 | 10 |
+> | `search_pro_bing` | 10 | 10 |
+>
+> 也就是说，最常被推荐的 `search_pro`（以及 `search_std`）**返回的来源只有标题和摘要，`link` 恒为空字符串**，
+> HTTP 200、条数正常、`title`/`content`/`publish_date` 都齐全，只有链接是空的——这是典型的静默失效。
+> **凡是产品上要求"给出可核对的来源链接"的场景（引用式问答、研究助手、事实核查），必须用
+> `search_pro_bing` / `search_pro_jina` / `search_pro_quark` / `search_pro_sogou` 其中之一**，
+> 并且在代码里对 `link` 为空做兜底判断。另注：`search_pro_jina`、`search_pro_bing` 这两个引擎名在官方参数表里没有列出，但实测可用。
+
 - 四个搜索引擎的能力和计费不同：`search_std` 性价比最高，适合日常查询；`search_pro` 多引擎协同、召回率更高；`search_pro_sogou` 在腾讯生态和知乎内容、百科医疗等垂直领域权威性强；`search_pro_quark` 适合垂直内容精准检索。同时指定 `search_domain_filter` 和 `search_recency_filter` 时 `count` 不生效。
 - `search_query` 限长 70 字符，需要检索长问题时应先做 query 改写/摘要再传入。
 

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "合同文件：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/pdf-reuse-fileid/without_skill/run-4/work/contract.pdf\n正在把 PDF 上传到 BigModel 平台（整个流程只上传这一次）...\n已获得 file_id：1788754083272-7b4cf1603e244d0fb6cf6a439616dd71.pdf\n使用模型：glm-5.3-flash\n\n============================================================\n【问题 1】这份合同的合同编号是什么？\n",
+  "stderr": "[错误] 对话补全失败：HTTP 400 {\"error\":{\"code\":\"1210\",\"message\":\"文件解析失败，请检查文件可访问性和格式\"}}\n",
+  "timed_out": false,
+  "seconds": 4.7
+}

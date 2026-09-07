@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0 且未在本地解析 PDF",
+      "passed": true,
+      "evidence": "exit=0 5.0s :: 已找到合同文件: /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round/pdf-contract/with_skill/run-3/work/contract.pdf\n local_parse=False"
+    },
+    {
+      "text": "stdout 出现合同编号 HT-2026-0917-XJ",
+      "passed": true,
+      "evidence": "found=True"
+    },
+    {
+      "text": "stdout 出现合同总金额",
+      "passed": true,
+      "evidence": "found=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

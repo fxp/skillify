@@ -1,0 +1,50 @@
+{
+  "batch-best-model/with_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "batch-best-model/without_skill": {
+    "runs": 5,
+    "scores": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean": 0.0,
+    "stdev": 0.0
+  },
+  "pdf-reuse-fileid/with_skill": {
+    "runs": 5,
+    "scores": [
+      0.5,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 0.9,
+    "stdev": 0.2
+  },
+  "pdf-reuse-fileid/without_skill": {
+    "runs": 5,
+    "scores": [
+      0.25,
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "mean": 0.25,
+    "stdev": 0.0
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "已上传 contract.pdf -> file_id = 1788752358426-c7e61f5e799d4106b72f0c2b62d53b00.pdf\n以下三个问题全部复用该 file_id，不再重复上传文件。\n\n",
+  "stderr": "运行失败：请求 https://open.bigmodel.cn/api/paas/v4/chat/completions 重试 3 次仍失败，最后一次错误：HTTP 500：{\"error\":{\"code\":\"1234\",\"message\":\"网络错误，错误id：2026090712061558b57fe420424f43，请稍后重试\"}}\n",
+  "timed_out": false,
+  "seconds": 16.2
+}

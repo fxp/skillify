@@ -1,0 +1,50 @@
+{
+  "cited-web-answer/with_skill": {
+    "runs": 5,
+    "scores": [
+      0.667,
+      0.667,
+      0.333,
+      0.667,
+      0.667
+    ],
+    "mean": 0.6,
+    "stdev": 0.133
+  },
+  "cited-web-answer/without_skill": {
+    "runs": 5,
+    "scores": [
+      0.667,
+      0.667,
+      0.667,
+      0.667,
+      0.667
+    ],
+    "mean": 0.667,
+    "stdev": 0.0
+  },
+  "rag-index-embeddings/with_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "rag-index-embeddings/without_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  }
+}

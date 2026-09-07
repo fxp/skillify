@@ -10,7 +10,7 @@
 | Where the unskilled agent's code fails against the real API | 11 / 25 |
 | Round 7 end-to-end execution success, Coding Plan key, 21 runs per side | skill 21 / 21 · baseline 21 / 21 |
 | Pass rate for the skilled agent, every round | 100% |
-| Real documentation errors found and fixed mid-audit | 14 |
+| Real documentation errors found and fixed mid-audit | 15 |
 
 ---
 
@@ -284,6 +284,9 @@ Confirmed rejections for glm-4.6, glm-5.1's newer siblings, and both 5.2 and 5.3
 
 ### `files-batch.md` — Two smaller Batch corrections
 Request counts live under a nested `request_counts` object, not top-level fields as the old example showed. Separately, `custom_id` has an undocumented 6-character minimum — anything shorter fails upload with error `1214`.
+
+### `sdk-and-compat.md` — an SDK call can succeed and still hand you an empty string
+Verified with `zai-sdk 0.2.3` and `glm-4.6`: the call returns, `response.model` echoes back correctly, and `choices[0].message.content` is `''`. Thinking tokens count against `max_tokens`, so a small budget is consumed entirely by reasoning — `max_tokens=20` gives `finish_reason: length`, empty content and 37 characters of `reasoning_content`; at 800 the same prompt answers normally; at 20 with thinking disabled it also answers. The tell is `finish_reason`, not the empty string. Documented, along with the streaming equivalent (collecting only `delta.content` yields an empty buffer).
 
 ### `agents-assistant-knowledge.md` — the knowledge-base API never returns a failing HTTP status
 Every endpoint under `llm-application/open/*` and `/zrag/*` answers `HTTP 200` even when the call failed; the real outcome sits in the body's `code`. Querying a non-existent knowledge base returns `200` + `{"code":100013,"message":"知识库不存在"}`; a wrong multipart field name returns `200` + `{"code":400,...}`. `raise_for_status()` never fires, so a RAG pipeline built the obvious way carries the error forward silently. Recorded with the contract spelled out.

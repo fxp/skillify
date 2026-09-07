@@ -4,6 +4,22 @@
 
 所有请求的完整地址 = Base URL `https://open.bigmodel.cn/api/` + 下文的 path；请求头需带 `Authorization: Bearer <API_KEY>`（API Key 获取地址：https://bigmodel.cn/usercenter/proj-mgmt/apikeys）。
 
+> **本文端点已用真实调用逐个验证（2026-09-07）**：以下六项实测通过，行为与本文描述一致——
+>
+> | 端点 | 实测结果 |
+> | :--- | :--- |
+> | `POST /paas/v4/images/generations`（`cogview-3-flash`、`glm-image`） | 200，同步返回图片 URL |
+> | `POST /paas/v4/async/images/generations` | 200，返回 `id` + `task_status`，走通用异步轮询 |
+> | `POST /paas/v4/videos/generations`（`cogvideox-flash`） | 200，返回 `id` + `task_status` |
+> | `POST /paas/v4/audio/speech`（`glm-tts`） | 200，返回二进制音频；不传 `response_format` 时是 `audio/pcm` 裸流，传 `wav` 得到标准 `RIFF` 头的 wav |
+> | `POST /paas/v4/audio/transcriptions`（`glm-asr-2512`） | 200，返回 `text` 字段 |
+> | `GET /paas/v4/voice/list` | 200，返回 `voice_list` |
+>
+> 并跑通了完整语音链路：用 `glm-tts` 合成「今天下午三点，把合同编号发给财务部。」，
+> 再把这段 wav 交给 `glm-asr-2512`，识别结果为「今天下午三点把合同编号发给财务部」——
+> 内容正确，仅标点省略。**注意 ASR 只收 `.wav`/`.mp3`，TTS 默认输出的是裸 `pcm`，
+> 两者串联时必须显式指定 `response_format: "wav"`**，否则拿 pcm 直接喂 ASR 会失败。
+
 ## 异步任务通用说明
 
 图像生成（异步）、视频生成都是**异步接口**：提交请求后立即返回一个任务 `id` 和 `task_status`（`PROCESSING`/`SUCCESS`/`FAIL`），真正的生成结果需要轮询通用的“查询异步结果”接口获取：

@@ -6,6 +6,12 @@
 
 ## 接入方式一览
 
+> **本文各条已用真实调用验证（2026-09-07）**：`zai-sdk 0.2.3` 的导入名、两个客户端类与各自默认地址、
+> `chat.completions.create` 的同步与流式调用、`langchain_openai.ChatOpenAI` 指向智谱、
+> `anthropic` SDK 指向 `/api/anthropic`、以及两个 Maven 坐标是否真实存在，逐条实测通过，结论见下文各节。
+> 其中有一条**踩过的坑单独提醒**（下面「SDK 调用返回空字符串」一节）。
+
+
 | 接入方式 | 本质 | 典型使用者 | 迁移成本 |
 | --- | --- | --- | --- |
 | HTTP 原生调用 | 直接调用 RESTful API | 任意语言、无历史包袱的新项目 | 无，需要自行封装请求 |
@@ -413,6 +419,24 @@ print(result['output'])
 
 ---
 
+## ⚠️ 用 SDK 时最容易踩的一个坑：返回 `content` 是空字符串
+
+**已用真实调用验证（2026-09-07，`zai-sdk 0.2.3` + `glm-4.6`）**：SDK 调用成功、HTTP 无错、
+`response.model` 正常回显，但 `choices[0].message.content` 是**空字符串**。原因是
+**思考过程也算进 `max_tokens`**，`max_tokens` 给小了就会全被推理吃光，正文一个字都没剩：
+
+| 调用方式 | `finish_reason` | `content` | `reasoning_content` |
+| :--- | :--- | :--- | :--- |
+| `max_tokens=20`（默认开思考） | `length` | **`''`（空）** | 37 字 |
+| `max_tokens=800`（默认开思考） | `stop` | `'巴黎'` | 105 字 |
+| `max_tokens=20` + `thinking={"type":"disabled"}` | `stop` | `'巴黎'` | 0 字 |
+
+**判断方法**：拿到空 `content` 时先看 `finish_reason`——是 `length` 就说明预算被推理吃完了，
+不是模型"没话说"。**解决办法二选一**：把 `max_tokens` 调大（几百起步），
+或对轻量任务显式关闭思考（`glm-5.3` 系列在标准端点关不掉，改用 `reasoning_effort: "low"`，
+见 `references/chat.md`）。流式调用同理——只收 `delta.content` 会拼出空串，
+推理内容在 `delta.reasoning_content` 里。
+
 ## 5. 官方 Python SDK（`zai-sdk`，注意与旧版 `zhipuai` 包的区别）
 
 `zai-sdk` 是智谱当前官方维护的 Python SDK，本质上是**对 HTTP API 的封装**——`client.chat.completions.create(...)` 内部就是对 `POST /paas/v4/chat/completions` 的一次 HTTP 调用，参数、返回结构与直接调 HTTP API 是同一套。选择用 SDK 还是裸调用 HTTP，只是"要不要自己处理序列化/重试/流式解析"的取舍。
@@ -433,6 +457,8 @@ python -c "import zai; print(zai.__version__)"
 ### 创建客户端
 
 `zai` 包里同时暴露了 `ZhipuAiClient` 和 `ZaiClient` 两个客户端类；**国内 bigmodel.cn 平台请使用 `ZhipuAiClient`**，对应的国内 API 地址是 `https://open.bigmodel.cn/api/paas/v4/`。
+
+**已实测确认（2026-09-07，`zai-sdk 0.2.3`）**：两个类确实同时存在，且各自的默认 `base_url` 无需手动传——`ZhipuAiClient` 默认 `https://open.bigmodel.cn/api/paas/v4`，`ZaiClient` 默认 `https://api.z.ai/api/paas/v4`。**选错类会直接打到另一个站点上**（Key 通常也不通用），这是新旧/国内外两套 SDK 最容易混淆的地方。
 
 ```python
 from zai import ZhipuAiClient
@@ -499,6 +525,8 @@ def robust_chat(message):
 ---
 
 ## 6. 官方 Java SDK（`zai-sdk` for Java，Maven 坐标 `ai.z.openapi:zai-sdk`）
+
+> **坐标已核实（2026-09-07）**：`ai.z.openapi:zai-sdk` 在 Maven Central 真实存在（当时最新 `0.3.5`，共 23 个版本）；上文 Claude 兼容层提到的 `com.anthropic:anthropic-java` 同样存在（当时最新 `2.61.0`）。文中示例写的版本号可能已经过时，接入前请取最新版。
 
 Java SDK 同样是对 HTTP API 的封装，面向需要类型安全、企业级高并发场景的 Java 项目。
 

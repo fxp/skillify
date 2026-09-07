@@ -1,0 +1,1390 @@
+{
+  "exit_reason": "max_iterations (5)",
+  "original_description": "\u63a5\u5165\u667a\u8c31AI\u5f00\u653e\u5e73\u53f0\uff08bigmodel.cn / open.bigmodel.cn\uff0cGLM \u7cfb\u5217\u6a21\u578b\uff09\u7684\u5b8c\u6574 API \u4f7f\u7528\u624b\u518c\u3002\u5f53\u7528\u6237\u9700\u8981\u8c03\u7528\u667a\u8c31/bigmodel.cn/GLM/CogView/CogVideoX/Zhipu AI \u7684\u4efb\u4f55\u80fd\u529b\u65f6\u90fd\u5e94\u4f7f\u7528\u672c\u6280\u80fd\u2014\u2014\u5305\u62ec\u4f46\u4e0d\u9650\u4e8e\uff1aGLM \u5bf9\u8bdd\u8865\u5168\uff08\u542b\u6d41\u5f0f\u3001\u51fd\u6570\u8c03\u7528\u3001\u6df1\u5ea6\u601d\u8003\u3001\u591a\u6a21\u6001\uff09\u3001\u56fe\u50cf\u751f\u6210\uff08GLM-Image/CogView\uff09\u3001\u89c6\u9891\u751f\u6210\uff08CogVideoX/Vidu\uff09\u3001\u8bed\u97f3\u8bc6\u522b\u4e0e\u5408\u6210\uff08GLM-ASR/GLM-TTS/\u97f3\u8272\u514b\u9686\uff09\u3001\u6587\u672c\u5411\u91cf\u4e0e\u91cd\u6392\u5e8f\uff08Embedding/Rerank\uff09\u3001\u8054\u7f51\u641c\u7d22\u3001\u7f51\u9875\u9605\u8bfb\u3001\u5185\u5bb9\u5b89\u5168\u5ba1\u6838\u3001\u6587\u6863\u89e3\u6790\u4e0e OCR\u3001\u6587\u4ef6\u4e0e\u6279\u5904\u7406\uff08Batch\uff09API\u3001\u6258\u7ba1\u77e5\u8bc6\u5e93/RAG \u68c0\u7d22\u3001\u5e73\u53f0\u5185\u7f6e\u667a\u80fd\u4f53\uff08Agents/Assistant API\uff09\u3001GLM-Realtime \u5b9e\u65f6\u8bed\u97f3\u89c6\u9891\u901a\u8bdd\uff0c\u4ee5\u53ca\u901a\u8fc7 OpenAI SDK / Claude API / LangChain \u517c\u5bb9\u5c42\u5feb\u901f\u8fc1\u79fb\u63a5\u5165\uff1b\u4e5f\u5305\u62ec GLM Coding Plan\uff08\u7f16\u7a0b\u5957\u9910\uff09\u7684\u63a5\u5165\u4e0e\u6392\u9519\u2014\u2014Coding Plan \u7684 API Key\u3001Base URL\u3001\u53ef\u7528\u6a21\u578b\u90fd\u4e0e\u6807\u51c6 API \u4e0d\u540c\uff0c\u5728 Claude Code / OpenCode / Kilo Code \u7b49\u5de5\u5177\u91cc\u914d\u7f6e\u5957\u9910\u3001\u6216\u9047\u5230\"\u4e70\u4e86\u5957\u9910\u5374\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\"\u65f6\u4e5f\u5e94\u52a0\u8f7d\u672c\u6280\u80fd\u3002\u53ea\u8981\u7528\u6237\u63d0\u5230\"\u63a5\u5165\u667a\u8c31\"\"bigmodel.cn\"\"open.bigmodel.cn\"\"GLM \u6a21\u578b\"\"\u667a\u8c31\u5f00\u653e\u5e73\u53f0\"\"zai-sdk\"\"zhipuai\"\"GLM Coding Plan\"\"\u7f16\u7a0b\u5957\u9910\"\uff0c\u6216\u8005\u8981\u6c42\u5199\u4ee3\u7801\u8c03\u7528\u4e0a\u8ff0\u4efb\u610f\u80fd\u529b\uff0c\u90fd\u5e94\u4e3b\u52a8\u52a0\u8f7d\u672c\u6280\u80fd\uff0c\u4e0d\u8981\u51ed\u8bb0\u5fc6\u7f16\u9020\u63a5\u53e3\u53c2\u6570\u3002",
+  "best_description": "\u63a5\u5165\u667a\u8c31AI\u5f00\u653e\u5e73\u53f0\uff08bigmodel.cn / open.bigmodel.cn\uff0cGLM \u7cfb\u5217\u6a21\u578b\uff09\u7684\u5b8c\u6574 API \u4f7f\u7528\u624b\u518c\u3002\u5f53\u7528\u6237\u9700\u8981\u8c03\u7528\u667a\u8c31/bigmodel.cn/GLM/CogView/CogVideoX/Zhipu AI \u7684\u4efb\u4f55\u80fd\u529b\u65f6\u90fd\u5e94\u4f7f\u7528\u672c\u6280\u80fd\u2014\u2014\u5305\u62ec\u4f46\u4e0d\u9650\u4e8e\uff1aGLM \u5bf9\u8bdd\u8865\u5168\uff08\u542b\u6d41\u5f0f\u3001\u51fd\u6570\u8c03\u7528\u3001\u6df1\u5ea6\u601d\u8003\u3001\u591a\u6a21\u6001\uff09\u3001\u56fe\u50cf\u751f\u6210\uff08GLM-Image/CogView\uff09\u3001\u89c6\u9891\u751f\u6210\uff08CogVideoX/Vidu\uff09\u3001\u8bed\u97f3\u8bc6\u522b\u4e0e\u5408\u6210\uff08GLM-ASR/GLM-TTS/\u97f3\u8272\u514b\u9686\uff09\u3001\u6587\u672c\u5411\u91cf\u4e0e\u91cd\u6392\u5e8f\uff08Embedding/Rerank\uff09\u3001\u8054\u7f51\u641c\u7d22\u3001\u7f51\u9875\u9605\u8bfb\u3001\u5185\u5bb9\u5b89\u5168\u5ba1\u6838\u3001\u6587\u6863\u89e3\u6790\u4e0e OCR\u3001\u6587\u4ef6\u4e0e\u6279\u5904\u7406\uff08Batch\uff09API\u3001\u6258\u7ba1\u77e5\u8bc6\u5e93/RAG \u68c0\u7d22\u3001\u5e73\u53f0\u5185\u7f6e\u667a\u80fd\u4f53\uff08Agents/Assistant API\uff09\u3001GLM-Realtime \u5b9e\u65f6\u8bed\u97f3\u89c6\u9891\u901a\u8bdd\uff0c\u4ee5\u53ca\u901a\u8fc7 OpenAI SDK / Claude API / LangChain \u517c\u5bb9\u5c42\u5feb\u901f\u8fc1\u79fb\u63a5\u5165\uff1b\u4e5f\u5305\u62ec GLM Coding Plan\uff08\u7f16\u7a0b\u5957\u9910\uff09\u7684\u63a5\u5165\u4e0e\u6392\u9519\u2014\u2014Coding Plan \u7684 API Key\u3001Base URL\u3001\u53ef\u7528\u6a21\u578b\u90fd\u4e0e\u6807\u51c6 API \u4e0d\u540c\uff0c\u5728 Claude Code / OpenCode / Kilo Code \u7b49\u5de5\u5177\u91cc\u914d\u7f6e\u5957\u9910\u3001\u6216\u9047\u5230\"\u4e70\u4e86\u5957\u9910\u5374\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\"\u65f6\u4e5f\u5e94\u52a0\u8f7d\u672c\u6280\u80fd\u3002\u53ea\u8981\u7528\u6237\u63d0\u5230\"\u63a5\u5165\u667a\u8c31\"\"bigmodel.cn\"\"open.bigmodel.cn\"\"GLM \u6a21\u578b\"\"\u667a\u8c31\u5f00\u653e\u5e73\u53f0\"\"zai-sdk\"\"zhipuai\"\"GLM Coding Plan\"\"\u7f16\u7a0b\u5957\u9910\"\uff0c\u6216\u8005\u8981\u6c42\u5199\u4ee3\u7801\u8c03\u7528\u4e0a\u8ff0\u4efb\u610f\u80fd\u529b\uff0c\u90fd\u5e94\u4e3b\u52a8\u52a0\u8f7d\u672c\u6280\u80fd\uff0c\u4e0d\u8981\u51ed\u8bb0\u5fc6\u7f16\u9020\u63a5\u53e3\u53c2\u6570\u3002",
+  "best_score": "4/8",
+  "best_train_score": "6/12",
+  "best_test_score": "4/8",
+  "final_description": "\u5f53\u4efb\u52a1\u91cc\u51fa\u73b0\"\u667a\u8c31\"\u3001\"Zhipu\"\u3001GLM \u7cfb\u5217\u6a21\u578b\uff08glm-4.x\u3001glm-5.x\uff09\u3001\"bigmodel.cn\"/\"open.bigmodel.cn\"\u3001\"zhipuai\"\u3001\"zai-sdk\"\u3001\"ZHIPUAI_API_KEY\"\u3001\"embedding-3\"\u6216\"GLM Coding Plan/\u7f16\u7a0b\u5957\u9910\"\u65f6\u4f7f\u7528\u672c\u6280\u80fd\uff0c\u54ea\u6015\u53ea\u662f\u4efb\u52a1\u4e2d\u7684\u4e00\u5904\u7ec6\u8282\u800c\u975e\u5168\u90e8\u8bc9\u6c42\u3002\u5178\u578b\u573a\u666f\uff1a\u5199 Python/requests \u6216 SDK \u811a\u672c\u8c03\u7528 glm \u6a21\u578b\u505a\u5206\u7c7b\u3001\u751f\u6210\u3001\u5bf9\u8bdd\uff1b\u628a\u9879\u76ee\u91cc\u7684 embedding/rerank \u6362\u6210\u667a\u8c31\u7684 embedding-3\uff08\u7ef4\u5ea6\u3001\u6279\u91cf\u4e0a\u9650\u600e\u4e48\u5b9a\uff09\uff1b\u901a\u8fc7 OpenAI SDK / Anthropic(Claude) SDK / LangChain \u517c\u5bb9\u5c42\u8c03\u7528 GLM\uff0c\u5305\u62ec thinking\u3001reasoning_effort\u3001max_tokens\u3001response_format\uff08json_schema \u8fd4\u56de\u5939\u5e26\u89e3\u91ca\u6587\u5b57\u800c\u4e0d\u662f\u7eaf JSON\uff09\u3001tool_choice \u5f3a\u5236\u6307\u5b9a\u4e0d\u751f\u6548\u7b49\u5177\u4f53\u62a5\u9519\u6216\u53c2\u6570\u7591\u95ee\uff1b\u5728 Claude Code / OpenCode / Kilo Code \u7684 settings.json/env \u91cc\u914d\u7f6e GLM Coding Plan \u7684 Key\u3001Base URL\u3001\u6a21\u578b\u6620\u5c04\uff0c\u6216\u6392\u67e5\"1113 \u4f59\u989d\u4e0d\u8db3\"\uff1b\u4ee5\u53ca\u591a\u6a21\u6001\u3001\u56fe\u50cf/\u89c6\u9891\u751f\u6210\u3001\u8bed\u97f3\u8bc6\u522b\u5408\u6210\u3001\u8054\u7f51\u641c\u7d22\u3001OCR\u3001Batch\u3001RAG/\u6258\u7ba1\u77e5\u8bc6\u5e93\u3001Agents \u7b49\u80fd\u529b\u3002\u4e0d\u9002\u7528\u4e8e\uff1a\u7eaf\u6a21\u578b\u9009\u578b\u5bf9\u6bd4\u4e0d\u5199\u4ee3\u7801\u3001\u6216\u6574\u4e2a\u4efb\u52a1\u5b8c\u5168\u4e0d\u6d89\u53ca\u667a\u8c31/GLM/bigmodel.cn \u7684\u573a\u666f\u3002",
+  "iterations_run": 5,
+  "holdout": 0.4,
+  "train_size": 12,
+  "test_size": 8,
+  "history": [
+    {
+      "iteration": 1,
+      "description": "\u63a5\u5165\u667a\u8c31AI\u5f00\u653e\u5e73\u53f0\uff08bigmodel.cn / open.bigmodel.cn\uff0cGLM \u7cfb\u5217\u6a21\u578b\uff09\u7684\u5b8c\u6574 API \u4f7f\u7528\u624b\u518c\u3002\u5f53\u7528\u6237\u9700\u8981\u8c03\u7528\u667a\u8c31/bigmodel.cn/GLM/CogView/CogVideoX/Zhipu AI \u7684\u4efb\u4f55\u80fd\u529b\u65f6\u90fd\u5e94\u4f7f\u7528\u672c\u6280\u80fd\u2014\u2014\u5305\u62ec\u4f46\u4e0d\u9650\u4e8e\uff1aGLM \u5bf9\u8bdd\u8865\u5168\uff08\u542b\u6d41\u5f0f\u3001\u51fd\u6570\u8c03\u7528\u3001\u6df1\u5ea6\u601d\u8003\u3001\u591a\u6a21\u6001\uff09\u3001\u56fe\u50cf\u751f\u6210\uff08GLM-Image/CogView\uff09\u3001\u89c6\u9891\u751f\u6210\uff08CogVideoX/Vidu\uff09\u3001\u8bed\u97f3\u8bc6\u522b\u4e0e\u5408\u6210\uff08GLM-ASR/GLM-TTS/\u97f3\u8272\u514b\u9686\uff09\u3001\u6587\u672c\u5411\u91cf\u4e0e\u91cd\u6392\u5e8f\uff08Embedding/Rerank\uff09\u3001\u8054\u7f51\u641c\u7d22\u3001\u7f51\u9875\u9605\u8bfb\u3001\u5185\u5bb9\u5b89\u5168\u5ba1\u6838\u3001\u6587\u6863\u89e3\u6790\u4e0e OCR\u3001\u6587\u4ef6\u4e0e\u6279\u5904\u7406\uff08Batch\uff09API\u3001\u6258\u7ba1\u77e5\u8bc6\u5e93/RAG \u68c0\u7d22\u3001\u5e73\u53f0\u5185\u7f6e\u667a\u80fd\u4f53\uff08Agents/Assistant API\uff09\u3001GLM-Realtime \u5b9e\u65f6\u8bed\u97f3\u89c6\u9891\u901a\u8bdd\uff0c\u4ee5\u53ca\u901a\u8fc7 OpenAI SDK / Claude API / LangChain \u517c\u5bb9\u5c42\u5feb\u901f\u8fc1\u79fb\u63a5\u5165\uff1b\u4e5f\u5305\u62ec GLM Coding Plan\uff08\u7f16\u7a0b\u5957\u9910\uff09\u7684\u63a5\u5165\u4e0e\u6392\u9519\u2014\u2014Coding Plan \u7684 API Key\u3001Base URL\u3001\u53ef\u7528\u6a21\u578b\u90fd\u4e0e\u6807\u51c6 API \u4e0d\u540c\uff0c\u5728 Claude Code / OpenCode / Kilo Code \u7b49\u5de5\u5177\u91cc\u914d\u7f6e\u5957\u9910\u3001\u6216\u9047\u5230\"\u4e70\u4e86\u5957\u9910\u5374\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\"\u65f6\u4e5f\u5e94\u52a0\u8f7d\u672c\u6280\u80fd\u3002\u53ea\u8981\u7528\u6237\u63d0\u5230\"\u63a5\u5165\u667a\u8c31\"\"bigmodel.cn\"\"open.bigmodel.cn\"\"GLM \u6a21\u578b\"\"\u667a\u8c31\u5f00\u653e\u5e73\u53f0\"\"zai-sdk\"\"zhipuai\"\"GLM Coding Plan\"\"\u7f16\u7a0b\u5957\u9910\"\uff0c\u6216\u8005\u8981\u6c42\u5199\u4ee3\u7801\u8c03\u7528\u4e0a\u8ff0\u4efb\u610f\u80fd\u529b\uff0c\u90fd\u5e94\u4e3b\u52a8\u52a0\u8f7d\u672c\u6280\u80fd\uff0c\u4e0d\u8981\u51ed\u8bb0\u5fc6\u7f16\u9020\u63a5\u53e3\u53c2\u6570\u3002",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "\u60f3\u505a\u4e2a\u8bed\u97f3\u52a9\u624b demo\uff1a\u7528\u6237\u8bf4\u8bdd \u2192 GLM-ASR \u8f6c\u6587\u5b57 \u2192 \u6a21\u578b\u56de\u7b54 \u2192 GLM-TTS \u5408\u6210\u8bed\u97f3\u64ad\u653e\u3002\u7528 node \u5199\uff0c\u5148\u7ed9\u6211 asr \u548c tts \u4e24\u4e2a\u63a5\u53e3\u7684\u8c03\u7528\u793a\u4f8b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 CogVideoX \u505a\u4e00\u4e2a\u56fe\u751f\u89c6\u9891\u7684\u5c0f\u5de5\u5177\uff1a\u8f93\u5165\u4e00\u5f20\u4ea7\u54c1\u56fe\u548c\u4e00\u53e5\u63cf\u8ff0\uff0c\u751f\u6210 5 \u79d2\u89c6\u9891\uff0c\u5f02\u6b65\u4efb\u52a1\u600e\u4e48\u8f6e\u8be2\u7ed3\u679c\uff1f",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "our backend already uses the openai python sdk against gpt-4o; product wants to switch to zhipu's glm models for the china deployment. what do I need to change in the client init and are there any params that behave differently?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "zai-sdk \u91cc\u600e\u4e48\u4e0a\u4f20\u4e00\u4e2a pdf \u7136\u540e\u8ba9\u6a21\u578b\u8bfb\u5b83\u7684\u5185\u5bb9\u56de\u7b54\u95ee\u9898\uff1f\u6211\u7528 purpose=agent \u4e0a\u4f20\u4e86\u4f46 chat \u62a5\u6587\u4ef6\u89e3\u6790\u5931\u8d25",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u7684 fastapi \u670d\u52a1\u8c03\u7528\u5927\u6a21\u578b\u65f6\u7ecf\u5e38 429\uff0c\u5e2e\u6211\u5199\u4e00\u4e2a\u901a\u7528\u7684\u6307\u6570\u9000\u907f\u91cd\u8bd5\u88c5\u9970\u5668\uff0c\u8981\u652f\u6301 async",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u628a\u8fd9\u6bb5 langchain \u7684\u94fe\u6539\u6210 langgraph\uff0c\u73b0\u5728\u7528\u7684 ChatOpenAI\uff0c\u6a21\u578b\u4e0d\u7528\u52a8",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "vLLM \u672c\u5730\u90e8\u7f72 GLM-4.5-Air \u7684\u5f00\u6e90\u6743\u91cd\uff0c\u600e\u4e48\u5f00\u542f tool call \u89e3\u6790\u548c reasoning parser\uff1f\u663e\u5b58 80G \u591f\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "kimi k2 \u7684 api \u652f\u6301 function calling \u5417\uff1f\u7ed9\u6211\u4e00\u4e2a moonshot \u5e73\u53f0\u5de5\u5177\u8c03\u7528\u7684 python \u4f8b\u5b50",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "description": "\u63a5\u5165\u667a\u8c31AI\u5f00\u653e\u5e73\u53f0\uff08bigmodel.cn / open.bigmodel.cn\uff09\u4e0e GLM \u7cfb\u5217\u6a21\u578b\uff08glm-4.x\u3001glm-5.x\u3001CogView\u3001CogVideoX\uff09\u7684\u6743\u5a01 API \u624b\u518c\u4e0e\u6392\u9519\u4f9d\u636e\u3002\u53ea\u8981\u4efb\u52a1\u4e2d\u51fa\u73b0\"\u667a\u8c31\"\"bigmodel.cn\"\"zhipuai\"\"GLM\"\"glm-4\"\"glm-5\"\"zai-sdk\"\u7b49\u5b57\u6837\uff0c\u6216\u6d89\u53ca\u5bf9\u8bdd\u8865\u5168\u3001\u6d41\u5f0f\u3001\u51fd\u6570\u8c03\u7528\u3001\u6df1\u5ea6\u601d\u8003(thinking/reasoning_effort)\u3001\u7ed3\u6784\u5316\u8f93\u51fa(json_schema/json_object \u7684\u771f\u5b9e\u9650\u5236)\u3001tool_choice \u5f3a\u5236\u8c03\u7528\u3001\u591a\u6a21\u6001\u3001Embedding/Rerank(\u5982 embedding-3)\u3001\u56fe\u50cf/\u89c6\u9891\u751f\u6210\u3001\u8bed\u97f3\u8bc6\u522b\u5408\u6210\u3001\u8054\u7f51\u641c\u7d22\u3001\u6587\u6863\u89e3\u6790OCR\u3001Batch\u3001\u6258\u7ba1\u77e5\u8bc6\u5e93/RAG\u3001Agents/Assistant\u3001GLM-Realtime \u7b49\u4efb\u610f\u80fd\u529b\u2014\u2014\u54ea\u6015\u53ea\u662f\u4e00\u6bb5\u66f4\u5927\u4efb\u52a1\u91cc\u987a\u5e26\u63d0\u4e00\u53e5\"\u7528\u667a\u8c31\u7684 xxx \u6a21\u578b\u5199\u4e2a\u811a\u672c\"\"key \u653e ZHIPUAI_API_KEY\"\uff0c\u4e5f\u5fc5\u987b\u5148\u52a0\u8f7d\u672c\u6280\u80fd\uff0c\u4e0d\u8981\u51ed\u8bb0\u5fc6\u7f16\u9020\u53c2\u6570\u3001\u5b57\u6bb5\u540d\u6216\u9ed8\u8ba4\u884c\u4e3a\u3002\u540c\u6837\u8986\u76d6\u901a\u8fc7 OpenAI SDK / Anthropic(Claude) SDK / LangChain \u517c\u5bb9\u5c42\u8c03\u7528\u667a\u8c31\u6a21\u578b\u7684\u573a\u666f\u3002GLM Coding Plan\uff08\u7f16\u7a0b\u5957\u9910\uff09\u5355\u72ec\u8986\u76d6\uff1a\u5176 API Key\u3001Base URL\uff08\u2026/api/coding/paas/v4\uff09\u3001\u53ef\u7528\u6a21\u578b\u90fd\u548c\u6807\u51c6 API \u4e0d\u540c\uff0c\u5728 Claude Code / OpenCode / Kilo Code \u7b49\u5de5\u5177\u7684 settings.json/env \u91cc\u914d\u7f6e\u5957\u9910\u3001\u505a haiku/sonnet/opus \u6a21\u578b\u6620\u5c04\uff0c\u6216\u9047\u5230\"\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\"\u6392\u9519\uff0c\u90fd\u8981\u52a0\u8f7d\u672c\u6280\u80fd\u3002",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "\u60f3\u505a\u4e2a\u8bed\u97f3\u52a9\u624b demo\uff1a\u7528\u6237\u8bf4\u8bdd \u2192 GLM-ASR \u8f6c\u6587\u5b57 \u2192 \u6a21\u578b\u56de\u7b54 \u2192 GLM-TTS \u5408\u6210\u8bed\u97f3\u64ad\u653e\u3002\u7528 node \u5199\uff0c\u5148\u7ed9\u6211 asr \u548c tts \u4e24\u4e2a\u63a5\u53e3\u7684\u8c03\u7528\u793a\u4f8b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 CogVideoX \u505a\u4e00\u4e2a\u56fe\u751f\u89c6\u9891\u7684\u5c0f\u5de5\u5177\uff1a\u8f93\u5165\u4e00\u5f20\u4ea7\u54c1\u56fe\u548c\u4e00\u53e5\u63cf\u8ff0\uff0c\u751f\u6210 5 \u79d2\u89c6\u9891\uff0c\u5f02\u6b65\u4efb\u52a1\u600e\u4e48\u8f6e\u8be2\u7ed3\u679c\uff1f",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "our backend already uses the openai python sdk against gpt-4o; product wants to switch to zhipu's glm models for the china deployment. what do I need to change in the client init and are there any params that behave differently?",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "zai-sdk \u91cc\u600e\u4e48\u4e0a\u4f20\u4e00\u4e2a pdf \u7136\u540e\u8ba9\u6a21\u578b\u8bfb\u5b83\u7684\u5185\u5bb9\u56de\u7b54\u95ee\u9898\uff1f\u6211\u7528 purpose=agent \u4e0a\u4f20\u4e86\u4f46 chat \u62a5\u6587\u4ef6\u89e3\u6790\u5931\u8d25",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u7684 fastapi \u670d\u52a1\u8c03\u7528\u5927\u6a21\u578b\u65f6\u7ecf\u5e38 429\uff0c\u5e2e\u6211\u5199\u4e00\u4e2a\u901a\u7528\u7684\u6307\u6570\u9000\u907f\u91cd\u8bd5\u88c5\u9970\u5668\uff0c\u8981\u652f\u6301 async",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u628a\u8fd9\u6bb5 langchain \u7684\u94fe\u6539\u6210 langgraph\uff0c\u73b0\u5728\u7528\u7684 ChatOpenAI\uff0c\u6a21\u578b\u4e0d\u7528\u52a8",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "vLLM \u672c\u5730\u90e8\u7f72 GLM-4.5-Air \u7684\u5f00\u6e90\u6743\u91cd\uff0c\u600e\u4e48\u5f00\u542f tool call \u89e3\u6790\u548c reasoning parser\uff1f\u663e\u5b58 80G \u591f\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "kimi k2 \u7684 api \u652f\u6301 function calling \u5417\uff1f\u7ed9\u6211\u4e00\u4e2a moonshot \u5e73\u53f0\u5de5\u5177\u8c03\u7528\u7684 python \u4f8b\u5b50",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "description": "TRIGGER\uff08\u5148\u52a0\u8f7d\u672c\u6280\u80fd\u518d\u52a8\u624b\uff0c\u54ea\u6015\u53ea\u662f\u5927\u4efb\u52a1\u91cc\u987a\u5e26\u4e00\u53e5\uff09\uff1a\u4efb\u52a1\u6d89\u53ca\u667a\u8c31AI/Zhipu/bigmodel.cn/open.bigmodel.cn \u6216\u4efb\u610f GLM \u6a21\u578b\uff08glm-4.x\u3001glm-5.x\u3001CogView\u3001CogVideoX\u3001GLM-Realtime\u3001zai-sdk\uff09\u7684\u4ee3\u7801\u7f16\u5199\u3001\u811a\u672c\u3001\u6392\u9519\u6216\u914d\u7f6e\u2014\u2014\u5305\u62ec\u4f46\u4e0d\u9650\u4e8e\uff1a\u76f4\u63a5\u5199 requests/SDK \u8c03\u7528 glm-5.3 \u7b49\u6a21\u578b\u505a\u5206\u7c7b/\u751f\u6210\u4efb\u52a1\u3001\u73af\u5883\u53d8\u91cf ZHIPUAI_API_KEY\u3001\u901a\u8fc7 OpenAI SDK/Anthropic(Claude) SDK/LangChain \u517c\u5bb9\u5c42\u8c03\u7528\u667a\u8c31\u3001embeddings/rerank\uff08\u5982 embedding-3\uff09\u9009\u578b\u6216\u66ff\u6362\u3001response_format=json_schema/json_object \u8fd4\u56de\u4e0d\u662f\u7eaf JSON\u3001tool_choice \u5f3a\u5236\u6307\u5b9a\u51fd\u6570\u4e0d\u751f\u6548\u3001thinking/reasoning_effort \u6df1\u5ea6\u601d\u8003\u53c2\u6570\u3001\u56fe\u50cf\u89c6\u9891\u751f\u6210\u3001\u8bed\u97f3\u8bc6\u522b\u5408\u6210\u3001\u8054\u7f51\u641c\u7d22\u3001OCR\u3001Batch\u3001RAG/\u6258\u7ba1\u77e5\u8bc6\u5e93\u3001Agents\u3002\u540c\u6837\u8986\u76d6 GLM Coding Plan\uff08\u7f16\u7a0b\u5957\u9910\uff09\uff1a\u5728 Claude Code/OpenCode/Kilo Code \u91cc\u914d\u7f6e\u5957\u9910 Key/Base URL\u3001haiku/sonnet/opus \u6a21\u578b\u6620\u5c04\uff0c\u6216\u62a5\u9519\"1113 \u4f59\u989d\u4e0d\u8db3\"\u3002\u4e0d\u8981\u51ed\u8bad\u7ec3\u8bb0\u5fc6\u7f16\u9020 bigmodel.cn \u7684\u53c2\u6570\u540d\u3001\u9ed8\u8ba4\u884c\u4e3a\u6216\u62a5\u9519\u539f\u56e0\u2014\u2014\u8fd9\u4e9b\u5751\u5b98\u65b9\u6587\u6863\u4e5f\u672a\u5fc5\u5199\u6e05\u695a\uff0c\u672c\u6280\u80fd\u6709\u5b9e\u6d4b\u6821\u9a8c\u8fc7\u7684\u7b54\u6848\u3002\u4ec5\u5bf9\u6bd4\u6a21\u578b\u9009\u578b\u3001\u4e0d\u5199\u4ee3\u7801/\u4e0d\u5b9e\u9645\u8c03\u7528\u65f6\u53ef\u4e0d\u52a0\u8f7d\u3002\u5176\u4ed6\u5382\u5546\uff08OpenAI/DeepSeek/Qwen\u7b49\uff09\u4e0d\u6d89\u53ca\u667a\u8c31\u65f6\u4e0d\u9002\u7528\u3002",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "\u60f3\u505a\u4e2a\u8bed\u97f3\u52a9\u624b demo\uff1a\u7528\u6237\u8bf4\u8bdd \u2192 GLM-ASR \u8f6c\u6587\u5b57 \u2192 \u6a21\u578b\u56de\u7b54 \u2192 GLM-TTS \u5408\u6210\u8bed\u97f3\u64ad\u653e\u3002\u7528 node \u5199\uff0c\u5148\u7ed9\u6211 asr \u548c tts \u4e24\u4e2a\u63a5\u53e3\u7684\u8c03\u7528\u793a\u4f8b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 CogVideoX \u505a\u4e00\u4e2a\u56fe\u751f\u89c6\u9891\u7684\u5c0f\u5de5\u5177\uff1a\u8f93\u5165\u4e00\u5f20\u4ea7\u54c1\u56fe\u548c\u4e00\u53e5\u63cf\u8ff0\uff0c\u751f\u6210 5 \u79d2\u89c6\u9891\uff0c\u5f02\u6b65\u4efb\u52a1\u600e\u4e48\u8f6e\u8be2\u7ed3\u679c\uff1f",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "our backend already uses the openai python sdk against gpt-4o; product wants to switch to zhipu's glm models for the china deployment. what do I need to change in the client init and are there any params that behave differently?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "zai-sdk \u91cc\u600e\u4e48\u4e0a\u4f20\u4e00\u4e2a pdf \u7136\u540e\u8ba9\u6a21\u578b\u8bfb\u5b83\u7684\u5185\u5bb9\u56de\u7b54\u95ee\u9898\uff1f\u6211\u7528 purpose=agent \u4e0a\u4f20\u4e86\u4f46 chat \u62a5\u6587\u4ef6\u89e3\u6790\u5931\u8d25",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u7684 fastapi \u670d\u52a1\u8c03\u7528\u5927\u6a21\u578b\u65f6\u7ecf\u5e38 429\uff0c\u5e2e\u6211\u5199\u4e00\u4e2a\u901a\u7528\u7684\u6307\u6570\u9000\u907f\u91cd\u8bd5\u88c5\u9970\u5668\uff0c\u8981\u652f\u6301 async",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u628a\u8fd9\u6bb5 langchain \u7684\u94fe\u6539\u6210 langgraph\uff0c\u73b0\u5728\u7528\u7684 ChatOpenAI\uff0c\u6a21\u578b\u4e0d\u7528\u52a8",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "kimi k2 \u7684 api \u652f\u6301 function calling \u5417\uff1f\u7ed9\u6211\u4e00\u4e2a moonshot \u5e73\u53f0\u5de5\u5177\u8c03\u7528\u7684 python \u4f8b\u5b50",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "vLLM \u672c\u5730\u90e8\u7f72 GLM-4.5-Air \u7684\u5f00\u6e90\u6743\u91cd\uff0c\u600e\u4e48\u5f00\u542f tool call \u89e3\u6790\u548c reasoning parser\uff1f\u663e\u5b58 80G \u591f\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 4,
+      "description": "\u5fc5\u8bfb\u89c4\u5219\uff1a\u53ea\u8981\u7528\u6237\u6d88\u606f\u4e2d\u51fa\u73b0\"\u667a\u8c31\"\u3001\"Zhipu\"\u3001\"bigmodel.cn\"\u3001\"open.bigmodel.cn\"\u3001\"GLM\"\uff08\u542b glm-4/glm-5 \u7b49\u4efb\u610f\u7248\u672c\u53f7\uff09\u3001\"zhipuai\"\u3001\"zai-sdk\"\u3001\"embedding-3\"\u3001\"ZHIPUAI_API_KEY\"\u3001\"GLM Coding Plan\"\u6216\"\u7f16\u7a0b\u5957\u9910\"\u8fd9\u4e9b\u8bcd\u91cc\u7684\u4efb\u610f\u4e00\u4e2a\u2014\u2014\u54ea\u6015\u53ea\u662f\u6574\u53e5\u8bdd\u91cc\u7684\u4e00\u4e2a\u4ece\u53e5\u3001\u4e00\u4e2a\u53d8\u91cf\u540d\u3001\u4e00\u4e2a Base URL\u3001\u4e00\u53e5\u987a\u5e26\u63d0\u5230\u2014\u2014\u5c31\u5fc5\u987b\u5148\u52a0\u8f7d\u672c\u6280\u80fd\u518d\u56de\u7b54\u6216\u5199\u4ee3\u7801\uff0c\u7981\u6b62\u51ed\u8bad\u7ec3\u8bb0\u5fc6\u7f16\u9020\u53c2\u6570\u3001\u9ed8\u8ba4\u884c\u4e3a\u6216\u62a5\u9519\u539f\u56e0\u3002\u5178\u578b\u573a\u666f\u5305\u62ec\u4f46\u4e0d\u9650\u4e8e\uff1a\u5199\u811a\u672c/\u7528 requests \u6216 SDK \u8c03 glm \u6a21\u578b\u505a\u5206\u7c7b\u3001\u751f\u6210\u3001\u5bf9\u8bdd\uff1b\u628a\u73b0\u6709 embedding/rerank \u6362\u6210\u667a\u8c31\u7684\uff08\u5982 embedding-3\uff0c\u6d89\u53ca\u7ef4\u5ea6\u3001\u6279\u91cf\u4e0a\u9650\uff09\uff1b\u901a\u8fc7 OpenAI SDK / Anthropic(Claude) SDK / LangChain \u517c\u5bb9\u5c42\u63a5\u5165\u667a\u8c31\uff08\u542b thinking\u3001reasoning_effort\u3001max_tokens\u3001response_format\u3001tool_choice \u662f\u5426\u771f\u7684\u751f\u6548\uff09\uff1b\u5728 Claude Code / OpenCode / Kilo Code \u7684 settings.json/env \u91cc\u914d\u7f6e GLM Coding Plan \u7684 Key\u3001Base URL\u3001haiku/sonnet/opus \u6a21\u578b\u6620\u5c04\uff0c\u6216\u6392\u67e5\"1113 \u4f59\u989d\u4e0d\u8db3\"\uff1b\u591a\u6a21\u6001\u3001\u56fe\u50cf\u89c6\u9891\u751f\u6210\u3001\u8bed\u97f3\u8bc6\u522b\u5408\u6210\u3001\u8054\u7f51\u641c\u7d22\u3001OCR\u3001Batch\u3001RAG/\u6258\u7ba1\u77e5\u8bc6\u5e93\u3001Agents\u3002\u4e0e\u667a\u8c31\u5b8c\u5168\u65e0\u5173\uff08\u5176\u4ed6\u5382\u5546\u6a21\u578b\u9009\u578b\u5bf9\u6bd4\u3001\u4e0d\u5199\u4ee3\u7801\u3001\u7eaf Claude Code \u914d\u7f6e\u4e0d\u542b\u667a\u8c31\u5b57\u6837\uff09\u65f6\u4e0d\u9002\u7528\u3002",
+      "train_passed": 7,
+      "train_failed": 5,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.6666666666666666,
+          "triggers": 2,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "\u60f3\u505a\u4e2a\u8bed\u97f3\u52a9\u624b demo\uff1a\u7528\u6237\u8bf4\u8bdd \u2192 GLM-ASR \u8f6c\u6587\u5b57 \u2192 \u6a21\u578b\u56de\u7b54 \u2192 GLM-TTS \u5408\u6210\u8bed\u97f3\u64ad\u653e\u3002\u7528 node \u5199\uff0c\u5148\u7ed9\u6211 asr \u548c tts \u4e24\u4e2a\u63a5\u53e3\u7684\u8c03\u7528\u793a\u4f8b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 CogVideoX \u505a\u4e00\u4e2a\u56fe\u751f\u89c6\u9891\u7684\u5c0f\u5de5\u5177\uff1a\u8f93\u5165\u4e00\u5f20\u4ea7\u54c1\u56fe\u548c\u4e00\u53e5\u63cf\u8ff0\uff0c\u751f\u6210 5 \u79d2\u89c6\u9891\uff0c\u5f02\u6b65\u4efb\u52a1\u600e\u4e48\u8f6e\u8be2\u7ed3\u679c\uff1f",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "our backend already uses the openai python sdk against gpt-4o; product wants to switch to zhipu's glm models for the china deployment. what do I need to change in the client init and are there any params that behave differently?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "zai-sdk \u91cc\u600e\u4e48\u4e0a\u4f20\u4e00\u4e2a pdf \u7136\u540e\u8ba9\u6a21\u578b\u8bfb\u5b83\u7684\u5185\u5bb9\u56de\u7b54\u95ee\u9898\uff1f\u6211\u7528 purpose=agent \u4e0a\u4f20\u4e86\u4f46 chat \u62a5\u6587\u4ef6\u89e3\u6790\u5931\u8d25",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4eec\u7684 fastapi \u670d\u52a1\u8c03\u7528\u5927\u6a21\u578b\u65f6\u7ecf\u5e38 429\uff0c\u5e2e\u6211\u5199\u4e00\u4e2a\u901a\u7528\u7684\u6307\u6570\u9000\u907f\u91cd\u8bd5\u88c5\u9970\u5668\uff0c\u8981\u652f\u6301 async",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u628a\u8fd9\u6bb5 langchain \u7684\u94fe\u6539\u6210 langgraph\uff0c\u73b0\u5728\u7528\u7684 ChatOpenAI\uff0c\u6a21\u578b\u4e0d\u7528\u52a8",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "vLLM \u672c\u5730\u90e8\u7f72 GLM-4.5-Air \u7684\u5f00\u6e90\u6743\u91cd\uff0c\u600e\u4e48\u5f00\u542f tool call \u89e3\u6790\u548c reasoning parser\uff1f\u663e\u5b58 80G \u591f\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "kimi k2 \u7684 api \u652f\u6301 function calling \u5417\uff1f\u7ed9\u6211\u4e00\u4e2a moonshot \u5e73\u53f0\u5de5\u5177\u8c03\u7528\u7684 python \u4f8b\u5b50",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 7,
+      "failed": 5,
+      "total": 12,
+      "results": [
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.6666666666666666,
+          "triggers": 2,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "iteration": 5,
+      "description": "\u5f53\u4efb\u52a1\u91cc\u51fa\u73b0\"\u667a\u8c31\"\u3001\"Zhipu\"\u3001GLM \u7cfb\u5217\u6a21\u578b\uff08glm-4.x\u3001glm-5.x\uff09\u3001\"bigmodel.cn\"/\"open.bigmodel.cn\"\u3001\"zhipuai\"\u3001\"zai-sdk\"\u3001\"ZHIPUAI_API_KEY\"\u3001\"embedding-3\"\u6216\"GLM Coding Plan/\u7f16\u7a0b\u5957\u9910\"\u65f6\u4f7f\u7528\u672c\u6280\u80fd\uff0c\u54ea\u6015\u53ea\u662f\u4efb\u52a1\u4e2d\u7684\u4e00\u5904\u7ec6\u8282\u800c\u975e\u5168\u90e8\u8bc9\u6c42\u3002\u5178\u578b\u573a\u666f\uff1a\u5199 Python/requests \u6216 SDK \u811a\u672c\u8c03\u7528 glm \u6a21\u578b\u505a\u5206\u7c7b\u3001\u751f\u6210\u3001\u5bf9\u8bdd\uff1b\u628a\u9879\u76ee\u91cc\u7684 embedding/rerank \u6362\u6210\u667a\u8c31\u7684 embedding-3\uff08\u7ef4\u5ea6\u3001\u6279\u91cf\u4e0a\u9650\u600e\u4e48\u5b9a\uff09\uff1b\u901a\u8fc7 OpenAI SDK / Anthropic(Claude) SDK / LangChain \u517c\u5bb9\u5c42\u8c03\u7528 GLM\uff0c\u5305\u62ec thinking\u3001reasoning_effort\u3001max_tokens\u3001response_format\uff08json_schema \u8fd4\u56de\u5939\u5e26\u89e3\u91ca\u6587\u5b57\u800c\u4e0d\u662f\u7eaf JSON\uff09\u3001tool_choice \u5f3a\u5236\u6307\u5b9a\u4e0d\u751f\u6548\u7b49\u5177\u4f53\u62a5\u9519\u6216\u53c2\u6570\u7591\u95ee\uff1b\u5728 Claude Code / OpenCode / Kilo Code \u7684 settings.json/env \u91cc\u914d\u7f6e GLM Coding Plan \u7684 Key\u3001Base URL\u3001\u6a21\u578b\u6620\u5c04\uff0c\u6216\u6392\u67e5\"1113 \u4f59\u989d\u4e0d\u8db3\"\uff1b\u4ee5\u53ca\u591a\u6a21\u6001\u3001\u56fe\u50cf/\u89c6\u9891\u751f\u6210\u3001\u8bed\u97f3\u8bc6\u522b\u5408\u6210\u3001\u8054\u7f51\u641c\u7d22\u3001OCR\u3001Batch\u3001RAG/\u6258\u7ba1\u77e5\u8bc6\u5e93\u3001Agents \u7b49\u80fd\u529b\u3002\u4e0d\u9002\u7528\u4e8e\uff1a\u7eaf\u6a21\u578b\u9009\u578b\u5bf9\u6bd4\u4e0d\u5199\u4ee3\u7801\u3001\u6216\u6574\u4e2a\u4efb\u52a1\u5b8c\u5168\u4e0d\u6d89\u53ca\u667a\u8c31/GLM/bigmodel.cn \u7684\u573a\u666f\u3002",
+      "train_passed": 6,
+      "train_failed": 6,
+      "train_total": 12,
+      "train_results": [
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "test_passed": 4,
+      "test_failed": 4,
+      "test_total": 8,
+      "test_results": [
+        {
+          "query": "\u60f3\u505a\u4e2a\u8bed\u97f3\u52a9\u624b demo\uff1a\u7528\u6237\u8bf4\u8bdd \u2192 GLM-ASR \u8f6c\u6587\u5b57 \u2192 \u6a21\u578b\u56de\u7b54 \u2192 GLM-TTS \u5408\u6210\u8bed\u97f3\u64ad\u653e\u3002\u7528 node \u5199\uff0c\u5148\u7ed9\u6211 asr \u548c tts \u4e24\u4e2a\u63a5\u53e3\u7684\u8c03\u7528\u793a\u4f8b",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 CogVideoX \u505a\u4e00\u4e2a\u56fe\u751f\u89c6\u9891\u7684\u5c0f\u5de5\u5177\uff1a\u8f93\u5165\u4e00\u5f20\u4ea7\u54c1\u56fe\u548c\u4e00\u53e5\u63cf\u8ff0\uff0c\u751f\u6210 5 \u79d2\u89c6\u9891\uff0c\u5f02\u6b65\u4efb\u52a1\u600e\u4e48\u8f6e\u8be2\u7ed3\u679c\uff1f",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "our backend already uses the openai python sdk against gpt-4o; product wants to switch to zhipu's glm models for the china deployment. what do I need to change in the client init and are there any params that behave differently?",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "zai-sdk \u91cc\u600e\u4e48\u4e0a\u4f20\u4e00\u4e2a pdf \u7136\u540e\u8ba9\u6a21\u578b\u8bfb\u5b83\u7684\u5185\u5bb9\u56de\u7b54\u95ee\u9898\uff1f\u6211\u7528 purpose=agent \u4e0a\u4f20\u4e86\u4f46 chat \u62a5\u6587\u4ef6\u89e3\u6790\u5931\u8d25",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u628a\u8fd9\u6bb5 langchain \u7684\u94fe\u6539\u6210 langgraph\uff0c\u73b0\u5728\u7528\u7684 ChatOpenAI\uff0c\u6a21\u578b\u4e0d\u7528\u52a8",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u6211\u4eec\u7684 fastapi \u670d\u52a1\u8c03\u7528\u5927\u6a21\u578b\u65f6\u7ecf\u5e38 429\uff0c\u5e2e\u6211\u5199\u4e00\u4e2a\u901a\u7528\u7684\u6307\u6570\u9000\u907f\u91cd\u8bd5\u88c5\u9970\u5668\uff0c\u8981\u652f\u6301 async",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "kimi k2 \u7684 api \u652f\u6301 function calling \u5417\uff1f\u7ed9\u6211\u4e00\u4e2a moonshot \u5e73\u53f0\u5de5\u5177\u8c03\u7528\u7684 python \u4f8b\u5b50",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "vLLM \u672c\u5730\u90e8\u7f72 GLM-4.5-Air \u7684\u5f00\u6e90\u6743\u91cd\uff0c\u600e\u4e48\u5f00\u542f tool call \u89e3\u6790\u548c reasoning parser\uff1f\u663e\u5b58 80G \u591f\u5417",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ],
+      "passed": 6,
+      "failed": 6,
+      "total": 12,
+      "results": [
+        {
+          "query": "glm-5.3 \u8c03 chat/completions \u65f6\u6211\u4f20\u4e86 response_format json_schema\uff0c\u4f46\u8fd4\u56de\u7684\u8fd8\u662f\u5e26\u89e3\u91ca\u6587\u5b57\u7684 markdown\uff0c\u4e0d\u662f\u7eaf json\uff0c\u662f\u6211\u54ea\u91cc\u5199\u9519\u4e86\u5417",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u9700\u8981\u7ed9\u6211\u4eec\u7684 RAG \u7cfb\u7edf\u6362\u6210\u667a\u8c31\u7684 embedding-3 + rerank\uff0c\u73b0\u5728\u7528\u7684\u662f text-embedding-3-small\uff0c\u7ef4\u5ea6\u53c2\u6570\u548c\u6279\u91cf\u4e0a\u9650\u662f\u591a\u5c11\uff0c\u5199\u4e2a\u66ff\u6362\u7684 embed \u51fd\u6570",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u7528 anthropic sdk \u8c03\u667a\u8c31\u7684\u517c\u5bb9\u5c42\uff0cthinking \u53c2\u6570\u8fd8\u80fd\u7528\u5417\uff0cmax_tokens \u4e0a\u9650\u591a\u5c11",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "claude code \u60f3\u63a5 bigmodel \u7684\u5957\u9910\u8dd1\uff0csettings.json \u7684 env \u8981\u600e\u4e48\u914d\uff0chaiku sonnet opus \u5206\u522b\u6620\u5c04\u6210\u4ec0\u4e48\u6a21\u578b",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u5e2e\u6211\u5199\u4e2a python \u811a\u672c\uff0c\u7528\u667a\u8c31\u7684 glm-5.3 \u628a data/reviews.csv \u91cc 2000 \u6761\u7528\u6237\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u8f93\u51fa\u5230 labeled.csv\uff0ckey \u5728 ZHIPUAI_API_KEY \u91cc\uff0c\u7528 requests \u76f4\u63a5\u8c03",
+          "should_trigger": true,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u4e70\u4e86 GLM Coding Plan Max\uff0c\u60f3\u5728 OpenCode \u91cc\u7528\uff0cbase url \u586b\u54ea\u4e2a\uff1f\u586b\u4e86 open.bigmodel.cn/api/paas/v4 \u4e00\u76f4\u62a5 1113 \u4f59\u989d\u4e0d\u8db3\uff0c\u6211\u660e\u660e\u521a\u5145\u7684\u5957\u9910",
+          "should_trigger": true,
+          "trigger_rate": 0.3333333333333333,
+          "triggers": 1,
+          "runs": 3,
+          "pass": false
+        },
+        {
+          "query": "\u6211\u5728 claude code \u91cc\u60f3\u5207\u6362\u9ed8\u8ba4\u6a21\u578b\u5230 opus\uff0csettings.json \u91cc model \u5b57\u6bb5\u600e\u4e48\u5199",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u5bf9\u6bd4\u4e00\u4e0b glm-5.3\u3001qwen3-max\u3001deepseek-v3.2 \u4e09\u4e2a\u6a21\u578b\u5728\u7f16\u7a0b\u4e0a\u7684\u53e3\u7891\u548c\u4ef7\u683c\uff0c\u505a\u4e2a\u9009\u578b\u5efa\u8bae\uff0c\u4e0d\u7528\u5199\u4ee3\u7801",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "deepseek \u7684 api \u600e\u4e48\u5f00 reasoning \u6a21\u5f0f\uff0cdeepseek-reasoner \u8fd4\u56de\u7684 reasoning_content \u8981\u4e0d\u8981\u4f20\u56de\u5386\u53f2",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5199\u4e00\u4e2a\u901a\u7528\u7684 sse \u6d41\u5f0f\u89e3\u6790\u5668\uff0c\u80fd\u5904\u7406 data: \u524d\u7f00\u548c [DONE]\uff0c\u4e0d\u9488\u5bf9\u5177\u4f53\u5382\u5546",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5e2e\u6211\u7528 openai \u7684 gpt-4o-mini \u6279\u91cf\u7ed9 2000 \u6761\u8bc4\u8bba\u505a\u60c5\u611f\u5206\u7c7b\uff0c\u5199\u4e2a batch api \u7684\u811a\u672c\uff0ckey \u5728 OPENAI_API_KEY",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        },
+        {
+          "query": "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f\u91cc\u600e\u4e48\u5b89\u5168\u5730\u8c03\u7b2c\u4e09\u65b9\u5927\u6a21\u578b api\uff0ckey \u4e0d\u80fd\u653e\u524d\u7aef\uff0c\u5e2e\u6211\u8bbe\u8ba1\u4e00\u4e2a\u4e91\u51fd\u6570\u4e2d\u8f6c\u7684\u65b9\u6848",
+          "should_trigger": false,
+          "trigger_rate": 0.0,
+          "triggers": 0,
+          "runs": 3,
+          "pass": true
+        }
+      ]
+    }
+  ]
+}

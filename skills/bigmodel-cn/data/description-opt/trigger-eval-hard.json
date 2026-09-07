@@ -1,0 +1,22 @@
+[
+  {"query": "我要用 GLM Coding Plan 的额度写个 RAG，问了下 embedding-3 能不能算在套餐里，网上有人说套餐现在啥都包，你确认一下再告诉我要不要单独搞个 Key", "should_trigger": true},
+  {"query": "线上有个脚本用套餐 Key 调 chat/completions 传了 thinking:{'type':'disabled'}，本地开发机上用标准 Key 测同样代码总是报 1210，这是环境问题还是代码写错了？", "should_trigger": true},
+  {"query": "我们内部有个约定：调用智谱的模型前要先判断是不是免费模型走单独的限流池。glm-4.5-air 这个名字，走 GLM Coding Plan 套餐调用的话，算不算免费模型、限流规则一样吗？", "should_trigger": true},
+  {"query": "PDF 上传后 chat 接口报'文件解析失败，请检查文件可访问性和格式'，我看官方 openapi 规范里 purpose 字段说随便填哪个值都行，是不是我传错了别的参数？", "should_trigger": true},
+  {"query": "打算拿 glm-4.6 处理一份 80 万字的合同扫描件转写稿，一次性喂进去做摘要，这个模型的上下文窗口装得下吗？", "should_trigger": true},
+  {"query": "我在标准端点和 Coding 端点分别测了 GET /models，返回的列表长得一样，想拿这个列表来判断我的 GLM Coding Plan 套餐到底包含哪些模型，这个思路靠谱吗？", "should_trigger": true},
+  {"query": "同事说他们组用 GLM Coding Plan 的 Key 也顺利跑通了 /paas/v4/web_search 独立接口做联网搜索，让我抄他们的调用方式，帮我照着写一版", "should_trigger": true},
+  {"query": "Claude Code 里想把 haiku 那一档尽量映射到最省 token/额度的模型，套餐里填 glm-4.5-air 是不是比 glm-5.3-flash 更省钱？", "should_trigger": true},
+  {"query": "智谱那边 Preserved Thinking 这个东西，我用 GLM Coding Plan 的 chat/completions 接口是不是要显式传参数才会开，还是默认就有？", "should_trigger": true},
+  {"query": "帮我评估一下：我们准备把 GLM Coding Plan 套餐的 Key 直接下发给几十个开发者各自在本地脚本里用，用量记录靠什么维度看，会不会互相挤占额度", "should_trigger": true},
+  {"query": "帮我把这段 langchain 的链改成 langgraph，现在用的 ChatOpenAI，模型不用动", "should_trigger": false},
+  {"query": "我们的 fastapi 服务调用大模型时经常 429，帮我写一个通用的指数退避重试装饰器，要支持 async", "should_trigger": false},
+  {"query": "kimi k2 的 api 支持 function calling 吗？给我一个 moonshot 平台工具调用的 python 例子", "should_trigger": false},
+  {"query": "vLLM 本地部署 GLM-4.5-Air 的开源权重，怎么开启 tool call 解析和 reasoning parser？显存 80G 够吗", "should_trigger": false},
+  {"query": "deepseek 的 api 怎么开 reasoning 模式，deepseek-reasoner 返回的 reasoning_content 要不要传回历史", "should_trigger": false},
+  {"query": "写一个通用的 sse 流式解析器，能处理 data: 前缀和 [DONE]，不针对具体厂商", "should_trigger": false},
+  {"query": "帮我对比一下 glm-5.3、qwen3-max、deepseek-v3.2 三个模型在编程上的口碑和价格，做个选型建议，不用写代码", "should_trigger": false},
+  {"query": "微信小程序里怎么安全地调第三方大模型 api，key 不能放前端，帮我设计一个云函数中转的方案", "should_trigger": false},
+  {"query": "我在 claude code 里想切换默认模型到 opus，settings.json 里 model 字段怎么写", "should_trigger": false},
+  {"query": "帮我用 openai 的 gpt-4o-mini 批量给 2000 条评论做情感分类，写个 batch api 的脚本，key 在 OPENAI_API_KEY", "should_trigger": false}
+]

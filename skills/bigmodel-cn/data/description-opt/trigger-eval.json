@@ -1,0 +1,22 @@
+[
+  {"query": "帮我写个 python 脚本，用智谱的 glm-5.3 把 data/reviews.csv 里 2000 条用户评论做情感分类，输出到 labeled.csv，key 在 ZHIPUAI_API_KEY 里，用 requests 直接调", "should_trigger": true},
+  {"query": "我买了 GLM Coding Plan Max，想在 OpenCode 里用，base url 填哪个？填了 open.bigmodel.cn/api/paas/v4 一直报 1113 余额不足，我明明刚充的套餐", "should_trigger": true},
+  {"query": "our backend already uses the openai python sdk against gpt-4o; product wants to switch to zhipu's glm models for the china deployment. what do I need to change in the client init and are there any params that behave differently?", "should_trigger": true},
+  {"query": "用 CogVideoX 做一个图生视频的小工具：输入一张产品图和一句描述，生成 5 秒视频，异步任务怎么轮询结果？", "should_trigger": true},
+  {"query": "claude code 想接 bigmodel 的套餐跑，settings.json 的 env 要怎么配，haiku sonnet opus 分别映射成什么模型", "should_trigger": true},
+  {"query": "需要给我们的 RAG 系统换成智谱的 embedding-3 + rerank，现在用的是 text-embedding-3-small，维度参数和批量上限是多少，写个替换的 embed 函数", "should_trigger": true},
+  {"query": "glm-5.3 调 chat/completions 时我传了 response_format json_schema，但返回的还是带解释文字的 markdown，不是纯 json，是我哪里写错了吗", "should_trigger": true},
+  {"query": "想做个语音助手 demo：用户说话 → GLM-ASR 转文字 → 模型回答 → GLM-TTS 合成语音播放。用 node 写，先给我 asr 和 tts 两个接口的调用示例", "should_trigger": true},
+  {"query": "zai-sdk 里怎么上传一个 pdf 然后让模型读它的内容回答问题？我用 purpose=agent 上传了但 chat 报文件解析失败", "should_trigger": true},
+  {"query": "用 anthropic sdk 调智谱的兼容层，thinking 参数还能用吗，max_tokens 上限多少", "should_trigger": true},
+  {"query": "帮我用 openai 的 gpt-4o-mini 批量给 2000 条评论做情感分类，写个 batch api 的脚本，key 在 OPENAI_API_KEY", "should_trigger": false},
+  {"query": "我在 claude code 里想切换默认模型到 opus，settings.json 里 model 字段怎么写", "should_trigger": false},
+  {"query": "kimi k2 的 api 支持 function calling 吗？给我一个 moonshot 平台工具调用的 python 例子", "should_trigger": false},
+  {"query": "我们的 fastapi 服务调用大模型时经常 429，帮我写一个通用的指数退避重试装饰器，要支持 async", "should_trigger": false},
+  {"query": "vLLM 本地部署 GLM-4.5-Air 的开源权重，怎么开启 tool call 解析和 reasoning parser？显存 80G 够吗", "should_trigger": false},
+  {"query": "帮我把这段 langchain 的链改成 langgraph，现在用的 ChatOpenAI，模型不用动", "should_trigger": false},
+  {"query": "deepseek 的 api 怎么开 reasoning 模式，deepseek-reasoner 返回的 reasoning_content 要不要传回历史", "should_trigger": false},
+  {"query": "写一个通用的 sse 流式解析器，能处理 data: 前缀和 [DONE]，不针对具体厂商", "should_trigger": false},
+  {"query": "帮我对比一下 glm-5.3、qwen3-max、deepseek-v3.2 三个模型在编程上的口碑和价格，做个选型建议，不用写代码", "should_trigger": false},
+  {"query": "微信小程序里怎么安全地调第三方大模型 api，key 不能放前端，帮我设计一个云函数中转的方案", "should_trigger": false}
+]

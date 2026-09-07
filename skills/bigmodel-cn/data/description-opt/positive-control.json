@@ -1,0 +1,6 @@
+[
+  {"query": "我要用 GLM Coding Plan 的额度写个 RAG，问了下 embedding-3 能不能算在套餐里，网上有人说套餐现在啥都包，你确认一下再告诉我要不要单独搞个 Key", "should_trigger": true},
+  {"query": "帮我写个 python 脚本，用智谱的 glm-5.3 把 data/reviews.csv 里 2000 条用户评论做情感分类，输出到 labeled.csv，key 在 ZHIPUAI_API_KEY 里，用 requests 直接调", "should_trigger": true},
+  {"query": "我买了 GLM Coding Plan Max，想在 OpenCode 里用，base url 填哪个？填了 open.bigmodel.cn/api/paas/v4 一直报 1113 余额不足，我明明刚充的套餐", "should_trigger": true},
+  {"query": "帮我把这段 langchain 的链改成 langgraph，现在用的 ChatOpenAI，模型不用动", "should_trigger": false}
+]

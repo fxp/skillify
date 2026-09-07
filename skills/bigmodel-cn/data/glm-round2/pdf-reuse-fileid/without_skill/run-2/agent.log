@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，并用本地 mock 服务做了端到端冒烟验证（未调用真实 API）。
+
+## 脚本做的事
+
+1. **上传一次换 file_id**：`POST /api/paas/v4/files`，multipart 字段 `file` + `purpose="agent"`（现行文档枚举 `batch / code-interpreter / agent / voice-clone-input`，其中 `agent` 支持 pdf、单文件 ≤20M），从响应的 `id` 字段取 file_id。
+2. **三问复用同一 file_id**：每轮 `POST /api/paas/v4/chat/completions` 的 `messages[0].content` 只放两个块——`{"type":"file","file":{"file_id": <id>}}` 和 `{"type":"text","text": 问题}`，文件本体只传过一次，不重复上传、不做 base64 内联，也不在本地解析 PDF（无 PyPDF2/pdfplumber/pypdf，只用 requests）。
+3. 依次打印三个问题的答案（合同编号 / 总金额 / 违约金算法）到 stdout，每轮附上 token 消耗便于核对；进度信息走 stderr，`ZHIPUAI_API_KEY` 缺失或请求失败时报错退出（非 0）。
+
+## 接口细节均按今日抓取的官方文档逐字核实
+
+- 文件块是**嵌套结构** `file.file_id`（schema 标了 `additionalProperties: false`，旧的平级 `file_id`/`file_url` 写法已被标记为兼容但不建议），文件输入需视觉系模型，官方文件理解示例用 `glm-5.3-flash`（可用 `ZHIPUAI_MODEL` 覆盖）。
+- 注意：PyPI 上的 `zai-sdk` 0.2.3 是旧版（purpose 还是 `fine-tune/retrieval/batch`），我没有采信它，以现行文档为准。
+
+## 健壮性处理
+
+- **contract.pdf 定位**：你目录里实际没有这份文件（真实文件在 `glm-round2/fixtures/contract.pdf`），所以脚本按「命令行参数 > `CONTRACT_PDF` 环境变量 > 脚本同目录/上级/cwd 及其父目录 > fixtures 兜底」查找，无论从 `run-2/` 还是 `outputs/` 里跑都能找到。
+- `requests.Session` 复用连接；429/5xx/网络错误指数退避重试 3 次；4xx 直接把平台返回的错误信息打到 stderr 后退出。
+- 额外留了 `BIGMODEL_BASE_URL` 覆盖项（也用于我本地 mock 验证），默认仍是官方地址。
+
+真实环境运行：`ZHIPUAI_API_KEY=你的key python3 main.py`
+
+Sources:
+- [上传文件 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%96%87%E4%BB%B6-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6)
+- [对话补全 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)
+- [GLM-4.5V - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.5v)
+- [模型概览 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/start/model-overview)

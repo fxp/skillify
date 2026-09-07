@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，并用 fixtures 里的 comments.txt 验证了非联网路径（读取 20 条评论、生成 20 行合法 jsonl、`custom_id` 唯一、格式正确）。
+
+**关键决策**
+
+- **模型**：查了官方文档的模型总览和对话补全 API 参考，当前旗舰是 `glm-5.3`（1M 上下文），脚本里 `MODEL = "glm-5.3"`，没有降级到 Air/Flash/Turbo 等小模型——符合“质量优先”的要求。
+- **接口细节**（均按[官方 Batch 指南](https://docs.bigmodel.cn/cn/guide/tools/batch)和 API 参考逐字核对）：
+  - 上传：`POST /api/paas/v4/files`，multipart 字段 `file` + `purpose="batch"`，文件名必须 `.jsonl`，响应取 `id`；
+  - 创建任务：`POST /api/paas/v4/batches`，请求体 `input_file_id` + `endpoint="/v4/chat/completions"`（新版 API 中 `completion_window` 已废弃，不在请求体里）；
+  - jsonl 每行格式：`{"custom_id": ..., "method": "POST", "url": "/v4/chat/completions", "body": {...}}`（字段名是 `custom_id`，不是 OpenAI 的 `custom_request_id`）；
+  - Batch 半价与需求一致。
+- **分类质量设计**：system 提示词给了明确的正面/负面/中性判定标准 + 3 个 few-shot 示例，要求只输出标签本身；`temperature=0.1` 保证结果稳定可复现（文档确认 GLM-5 系列支持该参数）。没有加 `thinking` 等未完全确认 schema 的参数，避免 batch 执行期才静默失败。
+- **输出约定**：进度信息全部走 stderr，stdout 只有最后一行裸的 batch 任务 id，方便管道/脚本接管。
+- 只用了 `requests` 和标准库；API Key 从 `ZHIPUAI_API_KEY` 读取，缺失或请求失败时给出明确报错退出。
+
+**运行前注意**：当前 `run-3/`（及 `outputs/`）目录里没有 `comments.txt`，脚本会在运行时读取自身所在目录的 `comments.txt`，跑之前需要把它放到 `outputs/` 旁边。运行后会顺带生成 `batch_requests.jsonl`（含全部请求，便于核对），不会等待任务完成。
+
+参考文档：[Batch API 指南](https://docs.bigmodel.cn/cn/guide/tools/batch) · [Batch API FAQ](https://docs.bigmodel.cn/cn/faq/batch-api-issues) · [创建批处理任务 API](https://docs.bigmodel.cn/api-reference/批处理-api/创建批处理任务) · [对话补全 API](https://docs.bigmodel.cn/api-reference/模型-api/对话补全) · [模型总览](https://docs.bigmodel.cn/cn/guide/start/model-overview)

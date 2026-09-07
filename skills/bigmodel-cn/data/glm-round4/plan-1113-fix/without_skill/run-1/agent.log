@@ -1,0 +1,37 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+已修复并保存到 `outputs/main.py`（编译通过，目录里只有这一个文件）。按说明没有实际调用 API。
+
+## 429 / 1113 的真正原因
+
+你的额度没用完，报 1113 是因为**请求根本没走到套餐能抵扣的端点**，官方 FAQ 明确列了 1113 的排查项。原代码有两个 bug：
+
+1. **端点用错（主因）**：`https://open.bigmodel.cn/api/paas/v4/chat/completions` 是按量计费的通用端点，GLM Coding Plan 的额度**不在这里抵扣**，账户没现金余额就直接报 1113。Coding Plan 覆盖的 OpenAI 协议专用端点是 `https://open.bigmodel.cn/api/coding/paas/v4`（Anthropic 协议是 `/api/anthropic`）。
+2. **取 Key 写错**：`os.environ[chr(39)+chr(39)]` 中 `chr(39)` 是单引号，实际读的是名为 `''` 的环境变量，`GLM_KEY` 根本没被用上。
+
+## 修复后的脚本
+
+```python
+API_URL = "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions"  # 套餐专用端点
+MODEL = "glm-5.3"  # 官方 FAQ：所有套餐均支持 GLM-5.3 / GLM-5.3-Flash
+
+api_key = os.environ.get("GLM_KEY", "").strip()
+resp = requests.post(API_URL, headers={"Authorization": f"Bearer {api_key}"}, json={
+    "model": MODEL, "messages": [{"role": "user", "content": "用一句话介绍 Python"}],
+}, timeout=60)
+print(resp.json()["choices"][0]["message"]["content"])
+```
+
+完整版还包含：`GLM_KEY` 未设置时的提示、非 200 时打印状态码和响应体（方便下次直接看到服务端原因）、答案只打印到 stdout。
+
+运行方式：`export GLM_KEY=你的APIKey && python3 main.py`
+
+一个提醒：官方 FAQ 写明「套餐仅限在官方支持的指定工具与产品环境中使用」。如果脚本在这个端点仍报 1113，可退而走 Claude Code 同款的 Anthropic 协议端点，把 POST 目标换成 `https://open.bigmodel.cn/api/anthropic/v1/messages`、鉴权头改为 `{"x-api-key": GLM_KEY, "content-type": "application/json"}`、请求体加 `"max_tokens": 1024`，从 `resp.json()["content"][0]["text"]` 取回答即可。
+
+Sources:
+- [GLM Coding Plan 常见问题 FAQ - 智谱AI开放文档](https://docs.bigmodel.cn/cn/coding-plan/faq)
+- [GLM Coding Plan 快速开始（三种协议的 Base URL）- 智谱AI开放文档](https://docs.bigmodel.cn/cn/coding-plan/quick-start)
+- [Claude API 兼容接口 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/develop/claude/introduction)
+- [GLM Coding Plan 使用须知 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/coding-plan/usage-notes)

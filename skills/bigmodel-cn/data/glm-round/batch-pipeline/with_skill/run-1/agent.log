@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，验证均通过。
+
+## 实现流程
+
+`comments.txt`（每行一条）→ 生成 `batch_requests.jsonl` → `POST /paas/v4/files` 上传（`purpose=batch`）→ `POST /paas/v4/batches` 创建任务 → **stdout 只打印 batch 任务 id**（进度信息全部走 stderr，方便管道/程序解析）。
+
+## 依据技能包和官方文档确认的关键细节
+
+- **模型选了 `glm-4-plus`**：Batch 只支持一份白名单，`glm-5.3`/`glm-5.2` 等旗舰**不在名单内**，而且校验发生在上传 `.jsonl` 这一步（会直接报 1210「模型名称错误」）。`glm-4-plus` 同时出现在官方 Batch 队列表和技能包实测白名单里；也留了 `BATCH_MODEL` 环境变量可覆盖。
+- **`custom_id` 用 `request-001` 格式**：技能包实测短于 6 字符（如 `r1`）会在上传阶段报 1210。
+- 上传必须 `purpose=batch`；创建任务的 `endpoint` 与每行 `url` 统一为 `/v4/chat/completions`；已废弃的 `completion_window` 不传。
+- 每条请求带 system 提示词（只输出 正面/负面/中性 一个词）+ `temperature: 0.1` + `max_tokens: 32`（省 token，分类一个词足够）。
+
+## 验证情况（未调用真实 API）
+
+- `python3 -m py_compile` 通过；
+- 用 fixtures 里的 20 条评论离线测试了 JSONL 生成：行数、`custom_id` 唯一性、url/model 字段全部正确；
+- 用打桩的 requests 完整跑通 `main()`：上传参数（`purpose=batch`、Bearer 头）、创建参数（`input_file_id`、`endpoint`）正确，stdout 输出恰好只有 `batch_...` id 一行；
+- 真机 `python3 main.py`（无 Key）能直接运行，报错信息清晰、退出码 1。
+
+一个说明：`comments.txt` 实际在 `glm-round/fixtures/` 下而不是脚本旁，脚本会依次在**脚本所在目录、当前工作目录**查找它，运行时把 `comments.txt` 放在 `main.py` 旁边（或在同目录下执行）即可。另外注意：调用 Batch API 前账号需完成实名认证，否则创建任务会被拒。

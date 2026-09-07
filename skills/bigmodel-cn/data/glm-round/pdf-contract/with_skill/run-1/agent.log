@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 实现要点
+
+按 SKILL.md 指引读了 `references/chat.md`、`models.md`、`files-batch.md`，并用 WebFetch 对照官方文档确认了 `file` 输入类型的字段细节（内层对象 `file_id`/`file_url`/`file_data` 三选一，`file_data` 为 `data:<MIME>;base64,<DATA>` 格式，单文件 ≤50M，支持 PDF）：
+
+- **零本地解析**：不碰 PyPDF2/pdfplumber/pypdf，PDF 原始字节 base64 后以 `{"type": "file", "file": {"file_data": "data:application/pdf;base64,...", "filename": ...}}` 内联进一条 `chat/completions` 请求，由模型直接读文件。相比“先上传拿 file_id”的两步方案，单请求更简单，也避开了 `purpose` 必须为 `user_data` 的坑
+- **模型选 `glm-5.3-flash`**：models.md 里原生多模态旗舰，是 file 输入的正确模型类别；纯文本旗舰 `glm-5.3` 不属于视觉请求体
+- **输出解析做了兜底**：视觉模型不支持 `response_format: json_object`（仅纯文本模型支持），所以靠 prompt 约束 JSON + 客户端容错解析（容忍代码块围栏、夹带文字）
+- **参数细节**：不传 `thinking.disabled`（glm-5.3-flash 标准端点会报 1210），改用合法的 `reasoning_effort: "low"`；校验 `finish_reason`；错误路径都走 stderr 并以非零码退出
+- **找 PDF 的顺序**：argv 指定 → 脚本同目录 → cwd → 脚本上级目录，覆盖各种运行姿势
+
+## 验证情况
+
+- `py_compile` 编译通过（pyc 写到 /tmp，未污染 outputs）
+- 用 `env -u ZHIPUAI_API_KEY` 实测了三条失败路径（显式路径错、找不到 PDF、找到 PDF 但无 Key），报错信息清晰、退出码 1，且全程**没有发出任何 API 请求**——按你的要求未真实调用 API
+- 顺带说明：run-1 目录下目前实际没有 contract.pdf，测试用的样本在 `glm-round/fixtures/contract.pdf`（56KB 单页）。评测时把 PDF 放到脚本旁或运行目录即可，也可 `python3 main.py /path/to/contract.pdf` 显式指定
+
+有 Key 后直接 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可，stdout 输出「合同编号」和「合同总金额」两行。
+
+Sources: [GLM-4.6V 模型文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.6v)、[对话补全 API 参考](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)

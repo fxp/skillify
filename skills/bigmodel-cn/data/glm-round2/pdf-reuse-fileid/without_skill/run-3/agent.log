@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（`python3 -m py_compile` 验证通过；按约定未实际调用 API），outputs/ 下只有这一个文件。
+
+## 脚本工作流程
+
+1. **上传一次**：`POST https://open.bigmodel.cn/api/paas/v4/files`，multipart 上传 `contract.pdf`，拿到 `file_id`；
+2. **三轮提问全部复用同一个 file_id**：每次 `POST .../chat/completions` 的 content 里只放 `{"type": "file", "file": {"file_id": ...}}` 这个引用 + 问题文本，不再传文件本身，也不把抽取文本拼进 prompt；
+3. 依次问「合同编号 / 总金额 / 违约金怎么算」，问答逐条打印到 stdout（错误信息走 stderr，非零退出码）。
+
+## 基于官方文档确认的接口细节
+
+- **鉴权**：`Authorization: Bearer <ZHIPUAI_API_KEY>`（v4 接口直接用原始 API Key）；
+- **文件引用格式**：用新版嵌套结构 `{"type": "file", "file": {"file_id": ...}}` —— 官方明确顶层 `file_id`/`file_url` 是历史兼容写法，不建议新场景使用；
+- **模型**：`glm-5.3-flash`，是对话补全文档文件问答示例所用的多模态模型，直接读文件（含扫描件），本地零解析（无 PyPDF2/pdfplumber/pypdf，仅 `requests`）；
+- **purpose 容错**：官方文档存在新旧不一致——旧版指南上传用 `purpose=file-extract`，新版上传接口枚举只剩 `batch/code-interpreter/agent/voice-clone-input`，且未说明对话引用 file_id 时的要求。脚本按 `file-extract → agent → code-interpreter` 依次尝试，成功即用；401/403 鉴权错误则立即报错退出。
+
+## 运行方式
+
+```bash
+cd .../run-3   # contract.pdf 所在目录
+ZHIPUAI_API_KEY=你的Key python3 outputs/main.py
+```
+
+一个提醒：当前 `run-3/` 目录里还没有 `contract.pdf`（只有 agent.log 和 outputs/）。脚本按「命令行参数 → 当前目录 → 脚本所在目录 → 脚本上级目录」的顺序查找，所以从 run-3 或 outputs/ 里跑都能找到，运行前请把 PDF 放进去。
+
+Sources: [智谱AI开放文档 · 上传文件 API](https://docs.bigmodel.cn/api-reference/%E6%96%87%E4%BB%B6-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6) · [对话补全 API（含 file 类型输入与 glm-5.3-flash 示例）](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8) · [（旧）文件内容抽取指南](https://docs.bigmodel.cn/cn/guide/tools/file-extract) · [GLM-4.6V 模型文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.6v)

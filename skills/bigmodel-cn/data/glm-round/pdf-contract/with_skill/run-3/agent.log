@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录只有这一个文件）。
+
+## 实现要点
+
+**核心方案**：完全不在本地解析 PDF。本地只做 Base64 传输编码（这是接口的传输格式要求，不涉及内容解析），通过智谱 BigModel 对话补全接口的多模态 `file` 输入把整个文件交给模型：
+
+```python
+{"type": "file", "file": {"file_data": "data:application/pdf;base64,...", "filename": "contract.pdf"}}
+```
+
+**依据来源**（SKILL.md → references → 官方文档三方交叉确认）：
+
+| 决策 | 依据 |
+| :-- | :-- |
+| 走 `file_data` 内联而非 `file_id` 上传 | `references/chat.md` 实测坑：`file_id` 只认 `purpose=user_data` 上传的文件，其他 purpose 100% 报 1210；内联一条请求绕开此坑 |
+| 模型选 `glm-5.3-flash` | `references/models.md` 多模态旗舰；官方文档“文件理解”示例同款，支持 `file` 类型输入 |
+| 不用 `response_format: json_object` | 该字段仅纯文本模型支持，视觉模型请求体没有它；改为 prompt 约束 JSON + 客户端健壮解析（剥 ```` ``` ```` 围栏、`<think>` 标签、`<\|begin_of_box\|>` 边界标签，兼容英文键名） |
+| `reasoning_effort: "low"` | glm-5.3-flash 标准端点强制思考（传 `disabled` 报 1210），low 档实测接近不思考，抽取类任务够用 |
+| 仅对 429/5xx 指数退避重试 | `references/errors-and-limits.md`：4xx 是配置问题重试无意义 |
+
+**其他细节**：Key 从 `ZHIPUAI_API_KEY` 读取（缺失时友好报错退出，不发请求）；单文件 53KB 远低于 50M 上限；PDF 自动定位（脚本目录 → 当前目录 → 逐级向上含 `fixtures/`，实测从 `run-3/` 运行能找到 `glm-round/fixtures/contract.pdf`）；两行结果打到 stdout，诊断信息走 stderr。
+
+**已验证**（未调用真实 API）：`python3 -m py_compile` 通过；无 Key 路径行为正确；`find_pdf` 定位成功；data URI 前缀正确（base64 解码回 `%PDF-1.3`）；`parse_answer` 对 4 种模型输出形态（裸 JSON / 代码围栏 / think+box 标签+英文键 / 带解释文字）均解析成功。
+
+一个环境提示：这台机器的 Python 3.9 在导入 requests 时会打一条 urllib3 的 LibreSSL 警告到 stderr，不影响 stdout 结果和退出码。

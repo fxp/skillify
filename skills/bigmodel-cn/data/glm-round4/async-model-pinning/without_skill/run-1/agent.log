@@ -1,0 +1,30 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/async-model-pinning/without_skill/run-1/outputs/main.py`（目录下仅此一个文件）。
+
+## 实现要点
+
+**接口**（已对照官方文档确认）：
+- 提交：`POST https://open.bigmodel.cn/api/paas/v4/async/chat/completions`，返回任务 `id` 和 `task_status`
+- 轮询：`GET https://open.bigmodel.cn/api/paas/v4/async-result/{id}`，`task_status` 取值 `PROCESSING` / `SUCCESS` / `FAIL`；成功后返回对话补全响应，**接口实际使用的模型在顶层 `model` 字段**——审计核对就取这里
+
+**流程**：三句话先批量提交（每句一个任务），再逐个轮询收结果，系统提示词限定只输出「正面/负面/中性」一个词，`thinking: disabled`、`temperature: 0.1` 保证输出干净稳定。
+
+**审计核对（不含糊的设计）**：
+- 请求模型写死为常量 `PINNED_MODEL = "glm-4.6"`，不从外部传入，不可能被覆盖
+- 跑完逐任务打印 `我请求的模型=glm-4.6 | 接口实际使用的模型=xxx`
+- 三种情况都明确处理：**一致** → 退出码 0；**不一致** → 打 `!!!!! [审计报警]` 大字块并退出码 2；**响应里根本没返回 model 字段**（无法证明用的什么模型）→ 同样按报警处理，退出码 2。退出码可被 CI/审计流水线直接机检
+
+**验证情况**（未真正调用 API）：
+- `python3 -m py_compile` 通过
+- 不设 Key 运行：给出清晰提示并以退出码 1 结束，不发出任何请求
+- 用 mock 做了离线逻辑测试，三个用例全过：实际模型 `glm-4.6` → 退出码 0；实际模型 `glm-4.5` → 审计报警退出码 2；响应缺失 `model` 字段 → 报警退出码 2（测试脚本用完已删）
+
+有 Key 的环境下直接 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可跑通。
+
+Sources:
+- [对话补全（异步）- 智谱AI开放平台文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8%E5%BC%82%E6%AD%A5)
+- [查询异步结果 - 智谱AI开放平台文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%9F%A5%E8%AF%A2%E5%BC%82%E6%AD%A5%E7%BB%93%E6%9E%9C)
+- [HTTP API 调用指南（鉴权方式）](https://docs.bigmodel.cn/cn/guide/develop/http/introduction)

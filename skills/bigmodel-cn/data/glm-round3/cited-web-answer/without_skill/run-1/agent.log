@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，离线测试（来源提取、去重、异常路径）全部通过，未调用真实 API。
+
+## 实现说明
+
+**接口确认**（查了智谱官方文档，非凭印象）：
+- 端点 `https://open.bigmodel.cn/api/paas/v4/chat/completions`，鉴权 `Authorization: Bearer $ZHIPUAI_API_KEY`
+- 联网搜索通过 `tools` 内置工具开启，其中 **`web_search.search_result: true` 是满足你要求的关键**——它要求接口把搜索来源的详情（`title`、`link` 等）随响应返回
+- 来源位于响应**顶层 `web_search` 数组**，脚本只从这里提取链接，模型正文里没有任何编造链接的机会
+- 模型用 `glm-5.3`（当前官方 API schema 的默认旗舰）
+
+**脚本行为**：
+1. 从 `ZHIPUAI_API_KEY` 读 Key（缺失时明确报错退出，不触网）
+2. 发送写死的问题「2026 年智谱 BigModel 发布了哪些新模型」+ web_search 工具（`search_pro` 引擎）
+3. 打印答案后，列出接口真实返回的来源：每条含标题和完整 URL（终端里可直接点击），按链接去重、过滤空链接
+4. 防御性处理：兼容来源出现在 `message.tool_calls` 里的旧格式；若接口本次没返回来源数据，会明说「无法提供可核对的链接」而不是编一个
+5. 仅依赖 `requests`，HTTP 非 200 / 网络异常 / 非 JSON 响应均有错误处理
+
+**验证情况**：`python3 -m py_compile` 通过；`extract_sources` 用官方文档定义的响应结构做了离线单测（正常提取、去重、坏条目过滤、空来源），无 Key 报错路径实测正常。带 Key 的真实联网调用未执行（环境无 Key）。
+
+文档来源：
+- [联网搜索 web_search 工具 - 智谱开放平台](https://docs.bigmodel.cn/cn/guide/tools/web-search)
+- [对话补全 API 参考 - 智谱开放平台](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)
+- [HTTP API 介绍（base URL 与鉴权） - 智谱开放平台](https://docs.bigmodel.cn/cn/guide/develop/http/introduction)

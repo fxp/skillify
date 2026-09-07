@@ -1,6 +1,6 @@
 # GLM-5.3 执行器轮 · 协议（开跑前冻结）
 
-**变量**：执行 Agent 从 Claude 换成 **GLM-5.3**（Claude Code CLI 作为 harness，
+**执行 Agent**：**GLM-5.3**（Claude Code CLI 仅作 harness，
 `ANTHROPIC_BASE_URL=https://open.bigmodel.cn/api/anthropic` + Coding Plan Key，
 `ANTHROPIC_DEFAULT_SONNET_MODEL=glm-5.3`）。Claude Code 是智谱官方列出的套餐支持工具。
 

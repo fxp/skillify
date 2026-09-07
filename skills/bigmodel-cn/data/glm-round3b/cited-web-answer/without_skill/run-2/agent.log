@@ -1,0 +1,19 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3b/cited-web-answer/without_skill/run-2/outputs/main.py`（目录里只有这一个文件）。
+
+## 实现要点
+
+**接口细节（已抓官方文档 docs.bigmodel.cn 确认）**
+- Endpoint：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，Bearer 认证，Key 从 `ZHIPUAI_API_KEY` 环境变量读取
+- 联网搜索：`tools` 里传 `{"type": "web_search", "web_search": {"enable": True, "search_engine": "search_pro", "search_result": True}}`，其中 `search_result: true` 是关键——它让**接口**在响应中返回真实检索来源；模型用文档示例中的 `glm-5.3`
+- 只依赖 `requests`，`python3 main.py` 直接可跑
+
+**「来源必须真实」这条核心要求的落实**
+- 来源只从接口响应的结构化字段里读：优先取顶层 `web_search` 数组（当前官方格式），兼容旧版 `message.tool_calls[].search_result`，每条打印标题 + 原样 URL（单独成行，终端可点击）+ 媒体/日期，并显示 `refer` 角标方便和正文里的 `[ref_x]` 对应
+- **完全不经过模型正文**提取链接，并按 link 去重；若接口本次没返回任何来源，会明确打印提示，而不是让链接“看起来存在”
+- 其余容错：缺 Key、非 200、非 JSON 返回均有清晰报错退出
+
+**验证情况**（按约定未真实调用 API）：`python3 -m py_compile` 通过；另用 mock 响应冒烟测试了解析逻辑——两种来源格式提取、去重、缺字段容错、空来源分支、缺 Key 分支均断言通过，测试临时文件已删除。真实 API Key 配好后即可 `python3 main.py` 运行核对。

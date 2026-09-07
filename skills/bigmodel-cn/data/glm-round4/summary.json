@@ -1,0 +1,74 @@
+{
+  "plan-1113-fix/with_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "plan-1113-fix/without_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "kb-upload-readiness/with_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      0.75,
+      0.75
+    ],
+    "mean": 0.9,
+    "stdev": 0.122
+  },
+  "kb-upload-readiness/without_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      0.5,
+      1.0,
+      0.75,
+      1.0
+    ],
+    "mean": 0.85,
+    "stdev": 0.2
+  },
+  "async-model-pinning/with_skill": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "async-model-pinning/without_skill": {
+    "runs": 5,
+    "scores": [
+      0.667,
+      0.667,
+      1.0,
+      0.667,
+      0.667
+    ],
+    "mean": 0.733,
+    "stdev": 0.133
+  }
+}

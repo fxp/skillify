@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，交付目录里只有这一个文件。
+
+## 实现说明
+
+**接口依据**：先读了 `SKILL.md` → `references/tools.md`，并用 WebFetch 核对了 docs.bigmodel.cn 的 embedding-3 官方文档，确认了几个直接影响代码结构的点：
+
+- 端点 `POST https://open.bigmodel.cn/api/paas/v4/embeddings`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读取
+- **`input` 数组单次最多 64 条**——faq.txt 实测 150 行，所以脚本按 64 条一批分 3 次调用（64/64/22），再加 1 次查询向量化，共 4 次请求
+- 响应 `data[].index` 对应输入下标，脚本按 `index` 排序对齐，不依赖返回顺序
+- `dimensions=1024`（支持 256/512/1024/2048），建索引和查询用同一 `model` + `dimensions` 组合，保证向量空间一致
+
+**脚本流程**（`python3 main.py` 直接跑）：
+1. 读同目录 `faq.txt`，去空行取 150 条
+2. 分批调 embedding-3 向量化，连同原文存入同目录 `vectors.json`（`{"model", "dimensions", "texts", "vectors"}`）
+3. 从写好的 `vectors.json` 加载索引，把「发票怎么开」向量化，用纯 Python 手写余弦相似度（点积 / 模长乘积，零向量兜底），排序取 top-3 打印原文和相似度
+
+**验证**（未调真实 API）：
+- `python3 -m py_compile` 通过（本机 Python 3.9 + requests 2.32.5）
+- 做了一次 monkey-patch `requests.post` 的端到端冒烟测试：mock 故意**乱序**返回 `data`，脚本仍正确按 index 对齐；150 条按 64/64/22 分批 + 1 次查询共 4 次调用；`vectors.json` 正确落盘；top-3 准确命中发票相关条目。测试临时文件已清理。
+
+有 Key 的环境里 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可跑通；接口报错时脚本会带出状态码和响应体，方便按 `references/errors-and-limits.md` 排查。

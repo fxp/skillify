@@ -1,0 +1,34 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，无 Key 时给出友好报错并以退出码 1 结束（输出里的 urllib3 警告来自本机 Python 3.9 + LibreSSL 环境，与脚本无关）。
+
+## 实现要点
+
+**接口**：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，模型 `glm-5.3`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 环境变量读取，仅依赖 `requests`。
+
+**“来源必须真实”是本任务的核心，靠这三个参数保证**（依据 SKILL.md → `references/chat.md`，并用 WebFetch 对了 docs.bigmodel.cn 的 API 参考）：
+
+| 参数 | 作用 |
+| :-- | :-- |
+| `tools[].web_search.search_result: true` | **最关键**。官方文档明确“是否返回搜索来源的详细信息，默认值 false”；技能包实测验证：不传时搜索照常执行、回答照常生成，但响应体顶层完全没有 `web_search` 字段——拿来源的需求会静默失效 |
+| `tools[].web_search.require_search: true` | 强制先搜索再回答，防止模型凭训练记忆作答 |
+| `search_engine: "search_pro"` + `search_recency_filter: "oneYear"` | 官方 OpenAPI 把 `search_engine` 标为必填，按技能包建议显式传；问题关注 2026 年新发布，限一年内结果 |
+
+**来源的提取**：只从响应体**顶层** `web_search` 数组读取（每项含 `title`/`link`/`media`/`publish_date` 等，是搜索引擎真实返回的结构化数据，模型无法注入），按链接去重后打印为 `[序号] 标题（媒体 / 日期）+ 缩进的 URL`，终端里 URL 自动可点击。若接口没返回来源，会明确打印“缺乏可核对的出处”，而不是让模型编链接凑数。
+
+输出结构：
+
+```
+问题：2026 年智谱 BigModel 发布了哪些新模型
+
+回答：
+……（含 [来源：ref_N] 内联标注）……
+
+============================================================
+信息来源（接口本次真实返回的联网搜索结果）：
+[1] 某某标题（媒体 / 2026-0x-xx）
+    https://……
+```
+
+设置 `ZHIPUAI_API_KEY` 后 `python3 main.py` 即可直接跑通。

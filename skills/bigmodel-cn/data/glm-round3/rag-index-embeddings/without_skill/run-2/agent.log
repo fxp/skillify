@@ -1,0 +1,19 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里没有其他文件。
+
+**接口依据**（已抓取 docs.bigmodel.cn 官方文档确认）：
+- `POST https://open.bigmodel.cn/api/paas/v4/embeddings`，鉴权 `Authorization: Bearer <key>`
+- 请求体 `{"model": "embedding-3", "input": [...]}`；文档明确 input 数组单次最多 64 条，所以脚本按 64 条分批
+- 响应取 `data[i].embedding`，并按 `index` 排序保证与输入顺序对齐
+
+**脚本做的事**：
+1. 从脚本同目录读 `faq.txt`（每行一条，跳过空行；若同级没有会回退到上级目录找一次）
+2. 分批调用 embedding-3 把全部 FAQ 向量化，连同原文一起写入同目录 `vectors.json`
+3. 对查询「发票怎么开」单独取一次向量，用纯 Python 手写的余弦相似度（`zip` + 平方和，无 numpy）逐条打分
+4. 按分数排序取 top-3，把三条原文（带序号和相似度）打印到 stdout
+
+**健壮性细节**：无 `ZHIPUAI_API_KEY` 时直接报错退出；接口返回非 200 时会把智谱的 `error.message` 打出来再退出，方便排查。
+
+**验证情况**：`python3 -m py_compile` 编译通过；本机 `requests 2.32.5` 可用；余弦与 top-3 排序逻辑用平行/正交/零向量做了离线断言测试，全部通过。API 调用部分按要求未真实执行（无可用 Key），拿到 Key 后 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可跑通。

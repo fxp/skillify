@@ -1,0 +1,26 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，并用 mock 响应做了本地冒烟测试（未调真实 API）。
+
+## 实现要点
+
+**调用方式**：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，模型 `glm-5.3`，挂平台内置联网搜索工具 `tools: [{"type": "web_search", ...}]`，非流式，只用 `requests`。Key 从 `ZHIPUAI_API_KEY` 读取。
+
+**“来源必须真实、可点击”是这个任务的核心，靠三个决策保证**（来自 SKILL.md 参考文档的实测结论 + WebFetch 官方文档交叉确认）：
+
+1. **显式传 `web_search.search_result: true`** —— 不传这个字段时搜索照常执行、正文正常生成，但响应体顶层完全没有 `web_search` 来源数组，“列出信息来源”会静默失效；
+2. **`search_engine` 选 `search_pro_sogou`** —— 官方示例最常用的 `search_pro`/`search_std` 返回的来源 `link` 恒为空字符串（HTTP 200、条数正常、只有链接是空的），选带真实链接的引擎才能满足“可点击核对”；中文媒体/知乎覆盖也更适合这个中文问题；
+3. **代码只从响应的 `web_search` 数组渲染来源**，过滤空 `link`、按 URL 去重，并对“一条带链接的来源都没有”的情况打兜底提示——模型正文里写了什么链接一律不采信。
+
+其他细节：`search_recency_filter: "oneYear"` 限定时效（问的是 2026 年新模型）、`content_size: "high"` 给模型更充分的摘要；`reasoning_effort: "low"`（glm-5.3 标准端点强制思考且仅接受 low/high/max，low 接近不思考，搜索汇总类问题足够且快很多）；对 429/5xx 和网络异常做最多 3 次指数退避重试，4xx 直接报出业务错误码（如 1113/1210）；`finish_reason` 非 `stop` 时向 stderr 发警告。
+
+**运行方式**（当前无 Key，未实际调用）：
+
+```bash
+export ZHIPUAI_API_KEY=你的Key
+python3 main.py
+```
+
+输出为“问题 → 模型回答 → 参考来源列表（编号 + 标题 + 独占一行的可点击 URL + 媒体/发布日期）”。注意 `search_pro_sogou` 计费 0.05 元/次，每次运行消耗一次搜索费用。

@@ -1,0 +1,22 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/async-model-pinning/without_skill/run-4/outputs/main.py`（`py_compile` 通过；无 Key 环境下试跑也正常进入守卫分支并清晰报错退出码 2）。
+
+接口细节我先用 WebFetch 核对了官方文档（来源见文末）：
+
+- **提交任务**：`POST https://open.bigmodel.cn/api/paas/v4/async/chat/completions`，请求体与普通对话补全一致（`model` 字段锁定 `glm-4.6`），返回任务 `id` + `task_status: PROCESSING`；
+- **轮询结果**：`GET .../api/paas/v4/async-result/{id}`（注意是单数 `async-result`），`task_status` 为 `PROCESSING / SUCCESS / FAIL`，成功时返回完整 `ChatCompletionResponse`，其中 **`model` 字段就是「此次调用实际使用的模型」**——正好用它做审计核对。
+
+脚本设计要点：
+
+1. **批量异步**：三句话先全部提交成异步任务（拿到各自 `task_id`），再统一轮询直到全部完成（2s 间隔，300s 总超时），不是串行等待；
+2. **审计核对（核心）**：逐任务打印「请求的模型」与「接口实际使用的模型」两个值，任何不一致（包括接口未返回 `model` 字段、无法核对的情况）都会输出 `🚨 审计报警` 并以**退出码 1** 结束——审计上不会含糊放行；
+3. **其他约束**：密钥只从 `ZHIPUAI_API_KEY` 读取，缺失时明确报错；HTTP 层只用 `requests`（含 `requests.Session` 复用连接）；单个任务 FAIL/超时不影响其余任务，最后统一汇总分类结果 + 审计结论。
+
+有 Key 时直接 `export ZHIPUAI_API_KEY=xxx && python3 main.py` 即可跑通。
+
+Sources:
+- [对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8%E5%BC%82%E6%AD%A5)
+- [查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%9F%A5%E8%AF%A2%E5%BC%82%E6%AD%A5%E7%BB%93%E6%9E%9C)

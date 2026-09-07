@@ -1,0 +1,27 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+已修复并保存到 `outputs/main.py`（`python3 -m py_compile` 编译通过）。
+
+## 问题根因
+
+**429 + 1113 不是余额问题**。GLM Coding Plan 和标准 API 是两套隔离的计费体系：套餐 Key 打到标准端点 `…/api/paas/v4` 时，该端点只认账户余额/资源包，完全看不到你的套餐额度，于是报“余额不足”。已从官方快速开始文档确认：OpenAI Chat Completion 协议下，套餐应使用 `https://open.bigmodel.cn/api/coding/paas/v4`（技能包实测记录：同一把套餐 Key，标准端点 1113，Coding 端点 200）。**不需要充值。**
+
+## 改了什么
+
+1. **Base URL**：`/api/paas/v4/chat/completions` → `/api/coding/paas/v4/chat/completions`（多了 `/coding`，注意路径里没有 `/v1` 这一级）。
+2. **Key 读取**：原代码 `os.environ[chr(39)+chr(39)]` 读的是名为 `''` 的环境变量，必然 KeyError；改为 `os.environ.get("GLM_KEY")`，未设置时给出明确报错。
+3. **输出**：只打印 `choices[0].message.content`（模型回答）到 stdout，错误信息走 stderr 并以非零码退出；加了 60 秒超时。只依赖 `requests`（其余为标准库）。
+
+运行方式：
+
+```bash
+export GLM_KEY=<你的 Coding Plan Key>
+python3 main.py
+```
+
+两点提醒：
+
+- **模型保持 `glm-5.3` 没问题**——所有档位套餐都支持 `glm-5.3` / `glm-5.3-flash`；但套餐不含 embeddings、生图等能力，用套餐 Key 调那些接口也会报一模一样的 1113，届时需另用标准 Key。
+- 官方条款写明套餐“仅限在指定工具与产品环境中使用”（Claude Code、OpenCode 等）；自己写脚本调 Coding 端点技术上是通的，但属于条款边缘用法，生产系统建议用标准 API Key。

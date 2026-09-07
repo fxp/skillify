@@ -1,0 +1,20 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已完成并通过编译检查，保存在 `outputs/main.py`。按 SKILL.md 指引读了 `references/agents-assistant-knowledge.md`（知识库 API 参考），并用 WebFetch 核对了官方文档的接口细节。
+
+**流程**：建库（Embedding-3）→ 上传 faq.txt → 轮询向量化状态 → 真实检索验证 → `finally` 里无论成败都删库。
+
+**针对你被坑过的“上传显示成功、检索永远为空”，校验做了两层，缺一不可**：
+
+1. **轮询 `GET /document/{id}` 的 `embedding_stat` 直到 `1`（成功）**。这族接口（`/llm-application/open/*`）出错时 HTTP 仍是 200、真实结果在响应体 `code` 里，所以脚本统一判 `code == 200` 而不是 `raise_for_status()`；向量化失败（`embedding_stat=2`）会把 `failInfo.embedding_code/embedding_msg` 原样报出来，超时（默认 300s）也明确报错，绝不把“处理中”当成功。
+2. **用文档原文片段真实调一次 `POST /knowledge/retrieve`**（探针 query 从 faq.txt 自身取一行，保证判据有意义）。检索持续为空时先退到 `keyword` 召回重试，仍为空就报错——报错文案明确说“这就是上传成功但不可检索的状态”；同时校验召回切片的 `doc_id` 确实属于刚上传的文档，防止拿别的文档结果冒充通过。
+
+其他要点：API Key 从 `ZHIPUAI_API_KEY` 读取（缺失时提示需标准 Key 而非 Coding Plan 套餐 Key）；`faq.txt` 缺失/为空会直接退出不建库；网络错误/429/5xx 指数退避重试，鉴权/参数类错误直接失败；清理失败会警告并提示去控制台手动删除。只用 `requests` + 标准库，`python3 main.py` 直接可跑（当前无 Key，仅做了 `py_compile` 验证，未实际调 API）。
+
+Sources:
+- [上传文件文档 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档)
+- [文档详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/文档详情)
+- [知识库检索 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索)
+- [创建知识库 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/创建知识库)

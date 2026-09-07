@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已交付到 `outputs/main.py`，验证情况如下：
+
+**实现要点**（接口细节已对照 [官方 Embedding-3 文档](https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-3) 确认，与技能包 references/tools.md 一致）：
+
+- **接口**：`POST https://open.bigmodel.cn/api/paas/v4/embeddings`，Bearer 鉴权（`ZHIPUAI_API_KEY` 环境变量读取），`model: embedding-3`，维度用默认 2048
+- **分批**：embedding-3 的 `input` 数组单次最多 64 条，150 行 FAQ 按 64/64/22 分三批串行调用；响应按 `data[].index` 与输入下标对齐（不假设返回顺序，这是官方文档明确提示的坑）
+- **vectors.json**：存到 faq.txt 所在目录，内容为 `{"model", "source", "items": [{"text", "embedding"}]}`，原文随向量一起落盘，检索阶段从文件读回
+- **余弦相似度**：纯 Python 手写（点积 / 范数乘积），零第三方依赖除 `requests`，未用 numpy
+- **容错**：网络请求带超时和 3 次重试；缺 API Key、找不到 faq.txt、返回向量数不符时给出明确报错退出
+
+**验证结果**（均未真实调用 API）：
+- `python3 -m py_compile` 通过
+- mock 掉 `embed` 后端到端跑通：150 条全部向量化、vectors.json 落盘 150 条、top-3 正确打印（伪向量下「发票」相关条目如预期排最前）
+- 缺 `ZHIPUAI_API_KEY` 时干净报错退出（exit 1）
+- 从任意 CWD 运行都能定位 faq.txt（优先脚本同目录，其次当前目录）
+- 临时测试目录已清理，`outputs/` 下只有 `main.py`
+
+另外说明一点：任务描述说 faq.txt 在「同目录」，但 run-5 目录下实际没有，真实位置是 `../../fixtures/faq.txt`（150 行 UTF-8、无空行）。脚本按「脚本同目录 → 当前目录」的顺序查找，评测时把 faq.txt 放到 main.py 旁边或运行 CWD 里都能直接 `python3 main.py` 跑通。
+
+Sources:
+- [Embedding-3 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-3)
+- [文本嵌入 API 参考 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E5%B5%8C%E5%85%A5)

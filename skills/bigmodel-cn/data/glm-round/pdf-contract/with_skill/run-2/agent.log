@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，目录里只有这一个文件。
+
+## 实现思路
+
+全程**零本地 PDF 解析**——PDF 以二进制原样交给智谱平台，由模型自己读文件：
+
+1. **上传**：`POST /paas/v4/files`（multipart），`purpose=user_data` 拿到 `file_id`。这一步是关键坑点：技能参考文档里有真实 API 实测记录——chat/completions 的 `file` 类型**只认 `user_data` 用途上传的 file_id**，用 `agent`/`code-interpreter` 上传虽然能成功，但引用时必报 `1210 文件解析失败`。
+2. **抽取**：`POST /paas/v4/chat/completions`，模型用 `glm-5.3-flash`（原生多模态旗舰，官方文档的「文件理解」示例就是用它读 PDF，我也用 WebFetch 对照官方 API reference 确认了 `file` 类型的字段结构：`file_id`/`file_url`/`file_data` 三选一）。`content` 数组里放一条 text 指令 + 一条 `{"type": "file", "file": {"file_id": ...}}`，让模型严格返回 `{"contract_number": ..., "total_amount": ...}`。
+3. **输出**：解析后打印 `合同编号: xxx` / `合同总金额: xxx` 到 stdout；最后顺手删掉平台上的上传文件（best-effort，失败不影响结果）。
+
+## 几个落地细节
+
+- **Key**：只从 `ZHIPUAI_API_KEY` 环境变量读，缺失时给明确报错退出；错误统一走 stderr，stdout 只留结果。
+- **PDF 定位**：你说“同目录下”，但实际磁盘上 contract.pdf 在共享的 `glm-round/fixtures/` 里（run-2/ 下没有）。脚本按「当前目录 → 脚本目录 → 逐级向上（含 `fixtures/` 子目录）」查找，已验证能定位到 fixtures 里那份。
+- **解析兜底**：视觉模型不带 `response_format` 约束（官方仅纯文本模型支持），所以做了客户端兜底——剥 ```` ```json ```` 围栏、`<think>` 标签、截取首尾花括号、中英文字段名兼容，`json.loads` 失败时报错退出。这几条兜底逻辑我构造样例实测都通过。
+- `reasoning_effort: "low"`：简单抽取任务降思考强度换速度（glm-5.3-flash 只接受 low/high/max，标准端点无法彻底关思考）。
+
+**未验证的部分**：环境里没有可用 Key，真实 API 调用链路（上传 → 引用 → 抽取）没法跑通，只做了编译和离线逻辑测试。跑之前 `export ZHIPUAI_API_KEY=你的Key` 即可。

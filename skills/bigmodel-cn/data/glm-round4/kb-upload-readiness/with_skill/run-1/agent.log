@@ -1,0 +1,32 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部场景通过，交付完成。脚本在 `outputs/main.py`，outputs 目录里只有这一个文件。
+
+## 脚本做了什么
+
+流程：**建库 → 上传 → 轮询向量化状态 → 实测检索 → 无论成败删库清理**。针对你上次踩的坑，验证是双层的，任何一层不过都不说“成功”：
+
+1. **轮询 `GET /document/{id}` 直到 `embedding_stat == 1`**（0=处理中，1=成功，2=失败）。上传接口返回 200 只代表文件收下了，向量化是后台异步任务——这正是你上次“显示成功、检索永远为空”的根源。一旦 `embedding_stat == 2`，直接把 `failInfo.embedding_msg` 里的失败原因报出来（例如“知识不可用，文档损坏”）；超时也明确报错。
+2. **再真实调一次 `/knowledge/retrieve`**：用 faq.txt 第一条问题当探针，必须命中**本次上传文档**（校验返回切片的 `doc_id`）才算数。空结果重试 6 次，仍为空则失败，并附带一次“不带文档过滤”的兜底诊断，把“整库检索不到”和“过滤参数异常”区分开，报错信息说清楚原因。
+
+另外两个防坑设计：
+
+- 这族 `llm-application/open/*` 接口**出错时 HTTP 状态码依然是 200**，真实结果在响应体 `code` 里（官方文档已确认），所以脚本统一判定 `body["code"] == 200`，`raise_for_status()` 不可靠。
+- 清理放在 `finally` 里：失败路径也会删库；如果连删库都失败，会明确警告“请到控制台手动删除”并以非零码退出，绝不静默。
+
+## 验证情况
+
+- `python3 -m py_compile` 通过；缺 `ZHIPUAI_API_KEY`、缺 faq.txt 两条守卫路径实测报错清晰、exit 1。
+- 没碰真实 API，另用本地 mock 服务离线跑了 4 个场景：正常成功（exit 0）、向量化失败（exit 1 且带出失败原因）、检索始终为空（exit 1）、建库业务报错（exit 1）——**所有失败场景都照常清理了知识库**。
+
+## 运行提醒
+
+脚本从**自己所在目录**读 `faq.txt`（不是当前工作目录），实际跑的时候把它和 main.py 放一起即可——fixture 在 `glm-round4/fixtures/faq.txt`，按要求没有复制进 outputs。
+
+```bash
+ZHIPUAI_API_KEY=你的Key python3 main.py
+```
+
+Sources: [创建知识库](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93) · [上传文件文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E6%96%87%E6%A1%A3) · [文档详情](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E8%AF%A6%E6%83%85) · [知识库检索](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2)

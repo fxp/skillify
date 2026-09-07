@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "[17:25:56] ① 创建知识库「faq-upload-check-1788773156」...\n================================================================\n[17:25:56] ❌ 失败: 知识库文档不可用/不可检索。原因: 未预期的异常: TypeError: request() got an unexpected keyword argument 'json_body'\n[17:25:56]    （知识库已清理，不会残留半成品）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1
+}

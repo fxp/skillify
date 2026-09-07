@@ -1,0 +1,19 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,`python3 -m py_compile` 编译通过，并用临时样例数据离线验证了 JSONL 构造逻辑(每行含 `custom_id`/`method`/`url`/`body`,三样例均正确)，未调用任何真实 API。
+
+**实现要点**(接口细节均从官方文档核实)：
+
+1. **模型选择 `glm-5.3`** —— 当前旗舰模型(官方描述“比肩 Claude Fable 5”),符合“分类质量优先、不挑弱模型”的要求。
+2. **请求文件**：每行 `{"custom_id": "comment-N", "method": "POST", "url": "/v4/chat/completions", "body": {model, messages, temperature: 0.1}}`,系统提示词限定只输出「正面/负面/中性」其一，低温保证分类稳定。
+3. **上传**:`POST /api/paas/v4/files`,multipart 带 `purpose=batch`,取返回的 `id`。
+4. **创建任务**:`POST /api/paas/v4/batches`,请求体用 `input_file_id` + `endpoint: "/v4/chat/completions"`(`completion_window` 官方已标记废弃，故未传)。
+5. **stdout 只打印 batch 任务 id**(进度日志全部走 stderr),方便管道取值；API Key 从 `ZHIPUAI_API_KEY` 读取，仅依赖 `requests`;只读 `comments.txt`、不等待结果。
+
+脚本找 `comments.txt` 时先看脚本所在目录、再回退到当前工作目录，两种放置方式都能跑通。
+
+Sources:
+- [智谱 AI 批量处理指南](https://docs.bigmodel.cn/cn/guide/tools/batch)
+- [GLM-5.3 模型文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)
+- [文件上传 API 参考](https://docs.bigmodel.cn/api-reference/文件-api/上传文件)

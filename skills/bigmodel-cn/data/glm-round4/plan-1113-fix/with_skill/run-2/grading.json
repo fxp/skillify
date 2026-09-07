@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 3.9s :: "
+    },
+    {
+      "text": "stdout 有非空模型回答且不是报错栈",
+      "passed": true,
+      "evidence": "stdout_len=58"
+    },
+    {
+      "text": "全程未出现 1113",
+      "passed": true,
+      "evidence": "no_1113=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

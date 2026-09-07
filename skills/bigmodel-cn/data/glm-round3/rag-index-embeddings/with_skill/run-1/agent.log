@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付文件已保存到 `outputs/main.py`，且是 outputs 目录下唯一的文件。
+
+## 过程说明
+
+**按 SKILL.md 指引查阅了** `references/tools.md`（Embeddings 章节），并用 WebFetch/WebSearch 核对了官方文档，确认了几个关键细节：endpoint 为 `POST https://open.bigmodel.cn/api/paas/v4/embeddings`、Bearer 鉴权、`dimensions` 可选 256/512/1024/2048（默认 2048）、响应 `data[].index` 对应输入下标（不保证返回顺序，需按 index 对齐）。
+
+**规避的核心坑**：`input` 数组单次最多 **64 条**（官方原文「数组最大不得超过 64 条」），150 条 FAQ 若一把梭发会直接报 `400 / 1214`。脚本按 `BATCH_SIZE = 64` 分三批（64 + 64 + 22）调用。
+
+## 脚本要点（`main.py`）
+
+- 读取同目录 `faq.txt` 的 150 条非空行 → 分批调 `embedding-3`（`dimensions=1024`）→ 按 `index` 排序对齐后存入同目录 `vectors.json`（含 `model`/`dimensions`/`texts`/`vectors` 元数据）
+- 查询「发票怎么开」用**同一 model + dimensions** 单独向量化，保证向量空间一致
+- 余弦相似度纯 Python 手写（点积 / 模长乘积，零向量兜底），无 numpy，只依赖 `requests`
+- Key 从 `ZHIPUAI_API_KEY` 环境变量读取，缺失时给出明确报错；附带轻量网络重试和 60s 超时
+
+## 验证情况
+
+- `python3 -m py_compile` 编译通过
+- 按你的要求**未真实调用 API**，改用打桩 `requests.post` 做了离线全流程演练（故意打乱响应顺序以验证 index 对齐），全部断言通过：分批为 `[64, 64, 22, 1]`、`vectors.json` 恰好 150 条等长 1024 维向量、stdout 打出 top-3 且均为 faq 原文、正常路径退出码 0、缺 Key 时退出码 1 且不落盘
+- 真实语义排序效果需有 Key 后 `ZHIPUAI_API_KEY=... python3 main.py` 实跑确认（离线桩用的是字符袋假向量，仅验证流程逻辑）
+
+Sources: [Embedding-3 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-3)、[文本嵌入 API Reference - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/文本嵌入)

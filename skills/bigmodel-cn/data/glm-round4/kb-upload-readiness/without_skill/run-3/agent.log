@@ -1,0 +1,30 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+冒烟测试全部符合预期（query 生成、内容指纹、失败判定、缺文件/缺 Key 的报错路径）。交付完成。
+
+## 交付说明
+
+脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/kb-upload-readiness/without_skill/run-3/outputs/main.py`，`python3 -m py_compile` 通过，只依赖 `requests` + 标准库，`python3 main.py` 直接可跑。
+
+### 流程（5 步）
+
+1. **建库**：`POST /api/llm-application/open/knowledge`（embedding_id=11 即 Embedding-3，名字带时间戳避免撞名）
+2. **上传**：`POST /document/upload_document/{kb_id}`（multipart，字段名 `files`），检查 `failedInfos`，拿不到 `documentId` 就报错
+3. **等解析**：轮询 `GET /document/{doc_id}`，`failInfo`（向量化失败码/信息）一出现立即失败退出；官方 FAQ 明确「数据处理中→索引构建中→处理完成，只有处理完成才能检索」，所以没到完成态就继续等
+4. **真实检索校验（核心）**：从 faq.txt 原文动态取一句作 query，调 `POST /knowledge/retrieve` 真检索。判定标准很严格——返回切片必须归属本知识库（校验 metadata 里的 knowledge_id/doc_id），且内容与原文能对上（中文二字组/英文长词指纹匹配）。**检索不到就不打印“成功”**，报错时附带诊断：等了多少秒、embedding_stat、word_num、检索返回了几条、连续失败原因
+5. **清理**：`finally` 里 `DELETE /knowledge/{id}`，删完再翻知识库列表**确认真的删掉了**；删不掉或确认失败会大声警告并给出 id 让你手动删，且这种情况退出码非 0
+
+### 针对“假成功”这个坑的几处设计
+
+- 上传接口 200 ≠ 完成：以真实检索命中为唯一成功标准，状态轮询只是辅助（总预算 10 分钟，状态轮询最多占 60%，剩余留给检索重试）
+- 有一个防御点要说明：官方文档**没有公布 `embedding_stat` 的枚举值**（我从文档示例和 FAQ 的四态流转推断 3≈处理完成、`failInfo`≈失败），所以代码不拿猜测的状态值当成败依据——状态值只用来提前失败和打日志，最终裁决永远以检索结果为准
+- 退出码：成功且清理完成 = 0；校验失败/清理失败 = 1；缺 Key = 2
+
+### 接口依据（官方文档）
+
+- [创建知识库](https://docs.bigmodel.cn/api-reference/知识库-api/创建知识库)、[上传文件文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档)、[文档详情](https://docs.bigmodel.cn/api-reference/知识库-api/文档详情)、[知识库检索](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索)、[知识库列表](https://docs.bigmodel.cn/api-reference/知识库-api/知识库列表)、[删除知识库](https://docs.bigmodel.cn/api-reference/知识库-api/删除知识库)
+- [知识库 FAQ：为什么上传后检索不到内容](https://docs.bigmodel.cn/cn/faq/knowledge-base)（状态流转与「处理完成才可检索」的出处）
+
+一点提醒：当前环境没有 Key，我只做了编译和离线逻辑冒烟测试，没发过任何真实请求；等你带上 `ZHIPUAI_API_KEY` 实跑一次即可验证全链路。

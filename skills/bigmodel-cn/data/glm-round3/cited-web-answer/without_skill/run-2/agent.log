@@ -1,0 +1,17 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,编译通过；无 Key 环境下运行会给出明确提示并以退出码 1 退出(输出里那条 urllib3 警告是本机 Python 环境自带的，与脚本无关)。真实 API 调用因当前没有可用 Key 未实际执行，接口结构是逐字段对照官方文档确认的。
+
+**实现要点**
+
+- **接口**:`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`,`Authorization: Bearer $ZHIPUAI_API_KEY`,模型 `glm-5.3`(常量，可换)
+- **联网搜索**:在 `tools` 里声明 `{"type": "web_search", web_search: {...}}`,其中三个参数是关键——
+  - `search_result: true`:默认为 `false`,不开的话接口**不回传来源详情**，这是本题的核心开关
+  - `require_search: true`:强制先完成搜索再回答，保证有来源可列
+  - `search_recency_filter: "oneYear"`:限定一年内网页，贴合“2026 年发布”的时效性
+- **来源不掺假**：答案取自 `choices[0].message.content`,来源列表逐条取自响应**顶层 `web_search` 数组**(每项含 `title`/`link`/`media`/`publish_date`),`link` 原样打印、不经模型转述或拼接；没有 `link` 的条目直接跳过。另做了旧结构 `choices[0].message.web_search` 的兼容兜底
+- **输出格式**:每条来源为「标题 (媒体 / 日期)」+ 单独一行的裸 URL,终端和 Markdown 里都能直接点击核对
+- **只用 requests**(外加 `json`/`os`/`sys` 标准库);HTTP 非 200 时会把服务端错误信息透出来，方便排查 Key 或模型名问题
+
+有 Key 后直接 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可运行。

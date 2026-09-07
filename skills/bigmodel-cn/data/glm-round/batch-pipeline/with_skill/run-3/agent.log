@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过。
+
+## 实现要点（来自技能包 + 官方文档核实）
+
+| 决策 | 依据 |
+| :-- | :-- |
+| 模型选 `glm-4-air-250414` | **Batch 只支持白名单模型**，`glm-5.3` 等旗舰模型不在名单里，且校验发生在上传文件阶段（报 1210）。`glm-4-air-250414` 同时出现在官方支持列表和技能包实测白名单里 |
+| `custom_id` 用 `request-001` 格式 | 实测坑：最短 6 字符，`r1` 这种短 id 会在上传阶段被直接拒绝 |
+| 上传时 `purpose=batch` | Batch 输入文件的硬性要求 |
+| 创建任务只传 `input_file_id`/`endpoint`/`metadata` 等 | `completion_window` 已废弃不再传；`endpoint` 固定 `/v4/chat/completions`，与 jsonl 每行的 `url` 一致 |
+| 进度信息走 stderr，stdout 只打印 batch id | 保证 `python3 main.py` 的 stdout 就是干净的 `batch_xxx`，方便管道/脚本取用 |
+
+## 流程
+
+读 comments.txt（跳过空行）→ 每条评论写成一行 `{custom_id, method, url, body}` 请求（system 提示只回答 正面/负面/中性，temperature 0.1）→ 存 `batch_requests.jsonl` → `POST /paas/v4/files` 上传 → `POST /paas/v4/batches` 创建任务 → 打印 batch id。不轮询、不取结果。
+
+## 验证情况（未调真实 API）
+
+- **缺 Key 守卫**：不设 `ZHIPUAI_API_KEY` 时友好报错退出（exit 1）
+- **Mock 端到端**：本地 HTTP 服务端模拟 `/files` 和 `/batches`，跑通全链路——stdout 恰好输出 `batch_2095408344001937408`；上传体校验了 Bearer 鉴权、multipart、`purpose=batch`、jsonl 20 行全部合法、custom_id 唯一且 ≥6 字符；创建任务的 JSON 载荷逐字段比对通过
+- **跨目录运行**：从其他目录 `python3 main.py` 也能通过脚本目录回退找到 comments.txt
+
+一个需要说明的点：任务描述说 comments.txt 在“同目录下”，但它实际位于 `glm-round/fixtures/comments.txt`（run-3 里没有）。脚本因此按 **脚本同目录 → 当前目录 → argv[1] 指定路径** 的顺序查找，无论从哪运行都能工作。
+
+Sources: [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)、[Batch API 常见问题 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/faq/batch-api-issues)

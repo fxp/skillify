@@ -1,0 +1,26 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付文件：`outputs/main.py`（约 12KB，仅此一个文件）。
+
+## 做了什么
+
+1. **按 SKILL.md 指引**读了 `references/chat.md`（异步对话 + 轮询）和 `references/models.md`（确认 `glm-4.6` 为有效模型代码），并用 WebFetch 核实了官方 API 参考（提交端点、`task_status` 三态、`model` 字段定义为“此次调用使用的模型名称”）。
+2. **脚本流程**（只用 `requests`，直接 `python3 main.py` 可跑）：
+   - **批量提交**：3 句话分别 POST 到 `/paas/v4/async/chat/completions`（json_object 输出 + `do_sample=false` 保证可复现 + `request_id` 便于追溯），记录提交回执回显的 `model`；
+   - **轮询**：`GET /paas/v4/async-result/{id}` 直到 `SUCCESS`/`FAIL`/超时，读取结果回显的 `model`；
+   - **审计核对**：每个任务同时打印「我请求的模型」「提交回执回显的模型」「接口实际使用的模型」三行，**两处回显任一与请求不一致即打印 `❌ [审计报警]`**，最终汇总并置退出码（0 一致 / 2 模型不一致 / 1 其他错误），可直接接入审计流水线。
+
+## 必须提前告诉你的实测风险
+
+技能包 chat.md 有 2026-09-07 的真实 API 实测记录：**异步端点会静默替换模型——请求 `glm-4.6`，提交回执回显 `glm-4.7`、轮询结果回显 `GLM-4.7`**（同步端点不换；受影响的是 `glm-4.6`/`glm-4.7` 等旧型号）。所以拿真实 Key 跑这个脚本时，**报警大概率会触发并以退出码 2 结束——这是审计逻辑在正确工作，不是脚本坏了**。如果业务上必须严格用 glm-4.6 产出，脚本结尾也提示了对策：改走同步端点 `/paas/v4/chat/completions`（实测不换模型）。
+
+比对规则说明：官方文档注明模型代码大小写不敏感（如 `glm-5.3` 会回显成 `GLM-5.3`），所以比对忽略大小写，但两个原始值都原样打印留痕；回显字段缺失也按不一致处理（审计上宁可误报不可漏报）。
+
+## 验证情况
+
+- `python3 -m py_compile main.py` 通过；
+- 未调真实 API，另做了离线自检（stub 掉 requests）：情感标签解析的四级降级路径（标准 JSON / 代码围栏包裹 / JSON 夹带文字 / 关键词兜底）、大小写不敏感比对、`glm-4.6` vs `glm-4.7` 判不一致、缺 `ZHIPUAI_API_KEY` 时给出明确报错并以退出码 1 结束——全部通过。
+
+参考来源：[对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8%E5%BC%82%E6%AD%A5)、[查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%9F%A5%E8%AF%A2%E5%BC%82%E6%AD%A5%E7%BB%93%E6%9E%9C)

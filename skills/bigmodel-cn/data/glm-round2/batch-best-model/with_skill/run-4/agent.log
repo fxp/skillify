@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，未调用真实 API。
+
+## 关键决策：模型选了 `glm-5.1`
+
+这是本任务最核心的坑——**Batch API 只支持一份模型白名单，且校验发生在文件上传阶段**（写错直接报 `1210 模型名称错误`，任务根本建不起来）：
+
+- 平台最强旗舰 `glm-5.3` / `glm-5.2` **不在白名单里**，直接用会失败
+- 白名单内可用的最强文本模型是 **`glm-5.1`**（Coding 对齐 Claude Opus 4.6 档位，200K 上下文），明显强于白名单里的 glm-5-turbo / glm-4-plus / glm-4-air / glm-4-flash 等
+
+所以“能用的最好模型”就是 `glm-5.1`：分类质量优先，同时是 Batch 里能跑通的天花板。白名单会随平台更新，若日后报模型错误，以报错信息里给出的名单为准。
+
+## 脚本行为
+
+`python3 main.py`（需先 `export ZHIPUAI_API_KEY=...`）：
+
+1. 读取脚本同目录 `comments.txt`（utf-8-sig 兼容 BOM，跳过空行）
+2. 生成 `batch_requests.jsonl`：每行 `{"custom_id", "method": "POST", "url": "/v4/chat/completions", "body": {model, messages, temperature: 0.1}}`，system prompt 限定只输出 正面/负面/中性 一个词，并给了三类的判定标准
+3. `POST /paas/v4/files` 上传（`purpose=batch`）
+4. `POST /paas/v4/batches` 创建任务，**stdout 只打印 batch 任务 id**（进度日志走 stderr，方便管道取 id），不轮询结果
+
+按 SKILL.md 的踩坑提示处理的细节：`custom_id` 用 `request-000001` 补零格式（最短 6 字符的硬性要求）、jsonl 每行 `url` 与创建任务的 `endpoint` 字段保持 `/v4/chat/completions` 一致、单文件单一模型、响应同时校验 HTTP 状态码和 200-带-error-body 两种失败形态。
+
+## 验证
+
+- `python3 -m py_compile` 通过（本机 Python 3.9）
+- 用 fixtures 里真实的 20 条评论离线测试了 JSONL 生成：20 行、字段齐全、custom_id 唯一且 ≥6 字符、模型/url 一致
+- 缺 Key 时干净报错退出（exit 1），未触网

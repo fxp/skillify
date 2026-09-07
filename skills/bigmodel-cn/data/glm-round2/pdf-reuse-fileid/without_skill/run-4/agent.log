@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已写好并保存到 `outputs/main.py`（目录里只有这一个文件），`python3 -m py_compile` 验证通过。
+
+## 实现思路
+
+按官方文档确认的现行接口（旧的 `file-extract`→取文本→拼 prompt 流程已被官方标记为“（旧）”，且每轮要重发全文，不符合你的要求）：
+
+1. **上传一次**：`POST /api/paas/v4/files`，multipart 传 `file` + `purpose="agent"`（文档枚举值，支持 pdf，用于在对话中按 file_id 引用），从响应的 `id` 字段拿到 `file_id`
+2. **三轮提问复用**：每轮 `POST /api/paas/v4/chat/completions`，content 里只带一个引用块 + 问题文本，不重传任何文件内容：
+   ```json
+   {"type": "file", "file": {"file_id": "<同一个file_id>"}}
+   ```
+3. **模型**：`glm-5.3-flash` —— 官方“文件理解”示例同款，原生支持图片/视频/文件输入，1M 上下文，适合扫描件合同（可用 `ZHIPUAI_MODEL` 环境变量覆盖）
+
+## 约束满足情况
+
+- ✅ 文件只上传一次，后面无论问多少轮都只传 file_id
+- ✅ 完全不做本地解析（无 PyPDF2/pdfplumber/pypdf，代码里对 PDF 只有 `open(path, "rb")` 用于上传）
+- ✅ 仅依赖 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取
+- ✅ 直接 `python3 main.py` 可跑；答案逐题打印到 stdout，错误走 stderr 并以非零码退出
+- 附加健壮性：429/5xx 退避重试、contract.pdf 会在 cwd / 脚本目录 / 上级目录中自动定位（目前 run-4 下还没有 contract.pdf，跑之前放进去即可）
+
+注意：当前环境没有 API Key，我只做了编译验证，没能实际调通接口。
+
+Sources:
+- [对话补全 API - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/对话补全)
+- [上传文件 API - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/文件-api/上传文件)
+- [GLM-5.3-Flash - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)
+- [（旧）文件内容抽取 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/file-extract)

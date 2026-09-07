@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，并用本地 mock 服务器做了端到端验证（未调用真实 API）。
+
+## 实现要点
+
+**流程**：读 `comments.txt`（按脚本所在目录定位）→ 生成 `batch_requests.jsonl` → `POST /api/paas/v4/files` 上传（multipart，`purpose=batch`，字段名 `file`）→ `POST /api/paas/v4/batches` 创建任务 → `print(batch_id)` 输出到 stdout。
+
+**依据官方文档确认的接口细节**：
+- jsonl 每行格式：`{"custom_id", "method": "POST", "url": "/v4/chat/completions", "body": {chat/completions 参数}}`
+- 创建任务请求体：`{"input_file_id": <文件id>, "endpoint": "/v4/chat/completions"}`；`completion_window` 官方已标记废弃，不再传
+- 认证：`Authorization: Bearer <ZHIPUAI_API_KEY>`
+- 模型选 `glm-4-flash`（Batch 支持列表内，且 Batch 场景下免费）；上传响应的文件 id 字段是 `id`，创建响应的 batch id 也是 `id`
+- 情感分类用 system prompt 约束只输出「正面/负面/中性」，`temperature=0.1`（文档示例同值），`custom_id` 形如 `comment-1` 便于结果对回原评论
+
+**其他细节**：进度信息走 stderr，stdout 只有 batch id 一行，方便脚本/管道解析；缺 API Key、缺 comments.txt、HTTP 非 2xx、响应缺 id 都会以中文报错退出（exit 1）；只依赖 `requests`。
+
+**验证结果**（mock 服务器断言均通过）：20 条评论 → 20 行 jsonl（字段齐全）→ 上传表单含 `purpose=batch`/`file` 字段和 Bearer 头 → 创建任务请求体正确 → stdout 打出 `batch_1791490810192076800`（mock 值）。
+
+一个提醒：`run-2/` 目录下目前没有 `comments.txt`，实际文件在 `glm-round/fixtures/comments.txt`（20 条中文评论）。脚本按「同目录」约定从自己所在目录读取，运行前把 comments.txt 放到 main.py 旁边即可。
+
+Sources:
+- [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)
+- [上传文件 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/文件-api/上传文件)

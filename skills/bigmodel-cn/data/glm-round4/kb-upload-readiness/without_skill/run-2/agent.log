@@ -1,0 +1,26 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 脚本流程（`python3 main.py`，仅需 `export ZHIPUAI_API_KEY=...`）
+
+1. **建库**：`POST /api/llm-application/open/knowledge`（Embedding-3，库名带时间戳+随机后缀避免撞名）
+2. **上传**：`POST /document/upload_document/{kb_id}`，multipart 字段名是 `files`（复数，这是官方文档确认的易错点）；检查 `successInfos`/`failedInfos`，被拒就直接报出 `failReason`
+3. **轮询解析**：`GET /document/{doc_id}` 直到 `word_num > 0`；`failInfo` 里有 `embedding_code/embedding_msg` 立刻失败
+4. **检索验证（核心）**：从 faq.txt 原文提取 3 个查询句，反复调 `POST /knowledge/retrieve`，**必须真实召回内容才算数**——且要求结果 `metadata.doc_id` 对得上刚上传的文档，或内容与原文有 ≥12 字连续重叠（防止“召回了但不是这篇文档”的假阳性）。最长等 5 分钟（`KB_VERIFY_TIMEOUT` 可调）
+5. **清理**：`finally` 块里 `DELETE /knowledge/{kb_id}`，成功失败都会执行；删除失败会打警告并附上库 ID 供手动处理
+
+## 针对你踩过的坑
+
+官方 FAQ 明确写着「只有状态变为处理完成後才可以正常检索」——所以上传接口返回成功毫无意义，这正是上次“显示成功、检索永远为空”的根源。本脚本把**检索实测作为唯一的成功判据**：第 4 步不通过就不会打印“成功”，而是明确报出失败原因（召回 0 条 / 结果不属于本文档 / 具体错误码），退出码 1。
+
+## 已验证
+
+- `python3 -m py_compile` 通过；无 Key 时正确报错退出（exit 1），且不发起任何 API 调用
+- 离线单测了查询词提取、doc_id/内容重叠判定、UTF-8(含 BOM)/GBK 编码回退，全部通过
+
+一个提醒：`embedding_stat` 的枚举值官方文档没公布，所以解析判定用的是 `word_num`+`failInfo`，最终裁判仍是检索实测——即使状态字段语义有出入也不影响结论的正确性。
+
+Sources: [知识库 FAQ](https://docs.bigmodel.cn/cn/faq/knowledge-base) · [创建知识库](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93) · [上传文件文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E6%96%87%E6%A1%A3) · [知识库检索](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2) · [文档详情](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E8%AF%A6%E6%83%85) · [删除知识库](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%A0%E9%99%A4%E7%9F%A5%E8%AF%86%E5%BA%93)

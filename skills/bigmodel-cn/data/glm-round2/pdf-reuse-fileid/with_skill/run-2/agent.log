@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，未调用任何真实 API。
+
+## 实现要点
+
+**上传一次，全程复用 file_id**（核心需求）：
+1. `POST /paas/v4/files`（multipart）上传 `contract.pdf`，**`purpose=user_data`** —— 这是本任务最容易踩的坑：技能参考里有 2026-09 真机验证，`chat/completions` 的 `file` 类型**只认 `user_data` 上传的 file_id**，用 `agent`/`code-interpreter` 等 purpose 上传虽然能成功，但引用时必报 `1210 文件解析失败`
+2. 三个问题各自独立调 `POST /paas/v4/chat/completions`，content 数组里都是 `{"type": "file", "file": {"file_id": ...}}` 引用同一个 file_id，只传问题文本，不再碰文件本体（平台文件保留 30 天，脚本会把 file_id 打印出来，方便后续更多轮复用）
+
+**其他细节**：
+- 模型选 `glm-5.3-flash`：官方文档确认的原生多模态模型，支持 PDF 文件理解（`file` 类型单文件 ≤50M）；纯文本模型请求体不支持多模态 content 数组
+- `reasoning_effort: "low"`：glm-5.3 系列在标准端点强制思考（传 `disabled` 会报 1210），合同字段抽取这类事实型问题用 low 档更快更省
+- 完全不在本地解析 PDF（无 PyPDF2/pdfplumber/pypdf），只用 `requests` + 标准库；Key 从 `ZHIPUAI_API_KEY` 读取，缺失时给出明确报错退出
+- 有一处与你描述不符：`contract.pdf` 实际不在 run-2 目录，而在 `glm-round2/fixtures/contract.pdf`。脚本按「脚本同目录 → 当前工作目录 → 仓库 fixtures」三级候选查找（已实测能定位到 fixtures 那份），无论从哪个目录启动都能跑
+
+**验证结果**：编译通过；路径解析实测命中 `fixtures/contract.pdf`；无 Key 时报 `错误：请先设置环境变量 ZHIPUAI_API_KEY` 并以退出码 1 结束。有 Key 后 `python3 main.py` 即可跑通（网络部分按你的要求未实测）。
+
+Sources:
+- [智谱 AI 对话补全 API 文档](https://docs.bigmodel.cn/api-reference/模型-api/对话补全)
+- [GLM-5.3-Flash 模型文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)
+- [上传文件 API 文档](https://docs.bigmodel.cn/api-reference/文件-api/上传文件.md)

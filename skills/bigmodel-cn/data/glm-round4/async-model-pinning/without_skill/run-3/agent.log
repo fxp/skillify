@@ -1,0 +1,27 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/async-model-pinning/without_skill/run-3/outputs/main.py`，编译通过，审计判定等不联网的逻辑分支也做了离线验证。
+
+**接口细节均按官方 OpenAPI 文档核实**（docs.bigmodel.cn）：
+
+| 环节 | 接口 | 说明 |
+|---|---|---|
+| 提交 | `POST /api/paas/v4/async/chat/completions` | 请求体与同步接口一致；返回 `{model, id, request_id, task_status}` |
+| 轮询 | `GET /api/paas/v4/async-result/{id}` | 处理中 `task_status=PROCESSING`；完成返回完整结果，其 **`model` 字段 = 接口实际使用的模型** |
+
+**脚本关键设计**：
+
+- **模型锁定**：`REQUESTED_MODEL = "glm-4.6"` 常量集中定义（`glm-4.6` 在官方枚举内）
+- **审计核对**：逐任务打印「我请求的模型 / 提交回执 model / 实际使用 model」；不一致时立即输出醒目告警块（`!!! 审计告警：模型版本不一致 !!!`），汇总区再次判定，并以**退出码 1** 结束；结果里 `model` 字段缺失同样按不一致告警——审计上不给含糊空间
+- **批量异步**：先把 3 个任务全部提交拿到 task_id，再逐个轮询到完成，符合异步批处理的正确用法；每任务自带 `request_id` 便于追溯
+- **分类稳定性**：关闭 thinking、`temperature=0.1`，system prompt 限定只输出 正面/负面/中性
+- **工程细节**：Key 从 `ZHIPUAI_API_KEY` 读取（缺失退出码 2）；仅依赖 `requests`；轮询有间隔与 300 秒超时；`FAIL`、非 200、响应体异常均显式报错
+
+**验证结果**：`python3 -m py_compile` 通过；离线测试覆盖了一致/不一致/model 缺失三种审计判定、标签提取、缺 Key 退出行为，全部通过（未实际调用 API）。
+
+Sources:
+- [对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/对话补全异步)
+- [查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/查询异步结果)
+- [智谱AI 文档索引 llms.txt](https://docs.bigmodel.cn/llms.txt)

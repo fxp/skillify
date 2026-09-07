@@ -1,7 +1,0 @@
-{
-  "exit_code": 0,
-  "stdout": "共读取 8 条反馈，开始调用 glm-5.3 抽取……\n  [1/8] 张伟 / 账号登录 / medium\n  [2/8] 李娜 / 退款问题 / high\n  [3/8] 王强 / 功能建议 / low\n  [4/8] 陈静 / 重复扣款退款 / high\n  [5/8] 刘洋 / 功能建议 / low\n  [6/8] 赵敏 / 物流延迟 / medium\n  [7/8] 孙磊 / 界面体验 / low\n  [8/8] 周芳 / 账号被盗 / high\n已写出 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/recalibration/json-extraction/with_skill/run-3/work/out.json（8 条记录）。\n",
-  "stderr": "",
-  "timed_out": false,
-  "seconds": 7.6
-}

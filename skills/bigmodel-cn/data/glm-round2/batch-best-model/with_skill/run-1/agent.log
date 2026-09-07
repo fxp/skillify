@@ -1,0 +1,18 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/batch-best-model/with_skill/run-1/outputs/main.py`，`python3 -m py_compile` 通过，并用本地 mock 服务器端到端验证了「上传 → 建任务 → stdout 输出 id」全链路（未真实调用 API）。
+
+## 关键决策：模型选了 `glm-5.1`，不是 `glm-5.3`
+
+这是本任务最核心的坑：**Batch 不支持平台全部模型**。技能包里用真实 API 验证过（2026-09）的白名单里，平台旗舰 `glm-5.3` / `glm-5.2` 都**不在** Batch 白名单内——校验发生在文件上传那一步，直接报 `1210 模型名称错误`。白名单里最强的是 `glm-5.1`（最新一代、对齐 Claude Opus 4.6、200K 上下文），明显强于白名单里的 `glm-4-plus`、`glm-5-turbo` 等，所以质量优先的前提下它就是 Batch 能用的最优解。我也抓了官方 docs.bigmodel.cn 的 Batch FAQ 交叉核对，官方页面那份白名单更旧（连 glm-5.1 都没有），以技能包实测的更新列表为准。
+
+## 实现要点（均来自技能包的实测提示）
+
+- **custom_id 用 `request-001` 格式**：最短 6 字符，`r1` 这种短 id 会在上传阶段直接报 1210
+- **上传必须 `purpose=batch`**（multipart），创建任务时 `endpoint` 用 `/v4/chat/completions`，与 jsonl 每行的 `url` 一致
+- **没传 `response_format` 的 json_schema**：实测会被静默忽略，所以 prompt 直接要求只输出「正面/负面/中性」一个词，后处理最稳；`temperature: 0.1` 保证分类一致性
+- **stdout 只打印 batch 任务 id**（过程日志走 stderr），缺 Key / 找不到 comments.txt / HTTP 与业务错误（`error.code`）都有明确报错
+- comments.txt 按先 cwd、后脚本所在目录的顺序查找；本地 fixture（20 条评论）验证生成 20 行合法 jsonl
+
+使用方式：`ZHIPUAI_API_KEY=你的Key python3 main.py`（注意 Batch 需要账户完成实名认证）。任务通常 24 小时内完成，之后可用打印出的 id 走 `GET /paas/v4/batches/{id}` 查状态、下载结果文件——脚本按要求不等待、不取结果。

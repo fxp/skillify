@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已写好并通过验证，交付在 `outputs/main.py`。
+
+## 实现要点
+
+**核心思路：上传一次，file_id 复用三轮**（满足“不要每轮重塞文件”）：
+
+1. **上传**：`POST https://open.bigmodel.cn/api/paas/v4/files`，multipart 传 `file` + `purpose=file-extract`，从响应取 `id` 即 file_id。
+2. **三轮提问**：每次请求的 messages 里只用 `{"type": "file", "file": {"file_id": ...}}` 引用文件 + 问题文本，走 `POST /paas/v4/chat/completions`。文件字节和正文都不再进请求体。
+3. **不做本地解析**：全程只有 `requests` + 标准库，无 PyPDF2/pdfplumber/pypdf。
+4. 模型默认 `glm-4.6v`（官方文档中支持文件理解的一支，扫描件场景合适），可用 `ZHIPUAI_MODEL` 覆盖；关闭 thinking、低温抽取。
+5. 健壮性：429/5xx/网络异常指数退避重试，4xx 直接报平台错误详情；答案走 stdout，进度信息走 stderr，互不污染。
+6. 额外为“后面还要反复问很多轮”留了后门：`export ZHIPUAI_FILE_ID=<id>` 后再跑会跳过上传直接复用。
+
+字段结构是从官方文档逐一核实的（[对话补全参考](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)明确 `file` 对象支持 `file_id`，且来自上传接口；[GLM-4.6V 文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.6v)给了文件理解示例；[上传文件参考](https://docs.bigmodel.cn/api-reference/%E6%96%87%E4%BB%B6-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6)和[旧版 file-extract 指南](https://docs.bigmodel.cn/cn/guide/tools/file-extract)确认了 purpose 取值）。注意一点：新版上传接口的 purpose 枚举文档里已不列 `file-extract`（但旧指南仍记载，社区示例也在用），如遇报错可先试改成 `code-interpreter`。
+
+## 验证情况（如实说明）
+
+- `python3 -m py_compile` 编译通过；
+- 无 Key 环境下实际跑了一次，错误路径正常：`[错误] 请先设置环境变量 ZHIPUAI_API_KEY`，退出码 1；
+- **未真实调用 API**（当前无可用 Key），联网链路属于按文档编写、未经实测。
+
+用法：
+
+```bash
+export ZHIPUAI_API_KEY=你的key
+python3 main.py        # contract.pdf 需与脚本同目录
+```
+
+其他来源：[CSDN 调用示例](https://blog.csdn.net/polarisrisingwar/article/details/157518406)、[GLM-4.5V 文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.5v)。

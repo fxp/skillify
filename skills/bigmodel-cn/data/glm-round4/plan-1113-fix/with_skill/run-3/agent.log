@@ -1,0 +1,34 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件），`python3 -m py_compile` 验证通过。
+
+## 问题根因
+
+不是余额问题，**不用充值**。智谱有两套隔离的计费体系：
+
+| | 你代码里用的 | 应该用的 |
+|---|---|---|
+| 端点 | `…/api/paas/v4`（标准 API，按量计费） | `…/api/coding/paas/v4`（Coding Plan 专用，多一级 `/coding`） |
+
+标准端点只认账户余额/资源包，完全看不到你的 Coding Plan Max 套餐额度，所以套餐 Key 打过去必报 `429 + 1113"余额不足"`。官方文档也明确警告：「错误配置端点将导致无法使用 GLM Coding Plan 套餐额度」。技能包里 2026-09-03 的实测记录印证：同一把套餐 Key，标准端点 `1113`，Coding 端点 `200`。
+
+## 修复内容（`outputs/main.py`）
+
+1. **Base URL** 改为 `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`
+2. **Key 读取**：原代码 `os.environ[chr(39)+chr(39)]` 拼出来的键名其实是 `''`（`chr(39)` 是单引号），即使端点对了也会直接 KeyError——已改为 `os.environ["GLM_KEY"]`，缺 Key 时给出明确提示
+3. **模型** `glm-5.3` 本就在套餐支持范围内，保留
+4. **输出**：把回答正文（`choices[0].message.content`）打印到 stdout；失败时把 HTTP 状态码和平台错误体打到 stderr 并以非零码退出，方便下次排错
+5. 只依赖 `requests`（`os`/`sys` 为标准库）
+
+运行方式：
+
+```bash
+GLM_KEY=你的套餐Key python3 main.py
+```
+
+两点提醒：
+
+- **端点路径没有 `/v1` 这一级**：如果以后用 OpenAI SDK，`base_url` 填到 `.../coding/paas/v4` 为止，别让客户端自动追加 `/v1`，否则 404。
+- 官方条款规定套餐「仅限在官方支持的指定工具与产品环境中使用」（Claude Code、OpenCode 等）；自己写脚本打 Coding 端点技术上能通，但属于条款之外的用法，生产系统建议用标准 API Key。

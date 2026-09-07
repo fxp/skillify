@@ -1,0 +1,30 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，只交付了这一个文件。
+
+## 关键依据
+
+- **SKILL.md → `references/chat.md`**：异步对话用 `POST /paas/v4/async/chat/completions` 提交（返回 `id`/`task_status`/`model`），再用 `GET /paas/v4/async-result/{id}` 轮询。官方文档（[对话补全(异步)](https://docs.bigmodel.cn/api-reference/模型-api/对话补全异步)、[查询异步结果](https://docs.bigmodel.cn/api-reference/模型-api/查询异步结果)）也核实了这两个端点和字段。
+- **一条直接命中本任务的实测结论**（技能包 2026-09-07 真实 API 验证）：**异步端点会静默替换模型——请求 `glm-4.6` 实际跑的是 `glm-4.7`**（同步端点不会）。所以脚本里的核对不是摆设，真实运行时告警大概率会触发。
+- 官方文档与实测有一处不一致：文档说对话补全的异步结果可能不带 `task_status`，实测却带。轮询代码对两种形态都兼容（`SUCCESS` 或出现 `choices` 即完成，`FAIL` 即失败，180 秒总超时）。
+
+## 脚本要点
+
+| 需求 | 实现 |
+| :-- | :-- |
+| 异步批量 | 三个句子先全部提交（服务端并行），再逐个轮询，间隔 2s |
+| 模型核对 | 以最终结果回显的 `model` 为准（缺失时退回提交回显），同时打印提交回显值做证据链 |
+| 报警 | 逐任务打印 ✅/❌ 判定；任一不一致输出醒目 `⛔ 审计告警` 块并 `exit 1`；拿不到实际模型也算审计失败，不会含糊带过 |
+| 比对口径 | 大小写不敏感（平台会回显 `GLM-4.7` 这种大写形式，模型代码本身大小写不敏感），但 `glm-4.6 ≠ glm-4.7` 必报 |
+| 输出可靠性 | `response_format: json_object` + prompt 描述结构（平台不支持 `json_schema`），客户端解析带三层兜底，失败会明确标出而不是静默 |
+| 审计复现 | `do_sample=False` 贪心解码、每任务带 `request_id`（uuid）便于追溯 |
+| 约束 | 仅用 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取，缺失时明确报错退出 |
+
+## 验证结果
+
+- `python3 -m py_compile` ✅ 编译通过
+- 无 Key 试跑 ✅ 打印「错误：未设置环境变量 ZHIPUAI_API_KEY」并 `exit 2`（未发起网络请求；输出里的 urllib3 OpenSSL 警告来自本机 Python 环境，与脚本无关）
+
+真实跑通需要有 Key 的环境：`export ZHIPUAI_API_KEY=xxx && python3 main.py`。提醒一点：基于技能包的实测对照，用异步端点跑 `glm-4.6` 大概率会触发模型不一致告警并退出码 1——这正是审计要抓的问题，届时如需结果可复现，建议改走同步端点（实测不换模型）。

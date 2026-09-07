@@ -1,0 +1,19 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3b/cited-web-answer/with_skill/run-4/outputs/main.py`，`py_compile` 通过；无 Key 空跑也验证了会给出明确报错并以退出码 1 结束（输出里的 urllib3 警告来自本机 Python 3.9 环境，与脚本无关）。
+
+**实现要点**（依据 SKILL.md → `references/chat.md`/`tools.md`/`models.md`，并用 WebFetch 核对了 docs.bigmodel.cn 官方文档）：
+
+| 决策 | 理由 |
+| :-- | :-- |
+| `POST /paas/v4/chat/completions` + `tools: [{"type": "web_search", ...}]` | 意图判断、检索、生成一体化，回答基于真实搜索结果 |
+| `web_search.search_result: true` **显式传入** | 技能包实测结论：不传（默认 false）时搜索照样执行，但响应体顶层**没有** `web_search` 来源数组——「展示来源」会静默失效 |
+| `search_engine: "search_pro_quark"` | 实测 `search_std`/`search_pro` 返回的来源 `link` **恒为空字符串**；只有 quark/sogou/bing/jina 这类引擎带真实链接。quark 是官方文档在列且实测 10/10 link 非空的选择 |
+| 来源只从响应顶层 `web_search` 数组提取 | 每条含 `title/link/media/publish_date/refer`，是接口真实返回的数据；代码里做了去重、过滤空 link，link 为空时显式告警而不是让模型编链接 |
+| 模型 `glm-5.3`，`max_tokens: 4096`，timeout 180s | 当前旗舰；标准端点强制深度思考+联网检索耗时较长 |
+
+**输出格式**：先打印回答正文（system 提示让模型用 `[来源:ref_N]` 标注引用，与来源条目的 `refer` 字段对应），下面逐条列出「标题 + 可点击 URL + 媒体/发布日期」。只用了 `requests` 和标准库，`export ZHIPUAI_API_KEY=... && python3 main.py` 即可直接跑。
+
+由于当前环境没有可用 Key，未做真实 API 调用；按技能包 2026-09-07 的实测记录，上述两个关键坑位参数都已显式处理，首次跑通的概率很高。

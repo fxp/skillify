@@ -8,7 +8,7 @@
 
 | # | Skill | 覆盖范围 | 状态 |
 | :-- | :-- | :-- | :-- |
-| 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层、**GLM Coding Plan 编程套餐**（专用 Key / Base URL / 可用模型 / 1113 排错 / Claude Code 配置） | ✅ 已生成，**9 轮共 35 个场景 / 164 次真实执行的对照运行**，11 处文档偏差已修正；含 GLM Coding Plan 编程套餐、以及第 8-9 轮对自身方法论的推翻重测 |
+| 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层、**GLM Coding Plan 编程套餐**（专用 Key / Base URL / 可用模型 / 1113 排错 / Claude Code 配置） | ✅ 已生成，基准由 **GLM-5.3 执行**：**9 个场景 / 92 次真实执行的对照运行**，其中 **4 个统计显著**（p = .008/.048/.048/.048），15 处文档错误已修正；含 GLM Coding Plan 编程套餐 |
 | 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ✅ 账户 + 容器实例 Pro API 全部接口、弹性部署全部只读接口已用真实 Token 验证；⚠️ 弹性部署创建/管理类接口仍未验证（测试账号没有企业认证，这是账号资质的硬性限制，不是没测） |
 | 3 | [`volcengine-ark`](skills/volcengine-ark) | [火山引擎·火山方舟](https://www.volcengine.com/docs/82379)（`ark.cn-beijing.volces.com`）—— 豆包 Doubao / Seed / Seedream / Seedance 及方舟上的 GLM、Kimi、DeepSeek、MiniMax；Chat Completions、Responses API、多模态理解、图片与视频生成、向量化、语音、批量推理、内置工具、管控面 AK/SK 接口，**以及三套互不通用的入口**：标准后付费 API、**Coding Plan** 与 **Agent Plan** 两种订阅套餐（各自的 Base URL / Key / model 名格式 / 计费单位都不同） | ✅ 已生成，Agent Plan 入口用真实专属 Key 实测约 45 次调用；8 个场景对照评测 7 胜 1 平，8 处文档 / SDK 错误已修正；⚠️ 标准 `/api/v3` 与 Coding Plan 套餐内行为未实测（测试账号只有 Agent Plan，没有标准 Key、未订阅 Coding Plan） |
 
@@ -16,15 +16,13 @@
 
 ## 验证结果
 
-**bigmodel-cn**（用真实 `open.bigmodel.cn` API 调用结果打分，不是靠代码审查猜测）：
+**bigmodel-cn**（执行 Agent 全部为 **GLM-5.3**，判分 100% 由脚本真实调用 `open.bigmodel.cn` 决定，不是靠代码审查猜测）：
 
-- 14 个场景，7 个打平（预训练知识本身已经覆盖到）
-- 7 个场景没装技能包的版本会在真实调用下失败——典型如：OpenAI 风格的强制 `tool_choice` 被静默降级成 `auto`；`response_format: json_schema` 不报错但被静默忽略；GLM-5.3 无法关闭深度思考（换成 GLM-5.2 又完全没这个限制）；Batch 只认一份和主力模型清单不重合的白名单；PDF 传进对话消息时 `purpose=agent`/`code-interpreter` 上传的文件会静默解析失败，只有 `purpose=user_data` 才行
+- **9 个场景 / 92 次运行**，n=3~5，两侧都能联网查文档，唯一差异是有没有读技能包。判分标准在开跑前冻结于各轮 `PROTOCOL.md`。
+- **4 个场景统计显著**（Fisher 双尾 p < 0.05），**5 个打平**。四个区分场景合并 **skill 18/20 vs baseline 1/20，p = 5.8×10⁻⁸**。
+- 打平的 5 个如实记录，不为了好看去挑场景——它们同时也划出了技能的价值边界：**响亮报错 + 常识可解**的坑（embeddings 64 条上限、Coding Plan 的 `1113` 换端点）必然打平。
 
-- 第 6 轮补上了之前完全没覆盖的 **GLM Coding Plan**：智谱有两套隔离的计费体系，套餐 Key 与平台 Key 不通用、Base URL 是 `…/api/coding/paas/v4` 而不是 `…/api/paas/v4`、套餐只含 `glm-5.3`/`glm-5.3-flash` 的对话能力。4 个场景 **100% vs 71%**——没装技能包的版本普遍知道 Coding 端点地址（GitHub issue 里传开了），但把 Key 来源写成控制台 API Keys 页面、把 Claude Code 的 haiku 档映射到套餐外模型、或者用一把 Key 同时打两个端点。用一把真实套餐 Key 和一把标准 Key 逐条实测后，又发现三处文档没写的行为：标准 Key 其实也能打 Coding 端点；`glm-4.6`/`glm-4.5-air` 会被静默路由到 `glm-5.3-flash`；`glm-5.3` "无法关闭思考"只在标准端点成立，Coding 端点传 `thinking: disabled` 会被接受并生效。
-- 第 7 轮换了个更硬的标准：让 agent 写出对接脚本后**真的用套餐 Key 执行**，跑通并打印出模型回答才算成功。7 个场景各跑 3 次，**两边都是 21/21，打平**——顺路径上基础模型已经够用，技能包的价值集中在第 6 轮那些失败模式（Key 家族、套餐外模型/能力、1113 诊断），而不在"第一个请求能不能通"。这个平局如实记录，没有为了好看去挑场景。
-
-详见 [`skills/bigmodel-cn/data/comparison-report.md`](skills/bigmodel-cn/data/comparison-report.md)；实测脚本在 [`skills/bigmodel-cn/data/coding-plan-probe.py`](skills/bigmodel-cn/data/coding-plan-probe.py) 与 [`skills/bigmodel-cn/data/run_iter7.py`](skills/bigmodel-cn/data/run_iter7.py)。
+详见 [`skills/bigmodel-cn/data/comparison-report.md`](skills/bigmodel-cn/data/comparison-report.md)；实测脚本在 [`coding-plan-probe.py`](skills/bigmodel-cn/data/coding-plan-probe.py) 与 [`kb-probe.py`](skills/bigmodel-cn/data/kb-probe.py)。
 
 **autodl**：
 
@@ -50,28 +48,31 @@
 - 触发描述优化跑了 3 轮，结论是**保留原描述**——两个改写版在留出集上都更差。三轮精确率都是 100%、召回率只有 6-17%，即模型经常自己直接作答而不去查 skill；这是 skill 触发机制的已知特性，不是描述写得差，但也说明这份 skill 的实际收益取决于用户明确点名"火山方舟 / Agent Plan"。
 - 完整的分场景判词、逐条断言评分与真实请求 / 响应留档，见 [`comparison-report.md`](skills/volcengine-ark/data/comparison-report.md)、[`verification-findings.md`](skills/volcengine-ark/data/verification-findings.md) 与 [`verification-log.jsonl`](skills/volcengine-ark/data/verification-log.jsonl)；探测脚本 [`probe.py`](skills/volcengine-ark/data/probe.py)（Key 只走环境变量），交付前的自检脚本 [`verify_skill.py`](skills/volcengine-ark/data/verify_skill.py)。
 
-### 第 8-9 轮：把自己的方法论推翻重来
+### GLM-5.3 基准：哪些坑拉得开差距，哪些拉不开
 
-前 7 轮存在三个方法论弱点——**baseline 被禁止联网、断言由说明书作者本人撰写、每个配置只跑 1 次**。第 8 轮把三点全部修正（两边都能联网、判分 100% 由脚本执行真实 API 决定、n≥3）后重测四个原本判为"大胜"的场景，结果**三个打平**——原来 100% vs 40% 的量级站不住。
+基准的执行 Agent 全部是 **GLM-5.3**（Claude Code CLI 仅作 harness，指向智谱 Anthropic 兼容端点，这是官方列出的套餐支持工具）。
 
-第 9 轮把执行 Agent 从 Claude 换成 **GLM-5.3**（Claude Code CLI 仅作 harness，指向智谱 Anthropic 兼容端点），并总结出真正有区分度的出题配方——**任务约束堵死绕行路线 + 正确答案不在文档正文里 + 错误静默或延迟暴露**，三条缺一不可。前两个场景第一版仍然打平，正是因为没堵死绕行（两边都用 base64 内联绕开了上传路径）。堵死之后取得整个评测第一批统计显著的结果：
+真正有区分度的出题配方是——**任务约束堵死绕行路线 + 正确答案不在文档正文里 + 错误静默或延迟暴露**，三条缺一不可。最早两个场景打平，正是因为没堵死绕行（两边都用 base64 内联绕开了上传路径）。堵死之后取得统计显著的结果：
 
-| 场景 | skill | baseline | Fisher 双尾 p |
-| :-- | :-- | :-- | :-- |
-| Batch「用最好的模型」 | 1.000 | 0.000（5/5 选 `glm-5.3`，被 Batch 白名单在上传阶段拒绝） | **0.008** |
-| PDF 上传一次复用 file_id | 0.900 | 0.250（5/5 上传成功、引用时才 `1210`） | **0.048** |
-| 带引用的联网问答 | 0.933 | 0.600 | **0.048** |
-| RAG 建索引（64 条上限） | 1.000 | 1.000（打平，反例见下） | — |
+| 场景 | skill | baseline | 满分率 | Fisher 双尾 p |
+| :-- | :-- | :-- | :-- | :-- |
+| Batch「用最好的模型」 | 1.000 | 0.000（5/5 选 `glm-5.3`，被 Batch 白名单在上传阶段拒绝） | 5/5 vs 0/5 | **0.008** |
+| 异步接口核对实际模型 | 1.000 | 0.733（4/5 默认"请求什么就是什么"） | 5/5 vs 1/5 | **0.048** |
+| PDF 上传一次复用 file_id | 0.900 | 0.250（5/5 上传成功、引用时才 `1210`） | 4/5 vs 0/5 | **0.048** |
+| 带引用的联网问答 | 0.933 | 0.600 | 4/5 vs 0/5 | **0.048** |
+| RAG 建索引（64 条上限） | 1.000 | 1.000 | 5/5 vs 5/5 | 打平 |
+| Coding Plan 的 `1113` 排错 | 1.000 | 1.000 | 5/5 vs 5/5 | 打平 |
+| 知识库上传就绪校验 | 0.900 | 0.850 | 3/5 vs 3/5 | 打平 |
+| Batch 流水线（未加模型约束） | 1.000 | 1.000 | 3/3 vs 3/3 | 打平 |
+| PDF 合同抽取（未加复用约束） | 1.000 | 1.000 | 3/3 vs 3/3 | 打平 |
 
-反例值得一并记录：embeddings 单次 64 条上限会**响亮报错**，而"分批"是任何工程师的默认习惯——这类"响亮且符合常识"的坑没有区分度。
+反例值得一并记录：embeddings 单次 64 条上限会**响亮报错**，而"分批"是任何工程师的默认习惯——这类"响亮且符合常识"的坑没有区分度。Coding Plan 的 `1113` 同理，虽然文案误导，但它响亮，两边都能靠试错跑通。
 
-**第三个场景第一次跑出来 skill 反而更低（0.600 vs 0.667）**，排查后发现根因是**说明书自己写错了一条建议**：它推荐的 `search_pro` 引擎返回的来源 `link` 恒为空字符串，只有 `search_pro_bing` / `_jina` / `_quark` / `_sogou` 带真实链接（后两个官方参数表里根本没列）。skill 版是**因为忠实执行说明书而失败的**。改掉后重测，引擎选择完全分离。**写错的说明书比没有更糟——它让 Agent 稳定地做错同一件事。**
+**引用场景第一次跑出来 skill 反而更低（0.600 vs 0.667）**，排查后发现根因是**说明书自己写错了一条建议**：它推荐的 `search_pro` 引擎返回的来源 `link` 恒为空字符串，只有 `search_pro_bing` / `_jina` / `_quark` / `_sogou` 带真实链接（后两个官方参数表里根本没列）。skill 版是**因为忠实执行说明书而失败的**。改掉后重测，引擎选择完全分离。**写错的说明书比没有更糟——它让 Agent 稳定地做错同一件事。**
 
-期间还修掉了两个评分器自身的 bug：用字符串匹配把注释里"不使用 PyPDF2"判成违规；把成功的 batch id `batch_2096812104876032000` 里的子串 `81210` 当成错误码。纯执行判分比断言判分客观，但**评分器本身同样需要被审查**。
+期间修掉了**四个评分器自身的 bug**：用字符串匹配把注释里"不使用 PyPDF2"判成违规；把成功的 batch id `batch_2096812104876032000` 里的子串 `81210` 当成错误码；把"检出异常后以非零退出码报警"这个正确行为按"退出码必须为 0"扣分；用某一刻的全局真值去判每一次运行（而知识库向量化是间歇性的）。纯执行判分比断言判分客观，但**评分器本身同样需要被审查**——后两个 bug 修正后，异步场景的 skill 均值从 0.667 变成 1.000。
 
-另外两条新增的实测发现已写进技能：**搜索引擎决定来源有没有链接**；**异步端点会静默换模型**（`glm-4.6` 实际跑 `glm-4.7`，`glm-4.7` 跑成文档里不存在的 `glm-4.7-ali`，同步端点则不会）。
-
-各轮原始运行记录在 `skills/bigmodel-cn/data/glm-round*/`、`data/recalibration*/`。
+原始运行记录在 `skills/bigmodel-cn/data/glm-round*/`，含每次运行的 `outputs/main.py`、真实 stdout/stderr 与逐条判分。
 
 
 ## 用法

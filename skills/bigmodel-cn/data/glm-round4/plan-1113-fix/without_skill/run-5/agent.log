@@ -1,0 +1,34 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 验证通过（环境里没有 Key，所以没有实际调用 API）。
+
+## 429/1113 的真正原因：不是额度用完，是走错了端点
+
+官方 FAQ 写得很明确：Coding Plan 的资源包**只在套餐专属端点上生效**，你原代码打的 `https://open.bigmodel.cn/api/paas/v4/chat/completions` 是**按量计费的通用 API**——套餐额度根本没被抵扣，请求被当成了普通付费调用，而账户里又没有现金余额，于是返回 1113。官方文档给出各协议的正确接入地址：
+
+| 协议 | Base URL |
+|---|---|
+| OpenAI Chat Completion | `https://open.bigmodel.cn/api/coding/paas/v4` |
+| Anthropic（Claude Code 用） | `https://open.bigmodel.cn/api/anthropic` |
+
+## 原代码的两处 bug
+
+1. **端点错误**（如上）：`/api/paas/v4/...` → 改为 `/api/coding/paas/v4/chat/completions`。
+2. **Key 永远取不到**：`os.environ[chr(39)+chr(39)]` 里的 `chr(39)+chr(39)` 是**两个单引号字符组成的字符串** `''`，不是空字符串，所以它读的是名为 `"''"` 的环境变量，必然 KeyError——改为 `os.environ.get("GLM_KEY", "").strip()`，缺 Key 时给出友好提示。
+
+## 修改后的 main.py
+
+- 只依赖 `requests`（外加标准库 `os`/`sys`）；
+- 模型保留 `glm-5.3`——官方文档确认所有 Coding Plan 套餐均支持 GLM-5.3 / GLM-5.3-Flash；
+- 成功时把 `choices[0].message.content` 打印到 stdout；失败时把 HTTP 状态码和完整错误 JSON 带出来（以后再报错能直接看出原因），以非零码退出；
+- 请求带 60 秒超时。
+
+运行方式：
+
+```bash
+GLM_KEY=你的APIKey python3 outputs/main.py
+```
+
+Sources: [GLM Coding Plan 常见问题（官方）](https://docs.bigmodel.cn/cn/coding-plan/faq) · [GLM Coding Plan 快速开始（官方）](https://docs.bigmodel.cn/cn/coding-plan/quick-start)

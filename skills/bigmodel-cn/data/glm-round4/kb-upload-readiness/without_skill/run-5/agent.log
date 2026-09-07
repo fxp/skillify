@@ -1,0 +1,25 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付：`outputs/main.py`（`python3 main.py` 直接跑，仅依赖 `requests` + 标准库）。
+
+## 接口核实结果（来自官方文档）
+
+智谱托管知识库走的是 `https://open.bigmodel.cn/api/llm-application/open` 这一组接口：创建知识库 `POST /knowledge`（返回 `data.id`）、上传文件 `POST /document/upload_document/{kb_id}`（multipart 字段名是 `files`，返回 `successInfos[].documentId` / `failedInfos[].failReason`）、文档详情 `GET /document/{doc_id}`（状态字段 `embedding_stat`，失败信息在 `failInfo`）、检索 `POST /knowledge/retrieve`（`knowledge_ids` + `document_ids`，召回分片在 `data[].text`）、删除 `DELETE /knowledge/{id}`。
+
+## 针对"假成功"的校验设计
+
+你被坑过的点我有专门处理：
+
+1. **上传成功 ≠ 可检索**：官方 FAQ 明确"状态变为「处理完成」后才可正常检索"。脚本先轮询 `embedding_stat` 走完 数据处理中→索引构建中→处理完成（超时 5 分钟，`failInfo` 有错误码或状态为"数据异常"立即报错并给出原因）。
+2. **最终以真实检索为准**：一个文档没给数值表的坑——官方文档没有公布 `embedding_stat` 的取值表，所以状态轮询只做辅助，**成败标准是第④步拿 faq.txt 里的实际问题行去调检索接口，且 `document_ids` 限定只查这份文档，必须召回非空分片**（重试 6 次 × 10s，容忍索引短暂延迟）。空结果、接口报错都判失败并打印具体原因和证据（query、召回数、最高分、分片摘录），绝不报喜不报忧。
+3. **兜底清理**：`finally` 里无论成败都删知识库（带重试）；删不掉会大声警告并给出 KB ID 让你手动删，此时退出码为 2 而非 0。退出码：0 全成功 / 1 失败 / 2 成功但清理失败。
+4. 其他细节：429/5xx 自动重试、`failedInfos` 检查、编码 fallback（utf-8→gb18030）、缺 Key / 缺 faq.txt / 空文件都有明确报错。
+
+## 已验证 / 未验证
+
+- ✅ `python3 -m py_compile` 通过；无 Key、缺 faq.txt 两条错误路径和检索 query 提取逻辑已在 /tmp 冒烟测试通过（测试副本已清理）。
+- ⚠️ 真实 API 调用路径**未执行**（本环境无 Key）。你跑之前 `export ZHIPUAI_API_KEY=...`，且 `faq.txt` 和脚本放同一目录。
+
+Sources: [知识库 FAQ](https://docs.bigmodel.cn/cn/faq/knowledge-base) · [创建知识库](https://docs.bigmodel.cn/api-reference/知识库-api/创建知识库) · [上传文件文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档) · [文档详情](https://docs.bigmodel.cn/api-reference/知识库-api/文档详情) · [知识库检索](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索) · [删除知识库](https://docs.bigmodel.cn/api-reference/知识库-api/删除知识库)

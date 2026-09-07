@@ -1,0 +1,20 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/async-model-pinning/with_skill/run-1/outputs/main.py`，`py_compile` 编译通过；无 Key 时运行会明确报错并以退出码 1 退出（不会发出网络请求）。
+
+## 脚本做了什么
+
+- **批量异步流程**：三句话串行提交到 `POST /paas/v4/async/chat/completions` 拿 `task_id`（串行避免触发并发速率限制），再逐个轮询 `GET /paas/v4/async-result/{id}`（2 秒间隔、单任务 180 秒总超时），按 `task_status` 的 `SUCCESS/FAIL` 终止
+- **审计核对（核心）**：打印「我请求的模型」`glm-4.6`，并从**两处**读回实际使用模型——提交响应的 `model` 字段（官方语义是"此次调用使用的名称"）和轮询结果的 `model` 字段；任一不一致就打出醒目报警块、列出不一致任务明细，并以**退出码 1** 结束，方便 CI/流水线捕获
+- **大小写归一化比较**：实测平台回显大小写不稳定（`glm-4.5-air` 会回显成 `GLM-4.5-Air`），归一化后比较避免把"没换模型"误报成不一致
+- 其他：Key 只从 `ZHIPUAI_API_KEY` 环境变量读取、只用 `requests`、`do_sample: false` 贪心解码满足审计可复现诉求、标签输出做了容错归一化
+
+## 一个必须提醒你的审计风险
+
+技能包里有一条 **2026-09-07 真实 API 实测验证**：智谱**异步端点会静默替换模型**——请求 `glm-4.6` 实际执行的是 `glm-4.7`，请求 `glm-4.7` 实际跑的是官方文档里根本不存在的 `glm-4.7-ali`；同步端点 `POST /paas/v4/chat/completions` 则原样透传。也就是说，这个脚本真实跑起来时，报警**大概率会触发**——这不是脚本 bug，而是审计核对正确地抓到了平台行为。如果审计硬性要求 glm-4.6 的结果，你可能需要：改用同步接口、或换实测透传的模型（`glm-5.3` 等）、或与平台确认此路由行为。
+
+Sources:
+- [对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8%E5%BC%82%E6%AD%A5)
+- [查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%9F%A5%E8%AF%A2%E5%BC%82%E6%AD%A5%E7%BB%93%E6%9E%9C)

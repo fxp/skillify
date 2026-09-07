@@ -1,0 +1,27 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3b/cited-web-answer/without_skill/run-1/outputs/main.py`，`python3 -m py_compile` 通过，离线测试也通过（按你的要求没有真实调用 API）。
+
+**实现要点**（接口细节已通过抓取官方文档 docs.bigmodel.cn 确认）：
+
+- **接口**：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，鉴权 `Authorization: Bearer $ZHIPUAI_API_KEY`，模型 `glm-4.6`（常量，可改）。
+- **联网搜索**：请求体挂 `tools: [{"type": "web_search", "web_search": {"enable": true, "search_engine": "search_pro", "count": 10, "search_result": true}}]`。关键是 `search_result: true`——让接口在响应里附带**结构化搜索结果**。
+- **来源保证**：答案下方的「参考来源」列表完全从响应 JSON 里解析出来（每条含标题、URL、媒体、发布日期，按 link 去重）。官方文档对来源字段位置有两种表述（响应根级 `web_search` 数组、或 `choices[].message.search_result`），脚本对两个位置都做了解析，任一生效即可；若接口没返回来源，会明确提示而不是让模型编链接。
+- **只依赖 requests**（外加标准库 os/sys），错误路径（缺 Key、HTTP 非 200、网络失败、非 JSON 响应）都输出到 stderr 并以非零码退出。
+
+验证过的输出格式（模拟数据）：
+
+```
+2026 年智谱发布了 GLM-5.3 等新模型。[ref_1]
+
+================================================================
+参考来源（接口 web_search 实际返回，可点击核对）：
+================================================================
+[1] 智谱发布 GLM-5.3（示例网 / 2026-08-01）
+https://example.com/a
+...
+```
+
+实际使用：`ZHIPUAI_API_KEY=你的key python3 main.py`。有一点需要你实测确认：当前环境没有 Key，我无法验证真实响应里来源字段的最终位置，但两种已知位置都已覆盖。

@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译与本地执行路径均验证通过。
+
+## 实现要点
+
+**核心流程**（对照 [SKILL.md](file:///Users/chopinfeng/Workspace/Skillify/bigmodel-cn/SKILL.md) 及其 references 写成）：
+
+1. **上传一次拿 file_id**：`POST /paas/v4/files`（multipart），`purpose="user_data"` —— 这是本任务最大的坑：`file` 类型输入只认 `user_data` 上传的文件，用 `agent`/`code-interpreter` 上传看似成功，引用时必报 `1210 文件解析失败`（技能包经真实 API 验证，[chat.md:43](file:///Users/chopinfeng/Workspace/Skillify/bigmodel-cn/references/chat.md)）
+2. **三个问题复用同一个 file_id**：文件引用 `{"type": "file", "file": {"file_id": ...}}` 只出现在第一条 user 消息；第 2、3 问是纯文本追问，追加到累积的 messages 里，靠历史中的引用复用文件——不再上传、不内联 base64，且请求前缀逐字一致利于命中平台隐式上下文缓存（命中部分半价计费，见 chat.md 第七节）
+3. **模型 `glm-4.6v`**：官方文档明确支持文件理解的多模态模型（128K 上下文），支持 `content` 数组里的 `type=file`
+4. **零本地解析**：只用 `requests` + 标准库，无 PyPDF2/pdfplumber/pypdf；Key 从 `ZHIPUAI_API_KEY` 读取，缺失时优雅报错退出
+
+**健壮性**：业务错误体 `{"error":{"code":...}}` 统一抛出（不会吞掉 1210）；网络抖动/429/5xx 带退避重试，业务性 4xx 不重试；上传前把 PDF 读成 bytes，重试不会遇到句柄读完的问题；`finish_reason` 非 `stop` 会报错。`find_pdf` 依次找 `CONTRACT_PDF` 环境变量 → 脚本同目录 → 当前目录 → 祖先目录 `fixtures/`，在三种运行目录场景下实测都能定位到文件。
+
+**验证情况**（未调真实 API，按约定无 Key）：`python3 -m py_compile` 通过；无 Key 运行正确输出错误并以退出码 1 结束；PDF 定位逻辑三种场景通过。
+
+**运行方式与预期输出**：
+
+```bash
+ZHIPUAI_API_KEY=你的Key python3 main.py
+```
+
+stdout 会先打印 `file_id`，随后依次输出三问三答，按 fixtures 里的合同内容，答案应为：合同编号 `HT-2026-0917-XJ`；总金额人民币肆佰捌拾柒万元整（¥4,870,000.00，分四期支付）；违约金为逾期超三十日时按合同总金额 10% 支付。
+
+Sources: [GLM-4.6V 模型文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.6v)、[对话补全 API](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)、[上传文件 API](https://docs.bigmodel.cn/api-reference/%E6%96%87%E4%BB%B6-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6)

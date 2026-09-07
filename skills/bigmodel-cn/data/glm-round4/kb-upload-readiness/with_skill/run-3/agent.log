@@ -1,0 +1,34 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，纯逻辑（查询词提取、无 Key 前置检查）冒烟测试通过。环境里没有可用 Key，按约定没有实际调 API。
+
+## 脚本设计说明
+
+针对你上次踩的坑（“上传显示成功、检索永远是空”），成功判定设了**三道闸门**，全部通过才会打印“成功”：
+
+| 步骤 | 做法 | 防的坑 |
+| :--- | :--- | :--- |
+| 1. 建库 | `POST /llm-application/open/knowledge`，Embedding-3 | — |
+| 2. 上传 | `POST .../upload_document/{id}`，`knowledge_type=1`；同时检查 `successInfos` **和** `failedInfos` | 这族接口**业务失败时 HTTP 仍是 200**，脚本统一校验 body 里的 `code == 200`，而不是 `raise_for_status()` |
+| 3. 轮询向量化 | 轮询 `GET /document/{id}` 直到 `embedding_stat == 1`（最长 5 分钟） | 上传成功只是文件被接收，向量化是后台异步的；`embedding_stat == 2` 时立即把 `failInfo.embedding_code/embedding_msg` 原样报出来，绝不傻等 |
+| 4. **真实检索校验** | 用 faq.txt 的第一行原文做查询词调 `/knowledge/retrieve`，**要求结果非空**（空则重试 3 次后报错） | 用文档自己的内容做查询，检索为空就只能是索引没生效，不会误判成“内容不相关”；这正是你上次那个症状的显式检测 |
+| 5. 清理 | `finally` 里删除知识库 | 无论成败都执行；清理失败会给出 knowledge_id 和控制台地址提醒手动删 |
+
+其他细节：
+
+- API Key 只从 `ZHIPUAI_API_KEY` 读取，缺失时报错退出（退出码 2），不会带 traceback；
+- faq.txt 按**脚本同目录**定位（`Path(__file__).parent`），不依赖当前工作目录；
+- 退出码：`0` 成功、`1` 流程失败（stderr 里带具体原因）、`2` 前置条件不满足；
+- 仅用 `requests` + 标准库。
+
+注意一点：`main.py` 运行时需要 `faq.txt` 和它在同一目录（当前 `outputs/` 下只有 main.py，按交付要求没有放别的文件）。
+
+接口细节除技能参考文件外，还与官方文档做了交叉核对：状态流转「数据处理中→索引构建中→处理完成，处理完成才可检索」与 `successInfos`/`failedInfos`、`embedding_stat`/`failInfo`、检索参数均已确认一致。
+
+Sources:
+- [上传文件文档 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E6%96%87%E6%A1%A3)
+- [文档详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E8%AF%A6%E6%83%85)
+- [知识库检索 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2)
+- [知识库常见问题 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/faq/knowledge-base)

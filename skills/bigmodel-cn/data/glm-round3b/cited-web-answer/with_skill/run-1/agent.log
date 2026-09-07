@@ -1,0 +1,16 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，输出逻辑用假响应数据本地验证过（未调用真实 API），没 Key 时的报错路径也确认正常。
+
+**实现要点**（按 SKILL.md 及其 references 的实测结论 + 官方文档核对）：
+
+- **调用方式**：同步 `POST /paas/v4/chat/completions`，模型 `glm-5.3`，通过 `tools: [{"type": "web_search", ...}]` 挂联网搜索。不走异步端点——那份文档实测过异步端点会静默替换模型。
+- **来源必须真实可点，两个坑都避开了**：
+  1. `web_search.search_result: true` 显式传——不传的话搜索照常执行，但响应体里**没有**顶层 `web_search` 来源数组，「列来源」会静默失效；
+  2. `search_engine` 用 `search_pro_bing`——实测 `search_std`/`search_pro` 返回的来源 `link` 恒为空字符串，只有 bing/jina/quark/sogou 这几个引擎带真实链接。
+- **来源列表**：直接从响应顶层 `web_search` 数组读取（平台搜索服务返回的，非模型生成），每条打印标题 + 独立一行的 URL（终端里可点击），附媒体名/发布日期；空链接过滤、URL 去重，若接口没返回来源会明确提示而不是空白。
+- **其他**：Key 从 `ZHIPUAI_API_KEY` 读取，缺失时报错退出；仅依赖 `requests`；`search_recency_filter: oneYear` 过滤往年旧闻；429/5xx 指数退避重试，4xx 直接报业务错误码；超时给到 300s（glm-5.3 标准端点强制思考 + 联网搜索，耗时偏长）。
+
+设好 Key 后直接跑：`export ZHIPUAI_API_KEY=你的Key && python3 main.py`。

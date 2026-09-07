@@ -1,0 +1,37 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/kb-upload-readiness/without_skill/run-4/outputs/main.py`（该目录只有这一个文件），`python3 -m py_compile` 编译通过，另做了不触网的冒烟测试（查询词提炼、原文重叠校验、缺 Key 报错路径均正常）。未调用任何真实 API。
+
+## 流程设计（对应你上次被坑的点）
+
+```
+读 faq.txt → 建库 → 上传 → 轮询文档状态 → 真实检索校验 → finally 清理（删文档+删库）
+```
+
+**校验环节**是核心，做了三层防“假成功”：
+
+1. **状态轮询**：上传后轮询文档详情的 `embedding_stat`；一旦 `failInfo` 有内容（如"字数超出限制”），立即带服务端原始原因报错退出，不进后续步骤；
+2. **真实检索**：状态完成后，用**从 faq.txt 原文自动提炼的查询词**（问题行优先）调用检索接口做真实召回——混合检索为主，最后加一条关键词检索兜底（与原文精确匹配，最能证明内容真入库了）。索引有滞后，给了 120 秒重试窗口；
+3. **原文比对**：召回的切片必须与 faq.txt 原文存在 **10 字以上连续逐字重叠**才算数——防止“检索有返回但内容对不上”的假阳性。
+
+另有一个刻意的设计：`embedding_stat` 官方未枚举取值，所以**即便状态轮询超时，脚本也不据此判死，而是继续做真实检索、以检索结果为最终裁决**——状态接口和检索接口哪个都不可全信，只有检索命中原文才算成功。检索失败时会把尝试轮数、每条查询的召回情况、常见原因（仍在“索引构建中”/向量化失败/编码问题）全部打出来。
+
+## 其他要点
+
+- API Key 读 `ZHIPUAI_API_KEY`，`Authorization: Bearer` 认证；仅用 `requests`；
+- 接口路径均按官方 OpenAPI 核实：建库 `POST /api/llm-application/open/knowledge`、上传 `POST .../document/upload_document/{库id}`（multipart 字段名 `files`）、检索 `POST .../knowledge/retrieve`、删除 `DELETE .../knowledge/{库id}` 与 `.../document/{文档id}`；
+- 建库用 Embedding-3（`embedding_id=11`），不开上下文增强（更快、更省，校验只看切片原文）；
+- 清理放在 `finally` 里，失败也执行；若知识库删除失败，会明确打印库 ID 让你手动删，且**不给出 0 退出码**；
+- 退出码：`0` = 上传成功 + 检索验证通过 + 清理完成；`1` = 任一环节失败（可直接用于 CI）。
+
+运行方式：把 `main.py` 和 `faq.txt` 放同一目录，`export ZHIPUAI_API_KEY=...` 后 `python3 main.py`。
+
+Sources:
+- [创建知识库 - 智谱 API 文档](https://docs.bigmodel.cn/api-reference/知识库-api/创建知识库)
+- [上传文件文档 - 智谱 API 文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档)
+- [文档列表 / 文档详情（embedding_stat、failInfo）- 智谱 API 文档](https://docs.bigmodel.cn/api-reference/知识库-api/文档列表)
+- [知识库检索 - 智谱 API 文档](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索)
+- [删除知识库 / 删除文档 - 智谱 API 文档](https://docs.bigmodel.cn/api-reference/知识库-api/删除知识库)
+- [知识库 FAQ（上传后需等“数据处理中→索引构建中→处理完成”才可检索）](https://docs.bigmodel.cn/cn/faq/knowledge-base)
+- [知识库帮助手册 - 智谱开放文档](https://docs.bigmodel.cn/cn/guide/tools/knowledge/guide)

@@ -1,0 +1,23 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3b/cited-web-answer/without_skill/run-3/outputs/main.py`，语法已用 `python3 -m py_compile` 验证通过（按你的要求没有真的调 API，目录下也只有这一个文件）。
+
+**接口细节（抓官方文档 docs.bigmodel.cn 确认过）：**
+- 端点 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，鉴权为标准 `Authorization: Bearer <key>`
+- 联网搜索通过 `tools` 传入内置 `web_search` 工具：`enable: true` + `search_result: true`（后者是关键，要求接口把真实搜索结果一并返回），搜索引擎用 `search_pro`
+- 模型用 `glm-5.3`（当前文档的旗舰示例模型）
+
+**关于「来源必须是接口真实返回的」这个核心要求的处理：**
+
+官方文档两处口径不一致——对话补全 API 参考的响应 schema 说搜索结果在**响应顶层 `web_search` 数组**（每条含 `title/link/content/media/publish_date/refer`），而 GLM-4 时代的旧版行为是放在 `choices[0].message.tool_calls` 中 `type: "web_search"` 条目的 `search_result` 里。脚本的 `extract_sources()` 把**两个位置都做了兼容提取**，只取响应 JSON 里的 `title` 和 `link` 字段（按 link 去重、保持原始顺序），完全不解析模型正文里自己写的链接，所以列出的每条来源都可点开核对；如果一个来源都没返回，会明确打出「（本次接口未返回任何搜索来源）」而不是编造。
+
+**运行方式：**
+
+```bash
+export ZHIPUAI_API_KEY=你的Key
+python3 main.py
+```
+
+输出格式：先打印问题，然后是模型的联网回答，最后是「参考来源（接口联网搜索真实返回）」编号列表，每条标题一行、裸 URL 单独一行（终端里可直接点击）。API Key 缺失、HTTP 非 200、返回 JSON 含 `error` 等异常都会打到 stderr 并以非零码退出。

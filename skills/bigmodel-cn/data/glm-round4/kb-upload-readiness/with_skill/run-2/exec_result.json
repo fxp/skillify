@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "[1/5] 创建知识库（embedding_id=11，name=faq-upload-check-20260907172006）……\n    知识库 ID：2096891255912128512\n[2/5] 上传文档 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/kb-upload-readiness/with_skill/run-2/work/faq.txt（5280 字节，knowledge_type=1）……\n    文档 ID：2096891264917295104\n[3/5] 轮询向量化状态（间隔 5s，最长等 600s）……\n    向量化完成：word_num=0 length=5280\n[4/5] 检索校验：用 faq.txt 里的真实内容当 query 实测检索……\n    query：退换货政策的有效期是多久？\n    命中 3 条，Top1 score=0.78，doc_name=faq.txt\n    Top1 片段：退换货政策的有效期是多久？ 如何申请退换货相关的服务？ 退换货出现问题时联系谁？ 退换货的处理时限是几个工作日？ 退换货需要提供哪些材料？ 退换货的费用由谁承担……\n\n✅ 成功：faq.txt 已灌入知识库，且已通过真实检索验证（文档确实可以被检索到）。\n\n[5/5] 清理：删除本次创建的知识库（无论成败）……\n    知识库已删除：2096891255912128512（code=200）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 9.7
+}

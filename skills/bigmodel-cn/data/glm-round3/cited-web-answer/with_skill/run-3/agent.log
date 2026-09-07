@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过；无 Key 时跑过一次，正确报错退出（exit=1，无 traceback，那条 urllib3 警告来自本机系统 Python 环境，与脚本无关）。没有真的调用大模型 API。
+
+**脚本做了什么**（`python3 main.py` 直接跑，只需 `export ZHIPUAI_API_KEY=...`）：
+
+1. 调 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，模型 `glm-5.3`，Bearer 鉴权从 `ZHIPUAI_API_KEY` 读取，只用 `requests`。
+2. 通过 `tools: [{"type": "web_search", ...}]` 开联网搜索：`search_engine: "search_pro"`、`search_recency_filter: "oneYear"`（问题关注 2026 年动态）、`content_size: "high"`。
+3. 打印答案后，来源列表**逐条取自响应体顶层的 `web_search` 数组**（接口真实返回的 `title` / `link`，附 `media`、`publish_date` 便于核对，按 link 去重），一条一行 URL，终端里可直接点开。
+4. 若接口没返回来源数组，宁可 exit 1 也绝不打印编造的链接；答案为空、HTTP 错误（解析出平台业务错误码）、网络异常都有明确报错。
+
+**两个决定成败的接口细节**（技能包实测结论 + 官方 API 参考双重确认）：
+
+- `web_search.search_result` 默认是 **false**——不显式传 `true`，搜索照常执行、答案照常生成，但响应里完全没有 `web_search` 来源字段，“展示真实来源”会静默失效。这正是“来源必须真实返回、不能让模型编”的命门，脚本里已显式传 `true` 并注释说明。
+- `glm-5.3` 在标准端点强制思考（`thinking.disabled` 会报 1210），所以用 `reasoning_effort: "low"`（实测≈不思考）加快事实型问答，读取超时放宽到 180 秒。
+
+文档来源：
+- [联网搜索 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/web-search)
+- [对话补全 API 参考 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)

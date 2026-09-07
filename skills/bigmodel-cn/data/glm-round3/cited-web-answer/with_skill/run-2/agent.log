@@ -1,0 +1,17 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 通过，无 Key 时的报错路径也实测正常（exit 1，提示设置环境变量）。
+
+## 实现要点
+
+**接口选型**：走 `chat/completions` 的 `web_search` 工具（意图判断→检索→生成一体化），而不是独立的 `/paas/v4/web_search` 端点，这样来源和回答来自同一次调用，天然对应。
+
+**来源真实性的关键处理**（这是任务的核心要求）：
+- 引用列表**只从响应顶层的 `web_search` 数组提取**，逐条打印 `title` + 单独一行的 `link`（终端里可直接点击），附 `media`/`publish_date` 元信息——没有任何一条来自模型正文。
+- 显式传了 `web_search.search_result: true`。技能包实测过这个坑：**不传这个字段时搜索照常执行、回答正常生成，但响应里根本没有 `web_search` 字段**，“列来源”会静默失效——这正是“模型自己编链接”风险最大的场景。
+- 若某次响应来源数组为空，脚本会明确打印“未返回来源、请谨慎采信”，而不是硬凑。
+
+**其他参数**（均经官方文档核对）：模型 `glm-5.3`；`search_engine: "search_pro"`（官方建议显式传，不依赖未文档化的默认值）；`search_recency_filter: "oneYear"`（问题针对 2026 年动态）；`reasoning_effort: "low"`（glm-5.3 标准端点强制思考，事实类问答用 low 档更快）；超时 120s（联网+生成耗时较长）；HTTP 非 200 或业务错误码时带出 `error.code/message` 便于排查。
+
+当前环境无 Key，未实际调 API；有 Key 时 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可跑通。

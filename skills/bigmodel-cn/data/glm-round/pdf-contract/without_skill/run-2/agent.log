@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round/pdf-contract/without_skill/run-2/outputs/main.py`（目录里只有这一个文件）。
+
+## 方案说明
+
+**核心思路**：完全不在本地解析 PDF。整个 `contract.pdf` 读成字节后 base64 编码，以 data URI 形式放进 chat completions 请求的多模态 `file` 输入里，由视觉模型自己读文件：
+
+```python
+{"type": "file", "file": {"file_data": "data:application/pdf;base64,...", "filename": "contract.pdf"}}
+```
+
+这个写法来自官方文档确认的接口细节（抓取的几版旧流程里，`purpose=file-extract` 已不在现行上传接口的枚举中，`GET /files/{id}/content` 也已改为只支持 batch，所以没用那条老路）：
+
+- 对话补全 API 参考中的 `file` 内容类型：`file_id` / `file_url` / `file_data` 三选一，`file_data` 用 `data:<MIME>;base64,` 格式，单文件 ≤50M；旧版顶层 `file_url` 类型官方已不建议新场景使用
+- [GLM-4.6V](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.6v)（128K 上下文）原生支持 PDF 文件输入，作为默认模型，可用环境变量 `BIGMODEL_MODEL` 换成其他支持文件输入的视觉模型
+
+**脚本行为**：
+- Key 从 `ZHIPUAI_API_KEY` 读取，仅依赖 `requests`，`python3 main.py` 直接跑
+- 提示词要求模型只输出 `{"合同编号": "…", "合同总金额": "…"}` 的 JSON（大写/小写金额、币种保留原文），脚本解析后打印两行到 stdout；诊断信息全部走 stderr，stdout 保持干净。JSON 解析做了剥代码块、按键名关键字取值的容错
+- 注意：当前 `run-2/` 下实际没有 contract.pdf（只有 agent.log），所以查找顺序做成了「脚本所在目录 → 脚本上级目录 → 当前工作目录」，无论 PDF 放在 run-2/ 还是 outputs/ 旁都能找到
+
+**验证情况**：`python3 -m py_compile` 通过；无 Key、无 PDF 两条错误分支冒烟测试均正常退出（exit 1、报错清晰）。API 未真实调用（环境无 Key），另外旧版 `file-extract` 流程与 GLM-4.5V 页面上仅有 URL 示例这两点，都是以现行 API 参考中明确支持 base64 `file_data` 的 `file` 类型为准来取舍的。
+
+Sources:
+- [GLM-4.6V - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.6v)
+- [GLM-4.5V - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.5v)
+- [对话补全 API - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/对话补全)
+- [上传文件（文件 API）- 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/文件-api/上传文件)
+- [文件解析（同步）- 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/file-parser-sync)

@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/cited-web-answer/without_skill/run-5/outputs/main.py`（目录下仅此一个文件），编译通过，未调用真实 API。
+
+## 实现说明
+
+**接口细节（已抓取 docs.bigmodel.cn 官方文档确认）：**
+- 端点 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，认证 `Authorization: Bearer <key>`
+- 开启联网搜索并让接口回传搜索结果的关键参数：`tools: [{"type": "web_search", "web_search": {"enable": true, "search_engine": "search_pro", "search_result": true, "count": 10}}]`
+- 搜索结果位于响应体**顶层 `web_search` 数组**（当前文档定义），每条含 `title`、`link`、`refer` 等字段；同时兼容旧版文档的 `message.tool_calls[].search_result` 结构
+
+**满足你的核心要求——来源真实可核对：**
+- 来源列表只从接口返回的 `web_search` 搜索结果里提取标题和 `link`，解析代码完全不经过模型输出，模型无法编造链接
+- 每条来源还带 `[ref_N]` 编号，与答案正文中的引用标注一一对应，方便逐条点开核对
+- 链接去重、保持接口返回顺序；若接口没返回搜索结果会明确提示，而不是留空或造数
+
+**其他：**
+- 问题写死为「2026 年智谱 BigModel 发布了哪些新模型」；API Key 从 `ZHIPUAI_API_KEY` 读取，缺失时给中文提示并 exit 1
+- 仅依赖 `requests`，非流式调用，超时 180s；默认模型 `glm-4.6`（模型概览中在列、支持工具调用），可用环境变量 `ZHIPUAI_MODEL` 覆盖
+- 已验证：`py_compile` 通过；无 Key 报错路径正确；用 mock 响应离线测试了两种搜索结果结构的提取与去重逻辑（真实 API 调用因环境无 Key 未执行，拿到 Key 后 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可跑）

@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，验证全部通过。
+
+## 方案要点
+
+**模型选择**：`glm-5.3` — 查阅官方文档确认这是智谱当前最新旗舰模型（1M 上下文、128K 最大输出），情感分类质量优先，且 Batch 调用价格本来就是标准 API 的 50%。
+
+**接口细节**（均从官方文档核实）：
+- jsonl 每行格式：`{"custom_id": "comment-N", "method": "POST", "url": "/v4/chat/completions", "body": {model, messages, temperature}}`，模型和参数在每行 body 里指定
+- 上传：`POST /api/paas/v4/files`，multipart，`purpose=batch`，从响应取 `id`
+- 建任务：`POST /api/paas/v4/batches`，请求体 `{"input_file_id": ..., "endpoint": "/v4/chat/completions", ...}`（`completion_window` 已废弃，未传），从响应取 `id` 打印到 stdout
+- 鉴权均为 `Authorization: Bearer $ZHIPUAI_API_KEY`
+
+**细节处理**：system 提示词严格约束只输出「正面/负面/中性」；`temperature=0.1` 求稳定；空行/纯空格行跳过；超过单文件 5 万条上限会提前报错；`auto_delete_input_file=False` 保留输入便于复查；进度信息全走 stderr，**stdout 只有 batch id**，方便下游解析。
+
+**验证**（未调用真实 API）：
+- `python3 -m py_compile` 编译通过
+- 无 Key 运行 → exit 1，报错进 stderr，stdout 干净
+- 本地 mock 服务器端到端跑通：验证了 multipart 的 `purpose=batch`、Bearer 头、创建任务的请求体形状、stdout 精确输出 `batch_xxx\n`、jsonl 4 条记录格式与中文内容完整
+
+一个需要说明的点：文档里 Batch 的"支持模型列表"还停留在 GLM-4 时代（连 glm-4.5 都没列，明显滞后），但指南明确 Batch 每行 body 与普通调用相同、模型在 body 中指定，机制是通用的，所以直接用了旗舰 `glm-5.3`。若线上创建任务时该模型报不支持，把 `main.py` 顶部的 `MODEL` 常量改成 `glm-5.2` 即可，其余不用动。
+
+Sources:
+- [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)
+- [创建批次任务 API 参考](https://docs.bigmodel.cn/api-reference/批处理-api/创建批处理任务.md)
+- [上传文件 API 参考](https://docs.bigmodel.cn/api-reference/文件-api/上传文件.md)
+- [GLM-5.3 模型介绍](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3.md)
+- [模型概览](https://docs.bigmodel.cn/cn/guide/start/model-overview.md)
+- [Batch API 常见问题](https://docs.bigmodel.cn/cn/faq/batch-api-issues.md)

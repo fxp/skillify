@@ -1,0 +1,28 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译与离线逻辑测试均通过，目录里只有这一个文件。
+
+## 做了什么
+
+**按说明书流程**：读了 `SKILL.md` → 按导航细读 `references/chat.md`（异步对话章节）和 `references/models.md`（确认 `glm-4.6` 为有效模型代码），并用 WebFetch 对照了官方文档的[对话补全(异步)](https://docs.bigmodel.cn/api-reference/模型-api/对话补全异步)和[查询异步结果](https://docs.bigmodel.cn/api-reference/模型-api/查询异步结果)页面，接口细节与技能包一致。
+
+**一个对你这个审计需求至关重要的发现**（技能包 2026-09-07 用真实 API 实测，官方文档没写）：**异步端点会静默替换模型**——请求体写 `glm-4.6`，服务端实际跑 `glm-4.7`（提交回显 `glm-4.7`、结果回显 `GLM-4.7`）；同步端点则原样透传。也就是说你们锁版本跑异步任务**大概率真的会触发报警**，这不是防御性编程，是实际会命中的场景。
+
+## 脚本要点（main.py）
+
+- **流程**：三句话全部先 `POST /paas/v4/async/chat/completions` 提交（服务端并行），再逐个轮询 `GET /paas/v4/async-result/{id}` 至 SUCCESS/FAIL，2 秒间隔、300 秒总超时，仅依赖 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取。
+- **审计核对（核心交付）**：打印「我请求的模型」与「接口实际使用的模型」，后者取**两处证据**——提交接口回显的 `model` 和轮询结果回显的 `model`，逐一比对；任一不一致**或字段缺失**都打醒目报警横幅并以退出码 1 结束（方便接 CI/审计流水线）。
+- **比对按小写归一化**：因为平台回显大小写不统一（实测 `glm-4.5-air` 回显 `GLM-4.5-Air`，同一模型），大小写敏感比较会误报；而 `glm-4.6` vs `glm-4.7` 这种真替换照样抓得住（已用离线测试验证）。
+- **分类输出**：`response_format: json_object` + prompt 里写明目标结构（平台不支持 json_schema），`do_sample=False` 贪心解码保证可复现，`request_id` 用 UUID 便于留痕追溯；JSON 解析带夹带文字的截取兜底。
+
+## 验证情况
+
+- `python3 -m py_compile` 通过；
+- 无 Key 冒烟测试：正常打印中文提示并以 1 退出；
+- 离线单测：审计逻辑对「换模型报警 / 仅大小写差异放行 / 字段缺失报警 / 全一致通过」四种情形判断全部正确，`parse_sentiment` 兜底通过。未调用真实 API（环境无 Key）。
+
+Sources:
+- [对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/对话补全异步)
+- [查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/查询异步结果)

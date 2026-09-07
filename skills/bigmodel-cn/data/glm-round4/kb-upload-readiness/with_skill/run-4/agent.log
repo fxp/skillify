@@ -1,0 +1,27 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，缺 Key / 缺 faq.txt 等失败路径实测都能如实报错并以非零码退出。
+
+## 脚本设计
+
+流程：**建库 → 上传 → 校验 → 清理**，其中校验环节专门针对你上次踩的坑做了两道防线：
+
+1. **不信任“上传成功”**：上传返回 `successInfos.documentId` 只是“受理成功”，向量化是后台异步任务、失败无主动通知。脚本会轮询 `GET /llm-application/open/document/{id}` 直到 `embedding_stat == 1`（0=处理中，1=成功，2=失败）：
+   - 变 `2` → 直接报错，并原样给出 `failInfo.embedding_code / embedding_msg` 的失败原因；
+   - 超时（默认 600s）→ 也按失败报，注明最后状态。
+2. **不信任“状态成功”**：向量化成功后还会**真的检索一次**——探测 query 从 faq.txt 自身内容里提取一个真实存在的问题（这样“查不到”才能断定是知识库不可用，而非问题不在文档里）。用文档自己的内容查还检索为空（重试 mixed×2 + keyword×1 后仍空），就明确报错：*“知识库实际不可用，这就是『上传显示成功、检索永远为空』的情况”*，绝不打印“成功”。
+
+另外两个关键点：
+
+- **错误判定**：`/llm-application/open/*` 这族接口出错时 HTTP 仍是 200，真实结果在响应体 `code` 里，所以封装里同时检查 HTTP 状态和 `body["code"] == 200`，`raise_for_status()` 完全不够用。上传响应里的 `failedInfos` 也会检查并报出 `failReason`。
+- **清理**：`finally` 块里无条件 `DELETE /llm-application/open/knowledge/{id}`，删失败会打警告提醒手动去控制台清理，不会静默吞掉。
+
+API Key 从 `ZHIPUAI_API_KEY` 环境变量读取，只依赖 `requests`，faq.txt 按“与脚本同目录”定位（`Path(__file__).parent`），直接 `python3 main.py` 即可运行。
+
+## 接口细节核实情况
+
+写代码前用 WebFetch 对照了官方文档：[创建知识库](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93)（`POST /llm-application/open/knowledge`，必填 `embedding_id`/`name`，返回 `data.id`）、[上传文件文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E6%96%87%E6%A1%A3)（multipart 字段名 `files`，返回 `successInfos[].documentId`）、[文档详情](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E8%AF%A6%E6%83%85.md)（`embedding_stat` + `failInfo.embedding_code/embedding_msg`）、[知识库检索](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2.md)（必填 `query`/`knowledge_ids`）。均与技能包一致；搜索摘要里出现的 `/paas/v4/datasets` 路径经核实是错的，未采用。`embedding_stat` 取值含义官方 schema 未枚举，脚本采用技能包 2026-09 实测语义（0/1/2），并在注释里注明了出处。
+
+Sources: [创建知识库 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93), [上传文件文档 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E6%96%87%E6%A1%A3), [知识库检索 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2.md), [API 文档总入口](https://bigmodel.cn/dev/api)

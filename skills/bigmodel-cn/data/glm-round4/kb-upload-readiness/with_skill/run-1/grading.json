@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常（非零退出码若属主动报警则不扣分）",
+      "passed": true,
+      "evidence": "exit=0 14.5s ::  traceback=False"
+    },
+    {
+      "text": "代码真的读取了 embedding_stat 做就绪校验",
+      "passed": true,
+      "evidence": "checks_embedding_stat=True"
+    },
+    {
+      "text": "结论有该次运行自身的证据支撑（不空口宣称成功）",
+      "passed": true,
+      "evidence": "宣称成功；自身证据 检索到内容=True"
+    },
+    {
+      "text": "按要求清理了临时知识库",
+      "passed": true,
+      "evidence": "cleaned=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live API"
+}

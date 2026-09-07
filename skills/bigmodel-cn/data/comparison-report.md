@@ -1,328 +1,229 @@
-# bigmodel-cn skill · value audit
+# bigmodel-cn skill · 价值评测（GLM-5.3 基准）
 
-## Where the skill actually changes the outcome
+## 口径声明
 
-25 coding tasks, 18 run twice and 7 run three times per configuration — once with an agent that read the `bigmodel-cn` skill, once with an agent working from general knowledge only — then graded against the real `open.bigmodel.cn` API, not against assumptions. Round 7 goes one step further: every generated script was actually executed with a real Coding Plan key, and only a script that ran and printed a model answer counts as a success. Round 6 (GLM Coding Plan) was graded first from the official docs and then re-verified live with a real Coding Plan key and a real standard key; every assertion held, and the probe turned up three undocumented behaviours (below).
+**本报告只包含由 GLM-5.3 作为执行 Agent 产出的实验。** 早期用 Claude 模型执行的轮次已从本报告中删除，不作为本基准的任何依据——执行器不同的结果不可合并统计。
 
-**Which agent ran the tasks, and which model the generated code called, are two different things** — an easy confusion to make, so it is spelled out here. All 164 runs are logged under `bigmodel-cn-workspace/`; only round 9's `grading.json` files carry an `executor` field, the earlier rounds were not annotated at the time.
+- **执行 Agent**：GLM-5.3。Claude Code CLI 仅作 harness，`ANTHROPIC_BASE_URL` 指向 `…/api/anthropic`，配 Coding Plan Key。这是智谱官方支持的 Coding Plan 使用方式。
+- **被测模型**：脚本自己调用的模型（`glm-5.x`、Batch、文件、Web Search 等）由每个场景决定，与执行 Agent 是两回事。
+- **判分**：100% 由脚本真实执行 `open.bigmodel.cn` 决定，不看代码"看起来对不对"。判分标准在开跑前冻结于各轮 `PROTOCOL.md`。
+- **对照**：两侧都能 WebFetch 查官方文档，唯一差异是有没有读 `bigmodel-cn` 技能。
 
-| Rounds | Runs | Executing agent | Model the generated code calls |
-|---|---|---|---|
-| 1–5 | 28 | Claude (Fable 5.1) | `glm-5.3` / `glm-5.2` and others per scenario |
-| 6–7 | 50 | Claude (Fable 5.1) | `glm-5.3` / `glm-5.3-flash` |
-| 8, 8b (recalibration) | 24 | Claude (Opus 5) | `glm-5.3` and the Coding Plan endpoints |
-| **9** | **62** | **GLM-5.3** (Claude Code CLI as harness only) | `glm-5.x`, Batch, files, web search |
-
-So **the three statistically significant results all come from round 9, where GLM-5.3 was the executing agent**; everything before it was executed by a Claude model and should be read as such. The executor changed mid-audit, which is itself a confound flagged in round 8.
-
-| Metric | Value |
-|---|---|
-| Scenarios tested, across 7 rounds | 25 |
-| Where the unskilled agent's code fails against the real API | 11 / 25 |
-| Round 7 end-to-end execution success, Coding Plan key, 21 runs per side | skill 21 / 21 · baseline 21 / 21 |
-| Pass rate for the skilled agent, every round | 100% |
-| Real documentation errors found and fixed mid-audit | 15 |
+| 指标 | 值 |
+| :--- | :--- |
+| 场景数 | 9 |
+| 总运行次数 | 92 |
+| 统计显著优势（Fisher 双尾 p < 0.05） | **4 / 9** |
+| 打平 | 5 / 9 |
+| 技能落后 | 0（修复技能自身缺陷前有 1 次，见下） |
+| 四个区分场景合并满分率 | **skill 18/20 vs baseline 1/20，p = 5.8 × 10⁻⁸** |
+| 全部 9 场景合并满分率 | skill 37/41 vs baseline 20/41，p = 0.00008 |
+| 实测查出并修正的文档错误 | 15 |
 
 ---
 
-## Round 1 — obvious tasks
+## 总表
 
-Chat completion, image→video, an OpenAI-SDK migration. Common enough patterns that general training data already covers them — the audit's first honest result was a tie.
+| 场景 | n | skill | baseline | 满分率 | Fisher 双尾 p |
+| :--- | :-: | :--- | :--- | :--- | :--- |
+| batch-best-model | 5 | **1.000 ± 0.000** | 0.000 ± 0.000 | 5/5 vs 0/5 | **0.0079** ✅ |
+| pdf-reuse-fileid | 5 | **0.900 ± 0.200** | 0.250 ± 0.000 | 4/5 vs 0/5 | **0.0476** ✅ |
+| cited-web-answer（修技能后） | 5 | **0.933 ± 0.133** | 0.600 ± 0.133 | 4/5 vs 0/5 | **0.0476** ✅ |
+| async-model-pinning | 5 | **1.000 ± 0.000** | 0.733 ± 0.133 | 5/5 vs 1/5 | **0.0476** ✅ |
+| kb-upload-readiness | 5 | 0.900 ± 0.122 | 0.850 ± 0.200 | 3/5 vs 3/5 | 1.0000 |
+| rag-index-embeddings | 5 | 1.000 ± 0.000 | 1.000 ± 0.000 | 5/5 vs 5/5 | 1.0000 |
+| plan-1113-fix | 5 | 1.000 ± 0.000 | 1.000 ± 0.000 | 5/5 vs 5/5 | 1.0000 |
+| batch-pipeline | 3 | 1.000 ± 0.000 | 1.000 ± 0.000 | 3/3 vs 3/3 | 1.0000 |
+| pdf-contract | 3 | 1.000 ± 0.000 | 1.000 ± 0.000 | 3/3 vs 3/3 | 1.0000 |
+| _cited-web-answer（修技能前）_ | 5 | _0.600 ± 0.133_ | _0.667 ± 0.000_ | _0/5 vs 0/5_ | _1.0000_ |
 
-| Scenario | Result | Skill | Baseline |
-|---|---|---|---|
-| Tool-calling weather bot | tie | 100% | 100% |
-| Image → video pipeline | tie | 100% | 100% |
-| OpenAI SDK migration + web search | tie | 100% | 100% |
-
-### Tool-calling weather bot — tie
-**Task:** GLM-5.3 command-line assistant that must call a weather function before answering.
-**Why:** both agents produced a correct function-calling loop — this pattern is well represented in general knowledge.
-
-### Image → video pipeline — tie
-**Task:** GLM-Image generates a frame, CogVideoX-3 animates it, poll the async result.
-**Why:** both agents got the endpoints, first-frame parameter, and polling loop right.
-
-### OpenAI SDK migration + web search — tie
-**Task:** Swap an existing OpenAI client over to bigmodel.cn, add web search.
-**Why:** initially scored as a win — baseline omitted `search_engine`. A live retest showed the field is silently defaulted, not required. Corrected after the fact rather than left standing.
+原始数据：`glm-round/`、`glm-round2/`、`glm-round3/`、`glm-round3b/`、`glm-round4/`，每次运行的 `outputs/main.py`、`exec_result.json`（含真实 stdout/stderr）、`grading.json` 全部保留。
 
 ---
 
-## Round 2 — GLM-5.3-specific traps
+## 第一轮 — 两个打平，以及为什么
 
-Four tasks built around behavior verified against the live API first, then handed to both agents as an ordinary feature request — nothing in the prompt hints at the trap.
+`glm-round/`，n=3，12 次运行。batch-pipeline 与 pdf-contract 双双 1.000 打平。
 
-**Model under test:** `glm-5.3` · **Executing agent:** Claude (Fable 5.1) · 4 scenarios
+复盘原因很有价值：**坑要能区分，任务必须先堵死绕行路线**。
 
-| Scenario | Result | Skill | Baseline |
-|---|---|---|---|
-| Force a tool call, every turn | win | 100% | 40% |
-| Guaranteed-schema JSON extraction | win | 100% | 40% |
-| Turn off reasoning for latency | win | 100% | 40% |
-| Batch-classify 2,000 reviews, best model | win | 100% | 67% |
+- batch 任务没说模型要求，两边都随手挑了便宜的老模型——恰好都在 Batch 白名单里，谁也没踩坑。
+- pdf 任务没说要复用文件，6 次运行里有 5 次直接把 PDF 转 base64 内联进 prompt，整条上传链路根本没走到。
 
-### Force a tool call, every turn — win
-**Task:** Support bot that must call `lookup_order` before answering anything — even off-topic questions.
-**Why:** baseline sets an OpenAI-style forced `tool_choice`, which is silently downgraded to `auto` on this API. On an off-topic message it retries 3 times, then gives up and prints an internal error instead of replying.
-
-### Guaranteed-schema JSON extraction — win
-**Task:** Pull name / issue type / urgency out of feedback text as JSON matching an exact schema.
-**Why:** baseline uses `response_format:{type:"json_schema"}`. The API accepts it, then ignores it — returns prose, not JSON. Every retry fails the same way; extraction never succeeds.
-
-### Turn off reasoning for latency — win
-**Task:** High-concurrency FAQ bot — disable deep-thinking mode to cut cost and latency.
-**Why:** baseline sends `thinking:{type:"disabled"}`. On GLM-5.3 that's a hard error, code 1210, every single call — the bot cannot run at all.
-
-### Batch-classify 2,000 reviews, best model — win
-**Task:** Sentiment classification via the Batch API — quality matters, pick the newest model.
-**Why:** baseline picks glm-4.6 (a real, current model). Batch has its own model allow-list that excludes it — the upload is rejected before a single review is processed.
+这不是技能没用，是题出得没有区分度。第二轮就是照着这个诊断重写任务的。
 
 ---
 
-## Round 3 — same 4 tasks, glm-5.2
+## 第二轮 — 第一次统计显著
 
-Re-run to separate model-specific quirks from platform-wide ones. Two stayed broken, two flipped to a tie for two different, equally honest reasons.
+`glm-round2/`，n=5，20 次运行。两个场景都从"打平"翻成显著。
 
-**Model under test:** `glm-5.2` · **Executing agent:** Claude (Fable 5.1) · 4 scenarios
+### batch-best-model：模型选择的完美分离
 
-| Scenario | Result | Skill | Baseline |
-|---|---|---|---|
-| Force a tool call, every turn | tie | 100% | 100% |
-| Guaranteed-schema JSON extraction | win | 100% | 40% |
-| Turn off reasoning for latency | tie | 100% | 100% |
-| Batch job, user insists on glm-5.2 | win | 100% | 40% |
+任务加了一句真实用户会说的话——"质量要紧，用你能用的最好的模型"。
 
-### Force a tool call, every turn — tie
-**Task:** Same order-lookup bot, same wrong belief about `tool_choice`.
-**Why:** this baseline's fallback path actually re-synthesizes the call locally when forcing fails — it works, just at 2 model calls per turn instead of 1. Good defensive code covered for a wrong assumption.
+| | 选的模型 | 结果 |
+| :--- | :--- | :--- |
+| skill 版 | `glm-5.1` ×5 | 5/5 成功创建 batch |
+| baseline | `glm-5.3` ×5 | 5/5 在**上传阶段**就 `400 / 1210 模型名称错误` |
 
-### Guaranteed-schema JSON extraction — win
-**Task:** Same extraction task, different model.
-**Why:** `json_schema` being ignored is a platform behavior, not a GLM-5.3 quirk — confirmed broken again here.
+`glm-5.3` 是平台旗舰，看上去就该是"最好的模型"——但 Batch 有一份**独立白名单**，旗舰不在其中，白名单里最强的是 `glm-5.1`。**这条信息只存在于报错信息里，官方文档正文没有列出。**
 
-### Turn off reasoning for latency — tie
-**Task:** Same request, glm-5.2 instead of glm-5.3.
-**Why:** glm-5.2 isn't a forced-thinking model — `thinking:{type:"disabled"}` genuinely works here. The earlier failure really was GLM-5.3-specific; the skilled agent correctly used the direct switch instead of over-generalizing a rule that no longer applies.
+### pdf-reuse-fileid：静默失败的典型
 
-### Batch job, user insists on glm-5.2 — win
-**Task:** "Use glm-5.2, our other projects already standardized on it."
-**Why:** baseline complies literally — glm-5.2 isn't Batch-whitelisted either, so the job fails at upload. The skilled version catches the conflict and substitutes a whitelisted model with a stated reason.
+任务加的约束是"后面还要问很多轮，先上传拿 `file_id` 复用，别每轮重传"——这一句堵死了 base64 内联。
+
+| | `purpose` | 结果 |
+| :--- | :--- | :--- |
+| skill 版 | `user_data` ×5 | 4/5 满分（失分那次是平台侧 `500 / 1234`，重试三次仍失败，与知识无关） |
+| baseline | `file-extract` / `agent` / 未指定 | 5/5 全部 `1210 文件解析失败` |
+
+baseline 的失败方式最值得看：**上传那一步全部成功**，run-1 甚至打印了 `file_id` 并提示"后续可 export 免上传"——所有信号都显示正常，直到引用文件提问时才 400。
 
 ---
 
-## Round 4 — new territory, two more ties
+## 第三轮 — 评测查出了技能自己写错的一条建议
 
-Voice naming and search citations — plausible traps that didn't pan out. Worth showing, not just the wins.
+`glm-round3/` + `glm-round3b/`，n=5，20 次运行。
 
-| Scenario | Result | Skill | Baseline |
-|---|---|---|---|
-| Text-to-speech, pick a voice | tie | 100% | 100% |
-| Web search with visible citations | tie | 100% | 100% |
+`rag-index-embeddings` 打平（1.000 vs 1.000）：64 条上限会**响亮报错**，而"分批"是任何称职工程师的默认习惯。这类"响亮且符合常识"的坑天然不具备区分度。
 
-### Text-to-speech, pick a voice — tie
-**Task:** "A gentle female voice" for GLM-TTS.
-**Why:** a made-up voice name errors with "音色不存在" — but baseline happened to guess `tongtong`, a real system voice, likely well-represented in public bigmodel.cn material.
+`cited-web-answer` 第一次跑出来是**技能输给 baseline**（0.600 vs 0.667）。10 个脚本代码全都写对了——设了 `search_result: true`、读了 `link` 字段——但运行时一条链接都拿不到。逐层排查定位到真因：
 
-### Web search with visible citations — tie
-**Task:** Answer with sources listed — title and link — underneath.
-**Why:** citations only appear if `search_result:true` is set explicitly. Baseline guessed it anyway, and its defensive multi-location field-probing happened to check the one place the data actually lives.
+| search_engine | 返回条数 | `link` 非空 |
+| :--- | :-: | :-: |
+| `search_std` | 10 | **0** |
+| `search_pro` | 10 | **0** |
+| `search_pro_sogou` | 50 | 50 |
+| `search_pro_quark` / `_jina` / `_bing` | 10 | 10 |
 
----
+HTTP 200、条数正常、`title`/`content`/`publish_date` 全齐，唯独 `link` 是空字符串。而技能原文写的是"显式传 `search_engine`（如 `search_pro`）"——**5 个 skill 版忠实执行了这条错误建议，全部拿不到链接**。附带发现：`search_pro_jina`、`search_pro_bing` 这两个可用引擎在官方参数表里根本没有列出。
 
-## Round 5 — the largest gap found
+修正 `tools.md` / `chat.md` 后用同一场景重跑（3b），引擎选择完全分离：
 
-A capability OpenAI's API has no equivalent for at all — nothing to pattern-match against, so the baseline agent invented a plausible-sounding pipeline instead.
+| | 选的引擎 | 满分 |
+| :--- | :--- | :-: |
+| skill 版 | `search_pro_bing` / `search_pro_quark` ×3 / `search_pro_sogou` | 4/5 |
+| baseline | `search_pro` ×5 | 0/5 |
 
-| Scenario | Result | Skill | Baseline |
-|---|---|---|---|
-| Read a PDF contract directly, no local parsing | win | 100% | 40% |
-
-### Read a PDF contract directly, no local parsing — win
-**Task:** "The model should just read the file" — no PyPDF2, no pdfplumber.
-**Why:** baseline invents a two-step upload-then-download flow using `GET /files/{id}/content` — an endpoint that explicitly rejects anything but Batch output files ("does not support downloading"). It never discovers that chat completions accepts a file directly, or that doing so requires the upload's `purpose` to be exactly `user_data` — `agent` and `code-interpreter` uploads succeed but fail silently later.
+**写错的说明书比没有说明书更糟**——它让 Agent 一致地犯同一个错，而 baseline 的分散反而让它偶尔蒙对。这是本次评测最重要的一条元结论。
 
 ---
 
-## Round 6 — GLM Coding Plan, a second billing system
+## 第四轮 — 三个更贴近真实工程的场景
 
-Zhipu sells a subscription product, the GLM Coding Plan, that runs on **a different API key and a different base URL** from the pay-as-you-go API: `…/api/coding/paas/v4` instead of `…/api/paas/v4`, keys created on the plan page instead of the console, only `glm-5.3` / `glm-5.3-flash`, chat only. The skill previously said nothing about it. Four tasks were written the way real users phrase them — nobody says "which billing system am I on".
+`glm-round4/`，n=5，30 次运行。
 
-**Model under test:** `glm-5.3` · **Executing agent:** Claude (Fable 5.1) · 4 scenarios · baseline 71%, skill 100%
+| 场景 | skill | baseline | 结论 |
+| :--- | :--- | :--- | :--- |
+| plan-1113-fix | 1.000 | 1.000 | 打平 |
+| kb-upload-readiness | 0.900 ± 0.122 | 0.850 ± 0.200 | 打平 |
+| async-model-pinning | **1.000 ± 0.000** | **0.733 ± 0.133** | **5/5 vs 1/5，p = 0.0476** ✅ |
 
-| Scenario | Result | Skill | Baseline |
-|---|---|---|---|
-| Batch docstrings via openai SDK on a Coding Plan | win | 100% | 83% |
-| Point Claude Code at the Coding Plan | win | 100% | 60% |
-| "Bought Max, still get 1113 — should I top up?" | win | 100% | 60% |
-| Code-base RAG with embeddings on plan quota | win | 100% | 80% |
+### async-model-pinning：新增的第四个显著场景
 
-### Batch docstrings via openai SDK on a Coding Plan — win
-**Task:** Add docstrings to a folder of Python files with `glm-5.3` through the `openai` SDK, key from the environment, user says they are on a Pro Coding Plan.
-**Why:** baseline got the `/coding/paas/v4` base URL right — this one fact has spread widely through GitHub issues — but told the user to paste "the console API key", which is the wrong key family. It also disables thinking on `glm-5.3`, which cannot be disabled. The skilled agent read the key from a plan-specific variable, validated the model against the plan's list, and treated `1113` as a configuration error rather than retrying it.
+任务要求"用异步接口跑 `glm-4.6`，并核对返回里实际用的是不是这个模型"。实测事实是：`POST /async/chat/completions` 会**静默把 `glm-4.6` 换成 `glm-4.7`**（`glm-4.7` 则换成 `glm-4.7-ali`，一个文档里根本不存在的名字），同步接口从不替换。
 
-### Point Claude Code at the Coding Plan — win
-**Task:** Produce the `~/.claude/settings.json` env block that makes Claude Code run on `GLM-5.3` under the plan.
-**Why:** baseline mapped the haiku tier to `glm-4.5-air`, a model the plan does not include, and again pointed the user to the console key page. The skilled agent reproduced the official mapping (`glm-5.3` / `glm-5.3-flash`), the `ANTHROPIC_AUTH_TOKEN` variable, and the plan-page key source. Grading this run also caught a type error in the new reference (`"1"` must be a string in `settings.json`), fixed before packaging.
+skill 版 5/5 都读回了 echo 的 `model` 字段、检出不一致并报警；baseline 只有 1/5 做到——其余默认"请求什么就是什么"，直接把不存在的替换当成功路径走完。这类问题在计费对账和可复现性上是硬伤，而它不会报错。
 
-### "Bought Max, still get 1113 — should I top up?" — win
-**Task:** User pastes working-looking code hitting `…/api/paas/v4/` with a plan key and gets `429 / 1113 余额不足`.
-**Why:** both agents diagnosed the wrong base URL and told the user not to top up. Baseline then said the plan key is "generated on the open-platform API Keys page" — the opposite of the official note that plan keys and platform keys are not interchangeable — and added an unfounded claim that off-plan models fall back to metered billing. Skill answer followed the reference's check order: key family → base URL → model → balance.
+### plan-1113-fix 与 kb-upload-readiness 为什么打平
 
-### Code-base RAG with embeddings on plan quota — win
-**Task:** Embed a code base with `embedding-3` and answer with `glm-5.3`, "using the plan quota", raw `requests`.
-**Why:** baseline correctly guessed that embeddings are not in the plan and split the two base URLs, then read **one** key for both, so half the calls would fail with `1113`. The skilled script reads a standard key for embeddings/rerank and a plan key for chat, with a targeted error message when either is missing. The skilled answer's claim that a plan key on `/embeddings` returns `1113` was later confirmed live.
+- **plan-1113-fix**：给了一个报 `1113` 的 Coding Plan 脚本让其修好。`1113` 虽然文案是"余额不足"具有误导性，但它是**响亮的**，两边都能靠试错在换端点后跑通。响亮的错误不构成区分度。
+- **kb-upload-readiness**：知识库向量化在本测试账号上是**间歇性**的，同一账号有时成功有时 `embedding_stat=2`。两边满分率都是 3/5，噪声吞掉了差异。技能版确实更常主动轮询 `embedding_stat`，但样本量下不显著。
 
 ---
 
-## Round 7 — Coding Plan end-to-end: does the code actually run?
+## 区分度配方（可复用的出题方法）
 
-Rounds 1–6 graded code by reading it and probing the API separately. This round removes the reader: each agent had to write a `main.py` (or a `settings.json`), and the harness `bigmodel-cn-workspace/run_iter7.py` executed it with a real Coding Plan key exported and nothing else. Success means exit 0 plus a printed model answer; for the Claude Code config it means a live `/v1/messages` call succeeds for every model alias the config maps. Seven scenarios, three independent runs per side, 42 executions.
+前后一共 5 个场景打平、4 个显著。对比之后，显著场景无一例外同时满足三个条件：
 
-**Model under test:** `glm-5.3` / `glm-5.3-flash` · **Executing agent:** Claude (Fable 5.1) · 7 scenarios × 3 runs · **skill 21/21, baseline 21/21 — tie**
+1. **任务约束堵死了绕行路线**——且这个约束是真实用户会提的（"要最好的模型" / "要复用 file_id" / "要可点击的来源" / "要核对实际模型"）
+2. **正确答案不在文档正文里**——Batch 白名单只在报错里；`purpose` 限制与 OpenAPI 规范矛盾；两个可用搜索引擎没进参数表；异步替换全无记载
+3. **错误是静默的或延迟暴露**——上传成功不代表能用；`link` 是空串但 HTTP 200；模型被换了但一切正常返回
 
-| Scenario | Result | Skill | Baseline |
-|---|---|---|---|
-| Plain `requests` call on the plan (`GLM_KEY`) | tie | 3/3 | 3/3 |
-| openai SDK, streaming `glm-5.3-flash` | tie | 3/3 | 3/3 |
-| anthropic SDK through `/api/anthropic` | tie | 3/3 | 3/3 |
-| Function-calling loop (Tokyo time) | tie | 3/3 | 3/3 |
-| Two keys: embeddings on standard, chat on plan | tie | 3/3 | 3/3 |
-| Plan described only as "编程套餐 Pro，按 5 小时额度" | tie | 3/3 | 3/3 |
-| Claude Code `settings.json`, every alias called live | tie | 3/3 | 3/3 |
-
-### Why the baseline no longer fails
-**Task family:** the plain integration path — right base URL, right key variable, a chat call that returns.
-**Why:** by now the `…/api/coding/paas/v4` base URL and the `1113` symptom are all over GitHub issues, and the unskilled agent reproduced them in 21 of 21 runs, even when the plan was only described as "the 5-hour-quota monthly package". The baseline also split embeddings onto the standard key unprompted in all three two-key runs. On the narrow question "will the first request go through", the skill adds nothing here.
-
-### Where the two sides still differ, invisible to a pass/fail harness
-- **Claude Code haiku alias.** Baseline mapped haiku to `glm-4.5-air` in two of three runs. The live call returned 200 only because the coding endpoint silently reroutes `glm-4.5-air` to `glm-5.3-flash` (documented in `coding-plan.md` after the Round 6 probe). The skilled config used the official `glm-5.3-flash` in all three runs. Same exit code, different dependence on undocumented behaviour.
-- **Thinking control.** Two baseline scripts sent `thinking: disabled` to `glm-5.3`; that only works on the coding endpoint and would return `1210` on the standard one. The skilled scripts used `reasoning_effort: low` in seven runs, which works on both.
-- **Silent fallback.** Every baseline two-key script falls back to the pay-as-you-go key when the plan call fails, so a wrong base URL would quietly start billing the standard account. Two of three skilled runs also included a fallback, so this is a tendency, not a clean split.
-- **Cost of the skill.** Skilled runs used about 37% more tokens and 36 s more wall-clock per task (reading the reference files), for identical execution results.
-
-**Reading of the round:** the value of this skill for the Coding Plan is concentrated in the failure modes tested in Round 6 — wrong key family, off-plan models, off-plan capabilities, diagnosing `1113` — not in the happy path, which the base model already handles. The two rounds should be read together.
+反过来，**响亮报错 + 常识可解**的坑（embeddings 64 条上限、`1113` 换端点）必然打平。这正是本技能价值的边界：它不提升通用编码准确率，它专门规避静默的、未文档化的陷阱。
 
 ---
 
-## Round 8 — recalibration: what survives a fair fight
+## 文档修正（15 条）
 
-Rounds 1-6 forbade the baseline from searching the web, scored against assertions the skill's own author wrote, and ran n=1 per cell. Round 8 re-runs two of the biggest claimed wins with all three of those fixed: **both sides may search the web**, grading is **100% by executing the script against the live API** (`recalibration/grade.py`, criteria frozen in `recalibration/PROTOCOL.md` before any run), and **n=3**.
+以下修正全部来自**对真实 API 的直接探针**（`coding-plan-probe.py`、`kb-probe.py` 等，日志见 `kb-verification-log.jsonl`）或上述 GLM 轮次的实跑，与执行 Agent 无关。每条都带实测日期与证明它的报错原文。
 
-| Scenario | As scored in rounds 2-3 | Recalibrated skill | Recalibrated baseline |
-|---|---|---|---|
-| Guaranteed-schema JSON extraction | 100% vs 40% | 1.000 ± 0.000 | **0.667 ± 0.471** |
-| Force a tool call, every turn | 100% vs 40% | 1.000 ± 0.000 | **1.000 ± 0.000 — tie** |
+| 文件 | 结论 |
+| :--- | :--- |
+| `coding-plan.md`（新增） | Coding Plan 是独立 Key + 独立端点，不是折扣档 |
+| `chat.md` / `models.md` | 异步接口**静默替换模型** |
+| `tools.md` / `chat.md` | `search_engine` 决定 `link` 是否为空 |
+| `agents-assistant-knowledge.md` | KB 接口任何情况都返回 HTTP 200，真状态在 `body.code` |
+| `agents-assistant-knowledge.md` | 上传成功 ≠ 可检索，必须轮询 `embedding_stat` |
+| `agents-assistant-knowledge.md` | `glm-4-assistant` 必须 `stream: true`，文档默认值写反 |
+| `agents-assistant-knowledge.md` | Agent 响应 `content` 是对象不是字符串 |
+| `sdk-and-compat.md` | SDK 调用可以成功却返回空字符串 |
+| `chat.md` / `models.md` | "glm-5.3 思考不可关闭"只在标准端点成立 |
+| `chat.md` | `web_search.search_engine` 在两个入口要求不一致 |
+| `chat.md` | `web_search` 引用需显式 `search_result: true` 才返回 |
+| `chat.md` | 聊天里引用文件必须 `purpose=user_data` |
+| `files-batch.md` | Batch 只接受固定的带日期模型列表 |
+| `files-batch.md` | `request_counts` 是嵌套对象；`custom_id` 有未文档化的 6 字符下限 |
+| `realtime.md` | 连接后先到 `session.created`，规范里没有这个事件 |
 
-### Force a tool call — the win does not survive
-All three baselines independently found the `tool_choice`-is-auto-only limitation in the official function-calling docs and implemented the same local-fallback pattern the skill recommends. Executed against the live API with an off-topic message, all six scripts logged the tool call and answered. The original 100% vs 40% was mostly an artifact of forbidding web search, not a knowledge gap.
+### `coding-plan.md`（新增）— Coding Plan 是独立 Key + 独立端点
 
-### JSON extraction — a real gap, but not the one that was claimed
-No baseline fell for `response_format: json_schema`; that fact is also one web search away. The single failure (baseline run-2, reproducible on re-run) came from a different mistake: it never disabled thinking. Measured directly, `glm-4.6` costs 2.8s per request with `thinking: disabled` and 27.7s without (628-957 reasoning tokens) — a ~10x latency difference that blew the 300s budget on 8 records. All three skilled runs disabled it; 2 of 3 baselines did too.
+技能原来的首页、`sdk-and-compat.md`、`errors-and-limits.md`、`models.md` 都假设只有一套 Key 和一个 base URL。实测确认第二套体系：`…/api/coding/paas/v4`（OpenAI 兼容）与共用的 `…/api/anthropic`（Anthropic 兼容），Key 来自 Coding Plan 页面，仅 `glm-5.3` / `glm-5.3-flash`，配额走 5 小时 + 7 天双周期。探针另外查出三件文档没说的事：**标准 Key 在 coding 端点上全功能可用**（并非 plan 专属）；`glm-4.6`、`glm-4.5-air` 被静默重路由到 `glm-5.3-flash`；视觉模型 `glm-4.6v` / `glm-5v-turbo` 在 plan 下可用。
 
-### Round 8b — the Coding Plan claims, same treatment
-The two headline Coding Plan scenarios were re-run the same way, with a real plan key injected and no standard key, so a wrong endpoint fails by construction.
+`1113` 这个错误码有三个完全不同的成因——用错端点、能力不在计划内、模型不在计划内——而文案统一是"余额不足"。技能里给了固定的三步排查顺序。
 
-| Scenario | As scored in round 6 | Recalibrated skill | Recalibrated baseline |
-|---|---|---|---|
-| Plan key returns 1113, produce a working fix | 100% vs 60% | 1.000 ± 0.000 | **1.000 ± 0.000 — tie** |
-| Long-document summary on plan quota | 100% vs 80% | 1.000 ± 0.000 | **1.000 ± 0.000 — tie** |
+### `chat.md` / `models.md` — 异步接口静默替换模型
 
-All twelve runs scored 3/3 with no `1113` anywhere. Every baseline found `…/api/coding/paas/v4` in the official docs and cited the page; none picked `glm-4-long`, the in-name-only trap for a long-document task, all three choosing `glm-5.3` for its 1M context. One baseline went further than the skill does and flagged that the official terms exclude self-written API integrations from plan quota, shipping a switch back to the standard endpoint.
+2026-09-07 实测，读回 echo 的 `model`：`POST /async/chat/completions` 把 `glm-4.6` 变成 `glm-4.7`，把 `glm-4.7` 变成 `glm-4.7-ali`（此名文档中不存在）；`glm-4.5-air` 与 `glm-5.3` 原样通过。同步端点从不替换。任何需要可复现性或计费对账的场景都必须读回 echo 的模型名。
 
-**A selection bias worth stating:** these scenarios were written the way a user would ask them, deliberately *not* built around the skill's live-probe findings that the docs omit — that a standard key also works on the coding endpoint, that `glm-4.6`/`glm-4.5-air` are silently rerouted, that `thinking: disabled` is rejected on one endpoint and honored on the other, that `1113` has three distinct causes. A scenario built on those would almost certainly favor the skill, and would also be a scenario chosen because the answer was already known. That knowledge is untested here, and these ties do not refute it.
+### `agents-assistant-knowledge.md` — 上传成功不等于可检索
 
-### What this round establishes
-Across all four recalibrated scenarios — 24 executions — the skilled side scored 12/12 and the baseline 11/12; three of the four are outright ties. The `100% vs 40%` magnitude does not hold under symmetric conditions. The baseline's stdev of 0.471 on the same configuration — one run scoring 0, two scoring 1.0 — is direct evidence that the earlier n=1 rounds were sampling noise as signal. It does **not** establish significance: 3/3 vs 2/3 is Fisher p = 1.0. Read it as a magnitude correction, not a new claim. Full write-up: `recalibration/RESULTS.md` and `recalibration-cp/RESULTS.md`.
+上传返回 `200` 加 `data.successInfos` 里的 `documentId`，读起来完全是成功。向量化随后在后台跑，失败时没有任何提示：`POST /knowledge/retrieve` 会永远返回 `200` + `{"code":200,"data":[]}`，和"没有相关内容"无法区分。唯一信号是 `GET /document/{id}` 的 `embedding_stat`（0 处理中 / 1 就绪 / 2 失败）与 `failInfo.embedding_msg`。测试账号上 `.pdf`/`.md`/`.txt` 三种格式都落在 `embedding_stat=2`（`知识不可用，文档损坏`），而存储只用了 5,000,000 字里的 6,196 字——可能是账号维度的问题，但无论如何结论是：**轮询到 `embedding_stat == 1` 再说，别假设**。
 
----
+### `agents-assistant-knowledge.md` — KB 接口永远不返回失败状态码
 
-## Round 9 — a different executor, and the first significant win
+`llm-application/open/*` 与 `/zrag/*` 下的每个端点即使调用失败也答 `HTTP 200`，真实结果在 body 的 `code` 里。查不存在的知识库返回 `200` + `{"code":100013,"message":"知识库不存在"}`；multipart 字段名写错返回 `200` + `{"code":400,...}`。`raise_for_status()` 永远不触发，按常规写法搭的 RAG 流水线会把错误静默地带下去。
 
-Rounds 1-8 all ran Claude as the executing agent. Round 9 swaps the brain for **GLM-5.3** — Claude Code CLI kept purely as the harness, pointed at `…/api/anthropic` with a Coding Plan key, which is one of Zhipu's officially supported tools for the plan. WebFetch still works in that configuration, so both sides keep researching the docs. n=5, graded purely by execution.
+### `agents-assistant-knowledge.md` — Assistant 示例照抄就报错
 
-The first two scenarios tied, and the reason is instructive: **a trap only discriminates when the task closes the detour**. Both sides picked cheap older models for a batch job (all whitelisted), and 5 of 6 skipped the upload path entirely by inlining the PDF as base64. Rewriting the tasks to close those routes — "quality matters, use the best model you can" and "we'll ask many rounds, upload once and reuse the file_id" — produced the first significant separation in the whole audit.
+原文说 `stream` 默认 `true`，却给了一个 `"stream": false` 的同步示例。2026-09-07 对 `glm-4-assistant` 实测：**不传 `stream` 和传 `false` 都返回 `1212 当前模型不支持SYNC调用方式`**，只有 `true` 才给出 `text/event-stream`。文档默认值写反的方向恰好是会让代码挂掉的方向，而随附示例正是两种失败写法之一。参数表与两处示例均已改正。
 
-| Scenario | Skill | Baseline | Full marks | Fisher p |
-|---|---|---|---|---|
-| Batch job, "use the best model" | **1.000 ± 0.000** | **0.000 ± 0.000** | 5/5 vs 0/5 | **0.0079** |
-| PDF, upload once and reuse file_id | **0.900 ± 0.200** | **0.250 ± 0.000** | 4/5 vs 0/5 | **0.0476** |
-| Cited web answers (after fixing the skill) | **0.933 ± 0.133** | **0.600 ± 0.133** | 4/5 vs 0/5 | **0.0476** |
-| RAG indexing (64-item embedding cap) | 1.000 | 1.000 | tie | — |
+### `sdk-and-compat.md` — 调用成功却拿到空字符串
 
-### Where the separation comes from
-- **Batch**: both sides honestly chased "the best model". Skilled runs picked `glm-5.1` 5/5 — the strongest model *inside Batch's separate whitelist*. Baselines picked `glm-5.3`, the platform flagship, 5/5 — rejected at **file upload** with `1210 模型名称错误`. That whitelist exists only in the error message, not in the docs prose.
-- **PDF**: skilled runs used `purpose=user_data` 5/5. Baselines used `file-extract` / `agent` / nothing, and every upload **succeeded** — one even printed the `file_id` and suggested reusing it next time — before failing at reference time with `1210 文件解析失败`.
+`zai-sdk 0.2.3` + `glm-4.6` 实测：调用返回、`response.model` 正确回显、`choices[0].message.content` 是 `''`。思考 token 计入 `max_tokens`，小预算被推理吃光：
 
-### The round that found a bug in the skill itself
-The citation scenario first came out *against* the skill (0.600 vs 0.667). All ten scripts were written correctly — `search_result: true` set, `link` field read — yet no run produced a URL. The cause was the skill's own advice to "pass `search_engine` explicitly (e.g. `search_pro`)": measured live, `search_pro` and `search_std` return ten sources whose `link` is an **empty string**, while `search_pro_bing` / `_jina` / `_quark` / `_sogou` return real URLs. Two of those working engines aren't listed in the official parameter table at all. The skilled runs failed *because they followed the skill faithfully*.
+| 配置 | `finish_reason` | `content` | `reasoning_content` |
+| :--- | :--- | :--- | :--- |
+| `max_tokens=20`（默认开思考） | `length` | `''`（空） | 37 字 |
+| `max_tokens=800`（默认开思考） | `stop` | `'巴黎'` | 105 字 |
+| `max_tokens=20` + 关思考 | `stop` | `'巴黎'` | 0 字 |
 
-After correcting `tools.md` and `chat.md`, the same scenario re-ran with complete separation in engine choice: skilled runs picked bing/quark/sogou, baselines picked `search_pro` 5/5. **A wrong manual is worse than none — it makes the agent fail consistently.**
+判据是 `finish_reason`，不是空字符串本身。流式等价形式（只收集 `delta.content` 得到空缓冲）也已记录。同时确认 `ZhipuAiClient` → `open.bigmodel.cn`、`ZaiClient` → `api.z.ai`，两个 Maven 坐标均存在。
 
-### Two grader bugs, caught and fixed
-Execution-based grading is more objective than assertions, but the grader needs auditing too. Naive substring matching produced a false positive (scripts whose comments said "we do *not* use PyPDF2" were flagged as using it — fixed with AST import detection) and a false negative plus a false positive on error codes (a successful batch id `batch_2096812104876032000` contains `1210`; a real failure printed the message without the code — fixed by matching `code: 1210` structurally or the known error text). Correcting them moved the batch scenario's skilled mean from 0.933 to 1.000.
+### `chat.md` / `models.md` — "思考不可关闭"只在标准端点成立
 
----
-
-## Documentation fixed along the way
-
-Every audit round tested the skill's own claims against the live API. Seven turned out to be wrong or incomplete — corrected in place, dated, with the exact error text that proved it.
-
-| File | Finding |
-|---|---|
-| `chat.md` | `web_search.search_engine` requirement is inconsistent across two entry points |
-| `chat.md` | `web_search` citations need an explicit opt-in |
-| `chat.md` | File input in chat requires `purpose=user_data` specifically |
-| `agents-assistant-knowledge.md` | Agent response `content` is an object, not a string |
-| `files-batch.md` | Batch accepts a fixed, dated model list — not the general catalog |
-| `files-batch.md` | Two smaller Batch corrections (`request_counts` nesting, `custom_id` minimum length) |
-| `realtime.md` | An undocumented event precedes the one the spec describes |
-
-### `chat.md` — `web_search.search_engine` requirement is inconsistent across two entry points
-Required and enforced on the standalone `/paas/v4/web_search` endpoint (real error `1214` if missing) — but silently defaulted when used as a chat-completions tool. Same field name, different platform behavior depending on which door you use.
-
-### `chat.md` — `web_search` citations need an explicit opt-in
-`search_result:true` must be set or the response's `web_search` array — the actual source list — never appears, even though the search itself still ran and shaped the answer.
-
-### `chat.md` — File input in chat requires `purpose=user_data` specifically
-Files uploaded with `agent` or `code-interpreter` — both plausible, both accepted at upload time — fail when referenced in a chat message: `"文件解析失败，请检查文件可访问性和格式"`.
-
-### `agents-assistant-knowledge.md` — Agent response `content` is an object, not a string
-Documented example showed plain text; the real shape is `{"type":"text","text":"..."}`. Code written against the old example would try string operations on a dict.
-
-### `files-batch.md` — Batch accepts a fixed, dated model list, not the general catalog
-Confirmed rejections for glm-4.6, glm-5.1's newer siblings, and both 5.2 and 5.3. Every model this skill recommends elsewhere for quality has to be checked against this separate list first.
-
-### `files-batch.md` — Two smaller Batch corrections
-Request counts live under a nested `request_counts` object, not top-level fields as the old example showed. Separately, `custom_id` has an undocumented 6-character minimum — anything shorter fails upload with error `1214`.
-
-### `sdk-and-compat.md` — an SDK call can succeed and still hand you an empty string
-Verified with `zai-sdk 0.2.3` and `glm-4.6`: the call returns, `response.model` echoes back correctly, and `choices[0].message.content` is `''`. Thinking tokens count against `max_tokens`, so a small budget is consumed entirely by reasoning — `max_tokens=20` gives `finish_reason: length`, empty content and 37 characters of `reasoning_content`; at 800 the same prompt answers normally; at 20 with thinking disabled it also answers. The tell is `finish_reason`, not the empty string. Documented, along with the streaming equivalent (collecting only `delta.content` yields an empty buffer).
-
-### `agents-assistant-knowledge.md` — the knowledge-base API never returns a failing HTTP status
-Every endpoint under `llm-application/open/*` and `/zrag/*` answers `HTTP 200` even when the call failed; the real outcome sits in the body's `code`. Querying a non-existent knowledge base returns `200` + `{"code":100013,"message":"知识库不存在"}`; a wrong multipart field name returns `200` + `{"code":400,...}`. `raise_for_status()` never fires, so a RAG pipeline built the obvious way carries the error forward silently. Recorded with the contract spelled out.
-
-### `agents-assistant-knowledge.md` — a successful upload does not mean a retrievable document
-Uploading returns `200` with a `documentId` in `data.successInfos`, which reads as complete success. Vectorisation then runs in the background, and when it fails nothing tells you: `POST /knowledge/retrieve` keeps returning `200` + `{"code":200,"data":[]}` forever — indistinguishable from "no relevant content". The only signal is `GET /document/{id}`, whose `embedding_stat` (0 pending / 1 ready / 2 failed) and `failInfo.embedding_msg` carry the truth. On the test account all three uploaded formats — `.pdf`, `.md`, `.txt` — ended at `embedding_stat=2` with `知识不可用，文档损坏` while storage sat at 6,196 of 5,000,000 words, so this may be account-scoped; either way the lesson is to poll for `embedding_stat == 1` rather than assume. The skill now says so.
-
-### `agents-assistant-knowledge.md` — the Assistant example fails if copied verbatim
-The reference said `stream` defaults to `true` and showed a synchronous example with `"stream": false`. Measured 2026-09-07 against `glm-4-assistant`: omitting `stream` **and** passing `false` both return `1212 当前模型不支持SYNC调用方式`; only `true` yields the `text/event-stream` response. So the documented default is wrong in the direction that breaks code, and the shipped example was one of the two failing forms. Corrected in the parameter table and both examples.
-
-### `tools.md` / `chat.md` — the search engine decides whether you get any links at all
-Sources come back with a `link` field either way, but measured live on 2026-09-07 it is an **empty string** for `search_std` and `search_pro`, and a real URL for `search_pro_sogou` (50 results), `search_pro_quark`, `search_pro_jina` and `search_pro_bing`. The last two aren't in the official parameter table. The skill had been recommending `search_pro` — corrected, with the comparison table in place, because any product that promises checkable citations breaks silently on the wrong engine.
-
-### `chat.md` / `models.md` — the async endpoint silently swaps the model
-Verified 2026-09-07 by reading back the echoed `model`: `POST /async/chat/completions` turns `glm-4.6` into `glm-4.7` and `glm-4.7` into `glm-4.7-ali`, a name that appears nowhere in the docs; `glm-4.5-air` and `glm-5.3` pass through untouched. The synchronous endpoint never substitutes. Anything needing reproducibility or billing reconciliation has to read the echoed model rather than trust the request.
-
-### `coding-plan.md` (new) — The Coding Plan is a separate key + endpoint, not a discount tier
-The skill's front page, `sdk-and-compat.md`, `errors-and-limits.md` and `models.md` all assumed one key family and one base URL. Official Coding Plan pages document a second family: `…/api/coding/paas/v4` (OpenAI-compatible) and the shared `…/api/anthropic` (Anthropic-compatible), keys from `bigmodel.cn/coding-plan/personal/overview` or the team plan page, `glm-5.3` / `glm-5.3-flash` only, quota on a 5-hour + 7-day cycle, usage restricted to designated coding tools. Live probe confirmed: plan key on the standard endpoint → `429 / 1113`; plan key on embeddings, rerank, tokenizer, async chat, standalone web search, images → the same `1113`; plan key on `reader` → works. Three things the docs do not say: a **standard** key works on the coding endpoint for everything (it is not plan-only); `glm-4.6` and `glm-4.5-air` are silently rerouted to `glm-5.3-flash` alongside the four documented aliases; vision models `glm-4.6v` / `glm-5v-turbo` answer under the plan.
-
-### `chat.md` / `models.md` — "glm-5.3 thinking cannot be disabled" is only true on the standard endpoint
-`thinking:{type:"disabled"}` on `glm-5.3` / `glm-5.3-flash` returns `1210` on `…/api/paas/v4` but is accepted on `…/api/coding/paas/v4` with `reasoning_tokens: 0` — with either key. The two endpoints validate parameters differently; the skill now says so instead of stating one rule.
-
-### `realtime.md` — An undocumented event precedes the one the spec describes
-A live WebSocket session showed `session.created` arriving immediately on connect, before `session.updated` — an event the AsyncAPI spec never mentions. Code that only waits for `session.updated` can misread the handshake.
+`thinking:{type:"disabled"}` 对 `glm-5.3` / `glm-5.3-flash` 在 `…/api/paas/v4` 返回 `1210`，但在 `…/api/coding/paas/v4` 被接受并返回 `reasoning_tokens: 0`——两种 Key 都是如此。两个端点的参数校验不一致，技能不再给出单一规则。
 
 ---
 
-**Conditions that were not recorded at the time, and matter:** rounds 1-6 ran n=1 per configuration and the baseline agents were instructed not to search the web. Round 8 shows how much of the measured gap depends on those two choices. Every "win" and "tie" above was checked against `open.bigmodel.cn` with a real API key — rounds 1–5 with a standard key, rounds 6 and 7 with both a standard key and a Coding Plan key (`bigmodel-cn-workspace/coding-plan-probe.py`, `bigmodel-cn-workspace/run_iter7.py`). The OpenAPI spec and the Coding Plan pages each proved incomplete in ways only a live call reveals. Full transcripts, per-assertion grading and (for round 7) captured stdout/stderr of every execution are in `bigmodel-cn-workspace/`.
+## 评分器的四次自我纠错（如实记录）
+
+纯执行判分比断言判分客观，但**评分器本身同样需要被审查**。四个 bug 都会影响结论，都已修正并重判：
+
+1. **把"声明不使用"误判成"使用了"**：用字符串匹配 `PyPDF2|pdfplumber` 判断是否本地解析 PDF，结果把注释里写着"本地不做任何 PDF 解析（不用 PyPDF2）"的脚本全判违规。改为 **AST 检测真实 import**。
+2. **把 batch id 里的数字误判成错误码**：`"1210" in output` 会命中成功创建的 batch id `batch_2096812104876032000`（含子串 `81210`）→ 误扣分；同时另一次真实失败因报错正文未带 `1210` 而漏判。改为**结构化匹配** `code: 1210` 或已知报错文案。修正后 batch 场景 skill 均值从 0.933 变为 1.000。
+3. **把正确的报警行为当成失败**：判分项写了"退出码必须为 0"，但脚本检出模型不一致后以非零退出码报警恰恰是正确的工程行为。改为"无未捕获异常"。修正后 async 场景 skill 均值从 0.667 变为 **1.000**。
+4. **拿全局真值判每一次运行**：知识库向量化是间歇性的，评分器某一刻测到"不可用"就把所有宣称成功的运行判错——但 `with_skill/run-1` 实际检索到了内容。改为**按次自证**：宣称成功必须有该次运行自身检索到内容的证据，报失败必须有该次运行自身的失败信号。
+
+---
+
+## 边界与未解决的问题
+
+- **场景由我设计，选题偏差存在。** 区分度配方是从数据里总结出来的，但用它出题天然偏向技能擅长的方向。诚实的表述是：技能在"静默 + 未文档化"这一类问题上有 4/9 的显著优势，在其余类型上打平。
+- **n=5 是能出 p<0.05 的最小样本量**（5/5 vs 0/5 → p=0.0079；4/5 vs 0/5 → p=0.0476）。任何单次平台抖动都会改变结论，pdf 场景那次 `500 / 1234` 就是例子——我没有为它改动已冻结的判分标准。
+- **kb-upload-readiness 受账号状态污染**，向量化间歇失败使该场景实际上没测出什么。
+- **只测了一个执行器（GLM-5.3）**，结论不外推到其他模型。
+- **技能自身出过错**（`search_pro` 那条），说明这类"说明书"必须持续对真实 API 复验，否则会从资产变成负债。每次更新技能都应重跑本基准。
+
+全部运行的转录、逐条判分与真实 stdout/stderr 都在 `bigmodel-cn-workspace/glm-round*/` 下。

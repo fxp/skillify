@@ -1,0 +1,37 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 脚本设计
+
+**接口对接**（已通过官方文档确认）：
+- 提交：`POST /api/paas/v4/async/chat/completions`，Bearer 认证，拿到任务 `id` 和 `task_status`
+- 轮询：`GET /api/paas/v4/async-result/{id}`，每 2 秒一次、单任务最长 5 分钟；对话补全结果在顶层，`model` 字段（实际使用的模型）也在顶层
+
+**批量流程**：先一次性提交 3 个情感分类任务（正面/负面/中性三个句子），再统一轮询直到全部 SUCCESS/FAIL，兼容结果顶层或包在 `data` 里两种返回形式。
+
+**审计核对**（核心要求，逐任务打印）：
+
+```
+[任务1] 我请求的模型      : glm-4.6
+[任务1] 接口实际使用的模型: 'glm-4.6'
+[任务1] 模型核对: [通过] 与请求一致
+```
+
+判定规则是**严格字符串相等**，不含糊：
+- 两者不一致 → `[告警] 不一致！请求 'glm-4.6'，实际 'xxx'`，末尾大 banner 汇总，`exit 1`
+- 接口**没返回** `model` 字段 → 审计无法确认，同样按不一致报警（这条很关键，否则审计有漏洞）
+- 任务失败/超时也会进入告警清单并 `exit 1`
+
+**验证情况**：
+- `python3 -m py_compile` 编译通过
+- 无 Key 运行 → 清晰报错退出（不崩溃）
+- 用桩替换网络层离线测了审计分支：一致/不一致/缺 model 字段三种情况分别输出 [通过]/[告警]/[告警]，任一异常时退出码为 1
+
+真实环境运行：`ZHIPUAI_API_KEY=你的key python3 main.py`（仅依赖 `requests`）。
+
+Sources:
+- [对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8%E5%BC%82%E6%AD%A5)
+- [查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%9F%A5%E8%AF%A2%E5%BC%82%E6%AD%A5%E7%BB%93%E6%9E%9C)

@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，验证情况如下：
+
+## 实现要点
+
+**模型选择：`glm-5.3`** —— 查了官方文档的[发布记录](https://docs.bigmodel.cn/cn/update/new-releases)，它是 2026-08 上线的当前旗舰（[模型页](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)确认 model ID 就是 `glm-5.3`），没有为了省钱降级。
+
+**接口细节全部对照[官方 Batch 文档](https://docs.bigmodel.cn/cn/guide/tools/batch)和 API 参考确认过：**
+
+| 步骤 | 调用 | 关键点 |
+|---|---|---|
+| 构造请求 | 写 `batch_requests.jsonl` | 每行 `{custom_id, method: "POST", url: "/v4/chat/completions", body}`，`custom_id` 按行号编号（`comment-00001`…），取结果时可对回原评论 |
+| 上传文件 | `POST /api/paas/v4/files` | multipart，`purpose="batch"`，取响应 `id` |
+| 创建任务 | `POST /api/paas/v4/batches` | 请求体只传 `input_file_id` + `endpoint` + `metadata`；`completion_window` 文档已标注废弃，不传 |
+
+认证统一 `Authorization: Bearer $ZHIPUAI_API_KEY`。stdout 只打印最终的 batch 任务 id（进度信息走 stderr），方便管道/脚本取值。
+
+## 验证结果
+
+- `python3 -m py_compile` 通过（Python 3.9）
+- 用 fixtures 里真实的 20 条评论测试：生成 20 行 jsonl，格式校验、custom_id 唯一性均通过
+- 假 Key 实测打到了真实服务端，返回 `401 令牌已过期或验证不正确`——证明 URL、认证头、multipart 格式正确，且错误路径能干净退出而非裸抛 traceback
+- 无 Key 时给出明确提示、exit 1
+
+脚本按「脚本同目录 → 当前目录」的顺序找 `comments.txt`，所以把 `main.py` 和 `comments.txt` 放一起（或在 `comments.txt` 所在目录执行）即可 `python3 main.py` 跑通。测试产物已清理，交付目录里只有 `main.py`。
+
+一个小提醒：GLM-5.3 思考模式始终开启（不可关闭），batch 结果里 `content` 字段仍是纯分类标签，后续解析不受影响；按文档说明，使用 Batch 前账号需完成实名认证。

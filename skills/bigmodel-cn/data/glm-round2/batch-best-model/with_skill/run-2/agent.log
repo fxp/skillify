@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/batch-best-model/with_skill/run-2/outputs/main.py`。
+
+## 关键决策：模型选 `glm-5.1`（而不是旗舰 glm-5.3）
+
+这是本任务最重要的坑：技能文档里有 2026-09 用真实 API 验证的结论——**Batch 只支持一份模型白名单**，且校验发生在上传文件那一步（`POST /paas/v4/files`），旗舰 `glm-5.3`/`glm-5.2` 都不在名单内，直接用会报 `1210 模型名称错误`，整份文件被拒。白名单中能力最强的文本模型是 `glm-5.1`（Coding 对齐 Opus 4.6 一档，200K 上下文），既满足“用最好的模型”又保证任务能创建成功；比 `glm-4-plus`、`glm-4-air` 这些老旗舰强得多，且走 Batch 同样享受 5 折。
+
+## 脚本做的事（严格按官方接口，已用 WebFetch 对照 docs.bigmodel.cn 确认）
+
+1. **读评论**：优先取脚本同目录的 `comments.txt`（找不到再退回当前目录），跳过空行——fixtures 里那份实际是 20 条有效评论。
+2. **构造 `batch_requests.jsonl`**：每行 `{"custom_id": "request-001", "method": "POST", "url": "/v4/chat/completions", "body": {...}}`。几个实测过的坑都已规避：
+   - `custom_id` 最短 6 字符（`r1` 这种会在上传时报错），用 `request-001` 格式且全局唯一；
+   - 行内 `url` 与创建任务时的 `endpoint` 参数保持一致（`/v4/chat/completions`，Batch 目前仅支持这一个）；
+   - 分类 prompt 走 system + 低 `temperature=0.1`，要求只输出“正面/负面/中性”一个词，混合褒贬按主要倾向、客观陈述归中性。
+3. **上传**：`POST /paas/v4/files`，multipart 表单 `purpose=batch`（必须，否则建不了任务）。
+4. **创建任务**：`POST /paas/v4/batches`，传 `input_file_id` + `endpoint`，`auto_delete_input_file=False` 保留输入文件便于核查。
+5. **输出**：进度信息走 stderr，**stdout 只打印 batch 任务 id**（如 `batch_2095...`），方便后续脚本直接接住；不轮询、不取结果。
+
+API Key 只从 `ZHIPUAI_API_KEY` 读，缺 Key 时给出明确报错并以非零码退出；HTTP 失败会把业务错误码带出来再退出。
+
+## 验证结果（未调真实 API，按要求）
+
+- `python3 -m py_compile` 通过（本机 Python 3.9 兼容）；
+- 在临时目录干跑了 jsonl 构造：20 行、custom_id 唯一且 ≥6 字符、url/method/model 字段全部正确；
+- 无 Key 运行：干净报错、exit 1；测试产生的临时文件已清理。

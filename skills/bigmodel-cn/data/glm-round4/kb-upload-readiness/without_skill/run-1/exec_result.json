@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "==============================================================\n智谱托管知识库灌入 + 真实检索校验（结束时自动删除知识库）\n==============================================================\n[17:20:40] API Key：<REDACTED>…；文档：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/kb-upload-readiness/without_skill/run-1/work/faq.txt（非空行 150 行，5280 字节）\n[17:20:40] 检索验证用的查询词（取自 faq.txt 本身）：['退换货政策的有效期是多久？', '优惠券政策的有效期是多久？', '配送范围是否支持部分办理？']\n[17:20:42] 步骤 1/4 创建知识库成功：kb_id=2096891400598810624（embedding_id=11）\n[17:20:44] 步骤 2/4 文档上传成功：documentId=2096891408660262912\n[17:20:44] 注意：上传成功 ≠ 可检索（解析/向量化是异步的），必须通过下面的真实检索验证\n[17:20:44] 开始检索验证：用 3 个取自 faq.txt 的查询词真实调用检索接口，直到能召回 faq.txt 内容为止（最多等 600s，每 10s 一轮）\n[17:20:47] 清理完成：知识库 2096891400598810624 已删除。\n\n==============================================================\n【失败】文档处理明确失败，无需再等：向量化失败 embedding_code=10001，embedding_msg='知识不可用，文档损坏'；文档状态：{\"id\": \"2096891408660262912\", \"name\": \"faq.txt\", \"url\": \"https://open.bigmodel.cn/api/llm-application/document/download_file/2096891408660262912\", \"length\": 5280, \"min_chunk_size\": 1, \"max_chunk_size\": 500, \"chunk_overlap\": 50, \"knowledge_type\": 0, \"custom_separator\": [\"\\n\"], \"embedding_stat\": 2, \"word_num\": 0, \"parse_image\": 0, \"failInfo\": {\"embedding_code\": 10001, \"embedding_msg\": \"知识不可用，文档损坏\"}}\n详见上方诊断信息与原因分析；知识库清理结果见上方日志。\n==============================================================\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 7.1
+}

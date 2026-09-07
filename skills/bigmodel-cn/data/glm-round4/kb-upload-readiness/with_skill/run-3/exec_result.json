@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "[17:20:15] 准备上传 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round4/kb-upload-readiness/with_skill/run-3/work/faq.txt（150 行），校验用查询词：'退换货政策的有效期是多久？'\n[17:20:17] 1/5 知识库创建成功：knowledge_id=2096891296437493760\n[17:20:19] 2/5 faq.txt 上传被接受：document_id=2096891304603803648（注意：这只代表文件被接收，向量化还在后台异步进行）\n[17:20:21] 3/5 向量化完成：embedding_stat=1（word_num=0）\n[17:20:22] 4/5 检索校验通过：命中 3 条切片，最高分 score=0.78，内容开头：'退换货政策的有效期是多久？  如何申请退换货相关的服务？  退换货出现问题时联系谁？  退换货的处理时限是几个工作日？  退换货需要提供哪些材料？  退换货的费'\n\n成功：faq.txt 已灌入知识库并验证可被检索（knowledge_id=2096891296437493760，document_id=2096891304603803648）。知识库已按约定清理。\n[17:20:24] 5/5 知识库已清理（DELETE 2096891296437493760）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 8.9
+}

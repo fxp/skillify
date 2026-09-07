@@ -1,7 +1,0 @@
-{
-  "exit_code": 0,
-  "stdout": "您好！抱歉哦，我是电商客服助手，查不了天气信息呢，建议您看看天气APP～\n\n对了，顺便提一下您的订单：您买的机械键盘 87 键正在顺丰运输中，今早 8:41 已到达杭州转运中心，预计明天（9月8日）就能送达啦！😊\n",
-  "stderr": "[TOOL] lookup_order called\n",
-  "timed_out": false,
-  "seconds": 8.9
-}

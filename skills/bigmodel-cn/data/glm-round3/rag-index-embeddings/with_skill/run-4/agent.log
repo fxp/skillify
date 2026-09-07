@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已交付到 `run-4/outputs/main.py`，验证全部通过。
+
+## 做了什么
+
+按 SKILL.md 指引读了 `references/tools.md` 的 Embeddings 章节，并抓取官方文档核对——两边一致：`POST https://open.bigmodel.cn/api/paas/v4/embeddings`、Bearer 鉴权、`embedding-3` 单次 `input` 数组最多 64 条、`dimensions` 可选 256/512/1024/2048（默认 2048）、响应 `data[].{index, embedding}` 需按 `index` 对齐。
+
+## 脚本要点（`run-4/outputs/main.py`）
+
+- **路径自适应**：`faq.txt` / `vectors.json` 都相对脚本自身目录解析，`cd` 到哪里都能 `python3 main.py` 跑
+- **分批向量化**：150 条 FAQ 按 64 条/批切成 3 批请求，遵守 embedding-3 的数组上限；结果按 `index` 对齐回原顺序（不信任返回顺序）
+- **维度一致性**：索引和查询统一走同一个 `embed()`（`embedding-3` + `dimensions=1024`），避免向量空间错配
+- **纯手算余弦**：点积/范数用 `math` + 生成器实现，无 numpy；零向量兜底返回 0
+- **vectors.json**：存 `{model, dimensions, texts, vectors}`，自包含可复用
+- **Key 从 `ZHIPUAI_API_KEY` 读取**，缺失或接口报错（非 200）时带响应体退出，便于排错
+
+## 验证结果
+
+- `python3 -m py_compile` 编译通过
+- 用桩替换 `requests.post` 做了端到端离线测试（未打真 API）：正确读入 150 条、批次为 `[64, 64, 22, 1]`（含查询）、vectors.json 正常落盘（150 条向量）、top-3 按相似度排序并打印原文
+- 临时测试目录已清理，交付物只有 `outputs/main.py`
+
+真跑时只需 `ZHIPUAI_API_KEY=你的key python3 main.py`，会打印「发票怎么开」最相近的 3 条 FAQ 原文及相似度。
+
+Sources:
+- [文本嵌入 API - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E5%B5%8C%E5%85%A5)
+- [Embedding-3 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-3)

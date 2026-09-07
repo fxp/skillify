@@ -1,0 +1,15 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过；未设 Key 时也能干净报错退出（exit=1），没有实际调用 API。
+
+**实现要点**（依据技能包 + 官方文档双重确认）：
+
+- **接口路径**：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读取（`main.py:28-29`）。
+- **联网方式**：`tools` 里挂 `{"type": "web_search", "web_search": {...}}`，让平台自动“意图判断→检索→生成”一体化，而不是自己拼搜索结果。
+- **来源必须真实可核对**——这是本任务的核心坑，技能包 `chat.md` 明确标注“已实测验证”：`web_search.search_result` 默认 `false`，**不显式传 `true` 时搜索照常执行、回答照常生成，但响应里完全没有 `web_search` 来源字段**，“展示来源”会静默失效。官方 API 参考同样写着“是否返回搜索来源的详细信息，默认值 false”。脚本已显式设置（`main.py:57`），并从响应体顶层的 `web_search` 数组取 `title` + `link` 逐条打印——链接是接口返回的原始搜索结果，模型无权编造。
+- **其余参数**：`search_engine: "search_pro"` 显式指定（不依赖未文档化默认值）、`require_search: true` 强制先搜后答、`search_recency_filter: "oneYear"` 过滤旧闻、来源按 link 去重并保留 `media`/`publish_date` 便于核对。
+- **模型选择**：`glm-5.3`；它在标准端点强制思考、传 `disabled` 会报 1210，所以用允许的最轻档 `reasoning_effort: "low"`（事实检索类够用且更快）。
+- **健壮性**：HTTP 非 2xx 与业务 `error` 码分别处理、`finish_reason` 异常提示到 stderr、来源缺失时明确说明而非留空。
+
+拿到 Key 后 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可运行：stdout 先打印答案，下面列「参考来源（接口 web_search 实际返回）」，每条含标题、来源媒体/日期和可点击 URL。

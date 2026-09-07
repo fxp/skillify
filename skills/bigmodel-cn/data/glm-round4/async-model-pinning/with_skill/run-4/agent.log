@@ -1,0 +1,30 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，验证全部通过。
+
+## 依据
+
+按 SKILL.md 指引读了 `references/chat.md`（异步对话）和 `references/models.md`（glm-4.6 参数），并用 WebFetch 核对了官方文档的端点、`task_status` 取值和 `model` 回显字段，两边一致。
+
+## 关键发现（直接决定了脚本设计）
+
+技能包里有一条 2026-09-07 的真实 API 实测警告，正中本次审计要害：**异步端点会静默替换模型**——请求 `glm-4.6`，提交回显 `glm-4.7`、轮询结果回显 `GLM-4.7`；而且回显大小写不稳定（`glm-4.5-air` → `GLM-4.5-Air` 属同一模型）。因此脚本：
+
+- **两处核对**：既核对提交响应的 `model` 回显，也核对轮询结果的 `model` 回显（后者最权威），任一与请求值不一致即告警；
+- **大小写归一化比对**，避免同模型不同大小写造成误报；
+- **告警不含糊**：逐任务打印「请求模型 | 提交回显 | 结果回显」对照，不一致时打印醒目告警块，并以**退出码 2** 结束（0=一致、1=运行错误如缺 Key/FAIL/超时、2=模型不一致），可直接接入 CI/审计流水线判断。
+
+## 脚本流程
+
+`POST /paas/v4/async/chat/completions` 锁定 `model=glm-4.6` 提交 3 个情感分类任务（轻量任务按文档建议显式关闭 thinking）→ `GET /paas/v4/async-result/{id}` 以 2s 间隔轮询（总超时 120s，FAIL/超时不中断批次）→ 汇总分类结果 + 审计核对。只依赖 `requests` + 标准库，Key 从 `ZHIPUAI_API_KEY` 读取。
+
+## 验证（未调用真实 API）
+
+- `python3 -m py_compile` 通过；无 Key 运行走友好报错、退出码 1；
+- 用打桩的 `requests` 离线模拟了 4 个场景全部通过：静默换模型（→退出码 2 告警）、仅大小写差异（→判一致）、完全一致（→退出码 0）、单任务 FAIL（→批次继续、退出码 1，核对行明确标「无法核对」而非含糊的「不一致」）。
+
+一点提醒：等你有 Key 真跑时，**这份告警大概率会真的触发**（异步端点目前就是拿 glm-4.7 跑 glm-4.6 的请求）——这是审计核对在正确工作，说明该批结果不满足版本锁定；若必须用 glm-4.6，需要找平台确认或改走同步端点。
+
+Sources: [对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/对话补全异步)、[查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/查询异步结果)、[HTTP API 调用指南](https://docs.bigmodel.cn/cn/guide/develop/http/introduction)

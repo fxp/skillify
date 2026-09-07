@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，本地逻辑用真实的 20 条评论 fixture 验证过（未真的调用 API）。
+
+## 关键决策：模型选了 `glm-5.1`，而不是旗舰 `glm-5.3`
+
+这是本任务最重要的坑：**Batch API 只支持一份模型白名单**，同步接口能用的旗舰 `glm-5.3`/`glm-5.2` 都不在白名单里——而且校验发生在**文件上传**阶段（`POST /paas/v4/files` 会直接报 `1210 模型名称错误`）。技能包里 2026-09 用真实 API 验证过的报错白名单为：`glm-5.1、glm-5-turbo、glm-4、glm-4-plus、glm-4-air 系列、glm-4-flash 系列 …`。其中 **`glm-5.1`** 是能力最强的（Coding 对齐 Opus 4.6、200K 上下文），满足“分类质量重要、用最好的模型”的要求。我也抓了官方文档核实，其队列限制表更旧（连 glm-5.x 都没列），故以实测白名单为准。
+
+## 脚本流程（`main.py`）
+
+1. **读评论**：`comments.txt` 先找脚本同目录、再找当前目录（fixture 在 `glm-round2/fixtures/comments.txt`，共 20 条，`utf-8-sig` 兼容 BOM、跳过空行）
+2. **构造 `.jsonl`**：每行 `{"custom_id": "request-000001", "method": "POST", "url": "/v4/chat/completions", "body": {...}}`
+   - `custom_id` 用 `request-000001` 格式——**最短 6 字符**是实测限制，`r1` 这类短 id 会在上传时报错
+   - `temperature: 0.1` 保证分类稳定；`thinking: {"type": "disabled"}`——三分类是轻量任务，glm-5.1 支持关闭深度思考，省 token 不伤质量；`max_tokens: 512` 限住输出
+   - system prompt 约束只输出「正面/负面/中性」三个标签之一
+3. **上传**：`POST /paas/v4/files`，multipart，`purpose=batch`（必须，否则不能用于 Batch）
+4. **创建任务**：`POST /paas/v4/batches`，`endpoint="/v4/chat/completions"`（与每行 `url` 一致）
+5. **输出**：batch 任务 id 只打到 **stdout**（进度日志走 stderr），Key 从 `ZHIPUAI_API_KEY` 读取，缺失时明确报错；只依赖 `requests`
+
+运行方式：`export ZHIPUAI_API_KEY=sk-xxx && python3 main.py`。另注意：Batch 需要账号完成实名认证，任务 24 小时内完成、结果文件保留 30 天。
+
+Sources: [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)、[Batch API 常见问题](https://docs.bigmodel.cn/cn/faq/batch-api-issues)

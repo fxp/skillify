@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，验证均通过（未实际调用 API）。
+
+## 方案说明
+
+**接口调研结论**（来自 docs.bigmodel.cn 官方文档）：
+- 旧的 `v4/files` + `file-extract` 流程已不在当前文档中（`files` 接口现在只服务 `batch`/`agent` 等用途）；
+- 现行做法是**视觉模型直接吃文件**：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions` 的视觉请求支持 `{"type": "file", "file": {...}}` 内容块，三选一传 `file_id` / `file_url` / `file_data`，其中 `file_data` 支持 `data:application/pdf;base64,...`，单文件上限 50MB；
+- 官方「文件理解」示例所用模型为 `glm-5.3-flash`（支持文本/图片/视频/文件输入），脚本即用它。
+
+**脚本工作方式**：把 `contract.pdf` 原始字节 base64 后直接塞进 `file_data` 内容块，让模型自己读 PDF 原文，按提示词只输出 `{"合同编号": "...", "合同总金额": "..."}`；全程零本地 PDF 解析（没有任何 PyPDF2/pdfplumber/pypdf），第三方依赖只有 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取。
+
+**健壮性细节**：
+- PDF 定位：从当前目录和脚本目录逐级向上搜索（含 `fixtures/` 子目录）——实际上这份 `contract.pdf` 在 `glm-round/fixtures/` 下而非 run-1 目录，这样无论从哪里运行都能找到；
+- 缺 Key、找不到 PDF、超 50MB、HTTP 非 200、响应结构异常均有明确报错（走 stderr，退出码非 0）；
+- 模型回复容忍 ```` ```json ```` 围栏；解析失败时兜底打印原文；stdout 只有两行结果，方便管道使用。
+
+**验证结果**：
+- `python3 -m py_compile` 通过（在 /tmp 副本上编译，outputs 里只留了 main.py 一个文件）；
+- `env -u ZHIPUAI_API_KEY python3 main.py` → 干净报错退出，不发请求（输出里的 `NotOpenSSLWarning` 是本机 Python 3.9+LibreSSL 导入 urllib3 的固有警告，与本脚本无关）；
+- 单测确认 `find_pdf()` 找到 `fixtures/contract.pdf`、`parse_fields()` 正确解析围栏 JSON。
+
+实际使用：
+```bash
+export ZHIPUAI_API_KEY=<你的Key>
+python3 outputs/main.py
+# stdout:
+# 合同编号: ...
+# 合同总金额: ...
+```

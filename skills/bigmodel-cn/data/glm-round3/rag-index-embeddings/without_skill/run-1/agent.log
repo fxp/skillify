@@ -1,0 +1,17 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付到 `outputs/main.py`，说明如下：
+
+**实现要点**（接口细节已抓取智谱官方文档确认）：
+- **调用**：`POST https://open.bigmodel.cn/api/paas/v4/embeddings`，`Authorization: Bearer $ZHIPUAI_API_KEY` 直接用 API Key 鉴权，body 为 `{"model": "embedding-3", "input": [...]}`；官方限制单次数组最多 64 条，脚本按 `BATCH_SIZE=64` 自动分批（一百多条会发 2~3 个请求），并按响应里的 `index` 字段重排，保证向量与原行顺序一致。
+- **索引**：逐行读取 faq.txt（跳过空行）→ 全部向量化 → 连同原文一起写入同目录 `vectors.json`（UTF-8、`ensure_ascii=False`）。
+- **检索**：查询「发票怎么开」向量化后，用纯 Python 手写的 `cosine_similarity`（点积 / 模长，无 numpy）对全部条目打分排序，打印 top-3 原文到 stdout。
+- **健壮性**：缺 Key、缺 faq.txt、非 200 响应（带返回体）都有明确报错；进度信息走 stderr，stdout 只留查询结果，方便管道处理。
+- 文件路径基于 `Path(__file__).parent`，所以无论从哪个工作目录执行 `python3 main.py`，都会找同目录的 faq.txt、把 vectors.json 也落在同目录。
+
+**验证情况**（未调用真实 API）：
+- `python3 -m py_compile` 编译通过；
+- 在 /tmp 用假向量 mock 了 `embed_texts` 端到端跑通：正确跳过空行（6 行输入 → 5 条 FAQ）、vectors.json 结构正确、top-3 按余弦相似度正确排序（两条「发票」相关条目排在前两名），exit 0。测试目录已清理。
+
+一点说明：当前 `outputs/` 里还没有 faq.txt（应该是随后由任务环境放入），脚本按「与 main.py 同目录」引用，文件到位后设好 `ZHIPUAI_API_KEY` 即可直接跑。

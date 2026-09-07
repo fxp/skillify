@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 实现思路
+
+**本地零解析**：脚本只把 `contract.pdf` 的原始字节读进来做 Base64（约 70KB，远低于接口 50M 上限），以 `file` 内容块发给 BigModel，由模型自己读文件——全程没有用任何 PDF 解析库，也没有抽取文本再发送。
+
+**接口依据**（已从官方文档确认）：
+- 端点 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，Bearer 鉴权
+- 多模态 content 数组支持 `{"type": "file", "file": {"file_data": "data:application/pdf;base64,...", "filename": "contract.pdf"}}`，`file_data`/`file_url`/`file_id` 三选一
+- 默认模型 `glm-5.3-flash`（官方文档文件理解示例所用模型，原生多模态、支持文件输入；可用环境变量 `BIGMODEL_MODEL` 覆盖）
+
+**运行细节**：
+- API Key 从 `ZHIPUAI_API_KEY` 读取，缺失时输出明确错误并退出码 1
+- `contract.pdf` 实际在 `glm-round/fixtures/` 下，脚本会从当前目录、脚本目录逐级向上（含 `fixtures/` 子目录）自动查找；也可 `python3 main.py <路径>` 显式指定
+- 提示词要求模型只回一个 JSON（`contract_no` / `total_amount`），脚本解析后打印两行结果；若模型没按格式回答则原样兜底输出。stdout 只有抽取结果，进度和报错都走 stderr
+
+**已验证**（未真正调用 API）：`python3 -m py_compile` 通过；无 Key 时的错误路径正确；PDF 自动发现能找到 `fixtures/contract.pdf`；JSON 解析能容忍 ```` ```json ```` 包裹。实际有 Key 时直接 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可跑通。
+
+Sources:
+- [对话补全 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)
+- [GLM-5.3-Flash - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)
+- [（旧）文件内容抽取 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/file-extract)

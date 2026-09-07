@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 通过，无 Key 干跑也能正确报错退出（那条 urllib3 警告来自本机旧版 LibreSSL，与脚本无关）。
+
+## 实现要点
+
+**整体流程**：上传一次 PDF 拿 `file_id` → 三个问题全部复用这一个 `file_id` 发请求，每轮请求体里只有一个 ID 引用，不再传输文件内容。
+
+几个关键决策，都来自 skill 手册（含 2026-09 真实 API 验证记录）并与官方文档核对过：
+
+| 决策 | 依据 |
+| :-- | :-- |
+| 上传时 `purpose="user_data"` | 这是唯一能让 `chat/completions` 的 `file` 类型正常解析的 purpose；用 `agent`/`code-interpreter` 上传虽然也能成功，但引用时 100% 报 `1210 文件解析失败`。官方文档也标注 `user_data` 即“文件理解”用途 |
+| `content` 数组 + `{"type": "file", "file": {"file_id": ...}}` | 多模态输入的统一格式（新版 `file` 类型，替代旧 `file_url`） |
+| 模型选 `glm-5.3-flash` | 原生多模态旗舰，官方确认支持“图片、视频、文件”输入，价格只有 `glm-5.3` 的 1/10 |
+| `reasoning_effort: "low"` | 该模型在标准端点强制思考且不能关（传 `disabled` 报 1210）；三个问题都是简单事实抽取，`low` 档实测思考 token 接近 0，正合“省 token”的要求 |
+| `PDF_PATH` 按脚本所在目录解析 | `python3 main.py` 在任意 cwd 下都能找到同目录的 contract.pdf |
+
+**其他细节**：非 2xx 响应会把平台错误体带出来方便排查；检查 `finish_reason` 防止静默截断；每轮顺带打印 `prompt_tokens` 和缓存命中数，可以直观看到复用 file_id 的省 token 效果；全程只用 `requests` + 标准库，无本地 PDF 解析。
+
+跑通只需：
+```bash
+export ZHIPUAI_API_KEY=你的Key
+python3 main.py
+```
+
+Sources: [GLM-5.3-Flash - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)、[上传文件 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%25E6%2596%2587%25E4%25BB%25B6-api/%25E4%25B8%258A%25E4%25BC%25A0%25E6%2596%2587%25E4%25BB%25B6)、[API 文档 - 智谱AI](https://open.bigmodel.cn/dev/api)

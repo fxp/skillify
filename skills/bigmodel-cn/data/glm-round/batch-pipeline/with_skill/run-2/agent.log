@@ -1,0 +1,22 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，验证结果：`py_compile` 编译通过；本地冒烟测试（未调 API）确认能找到 comments.txt、生成 20 条请求、`custom_id` 唯一且 ≥6 字符；缺 Key 时报错清晰退出。
+
+## 实现说明
+
+**流程**（`main.py`）：读 comments.txt（跳过空行）→ 在当前目录生成 `batch_requests.jsonl` → `POST /paas/v4/files` 上传（multipart，`purpose=batch`）→ `POST /paas/v4/batches` 创建任务 → `print(batch["id"])`。不轮询、不取结果。API Key 从 `ZHIPUAI_API_KEY` 读取，仅依赖 `requests`。
+
+**按技能文档避开的三个坑**：
+
+1. **模型白名单**：Batch 不支持平台全部模型，校验发生在文件上传阶段。旗舰 `glm-5.3`/`glm-5.2` 不在实测白名单内，直接用会被整份文件拒绝（错误码 1210）。脚本选用白名单内的 **`glm-4-plus`**（官方情感分类示例同款，2M Batch 排队额度）。
+2. **`custom_id` 最短 6 字符**：`r1`/`id-1` 这种短 id 会在上传时报 1210，脚本用 `request-001` 格式（实测最短 11 字符）。
+3. **字段一致性**：jsonl 每行的 `url` 与创建任务时传的 `endpoint` 统一为 `/v4/chat/completions`；创建任务引用上传返回的文件 `id`。
+
+**其他细节**：进度日志走 stderr、stdout 只输出 batch 任务 id，方便后续脚本解析；HTTP 与业务层错误（响应体里的 `error` 字段）都会带响应体抛出，便于排错；输入文件先找脚本同目录、再找当前工作目录。
+
+另外说明：任务里说“同目录下 comments.txt"，实际文件在 `glm-round/fixtures/comments.txt`（run-2 目录下没有），脚本的双路径查找在两种摆放方式下都能跑通。运行前需完成平台实名认证（Batch 的前置要求）：
+
+```bash
+ZHIPUAI_API_KEY=你的Key python3 main.py
+```

@@ -1,0 +1,35 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，并用 20 条真实 fixture 评论做了离线逻辑断言（未发起任何网络请求）。
+
+## 关键决策：模型选 `glm-5.1`，而不是旗舰 `glm-5.3`
+
+这是本任务最容易踩的坑。SKILL 的 `files-batch.md` 里有一条 2026-09 **真实 API 调用验证**过的记录：
+
+- Batch 只支持一份**模型白名单**，且校验发生在**文件上传阶段**（`POST /paas/v4/files`）——白名单外的模型名直接报 `1210 模型名称错误`，根本到不了创建任务那一步；
+- 实测报错信息给出的白名单里，`glm-5.3` / `glm-5.2` 这些旗舰都**不在名单内**；
+- 名单里能力最强的文本模型是 **`glm-5.1`**（Coding 对齐 Claude Opus 4.6、200K 上下文，明显强于 `glm-4-plus` 一档）。
+
+我也按你的建议 WebFetch 核对了官方文档页：文档里的 Batch 队列表还是旧模型（连 glm-5.1 都没列），但 SKILL.md 明确写了“报错信息本身就是最权威的来源，不要死守文档”——真实调用的验证结果比文档页更新，所以选 `glm-5.1`。"最好的模型"用户要的是质量，Batch 半价 + 白名单内最强，两者都满足了。
+
+## 脚本要点（全部来自 SKILL 的实战提示）
+
+| 要点 | 实现 |
+| :--- | :--- |
+| `custom_id` 最短 **6 字符** | 用 `request-000001`（六位原始行号），过短的 `r1` 会在上传时报 1210；行号还方便结果对回原文件 |
+| 上传必须 `purpose=batch` | multipart 上传，文件名保留 `.jsonl`（该 purpose 只收这个格式） |
+| jsonl 每行 `url` 与 batch 的 `endpoint` 一致 | 统一常量 `/v4/chat/completions` |
+| 单文件 ≤50,000 请求 | 读取后显式校验 |
+| 结果匹配 | `temperature=0.1` + 严格三分类中文 prompt（只输出 正面/负面/中性 一个词），下游 `content.strip()` 即可解析 |
+
+## 脚本行为
+
+- `ZHIPUAI_API_KEY` 从环境变量读取，缺失时非零退出并提示（stdout 保持干净）；
+- `comments.txt` 先找脚本同目录、再退回 CWD；空行跳过；
+- **stdout 只打印 batch 任务 id**（`batch_2095...` 这种），所有进度日志走 stderr，方便上游脚本直接捕获 id；
+- HTTP 非 2xx 或平台业务错误体（`error.code/message`）都会带信息非零退出；
+- 只做“构造 → 上传 → 创建”三步，不轮询、不取结果，符合要求；
+- 仅用 `requests` + 标准库，`python3 main.py` 直接可跑。
+
+一个提醒：Batch 任务要求账号完成过实名认证，任务 24 小时内完成，结果文件（`output_file_id`/`error_file_id`）保留 30 天，到时候需要另外写下载逻辑（接口是 `GET /paas/v4/files/{id}/content`）。

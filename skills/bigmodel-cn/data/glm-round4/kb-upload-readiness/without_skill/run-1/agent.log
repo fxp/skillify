@@ -1,0 +1,38 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，可直接 `python3 main.py` 运行（`faq.txt` 放在脚本同目录即可，找不到时也会尝试当前工作目录）。
+
+## 针对你踩过的坑，脚本的验证设计
+
+**上传成功 ≠ 可检索**，所以“成功”的判定只看一件事：用官方检索接口 `POST /llm-application/open/knowledge/retrieve` 真实地召回了 faq.txt 的内容。具体做法：
+
+- 自动从 faq.txt 里提取最多 3 条真实查询词（优先问句，自动去掉 `Q3:`、`12.` 之类题号），每 10 秒一轮真实检索，最多等 600 秒（`VERIFY_TIMEOUT` 可调）——这就是“索引没建好之前检索永远为空”的窗口期；
+- 命中认定是**双保险**：返回切片的 `metadata.doc_id/doc_name` 对得上本次上传的文档，**或**切片文本确实出现在 faq.txt 原文里（忽略空白差异的内容比对）。返回了别人的内容、空文本、空结果都不算数；
+- **绝不报喜不报忧**：验证不过就明确报“失败”，并输出诊断（知识库/文档最后状态、`word_num`、`embedding_stat`、`failInfo`、每个 query 的返回条数和 top score 片段）+ 按概率排序的原因清单；文档向量化明确失败（`failInfo.embedding_code`）时立即报错不再空等；
+- `finally` 里无论成败都删库，删除失败会打警告并给出 kb_id 让你手动清理。退出码 0=验证通过，1=任何失败。
+
+## 接口依据（已抓官方文档逐个核实，均为 Bearer 认证）
+
+| 步骤 | 接口 |
+|---|---|
+| 建库 | `POST /api/llm-application/open/knowledge`（`embedding_id=11` 即 Embedding-3） |
+| 上传 | `POST /api/llm-application/open/document/upload_document/{id}`（multipart 字段 `files`，解析 `successInfos[].documentId` / `failedInfos[].failReason`） |
+| 状态 | `GET /api/llm-application/open/document/{id}`（列表接口兜底） |
+| 检索 | `POST /api/llm-application/open/knowledge/retrieve`（`query` + `knowledge_ids`） |
+| 删除 | `DELETE /api/llm-application/open/knowledge/{id}` |
+
+## 已验证 / 未验证
+
+- ✅ `python3 -m py_compile` 通过；查询词提取、内容比对、命中认定的纯逻辑单测通过；
+- ✅ 用假 HTTP 层跑了 4 个离线编排场景：最终命中（exit 0 且删库）、检索一直为空（exit 1 + 诊断 + 删库）、返回他人内容不误报成功（exit 1）、上传明确失败（exit 1 + 平台 failReason + 删库）；缺 Key、缺 faq.txt 的前置失败路径也都正确报错退出；
+- ⚠️ 未调用真实 API（环境无 Key）。唯一没官方文档支撑的点是 `embedding_stat` 的枚举值（官方未公布），所以脚本不依赖它做判定，只作诊断信息原样展示——判定权威交给真实检索。
+
+Sources:
+- [创建知识库](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93.md)
+- [上传文件文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E6%96%87%E6%A1%A3.md)
+- [知识库检索](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2.md)
+- [文档列表](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E5%88%97%E8%A1%A8.md) / [文档详情](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E8%AF%A6%E6%83%85.md)
+- [删除知识库](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%A0%E9%99%A4%E7%9F%A5%E8%AF%86%E5%BA%93.md)
+- [知识库 FAQ（检索为空的常见原因）](https://docs.bigmodel.cn/cn/faq/knowledge-base.md)

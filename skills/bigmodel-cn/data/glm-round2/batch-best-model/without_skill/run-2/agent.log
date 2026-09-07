@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round2/batch-best-model/without_skill/run-2/outputs/main.py`，`python3 main.py` 可直接运行（需 `export ZHIPUAI_API_KEY=...`）。
+
+## 实现要点
+
+**模型选择：`glm-5.3`** —— 查了官方文档确认这是当前最强旗舰（1M 上下文 / 128K 输出，深度思考默认开启且 `reasoning_effort` 默认 `max`），满足“质量优先、不挑弱模型”的要求；Batch 统一按标准 API 五折计费，正好对上“一半的钱”的诉求。
+
+**流程**（接口细节均从官方文档核对过）：
+1. 读 `comments.txt`（查找顺序：脚本同目录 → 当前目录 → 脚本上级目录，兼容 UTF-8 BOM，跳过空行）
+2. 构造 `batch_requests_sentiment.jsonl`，每行 `{"custom_id": "comment-0001", "method": "POST", "url": "/v4/chat/completions", "body": {...}}`，system 提示词要求只输出 正面/负面/中性 之一，`temperature: 0.1` 保证分类稳定
+3. `POST /api/paas/v4/files` 上传（multipart，`purpose=batch`）→ 拿 `file_id`
+4. `POST /api/paas/v4/batches` 创建任务（`input_file_id` + `endpoint: "/v4/chat/completions"`，均必填）→ 拿 `batch_id`
+5. **stdout 只打印 batch id 一行**（进度日志走 stderr），不等待任务完成
+
+**验证情况**（未真实调 API，无 Key）：
+- `python3 -m py_compile` 通过
+- 离线冒烟测试：用 fixtures 的 20 条评论构造出 20 行合法 JSONL，custom_id 唯一、字段/模型名/URL 正确
+- 全链路 mock 测试：上传 → 建任务 → stdout 恰好输出 `batch_...` id，Bearer 头正确
+- 缺 Key 时给出明确错误并以退出码 1 结束
+
+一个说明：文档中 Batch 各模型排队上限表还停留在旧型号列表（GLM-4 系），没有明确列 glm-5.3；Batch 请求体就是标准 chat completions 格式，理论上直接可用。若平台对 5.3 暂未开放 Batch 报错，把脚本顶部 `MODEL` 常量改成 `glm-5.2` 即可（次强旗舰），无需动其他逻辑。
+
+Sources:
+- [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)
+- [上传文件 API 参考](https://docs.bigmodel.cn/api-reference/%E6%96%87%E4%BB%B6-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6)
+- [创建批处理任务 API 参考](https://docs.bigmodel.cn/api-reference/%E6%89%B9%E5%A4%84%E7%90%86-api/%E5%88%9B%E5%BB%BA%E6%89%B9%E5%A4%84%E7%90%86%E4%BB%BB%E5%8A%A1)
+- [GLM-5.3 模型文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)
+- [Batch API FAQ](https://docs.bigmodel.cn/cn/faq/batch-api-issues)

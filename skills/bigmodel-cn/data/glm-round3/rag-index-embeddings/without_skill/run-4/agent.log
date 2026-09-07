@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 实现要点
+
+- **接口**（已对照[官方文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E5%B5%8C%E5%85%A5)确认）：`POST https://open.bigmodel.cn/api/paas/v4/embeddings`，`Authorization: Bearer $ZHIPUAI_API_KEY`，body 为 `{"model": "embedding-3", "input": [...]}`。
+- **批处理**：embedding-3 单次请求 input 数组上限 64 条，脚本按 64 分批（150 条 → 3 批 + 1 次查询），并根据响应里的 `data[].index` 把向量按输入顺序归位。
+- **vectors.json**：存 `{"model": "embedding-3", "texts": [...], "vectors": [...]}`，文本与向量一一对应，`ensure_ascii=False` 保留中文。
+- **余弦相似度**：纯 Python 手算（点积 / 模长），未用 numpy；零向量防护返回 0。
+- **健壮性**：缺 Key、缺 faq.txt、非 200 / error 响应、返回向量数不符等情况都会带明确信息退出。
+- 路径基于 `__file__` 解析，`python3 main.py` 在任意 cwd 下都能跑通。
+
+## 验证情况
+
+- `python3 -m py_compile` 通过（Python 3.9 环境）。
+- 做了一次离线端到端测试：在 /tmp 打桩 `requests.post`（并故意把响应 data 顺序打乱），跑通全流程 —— 正确发出 4 次请求（批量 64/64/22 + 查询 1）、URL/认证头/model 均正确、vectors.json 写入 150 条且向量与文本对齐（index 归位逻辑生效）、top-3 按分数正确排序打印。未调用真实 API。
+
+一个说明：run-4 目录下实际没有 faq.txt，我用的是 `glm-round3/fixtures/faq.txt`（150 行）做的测试；脚本运行时读取自己所在目录的 faq.txt，评测时把 main.py 和 faq.txt 放同目录即可。
+
+Sources:
+- [文本嵌入 API - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E5%B5%8C%E5%85%A5)
+- [Embedding-3 模型介绍 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-3)

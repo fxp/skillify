@@ -1,0 +1,32 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，本地逻辑（探测 query 挑选、行前缀清洗、错误体解析、缺 key/缺文件的快速失败）均做了冒烟测试。真实 API 路径未跑（环境无 Key），但接口细节已用官方文档逐字段核对过。
+
+## 脚本流程（`python3 main.py` 直接跑，只需 `requests` + 环境变量 `ZHIPUAI_API_KEY`）
+
+```
+[1/5] 创建知识库（Embedding-3）            POST /llm-application/open/knowledge
+[2/5] 上传 faq.txt（按标题段落切）          POST /llm-application/open/document/upload_document/{id}
+[3/5] 轮询向量化状态直到成功               GET  /llm-application/open/document/{id}
+[4/5] 检索校验：真实调一次检索              POST /llm-application/open/knowledge/retrieve
+[5/5] 清理：删库（finally 里，无论成败）     DELETE /llm-application/open/knowledge/{id}
+```
+
+## 针对“上传显示成功、检索永远为空”的两层校验
+
+1. **向量化状态校验**：上传成功≠可检索（向量化是后台异步任务，失败无通知）。脚本轮询文档详情的 `embedding_stat`（0=处理中 / 1=成功 / 2=失败），拿到 2 就把 `failInfo.embedding_code/embedding_msg` 里的失败原因原样报出；超时（最长 10 分钟）也明确报错。
+2. **真实检索校验**：`embedding_stat=1` 之后，从 faq.txt 里挑出真实问句（自动去掉 `1.`、`Q:`、`问：` 等前缀）当 query 实测检索，必须召回非空结果才打印“✅ 成功”。**用文档自身内容做 query**，检索为空就能断定是“文档不可检索”而不是“问了没有的东西”；此时明确报“❌ 失败”并指出这正是索引不可用的坑，建议去控制台核对。
+
+## 其他要点
+
+- **不报喜不报忧的反面教材都堵住了**：这族接口出错时 HTTP 仍是 200，脚本一律判 `body["code"] == 200`（不用 `raise_for_status()`）；上传响应里的 `failedInfos` 也检查
+- 删库失败会打警告并给出知识库 ID，提醒手动清理
+- 网络异常 / 429 / 5xx / 限流业务码（1302/1305/1308/1310）指数退避重试；鉴权、参数错误直接失败
+- 缺 API Key、缺 faq.txt、文件为空都在建库前快速失败，不在服务端留垃圾
+- 退出码：成功 0，失败 1，Ctrl+C 130
+
+接口细节依据：技能包 `references/agents-assistant-knowledge.md`（含 2026-09-07 真机验证的两个坑）并与官方文档核对一致——[上传文件文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档)、[知识库检索](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索)、[文档详情](https://docs.bigmodel.cn/api-reference/知识库-api/文档详情.md)。
+
+一点说明：官方 schema 里 `embedding_stat` 的 0/1/2 语义未枚举，脚本采用的是技能包真机验证过的口径（技能包实测记录过三份文档全部 `embedding_stat=2`、"知识不可用，文档损坏"的案例——正因如此第 2 层真实检索校验也不能省）。

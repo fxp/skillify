@@ -1,0 +1,16 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/rag-index-embeddings/without_skill/run-5/outputs/main.py`（目录里只有这一个文件）。
+
+**实现要点**（接口细节已通过官方文档确认）：
+- 调 `https://open.bigmodel.cn/api/paas/v4/embeddings`，`model: "embedding-3"`，Bearer 认证，Key 从 `ZHIPUAI_API_KEY` 环境变量读取
+- 按官方限制**每 64 条一批**分批请求（文档写明 input 数组最大 64 条），返回的 `data` 按 `index` 排序对齐，保证向量和文本一一对应
+- `faq.txt`、`vectors.json` 都以 `Path(__file__).parent` 为基准定位，在任何工作目录下 `python3 main.py` 都能跑通；读文件用 `utf-8-sig` 防 BOM，跳过空行
+- 余弦相似度纯手写（点积 / 模长乘积，含零向量保护），只用 `requests` + 标准库
+- vectors.json 存 `{model, count, lines, embeddings}`，然后对查询「发票怎么开」单独取向量、排序、打印 top-3 原文（附带相似度分数）
+- 附带简单重试（3 次、退避）和清晰的失败报错
+
+**验证情况**：
+- `python3 -m py_compile` 通过
+- 没有真实 Key，所以在 /tmp 用 stub 掉 `requests.post` 的方式做了离线端到端测试：100 行 FAQ（含 3 条发票相关）→ 正确分批为 64+36+1 次请求、vectors.json 结构和行-向量对应关系正确、top-3 精确返回那 3 条发票原文。测试产物已清理，未调用真实 API。

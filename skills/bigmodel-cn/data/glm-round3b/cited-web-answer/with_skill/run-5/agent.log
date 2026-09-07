@@ -1,0 +1,15 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3b/cited-web-answer/with_skill/run-5/outputs/main.py`，`py_compile` 编译通过；无 Key 时跑 `main.py` 会给出友好提示并以退出码 1 结束（未真实调用 API）。
+
+**实现要点**（依据 SKILL.md → `references/chat.md`、`references/tools.md`，并用 WebFetch 核对了 docs.bigmodel.cn 官方文档）：
+
+- **一条请求搞定**：`POST /paas/v4/chat/completions`，模型 `glm-5.3`，`tools` 里挂 `{"type": "web_search", "web_search": {...}}` 内置联网搜索工具，由平台完成检索并生成回答。
+- **来源必须是接口真实返回的**：脚本从响应体**顶层的 `web_search` 数组**读取来源（每条含 `title`/`link`/`media`/`publish_date`），逐条打印标题和 URL，完全不解析模型正文里的链接。这里有两个 skill 里实测过的静默失效坑，代码里都规避了：
+  1. 必须显式传 `web_search.search_result: true`——不传的话搜索照常执行、答案照常生成，但响应里根本没有 `web_search` 来源数组；
+  2. 搜索引擎选了 `search_pro_quark`——`search_std`/`search_pro` 返回的来源 `link` 恒为空字符串，`quark` 是官方参数表正式列出的引擎且实测每条都带真实链接。代码里还做了 `link` 为空的过滤兜底。
+- 其他细节：`reasoning_effort: "low"`（事实型检索问答，快；glm-5.3 只接受 max/high/low 三档）、`timeout=180`（联网搜索 + 生成耗时较长）、HTTP 非 200 和业务错误（如 1113）都有明确的报错输出、Key 缺失时提示设置 `ZHIPUAI_API_KEY`。
+
+跑法：`ZHIPUAI_API_KEY=你的Key python3 main.py`，输出为「问题 → 回答 → 参考来源（编号 + 标题 + 媒体/日期 + 可点击 URL）」。

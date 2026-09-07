@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录下仅此一个文件）。
+
+## 实现思路
+
+按 SKILL.md 的指引读了 `files-batch.md`、`chat.md`、`models.md`，并用 WebFetch 核对了 docs.bigmodel.cn 的官方 API 参考，流程定为：
+
+1. **上传一次**：`POST /paas/v4/files`（multipart），`purpose=user_data`，拿到 `file_id` 后全程复用，三个问题均以 `{"type":"file","file":{"file_id":...}}` 引用，不再传文件本体
+2. **三轮问答**：`POST /paas/v4/chat/completions`，模型 `glm-5.3-flash`（原生多模态、支持 `file` 类型输入），每题独立请求，答案打印到 stdout
+3. **零本地解析**：只以二进制方式打开文件上传，未用任何 PDF 解析库；仅依赖 `requests` + 标准库，Key 从 `ZHIPUAI_API_KEY` 读取
+
+## 关键的坑（来自技能包的真实 API 验证 + 官方文档确认）
+
+- **`purpose` 必须是 `user_data`**：用 `agent`/`code-interpreter` 上传也能成功，但那个 `file_id` 放进 chat 的 `file` 类型会 100% 报 `1210 文件解析失败`。`user_data` 恰好支持 pdf 格式
+- **`file` 类型结构**：官方 API 参考确认 `{"type":"file","file":{"file_id":...}}`，且 `additionalProperties: false`
+- **`reasoning_effort: "low"`**：glm-5.3-flash 只接受 low/high/max；事实抽取类问题用 low 实测近似不思考，省 token
+- **兼容性**：本机 Python 3.9 的 `pathlib.parents` 不支持切片（3.10 才有），已用 `list(...)` 包一层修掉
+
+## 验证情况
+
+- `python3 -m py_compile` 通过
+- PDF 定位逻辑实测：从 `outputs/` 运行能正确向上逐级找到 `contract.pdf`（也支持脚本同目录、命令行传参三种方式）
+- 无 Key 干跑：输出清晰错误信息、退出码 1、不发起任何网络请求
+- 按你的要求**未调用真实 API**；正式运行时 `python3 main.py` 即可（stdout 会打印 file_id、三个问答及各轮 token 用量）
+
+一个小提醒：上传的文件平台只保留 30 天，「反复问很多轮」如果跨度长，需要重传一次拿新 file_id。

@@ -1,0 +1,16 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round3/cited-web-answer/without_skill/run-3/outputs/main.py`，编译通过，无 Key 时的错误路径也验证正常（按你的要求没有真实调用 API）。
+
+**实现要点**（接口细节均已对照官方文档 `docs.bigmodel.cn` 确认）：
+
+- **调用方式**：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，`Authorization: Bearer $ZHIPUAI_API_KEY`，只用 `requests`，非流式。
+- **联网搜索**：通过 `tools` 传入 `web_search` 工具，`enable: true`、`search_engine: "search_pro"`（官方 schema 标注必填）、`search_result: true`——最后这个参数是关键，它要求接口随响应返回搜索来源详情。
+- **来源可信**：「参考来源」列表直接从响应的 `web_search` 数组原样提取 `title` 和 `link`（外加 `media`/`publish_date` 元信息和 `refer` 角标），零拼接、零生成；模型自己无法注入链接。由于不同版本接口可能把来源放在顶层 `web_search` 或 `choices[0].message.web_search`，脚本两处都检查。
+- **防御性处理**：缺 Key、HTTP 非 200、无回答正文、接口未返回来源这几种情况都会给出明确报错并返回非零退出码。
+- 模型默认 `glm-4.6`（文档确认支持 web_search），可用 `ZHIPUAI_MODEL` 环境变量覆盖。
+
+有 Key 后直接 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可运行：stdout 先打印答案正文，下方列出带角标序号的来源标题和可点击的 URL。
+
+一个说明：本机 Python 3.9 环境跑出了一个 `NotOpenSSLWarning`（LibreSSL 相关的 urllib3 警告），来自系统环境本身，与脚本逻辑无关，不影响运行。

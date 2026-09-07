@@ -1,0 +1,18 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 编译通过，未设 Key 时的报错分支也实测正常（exit 1 + 中文提示；输出里那条 urllib3 警告来自本机 Python 3.9 的 LibreSSL 环境，与脚本无关）。
+
+**实现要点**（均依据 SKILL.md / references 的真实 API 实测结论，并用 WebFetch 对照过 docs.bigmodel.cn 官方文档）：
+
+| 决策 | 原因 |
+| :--- | :--- |
+| `chat/completions` + `tools: [{"type": "web_search", ...}]` | 一体化"检索+生成"，来源由平台注入响应体顶层 `web_search` 数组 |
+| 显式传 `web_search.search_result: true` | 实测不传时搜索照常执行、回答正常，但响应里**没有**来源数组——本任务最致命的静默坑 |
+| 引擎按 `search_pro_quark → search_pro_bing → search_pro_sogou` 依次尝试 | 实测 `search_std`/`search_pro` 返回的来源 `link` **恒为空字符串**，唯独链接拿不到；三个引擎实测均返回非空链接，代码还对"全部引擎都没链接"做了兜底提示 |
+| 来源只读 `data["web_search"]` 字段，过滤空 `link`、按 URL 去重 | 满足"来源必须是接口真实返回、可点击核对"，绝不从模型正文抽链接 |
+| `glm-5.3` + `reasoning_effort: "low"` | 旗舰模型保证答案质量；5.3 在标准端点强制思考，`low` 档实测接近不思考，显著降延迟 |
+| 附带 `search_query` 固定搜索词、`search_recency_filter: "oneYear"` | 防止模型改写搜索词偏题；聚焦近一年结果，贴合"2026 年新发布" |
+
+运行方式：`export ZHIPUAI_API_KEY=你的Key && python3 main.py`。stdout 依次输出问题、模型回答、编号来源列表（每条含标题、媒体/日期和单独一行的 URL，终端可直接点击）；引擎切换等警告走 stderr，不污染 stdout。当前环境无 Key，真实调用未执行——拿到 Key 后即可直接跑通。

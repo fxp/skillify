@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+验证通过：编译 OK、PDF 定位正常（从 outputs/ 向上找到 fixtures/contract.pdf）、缺 Key 时干净退出且不发起任何请求。
+
+## 完成
+
+脚本已保存到 `outputs/main.py`，按 SKILL.md 的指引查了 `files-batch.md`、`chat.md`、`models.md`、`errors-and-limits.md` 四份参考，并抓取官方文档确认了接口细节。
+
+**实现要点**（都来自技能包里经真实 API 验证的结论）：
+
+| 环节 | 做法 |
+| :-- | :-- |
+| 上传 | `POST /paas/v4/files`，**`purpose="user_data"`** —— 这是关键坑：`file` 类型的 `file_id` 只认 `user_data` 上传的文件，用 `agent`/`code-interpreter` 上传虽然能成功，引用时必报 1210「文件解析失败」 |
+| 复用 | 三个问题各自只带 `{"type": "file", "file": {"file_id": ...}}` 几十字节的引用，不重传文件、不 base64 内联；平台侧文件保留 30 天，后续轮次继续复用 |
+| 模型 | `glm-5.3-flash`（原生多模态、支持 `type=file` 输入），`reasoning_effort: "low"`（标准端点强制思考，low 档对字段抽取这类事实问题更快更省 token） |
+| 容错 | 429/5xx/网络瞬断指数退避重试（1s/2s/4s），4xx 直接报错——针对历史 run-1 遇到的 500「网络错误」场景 |
+| 约束 | 仅依赖 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取，本地零 PDF 解析 |
+
+**验证情况**：`python3 -m py_compile` 通过；模拟运行确认能定位到 contract.pdf（脚本同目录 → 当前目录 → 各级祖先含 fixtures 兜底）；按你的要求**没有实际调用 API**（环境无 Key）。参考同 fixture 的历史成功 run，预期输出为：合同编号 `HT-2026-0917-XJ`、总金额 `￥4,870,000.00（肆佰捌拾柒万元整）`、违约金为总金额的 10% 即 `487,000 元`（逾期超 30 日且守约方解除合同时）。

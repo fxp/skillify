@@ -1,0 +1,42 @@
+{
+  "json-extraction/with_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "json-extraction/without_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      0.0,
+      1.0
+    ],
+    "mean": 0.667,
+    "stdev": 0.471
+  },
+  "forced-tool-call/with_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "forced-tool-call/without_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  }
+}

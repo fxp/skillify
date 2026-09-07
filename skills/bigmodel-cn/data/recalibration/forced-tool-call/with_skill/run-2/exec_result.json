@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "您好！先简单说下您的订单：订单 SO20260907001 的无线降噪耳机 Pro 目前运输中，在杭州转运中心，预计 9 月 8 日送达。\n\n关于北京天气，很抱歉我这边无法查询实时天气信息，建议您通过天气类 App 或搜索引擎查看哦。还有什么可以帮您的吗？😊\n",
+  "stderr": "[TOOL] lookup_order called\n",
+  "timed_out": false,
+  "seconds": 8.1
+}

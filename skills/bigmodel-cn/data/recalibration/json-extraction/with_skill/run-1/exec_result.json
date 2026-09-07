@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "共读取 8 条反馈，使用模型 glm-4.6\n[1/8] 张伟：你们的 App 每次打开都要重新登录，太烦了，已经第三次了\n[2/8] 李娜：客服态度很好，但是退款等了 12 天还没到账，急用钱\n[3/8] 王强：功能挺全的，就是搜索有点慢，能优化一下吗\n[4/8] 陈静：昨天下单付了两次钱！！！赶紧退给我，不然投诉\n[5/8] 刘洋：希望能加一个夜间模式，晚上看着太刺眼了\n[6/8] 赵敏：物流信息一直不更新，打客服电话也没人接，订单号 88123\n[7/8] 孙磊：整体还行，就是新版本界面改得有点不习惯，不过能接受\n[8/8] 周芳：账号被盗了，里面还有余额，怎么联系人工客服？在线等\n已写出 8 条结果到 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/recalibration/json-extraction/with_skill/run-1/work/out.json\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 12.5
+}

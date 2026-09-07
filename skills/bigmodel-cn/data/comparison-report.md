@@ -194,6 +194,26 @@ Rounds 1–6 graded code by reading it and probing the API separately. This roun
 
 ---
 
+## Round 8 — recalibration: what survives a fair fight
+
+Rounds 1-6 forbade the baseline from searching the web, scored against assertions the skill's own author wrote, and ran n=1 per cell. Round 8 re-runs two of the biggest claimed wins with all three of those fixed: **both sides may search the web**, grading is **100% by executing the script against the live API** (`recalibration/grade.py`, criteria frozen in `recalibration/PROTOCOL.md` before any run), and **n=3**.
+
+| Scenario | As scored in rounds 2-3 | Recalibrated skill | Recalibrated baseline |
+|---|---|---|---|
+| Guaranteed-schema JSON extraction | 100% vs 40% | 1.000 ± 0.000 | **0.667 ± 0.471** |
+| Force a tool call, every turn | 100% vs 40% | 1.000 ± 0.000 | **1.000 ± 0.000 — tie** |
+
+### Force a tool call — the win does not survive
+All three baselines independently found the `tool_choice`-is-auto-only limitation in the official function-calling docs and implemented the same local-fallback pattern the skill recommends. Executed against the live API with an off-topic message, all six scripts logged the tool call and answered. The original 100% vs 40% was mostly an artifact of forbidding web search, not a knowledge gap.
+
+### JSON extraction — a real gap, but not the one that was claimed
+No baseline fell for `response_format: json_schema`; that fact is also one web search away. The single failure (baseline run-2, reproducible on re-run) came from a different mistake: it never disabled thinking. Measured directly, `glm-4.6` costs 2.8s per request with `thinking: disabled` and 27.7s without (628-957 reasoning tokens) — a ~10x latency difference that blew the 300s budget on 8 records. All three skilled runs disabled it; 2 of 3 baselines did too.
+
+### What this round establishes
+The `100% vs 40%` magnitude does not hold under symmetric conditions. The baseline's stdev of 0.471 on the same configuration — one run scoring 0, two scoring 1.0 — is direct evidence that the earlier n=1 rounds were sampling noise as signal. It does **not** establish significance: 3/3 vs 2/3 is Fisher p = 1.0. Read it as a magnitude correction, not a new claim. Full write-up: `recalibration/RESULTS.md`.
+
+---
+
 ## Documentation fixed along the way
 
 Every audit round tested the skill's own claims against the live API. Seven turned out to be wrong or incomplete — corrected in place, dated, with the exact error text that proved it.
@@ -237,4 +257,4 @@ A live WebSocket session showed `session.created` arriving immediately on connec
 
 ---
 
-Every "win" and "tie" above was checked against `open.bigmodel.cn` with a real API key — rounds 1–5 with a standard key, rounds 6 and 7 with both a standard key and a Coding Plan key (`bigmodel-cn-workspace/coding-plan-probe.py`, `bigmodel-cn-workspace/run_iter7.py`). The OpenAPI spec and the Coding Plan pages each proved incomplete in ways only a live call reveals. Full transcripts, per-assertion grading and (for round 7) captured stdout/stderr of every execution are in `bigmodel-cn-workspace/`.
+**Conditions that were not recorded at the time, and matter:** rounds 1-6 ran n=1 per configuration and the baseline agents were instructed not to search the web. Round 8 shows how much of the measured gap depends on those two choices. Every "win" and "tie" above was checked against `open.bigmodel.cn` with a real API key — rounds 1–5 with a standard key, rounds 6 and 7 with both a standard key and a Coding Plan key (`bigmodel-cn-workspace/coding-plan-probe.py`, `bigmodel-cn-workspace/run_iter7.py`). The OpenAPI spec and the Coding Plan pages each proved incomplete in ways only a live call reveals. Full transcripts, per-assertion grading and (for round 7) captured stdout/stderr of every execution are in `bigmodel-cn-workspace/`.

@@ -1,0 +1,40 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 13.6s :: "
+    },
+    {
+      "text": "out.json 存在且是合法 JSON",
+      "passed": true,
+      "evidence": "parsed=True"
+    },
+    {
+      "text": "顶层是数组且长度为 8",
+      "passed": true,
+      "evidence": "type=list len=8"
+    },
+    {
+      "text": "每条记录的键恰好是 name/issue_type/urgency",
+      "passed": true,
+      "evidence": "8/8 条合格"
+    },
+    {
+      "text": "每条记录 urgency ∈ low|medium|high",
+      "passed": true,
+      "evidence": "8/8 条合格"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  },
+  "extra": {
+    "key_frac": 1.0,
+    "urg_frac": 1.0
+  },
+  "notes": "graded purely by executing the script against the live API"
+}

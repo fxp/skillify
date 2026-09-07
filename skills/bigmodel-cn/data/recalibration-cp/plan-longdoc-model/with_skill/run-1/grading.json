@@ -1,0 +1,26 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 5.5s :: \n---\nmodel=glm-5.3 prompt_tokens=1749 completion_tokens=267 total_tokens=2016\n"
+    },
+    {
+      "text": "stdout 有 ≥50 字摘要且不是报错栈",
+      "passed": true,
+      "evidence": "stdout_len=424"
+    },
+    {
+      "text": "全程未出现 1113",
+      "passed": true,
+      "evidence": "no_1113=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "notes": "graded purely by executing the script with a real Coding Plan key"
+}

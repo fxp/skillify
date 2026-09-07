@@ -1,0 +1,42 @@
+{
+  "plan-1113-fix/with_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "plan-1113-fix/without_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "plan-longdoc-model/with_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "plan-longdoc-model/without_skill": {
+    "runs": 3,
+    "scores": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  }
+}

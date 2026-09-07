@@ -209,8 +209,20 @@ All three baselines independently found the `tool_choice`-is-auto-only limitatio
 ### JSON extraction — a real gap, but not the one that was claimed
 No baseline fell for `response_format: json_schema`; that fact is also one web search away. The single failure (baseline run-2, reproducible on re-run) came from a different mistake: it never disabled thinking. Measured directly, `glm-4.6` costs 2.8s per request with `thinking: disabled` and 27.7s without (628-957 reasoning tokens) — a ~10x latency difference that blew the 300s budget on 8 records. All three skilled runs disabled it; 2 of 3 baselines did too.
 
+### Round 8b — the Coding Plan claims, same treatment
+The two headline Coding Plan scenarios were re-run the same way, with a real plan key injected and no standard key, so a wrong endpoint fails by construction.
+
+| Scenario | As scored in round 6 | Recalibrated skill | Recalibrated baseline |
+|---|---|---|---|
+| Plan key returns 1113, produce a working fix | 100% vs 60% | 1.000 ± 0.000 | **1.000 ± 0.000 — tie** |
+| Long-document summary on plan quota | 100% vs 80% | 1.000 ± 0.000 | **1.000 ± 0.000 — tie** |
+
+All twelve runs scored 3/3 with no `1113` anywhere. Every baseline found `…/api/coding/paas/v4` in the official docs and cited the page; none picked `glm-4-long`, the in-name-only trap for a long-document task, all three choosing `glm-5.3` for its 1M context. One baseline went further than the skill does and flagged that the official terms exclude self-written API integrations from plan quota, shipping a switch back to the standard endpoint.
+
+**A selection bias worth stating:** these scenarios were written the way a user would ask them, deliberately *not* built around the skill's live-probe findings that the docs omit — that a standard key also works on the coding endpoint, that `glm-4.6`/`glm-4.5-air` are silently rerouted, that `thinking: disabled` is rejected on one endpoint and honored on the other, that `1113` has three distinct causes. A scenario built on those would almost certainly favor the skill, and would also be a scenario chosen because the answer was already known. That knowledge is untested here, and these ties do not refute it.
+
 ### What this round establishes
-The `100% vs 40%` magnitude does not hold under symmetric conditions. The baseline's stdev of 0.471 on the same configuration — one run scoring 0, two scoring 1.0 — is direct evidence that the earlier n=1 rounds were sampling noise as signal. It does **not** establish significance: 3/3 vs 2/3 is Fisher p = 1.0. Read it as a magnitude correction, not a new claim. Full write-up: `recalibration/RESULTS.md`.
+Across all four recalibrated scenarios — 24 executions — the skilled side scored 12/12 and the baseline 11/12; three of the four are outright ties. The `100% vs 40%` magnitude does not hold under symmetric conditions. The baseline's stdev of 0.471 on the same configuration — one run scoring 0, two scoring 1.0 — is direct evidence that the earlier n=1 rounds were sampling noise as signal. It does **not** establish significance: 3/3 vs 2/3 is Fisher p = 1.0. Read it as a magnitude correction, not a new claim. Full write-up: `recalibration/RESULTS.md` and `recalibration-cp/RESULTS.md`.
 
 ---
 

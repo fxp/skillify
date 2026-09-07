@@ -4,6 +4,17 @@
 
 25 coding tasks, 18 run twice and 7 run three times per configuration — once with an agent that read the `bigmodel-cn` skill, once with an agent working from general knowledge only — then graded against the real `open.bigmodel.cn` API, not against assumptions. Round 7 goes one step further: every generated script was actually executed with a real Coding Plan key, and only a script that ran and printed a model answer counts as a success. Round 6 (GLM Coding Plan) was graded first from the official docs and then re-verified live with a real Coding Plan key and a real standard key; every assertion held, and the probe turned up three undocumented behaviours (below).
 
+**Which agent ran the tasks, and which model the generated code called, are two different things** — an easy confusion to make, so it is spelled out here. All 164 runs are logged under `bigmodel-cn-workspace/`; only round 9's `grading.json` files carry an `executor` field, the earlier rounds were not annotated at the time.
+
+| Rounds | Runs | Executing agent | Model the generated code calls |
+|---|---|---|---|
+| 1–5 | 28 | Claude (Fable 5.1) | `glm-5.3` / `glm-5.2` and others per scenario |
+| 6–7 | 50 | Claude (Fable 5.1) | `glm-5.3` / `glm-5.3-flash` |
+| 8, 8b (recalibration) | 24 | Claude (Opus 5) | `glm-5.3` and the Coding Plan endpoints |
+| **9** | **62** | **GLM-5.3** (Claude Code CLI as harness only) | `glm-5.x`, Batch, files, web search |
+
+So **the three statistically significant results all come from round 9, where GLM-5.3 was the executing agent**; everything before it was executed by a Claude model and should be read as such. The executor changed mid-audit, which is itself a confound flagged in round 8.
+
 | Metric | Value |
 |---|---|
 | Scenarios tested, across 7 rounds | 25 |
@@ -42,7 +53,7 @@ Chat completion, image→video, an OpenAI-SDK migration. Common enough patterns 
 
 Four tasks built around behavior verified against the live API first, then handed to both agents as an ordinary feature request — nothing in the prompt hints at the trap.
 
-**Model:** `glm-5.3` · 4 scenarios
+**Model under test:** `glm-5.3` · **Executing agent:** Claude (Fable 5.1) · 4 scenarios
 
 | Scenario | Result | Skill | Baseline |
 |---|---|---|---|
@@ -73,7 +84,7 @@ Four tasks built around behavior verified against the live API first, then hande
 
 Re-run to separate model-specific quirks from platform-wide ones. Two stayed broken, two flipped to a tie for two different, equally honest reasons.
 
-**Model:** `glm-5.2` · 4 scenarios
+**Model under test:** `glm-5.2` · **Executing agent:** Claude (Fable 5.1) · 4 scenarios
 
 | Scenario | Result | Skill | Baseline |
 |---|---|---|---|
@@ -137,7 +148,7 @@ A capability OpenAI's API has no equivalent for at all — nothing to pattern-ma
 
 Zhipu sells a subscription product, the GLM Coding Plan, that runs on **a different API key and a different base URL** from the pay-as-you-go API: `…/api/coding/paas/v4` instead of `…/api/paas/v4`, keys created on the plan page instead of the console, only `glm-5.3` / `glm-5.3-flash`, chat only. The skill previously said nothing about it. Four tasks were written the way real users phrase them — nobody says "which billing system am I on".
 
-**Model:** `glm-5.3` · 4 scenarios · baseline 71%, skill 100%
+**Model under test:** `glm-5.3` · **Executing agent:** Claude (Fable 5.1) · 4 scenarios · baseline 71%, skill 100%
 
 | Scenario | Result | Skill | Baseline |
 |---|---|---|---|
@@ -168,7 +179,7 @@ Zhipu sells a subscription product, the GLM Coding Plan, that runs on **a differ
 
 Rounds 1–6 graded code by reading it and probing the API separately. This round removes the reader: each agent had to write a `main.py` (or a `settings.json`), and the harness `bigmodel-cn-workspace/run_iter7.py` executed it with a real Coding Plan key exported and nothing else. Success means exit 0 plus a printed model answer; for the Claude Code config it means a live `/v1/messages` call succeeds for every model alias the config maps. Seven scenarios, three independent runs per side, 42 executions.
 
-**Model:** `glm-5.3` / `glm-5.3-flash` · 7 scenarios × 3 runs · **skill 21/21, baseline 21/21 — tie**
+**Model under test:** `glm-5.3` / `glm-5.3-flash` · **Executing agent:** Claude (Fable 5.1) · 7 scenarios × 3 runs · **skill 21/21, baseline 21/21 — tie**
 
 | Scenario | Result | Skill | Baseline |
 |---|---|---|---|

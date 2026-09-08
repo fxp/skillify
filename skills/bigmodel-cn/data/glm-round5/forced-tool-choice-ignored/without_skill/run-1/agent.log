@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过。
+
+## 设计要点
+
+**关键发现（决定整体架构）**：官方文档明确 `tool_choice` **仅支持 `"auto"`**——不支持 `"required"`，也不支持指定函数的对象形式。也就是说"必须先调工具"无法靠服务端参数强制，本脚本的对应处理是把这个约束在客户端兜底：
+
+1. **第一阶段（必须成功）**：带 `create_ticket` 工具定义（两个字段 `category`/`summary`，均 required）调用模型，system 提示写明"拿到工单前禁止回复用户"。收到响应后严格校验 `choices[0].message.tool_calls` 里是否真有 `create_ticket` 调用、`arguments`（JSON 字符串）能否解析、两字段是否非空。
+2. **跑偏纠正**：模型若无视约束直接回文本（即 forced tool choice 被忽略的场景），把跑偏输出记入上下文并明确纠正重试，最多 3 轮。
+3. **硬失败**：重试耗尽仍拿不到工单 → 抛 `TicketError`，stderr 明确报错、退出码 1，**不生成任何用户回复**（不会退化为一句安慰话）。
+4. **第二阶段**：工单到手后，按官方多轮格式回传 `{"role": "tool", "tool_call_id": ..., "content": ...}`（附本地生成的工单号），且**不传 tools**，让模型只能输出文本，生成最终回复。
+
+其余：Key 从 `ZHIPUAI_API_KEY` 读取（缺失时第一件事就报错）、仅依赖 `requests`、60s 超时、非 200 响应体截断后透传。
+
+## 已验证
+
+- 编译通过；解析逻辑离线自测 4 例全过（正常工具调用、只有文本无调用、字段为空、arguments 非法 JSON）
+- 缺 Key 运行：退出码 1，输出 `[错误] 工单生成失败：环境变量 ZHIPUAI_API_KEY 未设置...`
+- 真实 API 调用按你的要求未执行（环境无 Key）

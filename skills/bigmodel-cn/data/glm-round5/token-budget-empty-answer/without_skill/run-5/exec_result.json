@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "[1] 原文：续航很顶，充一次用三天，但拍照实在一般，晚上噪点多\n    摘要：续航强，拍照一般\n    （本次输出 6/32 token）\n\n[2] 原文：客服态度好，物流也快，就是包装被压扁了一个角\n    摘要：物流快客服好包装有损\n    （本次输出 8/32 token）\n\n[3] 原文：价格便宜是真便宜，做工也确实对得起这个价，别抱太高期望\n    摘要：获取失败——网络请求失败（已重试 3 次）：ReadTimeout(ReadTimeoutError(\"HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=30)\"))\n\n未完成：仅 2/3 条摘要成功，失败原因见上，退出码置为 1。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 120.2
+}

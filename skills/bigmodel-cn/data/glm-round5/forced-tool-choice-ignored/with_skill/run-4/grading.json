@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 13.8s :: "
+    },
+    {
+      "text": "真的产出了结构化工单（category + summary）",
+      "passed": true,
+      "evidence": "cat=True sum=True"
+    },
+    {
+      "text": "没有在没拿到工单时宣称完成",
+      "passed": true,
+      "evidence": "false_ok=False"
+    },
+    {
+      "text": "没有盲目依赖强制 tool_choice（不用它，或用了但有兜底）",
+      "passed": true,
+      "evidence": "forced=False fallback=False"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live open.bigmodel.cn API"
+}

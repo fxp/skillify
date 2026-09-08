@@ -8,7 +8,7 @@
 
 | # | Skill | 覆盖范围 | 状态 |
 | :-- | :-- | :-- | :-- |
-| 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层、**GLM Coding Plan 编程套餐**（专用 Key / Base URL / 可用模型 / 1113 排错 / Claude Code 配置） | ✅ 已生成，基准由 **GLM-5.3 执行**：**8 个场景 / 82 次真实执行的对照运行**，其中 **4 个统计显著**（p = .008/.048/.048/.048），15 处文档错误已修正；含 GLM Coding Plan 编程套餐 |
+| 1 | [`bigmodel-cn`](skills/bigmodel-cn) | [智谱AI开放平台](https://bigmodel.cn)（`open.bigmodel.cn`）—— GLM 系列对话/多模态模型、图像与视频生成、语音识别合成、Embeddings/Rerank、联网搜索、文件与批处理、托管知识库、Agents API、GLM-Realtime、OpenAI/Claude/LangChain 兼容层、**GLM Coding Plan 编程套餐**（专用 Key / Base URL / 可用模型 / 1113 排错 / Claude Code 配置） | ✅ 已生成，基准由 **GLM-5.3 执行**：**12 个场景 / 122 次真实执行的对照运行**，其中 **4 个统计显著**（p = .008/.048/.048/.048），7 个打平、1 个领先但不显著，合并满分率 skill 54/56 vs baseline 35/56（p = 9×10⁻⁶），15 处文档错误已修正；含 GLM Coding Plan 编程套餐 |
 | 2 | [`autodl`](skills/autodl) | [AutoDL 文档](http://www.autodl.com/docs/) —— GPU 算力租用平台的账户/容器实例/弹性部署 API | ✅ 账户 + 容器实例 Pro API 全部接口、弹性部署全部只读接口已用真实 Token 验证；对照评测以 **GLM-5.3 为执行 Agent**：3 场景 / 30 次运行，1 个统计显著（p=0.008，5/5 vs 0/5），全部只读接口零费用；⚠️ 弹性部署创建/管理类接口仍未验证（测试账号没有企业认证，这是账号资质的硬性限制，不是没测） |
 | 3 | [`volcengine-ark`](skills/volcengine-ark) | [火山引擎·火山方舟](https://www.volcengine.com/docs/82379)（`ark.cn-beijing.volces.com`）—— 豆包 Doubao / Seed / Seedream / Seedance 及方舟上的 GLM、Kimi、DeepSeek、MiniMax；Chat Completions、Responses API、多模态理解、图片与视频生成、向量化、语音、批量推理、内置工具、管控面 AK/SK 接口，**以及三套互不通用的入口**：标准后付费 API、**Coding Plan** 与 **Agent Plan** 两种订阅套餐（各自的 Base URL / Key / model 名格式 / 计费单位都不同） | ✅ 已生成，Agent Plan 入口用真实专属 Key 探针实测约 45 次调用，8 处文档 / SDK 错误已修正；对照评测以 **GLM-5.3 为执行 Agent**：3 场景 / 30 次运行，**0 个达到统计显著**（技能在 2 个场景领先但 n=5 不够，1 个场景是出题失误，已如实记录）；⚠️ 标准 `/api/v3` 与 Coding Plan 套餐内行为未实测（测试账号只有 Agent Plan，没有标准 Key、未订阅 Coding Plan） |
 
@@ -18,8 +18,8 @@
 
 **bigmodel-cn**（执行 Agent 全部为 **GLM-5.3**，判分 100% 由脚本真实调用 `open.bigmodel.cn` 决定，不是靠代码审查猜测）：
 
-- **8 个场景 / 82 次运行**，n=3~5，两侧都能联网查文档，唯一差异是有没有读技能包。判分标准在开跑前冻结于各轮 `PROTOCOL.md`。
-- **4 个场景统计显著**（Fisher 双尾 p < 0.05），**4 个打平**。四个区分场景合并 **skill 18/20 vs baseline 1/20，p = 5.8×10⁻⁸**。
+- **12 个场景 / 122 次运行**，n=3~5，两侧都能联网查文档，唯一差异是有没有读技能包。判分标准在开跑前冻结于各轮 `PROTOCOL.md`。
+- **4 个场景统计显著**（Fisher 双尾 p < 0.05），**7 个打平、1 个领先但不显著**。四个区分场景合并 **skill 18/20 vs baseline 1/20，p = 5.8×10⁻⁸**。
 - 打平的 5 个如实记录，不为了好看去挑场景——它们同时也划出了技能的价值边界：**响亮报错 + 常识可解**的坑（embeddings 64 条上限、Coding Plan 的 `1113` 换端点）必然打平。
 
 详见 [`skills/bigmodel-cn/data/comparison-report.md`](skills/bigmodel-cn/data/comparison-report.md)；实测脚本在 [`coding-plan-probe.py`](skills/bigmodel-cn/data/coding-plan-probe.py) 与 [`kb-probe.py`](skills/bigmodel-cn/data/kb-probe.py)。
@@ -65,13 +65,15 @@
 | Batch 流水线（未加模型约束） | 1.000 | 1.000 | 3/3 vs 3/3 | 打平 |
 | PDF 合同抽取（未加复用约束） | 1.000 | 1.000 | 3/3 vs 3/3 | 打平 |
 
+第五轮专门挑了 4 个 HTTP 200 的静默失败扩证，**零显著**——因为它们的正确答案官方文档里查得到。**「静默」是必要条件，不充分；决定胜负的是「文档查不到或文档写反了」。** 这一轮把画像从 4/8 稀释到 4/12，但也让它更准确。
+
 另有一个场景 `kb-upload-readiness` 已从基准中剔除——测试账号的知识库向量化间歇性失败，两侧同分，测出来的是账号状态而不是技能差异（原始记录保留，不计入统计）。
 
 反例值得一并记录：embeddings 单次 64 条上限会**响亮报错**，而"分批"是任何工程师的默认习惯——这类"响亮且符合常识"的坑没有区分度。Coding Plan 的 `1113` 同理，虽然文案误导，但它响亮，两边都能靠试错跑通。
 
 **引用场景第一次跑出来 skill 反而更低（0.600 vs 0.667）**，排查后发现根因是**说明书自己写错了一条建议**：它推荐的 `search_pro` 引擎返回的来源 `link` 恒为空字符串，只有 `search_pro_bing` / `_jina` / `_quark` / `_sogou` 带真实链接（后两个官方参数表里根本没列）。skill 版是**因为忠实执行说明书而失败的**。改掉后重测，引擎选择完全分离。**写错的说明书比没有更糟——它让 Agent 稳定地做错同一件事。**
 
-期间修掉了**四个评分器自身的 bug**：用字符串匹配把注释里"不使用 PyPDF2"判成违规；把成功的 batch id `batch_2096812104876032000` 里的子串 `81210` 当成错误码；把"检出异常后以非零退出码报警"这个正确行为按"退出码必须为 0"扣分；用某一刻的全局真值去判每一次运行（而知识库向量化是间歇性的）。纯执行判分比断言判分客观，但**评分器本身同样需要被审查**——后两个 bug 修正后，异步场景的 skill 均值从 0.667 变成 1.000。
+期间修掉了**九个评分器自身的 bug**（其中 6 个把正确行为判成了失败）：用字符串匹配把注释里"不使用 PyPDF2"判成违规；把成功的 batch id `batch_2096812104876032000` 里的子串 `81210` 当成错误码；把"检出异常后以非零退出码报警"这个正确行为按"退出码必须为 0"扣分；用某一刻的全局真值去判每一次运行（而知识库向量化是间歇性的）。纯执行判分比断言判分客观，但**评分器本身同样需要被审查**——后两个 bug 修正后，异步场景的 skill 均值从 0.667 变成 1.000。
 
 原始运行记录在 `skills/bigmodel-cn/data/glm-round*/`，含每次运行的 `outputs/main.py`、真实 stdout/stderr 与逐条判分。
 

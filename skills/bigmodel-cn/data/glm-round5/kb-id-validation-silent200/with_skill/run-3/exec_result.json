@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "== 智谱托管知识库 ID 上线前校验 ==\n待校验知识库 ID：999999999999999999\n校验方式：GET https://open.bigmodel.cn/api/llm-application/open/knowledge/999999999999999999（知识库详情接口）\n[FAIL] 校验结论：不通过 —— 知识库 ID 无效（平台返回 code=100013）\n        平台消息：知识库不存在。（例如 100013 表示「知识库不存在」；鉴权/参数类错误也会走业务码）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 1.9
+}

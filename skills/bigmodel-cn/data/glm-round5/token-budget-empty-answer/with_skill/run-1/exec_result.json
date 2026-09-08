@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "[1] 评论: 续航很顶，充一次用三天，但拍照实在一般，晚上噪点多\n    摘要: 续航强但拍照一般\n    （finish_reason=stop, 输出 5/32 token（含思考 0））\n\n[2] 评论: 客服态度好，物流也快，就是包装被压扁了一个角\n    摘要: 客服物流好但包装压角\n    （finish_reason=stop, 输出 7/32 token（含思考 0））\n\n[3] 评论: 价格便宜是真便宜，做工也确实对得起这个价，别抱太高期望\n    摘要: 价格便宜，做工一般别期望太高\n    （finish_reason=stop, 输出 8/32 token（含思考 0））\n\n结束：3/3 条摘要全部成功获取，每条输出 token 均未超过 32。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 7.8
+}

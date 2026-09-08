@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 11.4s :: [1/3] 这家店服务太差了，再也不来了\n[2/3] 东西还行吧，没什么特别的\n[3/3] 太惊喜了，比我预期好太多，强烈推荐\n"
+    },
+    {
+      "text": "拿到 3 条严格符合 schema 的结果",
+      "passed": true,
+      "evidence": "valid_objs=3"
+    },
+    {
+      "text": "脚本自己做了结构校验或兜底",
+      "passed": true,
+      "evidence": "validated=True"
+    },
+    {
+      "text": "没有把不合规输出当成功",
+      "passed": true,
+      "evidence": "failed_claim=False"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live open.bigmodel.cn API"
+}

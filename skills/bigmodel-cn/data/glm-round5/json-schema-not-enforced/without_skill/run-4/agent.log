@@ -1,0 +1,31 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过（未实际调用 API）。
+
+**接口细节（已从官方文档确认）**
+- Endpoint：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`
+- 认证：`Authorization: Bearer $ZHIPUAI_API_KEY`
+- 响应内容在 `choices[0].message.content`
+- 官方的 `response_format: {"type": "json_object"}` 只保证“是个 JSON”，**并不校验字段结构**，所以不能只靠它
+
+**针对“入库不能有脏数据”做的防护**
+1. **严格本地校验**（`normalize_record`）：`sentiment` 必须映射到 正面/负面/中性 之一（常见同义写法如“积极”/`positive` 会归一化，其余一律判非法）；`score` 必须是数字（排除布尔、字符串里的百分数、NaN/inf）且落在 `[0, 1]`，输出前统一 `round(,4)`
+2. **容忍解析**（`extract_json_object`）：自动剥掉 ```` ```json ```` 围栏、从杂文字中截取 `{...}` 再解析
+3. **失败重试**：单条最多 3 次、指数退避；429/5xx/网络错误/校验失败都重试，401/403（Key 无效）立即报错
+4. **all-or-nothing 输出**：3 条全部成功才打印，避免部分结果先入库；最终失败则退出码 1，stderr 给出原因——宁可报错也不产出不合规格的数据
+
+**使用**
+```bash
+export ZHIPUAI_API_KEY=<你的Key>
+python3 main.py
+```
+stdout 逐行输出（JSON Lines，顺序与输入一致）：
+```
+{"sentiment": "负面", "score": 0.95}
+{"sentiment": "中性", "score": 0.8}
+{"sentiment": "正面", "score": 0.97}
+```
+（score 为示意，实际值由模型给出）
+
+其他说明：默认模型 `glm-4.5-flash`，可用环境变量 `GLM_MODEL` 换成 `glm-5.3` 等；每条结果的 JSON 只含 `sentiment`、`score` 两个字段，模型就算多吐了字段也会被剥掉，不会带进库里。

@@ -1,0 +1,22 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/forced-tool-choice-ignored/with_skill/run-3/outputs/main.py`，`py_compile` 编译通过，无 Key 时正确报错退出（exit 1，未发起任何 API 调用；那行 urllib3 警告来自本机 Python 3.9/LibreSSL 环境，与脚本无关）。
+
+## 核心设计决策
+
+这个任务的关键陷阱在「**必须**先出工单」。直觉做法是用 Function Calling 定义 `create_ticket` 工具并强制指定，但技能包和官方文档都确认：**`tool_choice` 目前仅支持 `"auto"`**，OpenAI 风格的强制指定写法会被静默当成 `auto`，模型可能直接跳过工具调用——工单就漏了。所以脚本改用技能包推荐的模式：**在代码里无条件先完成建单这一步**：
+
+1. **第一步（无条件执行）**：独立的 JSON 模式请求（`response_format: {"type":"json_object"}`，平台不支持 `json_schema`）生成工单。system prompt 里写明字段结构，`do_sample: false` 走贪心解码求稳定
+2. **客户端强校验 + 重试**：`json.loads`（容忍 ```` ```json ```` 包裹噪声）→ 校验 `category`/`summary` 均为非空字符串 → 归一化为恰好两个字段；失败最多重试 3 次
+3. **拿不到工单就硬报错**：重试耗尽时打印明确错误、exit 2，**不生成任何用户回复**，杜绝“只回一句安慰话就算处理完”
+4. **第二步**：工单校验通过后，把工单 JSON 作为上下文喂给模型，生成有同理心的客服回复（确认建单、引导提供订单号，不编造政策细节）
+
+## 其他要点
+
+- Key 从 `ZHIPUAI_API_KEY` 环境变量读取，缺失时报错并附控制台取 Key 地址；只用 `requests`，带 120s 超时
+- 模型 `glm-5.3`，`reasoning_effort: "low"`——它在标准端点强制思考（传 `disabled` 会报 1210），分类/摘要是轻量任务，用最低档省时延
+- 错误处理区分退出码：`1` 缺 Key、`2` 工单失败（业务硬失败）、`3` 工单成功但回复生成失败（此时工单已打印，下游仍可用）
+- 工单分类带受控词表（退货退款/商品质量等），返回词表外的分类时打 stderr 告警但不判失败——硬失败只留给真正必需的「两个字段缺失」
+
+Sources: [工具调用 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/capabilities/function-calling)、[结构化输出 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/capabilities/struct-output)

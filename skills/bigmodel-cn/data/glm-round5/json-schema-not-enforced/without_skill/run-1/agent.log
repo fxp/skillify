@@ -1,0 +1,37 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，验证均通过。
+
+## 实现要点
+
+**接口细节（已抓取官方文档 docs.bigmodel.cn 确认）：**
+- Endpoint：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`
+- 鉴权：`Authorization: Bearer <APIKey>`（v4 接口直接用原始 Key，无需自己签 JWT）
+- 结果取自 `choices[0].message.content`
+- 默认模型 `glm-5.3`（文档当前旗舰），可用环境变量 `GLM_MODEL` 覆盖
+
+**关键设计——保证输出严格合规：**
+智谱的 `response_format: {"type": "json_object"}` 只保证“是合法 JSON”，**不校验具体字段和取值**（这正是这个场景的坑）。所以脚本没有指望模型自觉，而是在 `parse_result()` 里做本地强校验：
+- 截取首个 `{` 到末个 `}` 再解析，容忍代码块围栏/前后缀
+- 字段必须**恰好**是 `sentiment` + `score`（多字段、缺字段都拒）
+- `sentiment` 必须严格是 `"正面"/"负面"/"中性"` 三选一（`"积极"` 之类的同义词也拒）
+- `score` 收敛为 `[0,1]` 内的浮点数并保留 4 位小数（拒绝 bool、乱字符串，容忍 `"0.9"` 这类字符串数字）
+- 不合规自动重试（最多 4 次、线性退避）；**全部文本都成功才输出**，任何一条失败则整体退出码 1、不打印任何部分结果——宁可失败也不让错位的脏数据进库
+
+**验证情况**（未调用真实 API）：
+- `python3 -m py_compile` 通过（环境 Python 3.9）
+- 17 项离线测试全过：各种脏输出形态（围栏、前后缀、多余/缺失字段、非法 sentiment、bool/乱字符串 score、越界收敛）+ mock 网络后的端到端输出格式
+- 缺 Key 时报错退出码 1（已实跑确认）
+
+**运行方式：**
+```bash
+export ZHIPUAI_API_KEY="你的APIKey"
+python3 main.py
+# stdout 每行一个 JSON，行序与输入一致：
+# {"sentiment": "负面", "score": 0.98}
+# {"sentiment": "中性", "score": 0.72}
+# {"sentiment": "正面", "score": 0.95}
+```
+
+（运行时终端里那条 `NotOpenSSLWarning` 是本机 urllib3/LibreSSL 的环境警告，与脚本无关。）

@@ -1,0 +1,22 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+验证通过（那条 urllib3 警告来自本机 Python 3.9 + LibreSSL 环境，与脚本无关）。交付完成，脚本已保存到 `outputs/main.py`。
+
+## 交付说明
+
+**文件**：`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/kb-id-validation-silent200/with_skill/run-4/outputs/main.py`（仅此一个文件）
+
+**校验逻辑（两道检查，全过才算 PASS）**
+1. **知识库详情** `GET /llm-application/open/knowledge/{id}` — 存在性的权威判据，成功后还核对 `data.id` 与待校验 ID 严格一致（防数据不自洽），并打印名称/文档数/字数等信息；
+2. **文档列表** `GET /llm-application/open/document?knowledge_id=...` — 确认知识库“能用”而不只是“存在”。
+
+**针对本场景核心坑的处理**：这族 `/llm-application/open/*` 接口出错时 **HTTP 状态码依然是 200**，查不存在的知识库返回 `HTTP 200 + {"code":100013,"message":"知识库不存在"}`（技能包实测 + 官方 API 参考均已确认）。所以脚本**完全不用 `raise_for_status()` 当判据**，而是判定响应体 `code == 200`，任何非 200 的业务码（含 100013）直接 FAIL。
+
+**fail-closed 设计**（宁可误报无效，绝不放坏 ID）——以下情况全部判无效：环境变量缺失/含空白、网络错误与超时（重试 3 次退避后仍失败）、HTTP 非 200、429/5xx 耗尽重试、响应体非法 JSON 或非对象、业务码非 200、`data` 缺失、`data.id` 不一致、以及任何未预期异常的兜底捕获。空知识库（`document_size=0`）ID 本身有效，打印醒目警告但不阻断。
+
+**流水线集成**：退出码 `0`=PASS / `1`=FAIL / `2`=配置错误（非零即卡点）；结论行明确打印 `校验结论：有效（PASS）` 或 `校验结论：无效（FAIL）`；API Key 打码输出，不进日志。
+
+**已验证**：`python3 -m py_compile` 编译通过；无网络的两条失败路径实测均正确输出 FAIL 结论并以退出码 2 结束。线上校验路径因当前无可用 Key 未实测（按你的要求未发起真实 API 调用），逻辑依据为技能包 `references/agents-assistant-knowledge.md` 的实测记录和官方文档确认的响应结构。
+
+Sources: [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)、[智谱 BigModel 平台](https://bigmodel.cn/)

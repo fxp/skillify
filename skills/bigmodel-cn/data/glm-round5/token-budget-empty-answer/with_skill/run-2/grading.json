@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 65.3s :: "
+    },
+    {
+      "text": "三条摘要都拿到了非空文本",
+      "passed": true,
+      "evidence": "rich_lines=7"
+    },
+    {
+      "text": "没有把空回答当成完成",
+      "passed": true,
+      "evidence": "truncated=False got3=True"
+    },
+    {
+      "text": "脚本检查了 finish_reason",
+      "passed": true,
+      "evidence": "checks=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live open.bigmodel.cn API"
+}

@@ -1,0 +1,16 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已保存到 `outputs/main.py`，编译通过；无 Key 环境下实际运行验证了失败路径——明确报错"ZHIPUAI_API_KEY 未设置"并以退出码 1 结束，不会假装成功（那条 urllib3 警告来自本机 Python 3.9 的环境，与脚本无关）。
+
+## 设计要点
+
+这个任务的核心风险是**"32 token 预算 + 强制思考模型 = 空摘要"**：如果直接用 `glm-5.3`，它在标准端点会强制开启深度思考（传 `thinking.type=disabled` 会报 1210，官方文档已确认），`max_tokens=32` 的额度会先被思维链耗尽，`message.content` 返回空字符串、`finish_reason=length`——表面上调用成功，实际拿不到任何文本。
+
+针对这个坑做了三层防御：
+
+1. **选型避开坑源**：用 `glm-4.5-flash`——免费模型（"评论量很大成本压住"直接归零），且属 GLM-4.5 系列、支持显式传 `thinking: {"type": "disabled"}` 彻底关掉思考，让 32 个 token 全部留给摘要正文。
+2. **预算可行性有依据**：官方换算 1 token ≈ 1.5 个中文字符，32 token ≈ 48 字；system 提示词要求摘要 ≤ 20 字并直接输出正文（无引号/前后缀），留足余量。
+3. **拿不到就明说原因**：每次调用后校验正文非空。为空时按 `finish_reason` 给出人话诊断（`length` = 预算被思考耗尽、`sensitive` = 内容安全拦截等），附带 `completion_tokens` 和 `reasoning_content` 证据；HTTP 错误解析出业务错误码（`1113` 还会附上"套餐 Key 打错端点"的提示）；429/5xx 带指数退避重试，4xx 直接失败不空转。成功时逐条回显 `completion_tokens=N/32`，预算执行情况可核对。任何一条失败，退出码为 1。
+
+另外两点顺手做了成本优化：system 提示词跨请求逐字固定（利于命中平台隐式上下文缓存，输入 token 按约五折计费）；文档里注明了真正上生产时建议改走 Batch API / 异步接口，因为同步接口按并发数限流。

@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/forced-tool-choice-ignored/with_skill/run-1/outputs/main.py`，`py_compile` 编译通过，无 Key 时运行会给出明确提示并以退出码 1 结束。
+
+## 方案要点
+
+**核心设计决策——不依赖 `tool_choice` 强制建单。** 技能包和官方文档交叉确认了两件事：
+
+1. `tool_choice` 仅支持字符串 `"auto"`。传 OpenAI 风格的 `{"type":"function","function":{"name":"create_ticket"}}` 不会报错，但会被**静默当成 `auto`**，模型完全可能对用户消息直接跳过工具调用——“必须先建单”这条硬性要求就失守了。
+2. `response_format` 的 `json_schema` 同样不受支持，会被静默忽略。
+
+所以脚本改用**代码层面的两段式强约束**，把顺序保证从“模型自觉”移到“代码流程”：
+
+- **第一步（无条件先执行）`create_ticket()`**：单独发一个建单请求，`response_format: {"type":"json_object"}` + system prompt 写死字段结构（`category` 限定 5 个分类枚举、`summary` 一句话摘要）。客户端做三层兜底：`json.loads` 失败时正则剥围栏/夹带文字重提取；字段校验（两个键必须是非空字符串，类型不对即失败）；失败重试 3 次。重试用尽仍失败 → 抛 `TicketError`，**打印明确错误、退出码 1，绝不进入回复环节**。
+- **第二步（仅在工单就绪后）`compose_reply()`**：把已校验的工单 JSON 作为上下文喂给模型生成用户回复。
+
+其他细节：
+
+| 项 | 处理方式 |
+| :--- | :--- |
+| 鉴权 | `ZHIPUAI_API_KEY` 环境变量读取，缺失时报错并给出 `export` 提示 |
+| 端点/模型 | `https://open.bigmodel.cn/api/paas/v4/chat/completions`，`glm-5.3` |
+| 思考模式 | glm-5.3 标准端点强制思考（传 `disabled` 报 1210），故用 `reasoning_effort: "low"` 降时延而非关闭 |
+| 健壮性 | HTTP 非 200 时带出平台业务错误码；`finish_reason` 非 `stop` 视为不可信输出；空内容判定 |
+| 依赖 | 仅 `requests` + 标准库（`json`/`os`/`re`/`sys`），可直接 `python3 main.py` |
+
+另外一点说明：即使第二步回复生成失败（比如网络抖动），工单也已经先打印交付了——因为工单才是后续流程的输入，脚本会在报错中明确区分“工单已产出、仅回复失败”这种情况。

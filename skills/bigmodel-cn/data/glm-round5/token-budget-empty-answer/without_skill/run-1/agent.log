@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已完成并保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过；无 Key 环境下运行也验证了守卫逻辑（明确报错、退出码 1，不会假装成功）。按你的要求没有发起真实 API 调用。
+
+## 核心问题：32 token 预算下为什么会拿到空摘要
+
+查官方文档确认了陷阱所在：GLM 混合推理模型的 `thinking` 参数**默认开启**，且**思考 token 计入 `max_tokens`**。如果直接设 `max_tokens: 32`，模型会先把预算烧在思考过程上，返回的 `content` 是空字符串、`finish_reason: "length"`——表面“调用成功”，实际没拿到摘要。这正是你说的“打印空字符串还说完成了”的场景。
+
+## 脚本的应对
+
+- **关闭思考**：请求里显式传 `"thinking": {"type": "disabled"}`，让 32 个 token 全部留给摘要正文；
+- **模型选型**：默认 `glm-4.5-flash`（免费、支持关思考；注意 GLM-5.3 系列无法关闭思考，不适合这个场景），可用环境变量 `ZHIPUAI_MODEL` 覆盖；
+- **摘要先行**：system prompt 要求“只输出一句中文摘要”，用户消息限定 20 字以内，确保 32 token 装得下；
+- **逐条校验、如实报告**：`content` 为空时按 `finish_reason` 区分原因（`length`→思考耗尽预算、`sensitive`→审核拦截等）；非空但被 `length` 截断、`completion_tokens > 32` 超预算，都算失败并说明原因。网络错误/429/5xx 有 3 次退避重试，4xx 和业务错误不重试直接报官方 `error.code/message`；
+- **成本可见**：每条摘要后面附带实际 `completion_tokens/32`，退出码在有任意一条失败时为 1。
+
+只依赖 `requests` + 标准库，`export ZHIPUAI_API_KEY=...` 后 `python3 main.py` 即可运行。唯一未验证的是真实 API 调用（环境无 Key），等你拿 Key 跑一次即可确认端到端效果。
+
+Sources: [智谱对话补全 API 参考](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8) · [核心参数说明](https://docs.bigmodel.cn/cn/guide/start/concept-param) · [GLM-4.5 系列模型文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-4.5)

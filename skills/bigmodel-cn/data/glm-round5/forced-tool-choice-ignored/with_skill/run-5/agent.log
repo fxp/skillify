@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/forced-tool-choice-ignored/with_skill/run-5/outputs/main.py`，`python3 -m py_compile` 通过。
+
+## 关键设计决策（来自技能包 + 官方文档双重确认）
+
+这个任务最核心的坑在于「必须先出工单」这个硬性要求怎么实现：
+
+- **不使用 tools + 强制 `tool_choice`**：智谱的 `tool_choice` 仅支持字符串 `"auto"`（官方 API 文档确认），OpenAI 风格的 `{"type":"function","function":{"name":...}}` 不会报错但会被静默当成 `auto`，模型可能直接跳过工具调用。所以脚本根本不传 `tools`，改为**由代码流程无条件先调用 `create_ticket()`**，工单拿不到就到不了回复那一步。
+- **结构化输出用 `{"type": "json_object"}`**：`json_schema` 不受支持（会被静默忽略），字段结构（`category`/`summary`）写进 system prompt，客户端再做 `json.loads` + 字段校验 + 最多 3 次重试兜底。
+- 模型 `glm-5.3`（标准端点），不传 `thinking`（该端点强制思考，传 `disabled` 会报 1210），用 `reasoning_effort: "low"` 给轻量任务降档。
+
+## 流程与兜底
+
+1. **第 1 步（硬性）** `create_ticket()`：`json_object` 模式抽取工单 → 解析（容忍代码块围栏/前后杂文）→ 校验两字段非空 → 重试耗尽抛 `TicketError`，退出码 1，明确提示「后续流程缺少输入、不发送任何回复」，**绝不降级成一句安慰话**。
+2. **第 2 步** `compose_reply()`：工单是必填入参（双保险：入参非法时也抛 `TicketError` 拒绝回复），把工单 JSON 注入 system prompt 作为上下文生成用户回复；工单在回复前就打印输出，即使回复失败下游也已拿到输入。
+3. API 层错误（鉴权/余额/限流，形如 `{"error":{"code","message"}}`）直接抛出不做重试；缺 `ZHIPUAI_API_KEY` 时退出码 2 并给出获取 Key 的指引。
+
+## 验证情况（未真实调 API，按环境限制）
+
+- `py_compile` 编译通过；
+- 离线单测：JSON 提取/字段校验的各种坏输入（空字段、缺字段、非 dict）都正确抛 `ValueError`；mock HTTP 层验证了「3 次坏输出 → `TicketError`」和「合法工单 → 携带工单上下文生成回复」全链路，并确认请求体不含 `tool_choice`、`response_format` 为 `json_object`；
+- 顺带修掉一个自检发现的真缺陷：`validate_ticket` 直接收到非 dict 时原本会抛 `AttributeError`，现在正确抛可重试的 `ValueError`；
+- 无 Key 环境下实际运行 `python3 main.py`，确认走配置报错分支、退出码 2。
+
+有 Key 时直接 `ZHIPUAI_API_KEY=你的Key python3 main.py` 即可跑通。

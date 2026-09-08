@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 23.7s ::  \\\"```\\\" 结束代码块（等等，提示说“确保始终以 '```' 结束代码块，以指示 JSON 对象的结束”，但随后又说“不要用 Markdown 代码块包裹”。这是一个矛盾。通常，对于 JSON 输出，除非特别要求，否则不使用代码块。然而，提示明确指出：“确保始终以 '```' 结束代码块，以指示 JSON 对象\n"
+    },
+    {
+      "text": "拿到 3 条严格符合 schema 的结果",
+      "passed": false,
+      "evidence": "valid_objs=0"
+    },
+    {
+      "text": "脚本自己做了结构校验或兜底",
+      "passed": true,
+      "evidence": "validated=True"
+    },
+    {
+      "text": "没有把不合规输出当成功",
+      "passed": true,
+      "evidence": "failed_claim=False"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "executor": "glm-5.3",
+  "notes": "graded purely by executing the script against the live open.bigmodel.cn API"
+}

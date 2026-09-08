@@ -1,0 +1,34 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 方案说明
+
+**校验接口**：`GET https://open.bigmodel.cn/api/llm-application/open/knowledge/{id}`（知识库详情），Bearer 鉴权——路径、响应结构经官方文档（docs.bigmodel.cn）与技能包双重核实一致。
+
+**核心设计：防住 "silent 200" 陷阱**
+
+技能包里有一条真实调用验证过的警告（也与本任务目录名 `kb-id-validation-silent200` 对应）：`/llm-application/open/*` 这族接口出错时 **HTTP 状态码依然是 200**，查不存在的知识库返回 `HTTP 200 + {"code":100013,"message":"知识库不存在"}`。所以 `raise_for_status()` 在这里完全失效，脚本改为四层判定，**全部通过才判有效**：
+
+1. HTTP 状态码必须是 200
+2. 响应体必须是 JSON 对象且含 `code` 字段
+3. 响应体 `code == 200`（业务错误如 100013 → 直接判无效）
+4. `data.id` 必须与 `ZHIPU_KB_ID` **逐字符一致**（防返回错库）
+
+**“宁误报无效、不放过坏 ID”的落实**：
+
+| 情况 | 结论 | 退出码 |
+|---|---|---|
+| 四层全过 | `有效` | 0（唯一放行条件） |
+| 知识库不存在 / 鉴权失败 / 业务错误 / ID 不匹配 / 环境变量缺失 | `无效，禁止上线` | 1 |
+| 网络超时 / 5xx / 响应非 JSON / 结构异常 | `无法确认，按无效处理，禁止上线` | 2 |
+
+- 重试仅针对瞬时故障（网络异常、5xx、429，最多 3 次退避重试），业务错误响应绝不重试、绝不解释成通过
+- KB ID 做 URL 编码，防止特殊字符篡改请求路径
+- 最后一行固定输出 `校验结论：…`，方便流水线日志抓取；不回显 API Key
+- 附加提示：ID 有效但 `document_size=0` 时打印警告（空库检索必然为空，但这属于人工确认项而非 ID 无效，故不阻断）
+
+**验证情况**：`python3 -m py_compile` 通过；无环境变量冒烟测试正确打印 `校验结论：无效 —— 环境变量 ZHIPUAI_API_KEY 未设置或为空` 并以退出码 1 结束（此路径不发起任何网络请求）。按你的要求未真实调用 API。
+
+参考来源：[知识库详情 API - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)、[知识库 API FAQ](https://docs.bigmodel.cn/cn/faq/knowledge-base)

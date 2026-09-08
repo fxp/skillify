@@ -1,0 +1,43 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，全部验证通过。
+
+## 交付内容
+
+`main.py`（约 230 行，仅依赖 `requests`），运行方式：
+
+```bash
+export ZHIPUAI_API_KEY=你的Key
+python3 main.py
+```
+
+stdout 每行一个严格结构的 JSON，与输入文本顺序一一对应，可直接入库：
+
+```
+{"sentiment": "负面", "score": 0.93}
+{"sentiment": "中性", "score": 0.88}
+{"sentiment": "正面", "score": 0.97}
+```
+
+（原文与结果的对照打到 stderr，不污染 stdout。）
+
+## 关键设计：为什么不直接信模型输出
+
+查官方文档确认了两个事实：端点为 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，API Key 直接作 `Bearer` 鉴权；但 **`response_format` 只支持 `json_object`，没有 `json_schema`** —— 它只保证"输出是合法 JSON"，不保证字段名和取值。所以 schema 约束全部由代码兜底：
+
+1. **请求侧**：`response_format: json_object` + system 提示写死结构，`temperature 0.1`、`max_tokens 1024`
+2. **解析侧**：容忍 ``` 围栏、前后杂文字、截取 `{...}` 子串三级兜底
+3. **校验侧**：`sentiment` 必须精确等于 正面/负面/中性；`score` 必须是数字（拒绝布尔、拒绝 `85` 这种百分比、数字字符串可转），且在 [0,1] 内
+4. **不合格就带着原因反馈重试**（最多 3 次）；结果对象由代码重建，模型多吐的字段进不来
+5. **脏数据零容忍**：3 条全部分类成功才输出；任何一条失败整个脚本非零退出、不产出半成品
+
+## 验证情况（未真调 API，无 Key）
+
+- `python3 -m py_compile` 通过
+- 离线单测：JSON 提取 4 种形态、校验 4 合法 + 7 非法路径全通过
+- mock 端到端：schema 漂移→反馈重试成功；429/5xx→退避重试成功；连续不合格→`SchemaError`；401→立即失败不空耗重试；缺 Key→stderr 报错退出码 1
+
+一个可调项：默认模型用 `glm-4.7-flash`（文档当前的免费文本模型），如需换模型设 `GLM_MODEL` 环境变量即可，无需改代码。
+
+Sources: [智谱快速开始](https://docs.bigmodel.cn/cn/guide/start/quick-start.md) · [对话补全 API 参考](https://docs.bigmodel.cn/api-reference/模型-api/对话补全) · [结构化输出](https://docs.bigmodel.cn/cn/guide/capabilities/struct-output.md) · [模型概览](https://docs.bigmodel.cn/cn/guide/start/model-overview)

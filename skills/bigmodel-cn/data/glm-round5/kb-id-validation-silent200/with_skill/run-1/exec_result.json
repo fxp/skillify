@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "待校验知识库 ID:999999999999999999\n校验接口:https://open.bigmodel.cn/api/llm-application/open/knowledge/999999999999999999\n[FAIL] 接口返回业务错误:code=100013, message='知识库不存在'(100013 通常即「知识库不存在」)\n校验结论:知识库 ID 无效(校验未通过,已拦截)\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 1.9
+}

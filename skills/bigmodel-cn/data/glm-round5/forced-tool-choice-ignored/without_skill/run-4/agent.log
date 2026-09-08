@@ -1,0 +1,18 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/forced-tool-choice-ignored/without_skill/run-4/outputs/main.py`，`python3 -m py_compile` 编译通过，解析/校验逻辑离线测试也通过（未调用真实 API）。
+
+## 设计要点
+
+**核心约束的落地方式**：查了官方文档后确认一个关键事实——智谱 v4 对话补全接口的 `tool_choice` **只支持 `"auto"`**，不能像 OpenAI 那样强制指定函数。所以强制力不能放在 API 层，脚本改在客户端兜底：
+
+1. **步骤 1 先拿工单**（`create_ticket`）：把工单定义成 function calling 工具（`category`/`summary` 两个 required 字段），配合 system 提示词禁止模型直接作答；响应回来后严格校验 `tool_calls` 里的 `arguments` 必须是合法 JSON 且两字段非空。模型不配合时最多重试 3 次，另有一个明确标注的兜底（个别时候模型把 JSON 写进 `content`，用正则提取后走同一套校验）。
+2. **拿不到工单就报错**：重试耗尽后抛 `RuntimeError`，明确说明“按业务规则中止流程，不生成用户回复”，`main()` 捕获后以退出码 1 结束——绝不会只输出安慰话就当处理完。
+3. **步骤 2 才生成回复**：工单在手后，第二次调用以工单 JSON 为上下文生成给用户的回复，回复为空同样报错。
+
+其他细节：API Key 只从 `ZHIPUAI_API_KEY` 读取（缺失时报错退出，退出码 1）；仅依赖 `requests`；HTTP 非 200 会带上响应体前 500 字符抛错，方便排查；模型默认 `glm-4.6`，可用 `ZHIPUAI_MODEL` 覆盖。
+
+Sources:
+- [对话补全 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)
+- [工具调用 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/capabilities/function-calling)

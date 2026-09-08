@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/token-budget-empty-answer/without_skill/run-3/outputs/main.py`，编译通过；缺 Key 场景实测正常（明确报错并退出码 1）。带 Key 的真实调用本环境没有 Key，未执行——但所有失败分支都做了显式处理，不会静默吞掉。
+
+## 设计要点
+
+**这个任务最大的坑：小 `max_tokens` 下拿到空 content。** 我抓取官方文档确认了三件事：
+
+1. GLM-4.5 之后的模型（含免费的 glm-4.7-flash）**默认开深度思考，且思考过程同样消耗 `max_tokens` 预算**。32 个 token 会被思考过程吃光，正文一个 token 都分不到，`content` 返回空字符串、`finish_reason=length`。
+2. `thinking: {"type": "disabled"}` 可以关掉思考（文档明确推荐简单分类/摘要类任务关思考）——前提是模型支持，**GLM-5.3 系列传 `disabled` 会直接报错**，所以选了免费档且支持关闭的 `glm-4.7-flash`。
+3. endpoint 为 `https://open.bigmodel.cn/api/paas/v4/chat/completions`，Bearer 认证。
+
+**成本控制**：免费档模型 + `max_tokens=32` 钉死 + prompt 压到最短（要求 20 字以内摘要，给 32 token 留截断余量），每次调用后打印 `completion_tokens` 证明预算没超。
+
+**拿不到就明说**（绝不打印空串冒充成功）：
+
+- 空内容 + `finish_reason=length` + 有 `reasoning_content` → 明确报告"32 token 预算全被深度思考消耗，正文 0 个 token"
+- HTTP 401/403/429/400 → 带错误码和提示（Key 无效 / 欠费 / 限流）
+- `finish_reason=sensitive` → 报告被安全审核拦截
+- 有正文但 `finish_reason=length` → 如实标注"可能被截断"，不当作完美结果
+- 任何一条失败 → 退出码 1，结尾给出"几条成功/几条失败"的真实统计
+
+网络错误/限流/5xx 有最多 3 次退避重试；业务性失败不重试、直接报原因。运行方式：`export ZHIPUAI_API_KEY=xxx && python3 main.py`。

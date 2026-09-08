@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录下只有这一个文件。
+
+## 校验方案
+
+用**知识库详情接口** `GET https://open.bigmodel.cn/api/llm-application/open/knowledge/{id}`（Bearer 鉴权）做存在性校验，依据来自技能包参考文档并经官方文档站核实（见文末来源）。
+
+## 关键设计：fail-closed 卡点逻辑
+
+技能包里实测验证过的最大坑直接决定了写法：**这族 `/llm-application/open/*` 接口出错时 HTTP 状态码依然是 200**——查一个不存在的知识库返回的是 `HTTP 200 + {"code":100013,"message":"知识库不存在"}`。所以脚本绝不用 `raise_for_status()` 当通过依据，判定规则如下：
+
+| 判定 | 条件 | 退出码 |
+| :--- | :--- | :--- |
+| **通过** | 仅当 HTTP 200 + 业务 `code==200` + `data.id` 非空且与待校验 ID 完全一致 | 0 |
+| **无效** | 平台业务码明确拒绝（如 100013 知识库不存在、鉴权失败）；环境变量 `ZHIPU_KB_ID` 缺失/为空 | 1 |
+| **无法确认→不放行** | 网络超时、非 200、响应非 JSON、缺 `code` 字段、`code=200` 但无 `data`、返回 ID 不一致、`ZHIPUAI_API_KEY` 缺失 | 2 |
+
+即：任何“没能拿到铁证”的情况都判不通过、非零退出，流水线直接卡住——符合“宁可误报无效，绝不放坏 ID 上线”。
+
+其他细节：
+- 每种失败都**明确打印结论行**（`[PASS]/[FAIL] 校验结论：……`）+ 具体原因（含平台返回的业务码和消息）
+- 对 KB ID 做 URL 编码，防止特殊字符篡改请求路径；15 秒超时防止流水线挂死；不打印 API Key
+- 只依赖 `requests`（外加 `os/sys/urllib.parse` 标准库），`python3 main.py` 直接跑
+
+已验证：`python3 -m py_compile` 编译通过；实际运行了缺 ID（exit 1）和缺 Key（exit 2）两条本地路径，均正确拦截且未发起网络请求（当前无 Key，未真实调 API）。
+
+Sources:
+- [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/知识库详情)

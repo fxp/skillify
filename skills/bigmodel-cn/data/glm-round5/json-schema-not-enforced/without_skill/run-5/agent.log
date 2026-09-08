@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，校验逻辑离线自测通过，无 Key 时友好报错退出（终端里那条 urllib3 警告来自本机 Python 环境，与脚本无关）。
+
+**关键设计**：抓取官方文档确认了智谱 `response_format` **只支持 `json_object`、不支持 JSON Schema**——即 API 只保证“是合法 JSON"，不保证字段和取值。所以入库约束完全由脚本自己兜底：
+
+| 层级 | 措施 |
+|---|---|
+| 提示层 | system prompt 明确规定恰好两个字段、枚举值、score 范围 |
+| 请求层 | `response_format: {"type": "json_object"}` + `temperature: 0.1` + 关闭 thinking（`glm-4.7-flash`，免费模型，可用 `ZHIPUAI_MODEL` 覆盖） |
+| 校验层 | `validate()` 硬校验：字段必须恰好为 `sentiment`/`score`（多了少了都拒）；sentiment 必须在 `正面/负面/中性` 枚举内；score 排除布尔/NaN/inf，数字夹回 [0,1] 并保留 4 位小数 |
+| 重试层 | 不合格输出会作为 assistant 消息连同错误原因回传给模型修正，最多 3 次；401/403（Key 无效）不重试直接终止 |
+| 兜底 | 重试耗尽直接 `raise` 报错退出——宁可失败，也不产出脏数据入下游库 |
+
+解析端还容忍 ```json 围栏和前后杂文字（`extract_json` 取首尾大括号间的片段再 `json.loads`）。
+
+运行方式：
+```bash
+export ZHIPUAI_API_KEY=你的key
+python3 main.py
+```
+每条文本输出一行，形如 `{"sentiment": "正面", "score": 0.97}`，可直接入库。

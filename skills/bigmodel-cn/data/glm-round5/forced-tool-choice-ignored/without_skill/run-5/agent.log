@@ -1,0 +1,22 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，关键逻辑做了离线冒烟测试（未真实调用 API）。
+
+## 方案要点
+
+**核心坑位**：智谱官方文档明确 `tool_choice`「默认且仅支持 `auto`」——OpenAI 风格的强制指定函数写法会被服务端忽略，所以「必须先出工单」这个硬性要求不能靠参数强制，脚本改由**代码层三重保证**：
+
+1. **第一步只做工单**：单独一次调用，只挂 `create_ticket` 工具，system 提示词禁止输出自然语言；对返回做硬校验（`tool_calls` 存在、`category`/`summary` 均非空）。
+2. **纠错重试**：模型无视工具要求、直接回一句安慰话时（本场景的典型失败形态，测试已覆盖），把错误回答追加进对话并严厉纠错，最多重试 3 次。
+3. **硬报错兜底**：重试耗尽仍无工单 → 抛 `TicketUnavailableError`，stderr 打印明确错误、退出码 1，**绝不进入回复环节**（`main.py:198-206`）。
+
+**第二步才是回复**：工单落定并打印后，才发起第二次调用（不挂任何工具）生成用户回复，工单 JSON 注入 system 提示词。两步调用间通过代码顺序强制了「工单 → 回复」的依赖。
+
+**其他细节**：
+- API Key 从 `ZHIPUAI_API_KEY` 环境变量读取，缺失时明确报错退出；端点 `https://open.bigmodel.cn/api/paas/v4/chat/completions`，`Authorization: Bearer` 鉴权，仅依赖 `requests`
+- `function.arguments` 按文档是 JSON 字符串，同时兼容了直接返回 dict 的端点；网络错误、非 200、响应格式异常都有中文错误信息
+- 默认模型 `glm-5.3`（当前文档示例所用），可用 `ZHIPUAI_MODEL` 覆盖
+- 验证：`py_compile` 通过（缓存重定向到 /tmp，`outputs/` 下只有 `main.py`）；工单解析的 4 种失败形态 + 无 Key 路径均测试通过
+
+Sources: [智谱 Function Calling 文档](https://docs.bigmodel.cn/cn/guide/tools/function-calling) · [HTTP API 调用](https://docs.bigmodel.cn/cn/guide/develop/http/introduction) · [对话补全 API 参考](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)

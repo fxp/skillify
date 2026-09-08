@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部通过。脚本已交付到指定路径，验证完整。
+
+## 交付说明
+
+**文件**：`outputs/main.py`（仅此一个文件，临时测试脚本已清理）
+
+### 接口确认（来自智谱官方文档）
+
+通过抓取 [知识库详情 API](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85) 和 [知识库列表 API](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E5%88%97%E8%A1%A8)（见 [知识库 FAQ](https://docs.bigmodel.cn/cn/faq/knowledge-base)）确认了关键事实：
+
+- 详情：`GET https://open.bigmodel.cn/api/llm-application/open/knowledge/{id}`，鉴权 `Authorization: Bearer <API_KEY>`
+- 成功响应：HTTP 200 + body `{"code": 200, "data": {...}, "message", "timestamp"}`
+- **失败响应只有 `{"code": <错误码>, "message": ...}`，且 HTTP 状态码很可能仍是 200** —— 这正是脚本重点防御的“静默 200”
+
+### 校验逻辑（fail-closed，三道关卡）
+
+1. **详情接口**：HTTP 200 + body 业务 `code == 200` + `data` 为对象 + **`data.id` 与 `ZHIPU_KB_ID` 完全一致**（防服务端返回别的库）
+2. **列表接口二次核验**：逐页翻完列表，必须亲眼找到该 ID，防详情接口“假成功”
+3. **可用性**：`document_size > 0`（空库无法检索，判不可用）
+
+任何一步拿不到肯定证据（网络异常、非 JSON 响应、ID 不匹配、空库、未预期异常……）都打印**明确的“校验结论：无效 —— 已拦截，禁止上线”**并 `exit 1`；只有三关全过才打印“校验结论：有效”并 `exit 0`，流水线可直接用退出码做卡点。网络错误/5xx 仅做少量重试（不会把失败重试成通过）。
+
+### 验证情况（未调用真实 API）
+
+- `python3 -m py_compile` 编译通过
+- 无环境变量 / 缺 API Key 本地跑通，正确拦截
+- 用桩响应离线测试了 11 个场景：静默 200（业务错误码 / `data=null`）、200 但非 JSON、HTTP 404/401、返回 ID 不匹配、空库、详情可查但列表未找到、列表静默 200、未预期异常 → 全部正确拦截（exit 1）；正常有效场景 → 正确放行（exit 0）
+
+一个需要你知晓的取舍：**空库（`document_size=0`）被判定为“不可用”而拦截**。如果你希望“存在即可、允许空库上线”，把 `verify_usable` 里的 `doc_size <= 0` 分支改成告警即可。

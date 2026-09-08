@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "[1] 评论: 续航很顶，充一次用三天，但拍照实在一般，晚上噪点多\n    摘要: 续航顶，拍照一般噪点多\n    (输出 8 tokens / 预算 32, finish_reason=stop)\n[2] 评论: 客服态度好，物流也快，就是包装被压扁了一个角\n    摘要: 客服好物流快，包装压扁一角\n    (输出 10 tokens / 预算 32, finish_reason=stop)\n[3] 评论: 价格便宜是真便宜，做工也确实对得起这个价，别抱太高期望\n    摘要: 价格便宜，做工一般，别期望高\n    (输出 10 tokens / 预算 32, finish_reason=stop)\n\n结果: 全部 3 条评论均拿到摘要，每条输出 token 控制在 32 预算内。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 6.8
+}

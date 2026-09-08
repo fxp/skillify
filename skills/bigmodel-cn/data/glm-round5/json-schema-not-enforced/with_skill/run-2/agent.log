@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件）。
+
+## 关键背景（来自技能包 + 官方文档核实）
+
+- 智谱 `chat/completions` **不支持 `response_format.type="json_schema"`**（传了会被静默忽略），只支持 `{"type": "json_object"}`，且官方文档明确说输出不保证 100% 合法。这一点我用 WebFetch 核对了官方结构化输出文档（`docs.bigmodel.cn/cn/guide/capabilities/struct-output.md`），与技能包结论一致。
+- 因此不能指望 API 层面强约束，脚本用了三层保障。
+
+## 脚本设计（`outputs/main.py`）
+
+1. **请求层**：`glm-5.3` + `response_format: {"type": "json_object"}`，system prompt 里写死目标结构（sentiment 只能是三个中文词、score 为 0~1 数字、禁止输出解释和代码块）；`reasoning_effort: "low"`（glm-5.3 标准端点思考关不掉，分类是轻量任务用 low 档）、`temperature: 0.1` 求稳定。
+2. **解析/校验层**（防脏数据的核心）：
+   - 容错解析：夹带 ```` ```json ```` 代码块或说明文字时，截取首个 `{` 到末个 `}` 再 `json.loads`；
+   - `sentiment` 归一化：同义词/英文（“积极”/`negative` 等）映射到 正面/负面/中性，映射不了的直接判为非法；
+   - `score` 强制数字、拒绝布尔/NaN/inf，越界夹回 `[0,1]`；
+   - **输出 dict 由代码显式构造**（只含 `sentiment`/`score` 两字段），不透传模型返回——模型多输出的字段天然被丢弃，字段名不可能错。
+3. **重试层**：校验失败自动重试 3 次；HTTP 429/5xx 指数退避重试，401/400 等配置类错误直接报错不浪费重试；全部耗尽则报错退出，**宁可不入库也不写脏数据**。
+4. 日志走 stderr，stdout 每行一条严格合规的 JSON（JSONL），可直接管道入库；Key 从 `ZHIPUAI_API_KEY` 读取，仅依赖 `requests`。
+
+## 验证结果（未调真实 API）
+
+- `python3 -m py_compile` 通过；
+- 离线单测：正常输出、“积极+markdown+多余字段+score 1.2”、“英文取值+score -0.05” 均正确归一化（`1.0`/`0.0` 被夹回界内）；乱造取值、缺字段、字符串分数、布尔值、非 JSON 全部拦截并触发重试路径；
+- 模拟“先脏后好”两次返回，端到端重试拿到合规结果；
+- 无 Key 环境直接 `python3 main.py`：给出清晰的设置提示并以退出码 1 结束。
+
+有 Key 后 `ZHIPUAI_API_KEY=你的Key python3 main.py` 即可跑通，三条文本按输入顺序各输出一行 `{"sentiment": ..., "score": ...}`。

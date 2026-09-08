@@ -1,0 +1,18 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，无 Key 时验证了报错路径（stderr 输出明确错误、退出码 1；那条 urllib3 警告来自本机 Python 3.9 + LibreSSL 环境，与脚本逻辑无关）。
+
+## 实现要点
+
+**抓文档确认到的关键坑**：智谱 API 的 `tool_choice` **默认且仅支持 `auto`**，不支持 OpenAI 式的 `{"type":"function","function":{"name":...}}` 强制指定——所以「传了 tools 模型就一定调用」这个假设不成立，脚本必须自己兜住。
+
+**为此设计的三层保障**（`main.py`）：
+
+1. **优先路径 — function calling**（`extract_ticket_with_tool`）：定义 `create_ticket` 工具（`category`/`summary` 两字段，JSON Schema 里标 `required`），system 提示词明确「必须调用、禁止直接回复」；`arguments` 按文档是 JSON 字符串，用 `json.loads` 解析。模型没调用就返回 `None`。
+2. **降级路径 — JSON 模式**（`extract_ticket_with_json_mode`）：工具被忽略时，改用文档确认支持的 `response_format: {"type":"json_object"}` 再抽取一次，并防御性剥掉可能的 ```` ```json ```` 围栏。
+3. **强校验 + 硬报错**（`validate_ticket`）：两条路径都失败，或字段缺失/为空/不是对象，抛 `TicketError` 明确报错、退出码 1——**不会输出任何用户回复**。
+
+**顺序即不变量**：`main()` 里严格按「建单 → 打印工单 JSON（后续流程的输入）→ 才调第二次 API 生成安抚回复」执行，回复生成拿不到合法工单根本不会被触达，从结构上杜绝「只回安慰话就算处理完」。
+
+其他细节：Key 从 `ZHIPUAI_API_KEY` 读取（缺失即报错）；仅依赖 `requests` + 标准库；模型默认 `glm-5.3`（可用 `ZHIPUAI_MODEL` 覆盖）；60s 超时、HTTP 非 200/响应缺 `choices` 均抛带上下文的 `RuntimeError`。因环境无 Key，未实际调 API，仅静态验证。

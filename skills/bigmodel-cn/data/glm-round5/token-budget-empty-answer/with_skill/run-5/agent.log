@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，核心逻辑也做了离线验证。
+
+## 关键设计：这个任务的隐藏坑
+
+GLM 新系列是**混合思考模型，思考 token 优先消耗 `max_tokens` 配额**。直接把 `max_tokens=32` 丢给默认开思考的模型，思维链会先把 32 个 token 烧光，返回 `content=""` + `finish_reason="length"`——HTTP 层面“成功”，实际一个字摘要都没拿到（正是你说的“打印空字符串还说完成了”）。而且 `glm-5.3` 在标准端点**强制思考**，传 `thinking: disabled` 会直接报 1210。
+
+脚本的应对（依据 SKILL.md 的 references + 官方文档交叉确认）：
+
+| 措施 | 说明 |
+| :-- | :-- |
+| 默认模型 `glm-4.5-flash` | 免费（成本压到底）、128K 上下文、支持显式关思考 |
+| `thinking: {"type": "disabled"}` | 32 的预算全部留给摘要正文 |
+| 换模型自适应 | 指定 `glm-5.3` 时自动改传 `reasoning_effort: "low"`（实测 `reasoning_tokens=0`）；GLM-4.5 以下不传 thinking 参数 |
+| 逐条校验 | `finish_reason=length` 且无正文 → 明确报“预算被思考链耗尽，reasoning_tokens=32，正文 0 字”；截断/sensitive/空 content 各有具体原因输出 |
+| 重试策略 | 仅限流(1302/1305/1308/1310)/5xx/网络错误做指数退避；4xx 配置错误直接报错（1113 会提示 Coding Plan Key 打错端点的可能） |
+| 退出码 | 0 全部成功；1 有失败；2 未配 Key |
+
+离线测试确认：成功路径正常返回；坑场景（空 content + length + 思考耗尽预算）会报出上面那句明确原因而不是空串；无 Key 时给出设置指引并退出码 2。评论量再上一个量级，建议改走 Batch API（不占同步并发额度），脚本里已留注释。
+
+Sources:
+- [智谱思考模式文档](https://docs.bigmodel.cn/cn/guide/capabilities/thinking-mode)
+- [GLM-4.7-Flash 思考 token 优先耗尽 max_tokens 的同类案例](https://github.com/HapeLee/legato-with-MD3/issues/2031)
+- [免费大模型 API 的坑：content 为空 + finish_reason=length](https://zhuanlan.zhihu.com/p/2070199142102709913)
+- [核心参数文档（max_tokens 建议）](https://docs.bigmodel.cn/cn/guide/start/concept-param)

@@ -1,0 +1,44 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/json-schema-not-enforced/with_skill/run-5/outputs/main.py`，`py_compile` 通过，本地校验逻辑单测全过，无 Key 时报错退出码 1（测试时那行 urllib3 警告来自本机 requests 导入，与脚本无关）。
+
+## 关键设计决策
+
+**1. 不能用 `json_schema`，这是本任务最大的坑。** 智谱 `chat/completions` 的 `response_format` 只支持 `text` / `json_object`，传 `json_schema` 不报错但会被**静默忽略**（技能包经真实 API 验证，官方文档同样只有 `json_object` 一种模式）。所以严格结构靠三层保障：
+
+- `response_format: {"type":"json_object"}` + system prompt 里写死字段结构、枚举值和“禁止其他文字/字段”；
+- **客户端强校验**：取首尾 `{}` 之间的子串做 `json.loads`（防夹带文字/markdown 围栏），`sentiment` 必须精确等于 `"正面"/"负面"/"中性"`，`score` 必须可转数字且落在 `[0,1]`；
+- **出口重建 dict**：`{"sentiment": ..., "score": ...}` 由代码显式构造，即使模型多吐字段也进不了输出——字段名和取值不可能错。
+
+**2. 校验失败自动纠错重试。** 因为用了 `do_sample: false`（贪心解码，分类更稳定），原样重发会得到同样输出，所以重试时把上次的坏输出作为 assistant 消息回传、附上具体违规原因让模型纠正，最多 3 次；仍失败则该条**不产出任何行**、退出码 1——宁缺毋滥，不往库里写脏数据。
+
+**3. 平台细节对齐**（均来自技能包 references）：
+
+| 参数 | 取值 | 原因 |
+| :-- | :-- | :-- |
+| `model` | `glm-5.3` | 旗舰，指令遵循最好 |
+| `reasoning_effort` | `"low"` | glm-5.3 标准端点强制思考（`disabled` 会报 1210），轻量分类用 low 档，实测近似不思考 |
+| `do_sample` | `false` | 确定性输出 |
+| 鉴权 | `Authorization: Bearer $ZHIPUAI_API_KEY` | 环境变量读取，未设置直接报错 |
+
+HTTP 层按官方建议区分错误类型：429/5xx 指数退避重试；401/400/403（配置类）立即失败不浪费重试；流式才需要的 `finish_reason` 异常（`sensitive` 等）也做了拦截。
+
+## 运行方式
+
+```bash
+export ZHIPUAI_API_KEY=你的Key
+python3 main.py
+```
+
+stdout 每行一个严格符合结构的 JSON 对象（`ensure_ascii=False`，中文原样），可直接逐行入库；所有错误信息走 stderr，stdout 保持纯净：
+
+```
+{"sentiment": "负面", "score": 0.95}
+{"sentiment": "中性", "score": 0.8}
+{"sentiment": "正面", "score": 0.97}
+```
+
+（具体 score 值以实际调用结果为准，此处仅示意格式。）
+
+Sources: [智谱结构化输出官方文档](https://docs.bigmodel.cn/cn/guide/capabilities/struct-output)

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/json-schema-not-enforced/without_skill/run-5/work/main.py\", line 158, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/json-schema-not-enforced/without_skill/run-5/work/main.py\", line 153, in main\n    result = classify_one(api_key, text)\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/json-schema-not-enforced/without_skill/run-5/work/main.py\", line 143, in classify_one\n    raise RuntimeError(\nRuntimeError: 文本 '这家店服务太差了，再也不来了' 分类失败（已重试 3 次），最后错误: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n",
+  "timed_out": false,
+  "seconds": 5.5
+}

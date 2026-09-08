@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，关键分支离线验证无误（未调用真实 API）。
+
+## 方案要点
+
+**模型选型是本题的坑点所在**：`max_tokens` 只限输出侧，而思维链 token 同样计入输出预算。`glm-5.3` 在标准端点**强制思考**（传 `thinking.type=disabled` 会报业务错误 1210），32 个 token 会被思维链耗光——结果是 HTTP 200、`content` 为空、`finish_reason=length`，恰好就是「打印空字符串还说完成了」的翻车现场。因此脚本选了 **`glm-5.2` + 显式 `thinking: {"type": "disabled"}`**（官方文档确认：除 GLM-5.3 系列外均可传 `disabled`），关闭思考后 32 token 全部留给可见正文。
+
+**成本控制**（`main.py:36-52`）：
+- `max_tokens=32` 硬性限制每条回复的输出预算；
+- system 提示词对 3 条评论逐字一致，命中平台隐式上下文缓存（命中部分约半价），评论量大时进一步省；
+- `do_sample=False` 贪心解码，输出稳定；顺带要求摘要 15 字以内，保证正文在 32 token 内装得下。
+
+**「拿不到就说清楚」**（`extract_summary`，已用伪造响应逐分支验证）：
+- HTTP/业务错误：报状态码 + `error.code/message`；429/5xx/网络异常指数退避重试 3 次，4xx 配置错误直接报错不重试；
+- 200 但空 content：按 `finish_reason` 区分并打印 `usage` 细节（如 `length` → 「输出预算在正文开始前就被耗尽」并附 `reasoning_tokens`，`sensitive` → 内容安全拦截）；
+- 任何一条失败即非零退出；非空但 `finish_reason=length` 的截断正文会附带明确警示，不冒充完整结果。
+
+**验证情况**：`python3 -m py_compile` 通过；无 Key 时直接运行会明确提示 `export ZHIPUAI_API_KEY=...` 并以退出码 1 结束。真实 API 调用未执行（当前无可用 Key），拿到 Key 后 `python3 main.py` 即可跑通。

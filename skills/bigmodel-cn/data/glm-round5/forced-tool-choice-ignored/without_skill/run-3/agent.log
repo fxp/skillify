@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 通过，无 Key 时也能正确报错退出（exit code 1，输出用法提示；那条 urllib3 警告来自本机 Python 3.9 环境，与脚本无关）。本机 Python 是 3.9，代码也刻意避开了 3.10+ 语法。
+
+## 设计要点
+
+**核心发现**：查了官方文档，智谱的 `tool_choice` **只支持 `"auto"`**，无法像 OpenAI 那样在协议层强制指定函数——这正是“强制工具选择被忽略”的坑。所以“必须先出工单”这个硬性要求不能交给 API，脚本用三层保障在代码层强制实现：
+
+1. **强约束提示词**：第一步的 system prompt 把模型定位成“工单抽取模块”，禁止自然语言回复，只准调用 `create_ticket` 工具；
+2. **响应硬校验**（`_parse_ticket`）：必须有 `tool_calls`、函数名必须是 `create_ticket`、`arguments` 必须是能 `json.loads` 的合法 JSON（官方确认它是字符串）、`category`/`summary` 两个必填字段非空——任一不满足即判失败；
+3. **纠正重试 + 明确报错**：失败时把模型的错误输出记回上下文并追加纠正指令重试（最多 3 次）；仍失败则抛出带原因的错误、退出码 1，**不生成任何用户回复**，绝不降级成“只回一句安慰话”。
+
+**流程顺序**：`main()` 里先 `create_ticket()` 拿到校验通过的工单并打印，之后才调 `generate_reply()` 基于工单生成回复——顺序在代码结构上是硬性的。工单 schema 里 `category` 用了枚举（退货退款/商品质量/物流配送/售后维修/使用咨询/其他），抽取更稳定。
+
+其他：端点 `https://open.bigmodel.cn/api/paas/v4/chat/completions` + `Authorization: Bearer`，Key 从 `ZHIPUAI_API_KEY` 读取，仅用 `requests`；默认模型 `glm-4.6`，可用 `ZHIPUAI_MODEL` 覆盖。
+
+Sources:
+- [工具调用 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/capabilities/function-calling)
+- [对话补全 API 参考 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)

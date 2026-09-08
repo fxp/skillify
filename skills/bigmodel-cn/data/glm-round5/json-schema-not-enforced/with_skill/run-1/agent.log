@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过。
+
+## 关键设计决策
+
+这个任务的核心风险点，技能包和官方文档都交叉确认了：**智谱不支持 `response_format: {"type": "json_schema"}`**（传了会被静默忽略，且经 WebFetch 核实 `docs.bigmodel.cn` 的 OpenAPI 定义里 `response_format.type` 只有 `text`/`json_object` 两档）。所以“严格符合结构”不能指望 API 端约束，脚本做了三层防线：
+
+1. **请求侧**：`response_format: {"type": "json_object"}` + system prompt 里逐字写明字段名、三选一枚举、score 取值范围和“只许这两个字段”。
+2. **校验侧**（`validate_result`）：`json.loads` 后严格检查——必须恰好是 `{"sentiment", "score"}` 两个字段、sentiment 只能是“正面/负面/中性”、score 必须是数字且在 [0,1]（排除了 bool 和字符串数字以外的脏值）。可安全归一化的轻微偏差（markdown 围栏、夹带解释文字、英文标签 `positive`→`正面`、字符串数字）会被修正后放行，其余一律拒绝。
+3. **重试侧**：校验失败时把错误输出连同纠错指令带回 messages 重试（最多 3 次）。这点有个隐蔽依赖：因为用了 `do_sample: False` 贪心解码保证输出稳定，原样重发会得到一模一样的结果，所以纠错上下文是必须的。
+
+**防脏数据底线**：重试用尽仍不合规时，脚本向 stderr 报错并 `exit 1`，**绝不输出编造的兜底记录**——stdout 只会有校验通过的 JSON 行，直接入库是安全的。
+
+## 其他接入细节（依据技能包）
+
+- 端点 `POST /paas/v4/chat/completions`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读取，缺失时给出明确报错
+- 模型 `glm-5.3`：标准端点强制思考且 `thinking.type: disabled` 会报 1210，所以轻量分类任务按手册建议用 `reasoning_effort: "low"`
+- 检查 `finish_reason`（`sensitive`/`network_error`/`length` 都视为不可信）；429/5xx 指数退避重试，4xx 配置类错误直接报错不空转；3 条文本串行请求，不触发并发限流
+
+## 验证结果（未调 API，离线测试）
+
+- 编译通过
+- 5 个可归一化用例（正常 JSON、围栏包裹、夹带文字、英文标签、整型 score）全部正确输出
+- 7 个脏数据用例（非 JSON、缺字段、非法枚举、越界、bool、多余字段等）全部被拒绝
+- 缺 `ZHIPUAI_API_KEY` 时 exit 1 且 stdout 干净
+
+拿到真实 Key 后 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可跑通，预期输出三行形如 `{"sentiment": "负面", "score": 0.95}` 的 JSON。

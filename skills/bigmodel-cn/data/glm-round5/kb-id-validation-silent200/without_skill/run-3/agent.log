@@ -1,0 +1,37 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已交付到 `outputs/main.py`，所有验证通过（未调用真实 API）。
+
+## 方案要点
+
+**接口选型**（依据官方文档 docs.bigmodel.cn，`Authorization: Bearer <Key>`）：
+- **存在性**：`GET /api/llm-application/open/knowledge/{id}` —— 只有 `HTTP 200` + 业务码 `code==200` + **`data.id` 与 `ZHIPU_KB_ID` 逐字符相等** 三条同时满足才算存在
+- **可用性**：`GET /api/llm-application/open/document?knowledge_id=...` —— 要求 `data.total > 0`（空库检索必落空，判不可用），并与详情接口的 `document_size` 交叉核对，不一致不放行
+- **刻意不用**检索接口（`POST /knowledge/retrieve`）当证据：文档未承诺对不存在的 ID 报错，“200 + 空结果”分不清是“库不存在”还是“没召回”——这正是**静默 200 陷阱**，脚本注释里写明了这个决策
+
+**失败关闭（fail-closed）设计**——退出码 0 只有一条路径（两步全部拿到明确回执）：
+
+| 退出码 | 含义 |
+|---|---|
+| 0 | 有效：存在且非空，放行 |
+| 1 | 无效：ID 不存在 / 无权访问 / `data.id` 不匹配 / 响应异常 / 空库 |
+| 2 | 无法确认（网络重试耗尽、401/403、两接口数据矛盾），**按无效阻断** |
+| 3 | 配置错误（环境变量缺失） |
+
+另有：瞬时故障自动重试（3 次）、API Key 脱敏防进日志、未知异常兜底也判“无法确认”绝不放行。
+
+## 验证情况
+
+- `python3 -m py_compile` 编译通过
+- mock 掉 `requests.Session.request` 跑了 **17 个分支场景全部通过**：404、200 但业务码错、200 但 `data.id` 不匹配（静默 200 场景）、非 JSON 响应、401/403、5xx 三连、网络异常、空库、文档数矛盾、缺 `total`、正常放行、ID 带空白等；并断言了结论文案打印完整、Key 未泄露
+- 实际 `python3 main.py`（无环境变量）在任何网络请求前即以退出码 3 阻断，输出正常
+
+流水线接入：`ZHIPU_KB_ID=xxx ZHIPUAI_API_KEY=xxx python3 main.py`，以退出码卡点即可。
+
+Sources:
+- [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)
+- [文档列表 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E5%88%97%E8%A1%A8)
+- [知识库检索 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2)
+- [知识库列表 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E5%88%97%E8%A1%A8)
+- [HTTP API 调用（基础地址与鉴权）](https://docs.bigmodel.cn/cn/guide/develop/http/introduction)

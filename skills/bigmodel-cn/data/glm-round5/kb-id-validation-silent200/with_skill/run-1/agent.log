@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 通过；冒烟运行（清空环境变量，不触发任何网络请求）正确走了拦截分支：明确打印 `[FAIL]` + 退出码 1。
+
+## 设计说明
+
+**校验接口**：`GET https://open.bigmodel.cn/api/llm-application/open/knowledge/{id}`（知识库详情），Bearer 鉴权。选它而不是检索接口，是因为它只读、直接回答“存在与否”，而检索为空和“库不存在”无法区分（技能包实测确认过）。
+
+**核心防线——针对“假 200"**：这套 `/llm-application/open/*` 接口出错时 HTTP 状态码依然是 200，真实结果在响应体的 `code` 里（查不存在的库返回 `HTTP 200 + {"code":100013,"message":"知识库不存在"}`）。`raise_for_status()` 在这里永远不触发，所以脚本做了四层校验，全部通过才判有效：
+
+| 层 | 校验内容 | 不过则 |
+| :--- | :--- | :--- |
+| 1 | HTTP 状态码 == 200 | 拦截 |
+| 2 | 响应体是合法 JSON 对象 | 拦截 |
+| 3 | **响应体 `code == 200`**（关键层，100013“知识库不存在"在这里被拦） | 拦截 |
+| 4 | `data` 是对象、且返回的 `id` 与 `ZHIPU_KB_ID` 一致 | 拦截 |
+
+**宁枉勿纵的卡点语义**：环境变量缺失、ID 含 `/ ? #` 空白等非法字符、网络错误/超时（重试 3 次后仍失败）、响应不可解析、业务错误码、ID 不匹配、乃至任何未预料异常（兜底 `except`）——全部判无效、退出码 1。唯一的通过路径就是上面四层同时成立，打印 `校验结论:知识库 ID 有效` 后退出码 0。附带的 15s 请求超时也保证流水线不会被挂死。
+
+唯一依赖 `requests`（其余均为标准库），`python3 main.py` 直接可跑。冒烟输出里那条 `NotOpenSSLWarning` 来自本机 Python 3.9 + LibreSSL 的 urllib3，与脚本逻辑无关，不影响退出码。
+
+Sources:
+- [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)

@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，另跑了 13 组纯本地用例（6 组正常解析 + 7 组应拒绝的脏数据全部正确拒绝），没有实际调用 API。
+
+## 关键设计决策
+
+**1. 不能用 JSON Schema 强约束，这是本任务的核心坑。** 技能包 SKILL.md 明确警告、我也抓官方文档核实了：智谱 `chat/completions` 的 `response_format` 只支持 `{"type": "json_object"}`，**没有** `json_schema`/strict 模式，传了会被静默忽略。所以「严格符合结构」不能靠 API 参数，官方推荐的做法就是脚本采用的：prompt 里写死字段结构 + 客户端校验兜底。
+
+**2. 三层兜底保证入库干净：**
+- **解析兜底**：`json_object` 模式下模型仍可能夹带解释文字或 markdown 围栏（技能包实测过），解析函数会剥围栏、从文本中抠出最外层 `{...}`；
+- **字段级校验**：恰好 `sentiment`/`score` 两个字段（多一个都拒）、`sentiment` 必须严格等于「正面/负面/中性」（英文、带标点一律拒）、`score` 必须是数字（排除布尔/NaN/百分号，带引号的 `"0.9"` 宽容转换一次，轻微越界夹回 [0,1]）；
+- **回喂自纠 + 快速失败**：校验失败把错误原因塞回对话让模型重来（最多 3 轮）；仍不合法就非零退出——宁可失败，不写脏数据。HTTP 层面对 429/5xx 指数退避，对 400/401 配置类错误直接报错不空转。
+
+**3. 其他参数**：模型 `glm-5.3`（纯文本旗舰，指令遵循最好）；`reasoning_effort: "low"`——glm-5.3 在标准端点强制思考且传 `disabled` 会报 1210，简单分类任务用 low 档（接近不思考）换低时延；`temperature: 0.1` 求稳定。逐条顺序请求（平台限流按并发算，3 条顺序最稳）。
+
+**输出形式**：stdout 每行一个 JSON（进度和错误走 stderr），例如 `{"sentiment": "负面", "score": 0.92}`，可直接管道给入库程序。运行方式：`export ZHIPUAI_API_KEY=... && python3 main.py`。
+
+一个需要说明的取舍：`score` 的语义是「该情感判断的置信度」，这个定义写在 prompt 里了——如果你们库里对 score 另有定义（比如情感强度），改 `SYSTEM_PROMPT` 里那一行即可。
+
+Sources:
+- [结构化输出 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/capabilities/struct-output)
+- [对话补全 API Reference - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/对话补全)

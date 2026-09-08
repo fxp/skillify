@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "[INFO] 待校验知识库 ID: 999999999999999999\n[INFO] GET https://open.bigmodel.cn/api/llm-application/open/knowledge/999999999999999999 (第 1/3 次尝试)\n[INFO] HTTP 状态码: 200\n\n校验结论: 无效 —— HTTP 200 但业务码 code=100013 != 200(静默 200 携带业务错误,例如知识库不存在),message='知识库不存在'\n(fail-closed:宁可误报无效,也不放坏 ID 上线;退出码=1,流水线应拦截)\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 1.9
+}

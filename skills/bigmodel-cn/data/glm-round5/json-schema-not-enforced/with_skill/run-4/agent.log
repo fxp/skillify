@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/json-schema-not-enforced/with_skill/run-4/outputs/main.py`，`py_compile` 通过，校验逻辑与无 Key 报错路径均已用不碰网络的方式验证（上面输出里的 `NotOpenSSLWarning` 是本机 Python 环境的警告，与脚本无关）。
+
+## 实现要点
+
+**关键背景（技能包 + 官方文档双重确认）**：智谱平台 `response_format.type` 只有 `text` / `json_object` 两个枚举值，**不存在 `json_schema` 强约束模式**——传了会被静默忽略，模型可能返回夹带解释文字的自由文本。所以“严格符合结构”不能靠 API 参数，脚本用了三层防线：
+
+1. **请求侧**：`response_format: {"type": "json_object"}` + system prompt 里精确描述字段（`sentiment` 三选一中文枚举、`score` 0–1 数字）并给出示例
+2. **解析侧**：先整体 `json.loads`，失败则截取最外层 `{...}` 再试（应对夹带文字）
+3. **校验侧**：严格检查恰好只有 `sentiment`/`score` 两个字段、`sentiment ∈ {"正面","负面","中性"}`、`score` 是数字（排除 bool）并夹紧到 `[0,1]`——任何不合法都会触发重试（最多 3 次，指数退避），重试耗尽则 stderr 报错、exit 1，**绝不输出脏数据**；且 3 条全部成功才打印，不会给下游残缺数组
+
+**其他符合说明书的细节**：
+- 端点 `https://open.bigmodel.cn/api/paas/v4/chat/completions`，`Authorization: Bearer`，Key 从 `ZHIPUAI_API_KEY` 读取
+- 模型 `glm-5.3`；标准端点强制思考（传 `disabled` 报 1210），轻量分类任务按文档建议用 `reasoning_effort: "low"`
+- `do_sample: False` 走贪心解码，分类结果确定性强
+- 检查 `finish_reason == "stop"`（`sensitive`/`length` 等一律视为失败）
+- 错误分类重试：429/5xx 退避重试，401/403/400 配置类错误直接报错不重试；串行调用避免并发限流
+
+**输出**：stdout 打印 JSON 数组（顺序与输入一致），每项形如 `{"sentiment": "正面", "score": 0.93}`，可直接入库。实际运行预期：`[{"sentiment": "负面", ...}, {"sentiment": "中性", ...}, {"sentiment": "正面", ...}]`（以模型实际返回为准）。

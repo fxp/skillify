@@ -1,0 +1,19 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已写好并保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/token-budget-empty-answer/without_skill/run-2/outputs/main.py`，`python3 -m py_compile` 编译通过（环境无 Key，未实际调 API）。
+
+**设计要点（均经官方文档确认）：**
+
+1. **`thinking: {"type": "disabled"}` 是本任务的生命线。** 智谱 GLM-4.5 及以上模型 `thinking` 默认是 `enabled`，思考 token 同样计入输出预算。32 token 的小预算下，思维链几乎必然把额度耗光——API 返回 HTTP 200、“看起来成功”，但 `content` 是空字符串、`finish_reason="length"`。这正是“小预算拿到空回复”最典型的坑，脚本显式关掉了它。
+
+2. **模型选 `glm-4.5-flash`**：平台免费模型，评论量大时成本为零（比“压住”更彻底）；且属于支持 `disabled` 的 GLM-4.5 系列。刻意避开了 GLM-5.3 系列——文档明确它已不支持关闭思考，传 `disabled` 会直接报错。
+
+3. **“拿不到就说清楚”落在代码路径里**，不是口头承诺：
+   - 请求/HTTP 层失败 → 报网络异常或平台错误码（`body.error.code/message`），429/502/503 自动重试 3 次；
+   - `content` 为空 → 按 `finish_reason` 给出具体原因（`length`=预算内截断、`sensitive`=安全拦截、`network_error`=推理异常等）；若只有 `reasoning_content`，会明确指出“思考耗尽了 32 token 预算”并附思考内容开头；
+   - 任何一条失败 → 原因打到 stderr，**退出码 1**；缺 `ZHIPUAI_API_KEY` 也一样直接报错退出，绝不输出空字符串冒充完成。
+
+4. **预算是 API 侧硬约束**：`max_tokens=32` 保证回复不可能超预算，同时 system prompt 要求“不超过 16 字、无引号无解释”；成功时每条会打印 `completion_tokens=N/32`，预算执行情况可直接核对。
+
+有 Key 的环境下 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可跑通。

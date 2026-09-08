@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。`py_compile` 通过，且实际跑了 `python3 main.py` 验证：在本机（Python 3.9）无 Key 环境下正确走到“缺 ZHIPUAI_API_KEY”的明确报错并以退出码 1 结束，没有静默失败。
+
+## 脚本已保存到
+
+`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/glm-round5/token-budget-empty-answer/with_skill/run-3/outputs/main.py`
+
+## 关键设计决策（这个任务最大的坑）
+
+**“32 token 预算 + 拿不到摘要”是同一个问题的两面**：`max_tokens` 只限制输出，但深度思考的思维链同样计入输出 token。如果选 `glm-5.3`（标准端点强制思考、`disabled` 直接报 1210，已实测），默认 `reasoning_effort=max` 的思维链会先吃光 32 token，返回 `content` 为空、`finish_reason=length`——这正是“打印空字符串还说完成了”的来源。
+
+所以脚本：
+- **选 `glm-4.6` + `thinking: {"type": "disabled"}`**：该系列属于“自动判断思考、可显式开关”，关闭后 32 token 全部留给摘要正文（一句话中文摘要约 15–25 token，prompt 里同时约束“不超过 20 个汉字”留出余量）。注释里说明了可换免费的 `glm-4.5-flash` 进一步压成本，以及为什么不能选 4.7 系列（强制思考）和 `glm-4-flash-250414`（不支持 thinking 参数）。
+- **每条失败都给出具体原因，绝不输出空摘要冒充成功**：HTTP/业务错误报 `error.code + message`（仅 429/5xx 指数退避重试，4xx 不重试）；空 content 按 `finish_reason` 区分——`length`（预算被耗尽，并检查是否思考链导致）、`sensitive`（安全拦截）、`network_error`（推理异常）；响应缺 `choices` 也兜住。任一条失败则汇总并退出码 1。
+- **预算合规可验证**：成功时打印 `usage.completion_tokens` 与预算 32 的对比；`finish_reason=length` 且正文非空时会标注“摘要可能被截断”。
+
+## 接口细节的确认方式
+
+按 SKILL.md 读了 `references/chat.md`、`models.md`、`errors-and-limits.md`，并用 WebFetch 核对了官方 API 参考（`docs.bigmodel.cn/api-reference/模型-api/对话补全`）：`max_tokens` schema 为 min 1 / max 131072（32 合法，官方“建议 ≥1024”正是小预算易踩坑的原因）、`finish_reason` 六种取值、错误体 `{"error":{"code","message"}}`。
+
+## 未做实际 API 调用
+
+环境无可用 Key（如你所说明），只做了编译和无 Key 路径验证。另外脚本 docstring 里提示了：评论量真的大时，同步接口按并发限流，建议改走 Batch API 或异步对话接口。

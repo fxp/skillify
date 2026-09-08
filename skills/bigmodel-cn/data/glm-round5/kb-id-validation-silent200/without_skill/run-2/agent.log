@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,验证全部通过。
+
+## 实现要点
+
+**接口依据**(抓取官方文档确认)：调用智谱《知识库详情》接口 `GET https://open.bigmodel.cn/api/llm-application/open/knowledge/{id}`(Bearer 鉴权)。文档明确：响应体里的 `code` 字段才是业务响应码，`200` 才算成功；而错误响应的 HTTP 状态码只标了 `default`——**业务错误完全可能伴随 HTTP 200 返回**。
+
+**判定标准(fail-closed,四条全过才判“有效”)**：
+1. HTTP 状态码 == 200;
+2. 响应体是合法 JSON 对象；
+3. `body["code"] == 200` —— 这是“静默 200”陷阱的关键防线，绝不只看 HTTP 状态码；
+4. `body["data"]["id"]` 与 `ZHIPU_KB_ID` 完全一致 —— 防止接口忽略错误 ID 返回别的库造成误判。
+
+其余任何情况(网络失败/超时重试耗尽、非 JSON、鉴权 401/403、缺 data、ID 不一致)一律打印 `[校验结论] ❌ 无效` 并以**退出码 1** 卡点；只有确凿证明存在才打印 `✅ 有效`、退出码 0。另附:`document_size == 0` 时判有效但打 ⚠️ 警告(库存在但检索会返回空)。瞬时的 5xx/429/网络错误会重试 3 次，重试耗尽仍无法确认则按无效处理。
+
+**用法**:`ZHIPUAI_API_KEY=xxx ZHIPU_KB_ID=yyy python3 main.py`(可选 `ZHIPU_API_BASE` 覆盖根地址便于测试)，仅依赖 requests。
+
+## 已验证(未调用真实 API)
+
+- `python3 -m py_compile` 通过；
+- 用本地 mock 服务器跑了 9 种场景，判定与退出码全部符合预期：正常库/空库 → exit 0;**HTTP 200+业务码 1211(“知识库不存在”)→ exit 1**、200+code 200 但返回别的 ID → exit 1、code 200 但无 data → exit 1、HTTP 404/401、200 但非 JSON、500 重试耗尽 → 全部 exit 1;
+- 缺任一环境变量时干净地打印无效结论退出，无 traceback。
+
+Sources:
+- [知识库详情 API](https://docs.bigmodel.cn/api-reference/知识库-api/知识库详情.md)
+- [知识库列表 API](https://docs.bigmodel.cn/api-reference/知识库-api/知识库列表.md)
+- [智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/start/introduction)

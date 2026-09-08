@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，未调用真实 API。
+
+## 核心设计决策
+
+这个任务最容易踩的坑是：用 `tool_choice: {"type":"function","function":{"name":"create_ticket"}}` 强制模型先建工单。但 SKILL.md（并用官方文档核实过）明确：**智谱的 `tool_choice` 仅支持 `"auto"`，强制指定的写法不报错但被静默当成 `auto`**——模型完全可能跳过建工单直接回复，硬性约束就失效了；`response_format` 也不支持 `json_schema`，同样被静默忽略。
+
+所以脚本把“必须先出工单”落实为**代码里的调用顺序**，而不是模型的工具调用意愿：
+
+1. **第 1 步（无条件执行）**：先调 `chat/completions`，`response_format: {"type":"json_object"}` + prompt 里写明 `{"category", "summary"}` 字段结构，让模型产出工单；
+2. **第 2 步（客户端守门）**：`json.loads` 解析（带截取 `{...}` 子串的兜底，防模型夹带解释文字）+ 校验两字段均为非空字符串；失败自动重试 3 次，耗尽后抛 `TicketGenerationError`，**打印明确错误、退出码 1，绝不进入回复环节**；
+3. **第 3 步（仅工单成功后）**：第二次调 API 生成用户回复，工单内容作为上下文喂给模型。
+
+其他细节：
+
+- 模型 `glm-5.3`（纯文本旗舰，支持 `json_object`）；抽取步骤加 `do_sample: False` 求确定性、`reasoning_effort: "low"` 降时延（该模型在标准端点思考无法关闭，只能调档）；
+- Key 只从 `ZHIPUAI_API_KEY` 环境变量读，缺失时启动即报错；HTTP 非 200 会带出平台错误码和响应体（便于排查 1113/1210 之类）；
+- 只依赖 `requests` + 标准库，`python3 main.py` 直接可跑。

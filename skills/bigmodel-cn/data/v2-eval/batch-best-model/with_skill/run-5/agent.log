@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付并通过验证。`py_compile` 编译通过（输出里的 urllib3 警告是本机 Python 3.9 环境的无关噪音），并做了不联网的冒烟测试：能自动向上级目录找到 `comments.txt`（20 条）、生成的 JSONL 首行结构正确，测试产物已清理，`outputs/` 里只留了 `main.py`。
+
+## 交付
+
+脚本在 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/batch-best-model/with_skill/run-5/outputs/main.py`，`python3 main.py` 直接可跑（需 `export ZHIPUAI_API_KEY=...`），成功后 stdout 只输出一行 batch 任务 id，方便 `BATCH_ID=$(python3 main.py)` 这样捕获；进度信息走 stderr。
+
+## 关键决策：模型为什么是 `glm-5.1` 而不是 `glm-5.3`
+
+你要“能用的最好的模型”，这里有个技能包实测（2026-09）确认的坑：**Batch 接口有一份独立于平台的模型白名单**。旗舰 `glm-5.3`（以及 `glm-5.2`）都**不在**白名单里，而且校验发生在文件上传这一步——不是创建任务时——会直接报 `1210 模型名称错误`。白名单内目前最强的对话模型是 `glm-5.1`（200K 上下文，官方定位对齐 Claude Opus 4.6），所以质量优先的正确选择就是它。这一点我用官方文档（docs.bigmodel.cn Batch 页）交叉确认过接口行为。
+
+## 规避的其他实测坑
+
+- **`custom_id` 有未文档化的 ≥6 字符下限**：短了上传阶段就报错，所以用 `request-000001` 格式（14 字符）
+- **`purpose` 必须是 `batch`**，否则创建任务时无法引用该文件
+- **JSONL 每行的 `url` 与创建任务时的 `endpoint` 保持一致**（都是 `/v4/chat/completions`，Batch 目前仅支持这一个端点）
+- **不设 `max_tokens`**：glm-5.1 会自动判断是否思考，思考 token 计入 `max_tokens`，设小了会拿到空内容还查不出错
+- **业务错误检查**：平台可能 HTTP 200 但 body 带 `error`（如白名单外的模型名），脚本对两种失败都给出明确报错
+- 分类 prompt 要求只输出 正面/负面/中性 单个标签，`temperature=0.1` 保证稳定性
+
+## 后续提醒
+
+按你的要求脚本不等待、不取结果。之后取结果时（轮询 `GET /paas/v4/batches/{id}`，完成后下载 `output_file_id`）建议核对响应里的 `model` 字段——智谱的异步类接口有过静默换模型的记录，对账时以读回的 `model` 为准。另外 Batch 前提是账号已实名认证，结果文件只保留 30 天。

@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。编译通过（`python3 -m py_compile` → OK），脚本已保存到 `outputs/main.py`，未实际调用 API（环境无 Key）。
+
+## 问题根源：不是余额不足，是端点用错了
+
+你的 1113 是**两套计费体系混用**的典型症状：GLM Coding Plan 套餐 Key 和开放平台标准 Key **不通用**。你原来打的是标准端点 `/api/paas/v4/chat/completions`，它只认账户余额/资源包，看不见套餐额度——所以官方提示“请充值”是误导，**不要充值**。
+
+修复只需一处：Base URL 改成套餐专用的 **`https://open.bigmodel.cn/api/coding/paas/v4`**（多一级 `/coding`），请求体字段完全不变。这一点我已从官方文档 `docs.bigmodel.cn/cn/coding-plan/tool/others` 核实，与技能包 2026-09-03 的实测记录一致（同一把套餐 Key：标准端点 429/1113，Coding 端点 200）。
+
+顺带修了原代码的另一个 bug：`os.environ[chr(39)+chr(39)]` 实际是 `os.environ['']`（空字符串键），真正跑起来会先抛 `KeyError`——已改为读 `GLM_KEY`。
+
+## 脚本行为
+
+- 从环境变量 `GLM_KEY` 读套餐 Key，缺失时给出明确提示并退出非零；
+- 用 `glm-5.3`（套餐支持的两个模型之一）问“用一句话介绍 Python"；
+- 模型回答打印到 stdout，出错信息走 stderr，仅依赖 `requests`。
+
+运行方式：`export GLM_KEY=... && python3 main.py`
+
+## 两个提醒
+
+1. **套餐内只有 `glm-5.3` / `glm-5.3-flash` 的对话能力**。如果以后用套餐 Key 调 embeddings、生图、异步接口等，同样会报 429/1113（错误码和打错端点一模一样），那些得另用标准 Key。
+2. 官方条款规定套餐“仅限在官方支持的指定工具与产品环境中使用”（Claude Code、OpenCode 等）。自己写脚本调 Coding 端点技术上能通，但属于条款之外的用法，生产系统建议用标准 API Key。

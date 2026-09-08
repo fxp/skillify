@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 通过，各失败路径用 mock 验证过（未真实调用 API）。
+
+## 校验逻辑
+
+用官方知识库详情接口 `GET https://open.bigmodel.cn/api/llm-application/open/knowledge/{id}`（Bearer 鉴权，已与官方文档核对）。核心是处理技能手册里实测验证过的**静默 200 陷阱**（官方文档没写）：这族接口出错时 HTTP 状态码依然是 200，查不存在的知识库返回 `HTTP 200 + {"code":100013,"message":"知识库不存在"}`——所以脚本**绝不依赖 `raise_for_status()`，必须判 `body["code"] == 200`**，目录名 "silent200" 指的就是这个坑。
+
+按“宁可误报无效”的卡点原则，以下情况全部判**不通过**（fail-closed）：
+
+| 情况 | 结论 |
+| :-- | :-- |
+| 环境变量缺失/为空 | 不通过（exit 2） |
+| HTTP 200 + `code != 200`（含 100013 知识库不存在） | 不通过（exit 1） |
+| 响应非 JSON / 缺 `code` 字段 / `data` 结构异常 | 不通过（exit 1） |
+| 接口返回的 `data.id` 与配置 ID 不一致 | 不通过（exit 1） |
+| 网络失败/超时（重试 3 次后仍失败）、非 200 状态码 | 不通过（exit 3） |
+| `code == 200` 且 `data.id` 与配置完全一致 | **通过**（exit 0） |
+
+退出码只有 0 表示有效，流水线拿非零退出码卡点即可。网络/5xx 有 3 次退避重试，只为减少瞬时抖动造成的误报，最终仍 fail-closed。
+
+**一个需要你确认的设计决定**：`document_size == 0` 的空知识库我判为“通过”但打警告（ID 本身确实有效；且实测中空库检索永远返回空数组、与“无相关内容”无法区分）。如果你希望空库也卡点，把那段警告改成 `fail(...)` 即可。
+
+验证结果（mock 网络，未调真实 API）：`200+code100013 → exit 1`、正常详情 `→ exit 0`、id 不一致 `→ exit 1`、非 JSON `→ exit 1`、401 `→ exit 3`、连接超时 `→ exit 3`、环境变量缺失 `→ exit 2`，全部符合预期。
+
+Sources: [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)

@@ -1,0 +1,33 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付并通过验证。总结如下：
+
+## 交付物
+
+`outputs/main.py` —— 直接 `python3 main.py` 运行，只用 `requests`，Key 和 KB ID 分别从 `ZHIPUAI_API_KEY` / `ZHIPU_KB_ID` 读取。
+
+## 校验逻辑（两步）
+
+1. **存在性**：`GET /llm-application/open/knowledge/{id}` 查详情，并核对返回的 `data.id` 与配置值一致
+2. **可用性**：`GET /llm-application/open/document?knowledge_id=…` 分页扫描文档的 `embedding_stat`（0=处理中 / 1=成功 / 2=失败）和 `failInfo`
+
+## 针对“静默 200”陷阱的核心防御
+
+这个任务最大的坑（技能手册实测结论 + 我抓取官方文档核实）：`/llm-application/open/*` 这族接口**业务出错时 HTTP 仍是 200**，查不存在的库返回 `HTTP 200 + {"code":100013,"message":"知识库不存在"}`——`raise_for_status()` 永远不触发。所以脚本的成功判据**只有 `body["code"] == 200`**，HTTP 状态码仅用来拦截网关/鉴权层异常。
+
+## 卡点安全设计（宁可误报无效）
+
+- **失败即抛、绝不吞错**：网络错误（重试 3 次仅限没收到响应的场景）、非 200 HTTP、非 JSON、缺 `code` 字段、`data.id` 不一致——全部判无效退出，不存在“出错后放行”的路径
+- **空库判无效**：检索端对空库永远返回 `200 + []`，与“无相关内容”无法区分，所以知识库存在但 0 篇文档直接拦截
+- **向量化失败/未完成判无效**：有 `embedding_stat=2` 或带 `failInfo` 的文档会静默缺失内容；全部文档仍在处理中同理拦截（这是“能用”的真实门槛，不是只看详情接口返回 200）
+- **退出码**：`0` 通过 / `1` 校验不通过 / `2` 环境变量缺失，流水线直接拿非零码卡点；同时打印 `KB_VALIDATION=PASS/FAIL` 供日志抓取，失败原因里对 `100013` 给出专门提示（ID 拼错、已删除、或不属于当前 Key 的账号）
+
+## 验证结果
+
+- `python3 -m py_compile` 编译通过
+- 实跑配置缺失路径：正确打印结论并 `exit=2`（未发起任何 API 调用；带 Key 的完整路径因当前无可用 Key 未实际调用，符合你的要求）
+
+一个可调参数：文档就绪检查最多扫 1000 篇（`MAX_DOCUMENTS_TO_SCAN`），超出会如实打印“部分检查”而不是假装查完。
+
+Sources: [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)、[文档列表 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E5%88%97%E8%A1%A8)

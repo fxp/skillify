@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/kb-id-validation-silent200/with_skill/run-5/outputs/main.py`，`py_compile` 编译通过，且本地空跑验证了卡点行为（无环境变量时打印「校验结论：无效」并退出码 1，不会放行）。
+
+## 实现要点
+
+**核心防御：应对「静默 200」陷阱**（SKILL.md 速查表第 9 条 + `references/knowledge-rag.md` 实测记录，并经官方文档核实——官方只写了 `code: 200 为成功` 和 `LlmApplicationError{code, message}`，没写出错时的 HTTP 状态，实际是 `llm-application/open/*` 族接口**出错也返回 HTTP 200**，如查不存在的库返回 `200 + {"code":100013,"message":"知识库不存在"}`）：
+- **绝不依赖 `raise_for_status()`**（永不触发），必须判 `body["code"] == 200`
+- HTTP 非 200 另外兜底（网关 5xx / 鉴权层拦截 → 也判无效）
+
+**校验流程（两层检查）**：
+1. `GET /api/llm-application/open/knowledge/{id}` — 确认**存在**：`code==200` + `data` 结构完整 + **读回 `data.id` 与 `ZHIPU_KB_ID` 逐一核对**（防静默错配）
+2. `GET /api/llm-application/open/document?knowledge_id=...` — 确认**可用**：当前 Key 能正常操作该库（空库 `total=0` 不阻断，只做展示）
+
+**fail-closed 严格落地**：环境变量缺失、网络异常、超时（15s）、响应非 JSON、结构不符、id 不一致、任何业务错误码——一律打印「校验结论：无效」+ 原因并 `sys.exit(1)`；只有两项检查全绿才打印「校验结论：有效」并退出 0。**不存在任何把无效判成有效的路径**，宁可误报。
+
+只用 `requests` + 标准库，`python3 main.py` 直接跑；Key 只从 `ZHIPUAI_API_KEY` 读、从不打印。
+
+Sources: [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)、[知识库帮助手册](https://docs.bigmodel.cn/cn/guide/tools/knowledge/guide)

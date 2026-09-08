@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 通过、仅依赖 `os/sys/requests`、无 Key 时正确报错退出（exit 1）。未实际调用 API（环境无 Key）。
+
+## 实现要点
+
+**调用路径**：标准端点 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，模型 `glm-5.3`，通过 `tools: [{"type": "web_search", ...}]` 启用联网搜索。
+
+**两个决定成败的坑**（技能手册实测发现，我抓官方文档交叉确认过——官方示例恰好两个都踩了）：
+
+| 坑 | 处理 |
+| :--- | :--- |
+| `search_engine` 用官方推荐的 `search_pro` 时，返回来源的 `link` **恒为空字符串**（HTTP 200、条数正常，静默失效） | 用 `search_pro_sogou`（官方参数表在列 + 实测带真实链接） |
+| 不显式传 `web_search.search_result: true` 时，搜索照跑、答案照给，但响应里**根本没有** `web_search` 来源数组 | 显式传 `true` |
+
+**来源可靠性**（你的核心要求）：脚本只从响应体顶层的 `web_search` 数组取来源——这是平台把检索结果喂给模型时真实返回的 `title`/`link`，不是模型生成的文本，不存在编链接。代码里还做了去重、跳过空 `link` 并兜底提示。
+
+**其他细节**：`glm-5.3` 标准端点强制思考且思考 token 计入 `max_tokens`，所以预算给到 16384 并在正文为空时按 `finish_reason` 给出诊断（区分“预算被思考吃光”和“参数问题”）；超时放宽到 300 秒；`search_recency_filter: "oneYear"` 覆盖整个 2026 年。
+
+运行方式：
+```bash
+export ZHIPUAI_API_KEY=你的Key
+python3 main.py
+```
+
+Sources:
+- [联网搜索 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/web-search)

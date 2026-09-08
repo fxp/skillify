@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+编译通过，缺环境变量路径也正确地 fail-closed（退出码 1，结论打印清晰，未发起任何 API 调用）。任务完成。
+
+## 交付说明
+
+脚本已保存到 `outputs/main.py`，`python3 main.py` 直接可跑（只依赖 `requests`）。
+
+**校验方式**：调用官方知识库详情接口 `GET https://open.bigmodel.cn/api/llm-application/open/knowledge/{id}`（Bearer 鉴权，`ZHIPUAI_API_KEY` 环境变量读取）。已通过官方文档确认该接口成功时顶层 `code == 200` 且 `data` 中回显知识库 `id`/`name`/`document_size` 等字段。
+
+**关键坑与应对**（来自 skill 实测、官方文档未写）：这族 `llm-application/open/*` 接口**出错时 HTTP 状态码依然是 200**——查不存在的知识库返回的是 `HTTP 200 + {"code":100013,"message":"知识库不存在"}`，所以 `raise_for_status()` 永远不会触发。脚本因此把判定全部放在响应体 `code` 上。
+
+**fail-closed 卡点设计**——只有同时满足「业务 `code == 200` 且 `data.id` 与 `ZHIPU_KB_ID` 完全一致」才判有效（退出码 0）；以下情况一律判不通过（退出码 1，阻断上线），并区分两种措辞：
+- **确认无效**：`code=100013` 知识库不存在、回显 ID 不一致；
+- **无法确认有效，按无效处理**：环境变量缺失、网络/超时（重试 2 次后仍失败）、重定向、HTTP 非 200、响应非 JSON、其他业务错误码（如 Key 无权限）、`data` 缺失。
+
+另外两点设计说明：
+- **不用 `/knowledge/retrieve` 做探测**：文档向量化失败和“确实无相关内容”都返回 `200 + 空数组`，无法区分，不能当卡点信号；
+- 知识库存在但**文档数为 0** 时仍判通过（ID 本身有效），但会打印明确警告提示先上传文档并确认 `embedding_stat == 1`。
+
+**验证**：`python3 -m py_compile` 通过；实测缺环境变量场景输出「校验结论：不通过——无法确认有效，按无效处理（阻断上线）」且退出码为 1。未发起真实 API 调用。
+
+Sources:
+- [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)
+- [创建知识库 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93)

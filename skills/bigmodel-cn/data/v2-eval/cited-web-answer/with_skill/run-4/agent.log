@@ -1,0 +1,17 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/cited-web-answer/with_skill/run-4/outputs/main.py`,`python3 -m py_compile` 编译通过，未实际调用 API(环境无 Key)。
+
+## 实现要点
+
+**调用方式**:`POST /paas/v4/chat/completions`,模型 `glm-5.3`,通过 `tools: [{"type": "web_search", ...}]` 让模型自动联网检索并生成回答(检索+回答一体化)，Key 从 `ZHIPUAI_API_KEY` 环境变量读取，仅依赖 `requests`。
+
+**「来源必须真实可点击」是本任务的核心约束，技能包里有两条官方文档没写清的静默陷阱，都已规避**：
+
+1. **搜索引擎的选择决定有没有链接**——`search_std`/`search_pro` 返回的来源 `link` 恒为空字符串(HTTP 200、条数正常、标题摘要齐全，唯独链接是空的)。脚本用了 `search_pro_sogou`(官方参数表在列、实测返回真实链接，且新闻资讯覆盖适合查新模型发布)，并附了注释说明另外三个可用引擎。
+2. **`search_result: true` 必须显式传**——不传时搜索照跑、答案照给，但响应体顶层根本没有 `web_search` 来源数组，`response.get("web_search")` 永远是 `None`。
+
+**来源展示逻辑**：只从响应的 `web_search` 数组取数据，过滤 `link` 为空的条目、按 URL 去重，每条打印标题 + 独立成行的 URL(终端可直接点击)，附媒体名和发布日期；若接口没返回任何带链接的来源，会明确提示“无法提供核对链接”，绝不编造。
+
+**其他防御**:`glm-5.3` 标准端点思考强制开启且思考 token 计入 `max_tokens`(预算不足时会拿到空内容+`finish_reason=length`),所以显式给了 16384 预算，并对空内容/截断分别报错和警告；错误处理覆盖网络异常、非 JSON 响应、HTTP 错误码和 body 内 `error` 字段。

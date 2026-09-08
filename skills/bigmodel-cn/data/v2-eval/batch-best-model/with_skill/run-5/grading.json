@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 3.6s :: lify/bigmodel-cn-workspace/v2-eval/batch-best-model/with_skill/run-5/work/batch_requests.jsonl\n请求文件已上传：batch_requests.jsonl -> 1788838918_36de5e5c461f432d80060fe1bbea9546\nbatch 任务创建成功，初始状态：validating\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": true,
+      "evidence": "matched=batch_2097168548871798784"
+    },
+    {
+      "text": "全程未出现 1210（模型不在 Batch 白名单）",
+      "passed": true,
+      "evidence": "no_1210=True model=?"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2",
+  "notes": "graded with the frozen grader from glm-round2"
+}

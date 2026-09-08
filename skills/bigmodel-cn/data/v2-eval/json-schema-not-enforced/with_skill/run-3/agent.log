@@ -1,0 +1,34 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过（那条 NotOpenSSLWarning 是本机 requests/urllib3 的环境噪音，与本脚本无关）。
+
+## 关键设计：输出约束靠三道防线，而不是靠 `response_format`
+
+按说明书速查表第 16 条（并经官方文档复核）：智谱平台**没有 strict JSON Schema 模式**，`response_format` 只有 `text`/`json_object` 两值，传 `json_schema` 会被静默忽略、返回夹带解释文字的散文。`json_object` 只能保证"是 JSON"，保证不了结构。所以：
+
+1. **Prompt 写死结构** — system prompt 明确两个约束：`sentiment` 只能取 `"正面"/"负面"/"中性"`，`score` 是 0~1 数字，禁止多余字段和围栏标记；`response_format: {"type": "json_object"}`。
+2. **客户端严格校验**（`_validate`）— 字段集合必须精确等于 `{sentiment, score}`（多余/缺失都拒）；`sentiment` 枚举精确匹配；`score` 排除 bool（bool 是 int 子类，不排除会漏过 `true`）、数字字符串可安全转换、必须落在 `[0,1]`。解析也有兜底：剥 ``` 围栏、截最外层花括号。
+3. **纠错重试 + 宁可失败不写脏数据** — 不合格会把失败原因带回 prompt 重试（最多 3 次，带退避）；重试耗尽则非零码退出，**stdout 只输出通过校验的记录**（每行一个严格 JSON，可直接逐行入库）。另按速查表第 13 条检查 `finish_reason`（`length` = 预算被思考挤占、内容不可信，按可重试处理）。
+
+其他要点：
+
+- **模型 `glm-5.2` + `thinking: {"type": "disabled"}`** — 简单分类不需要深度思考；`glm-5.3` 在标准端点思考关不掉，思考 token 还计入 `max_tokens`（速查表第 13/14 条），没必要冒这个险。
+- Key 只从 `ZHIPUAI_API_KEY` 读取，缺失时明确报错退出（已实测 exit=1）；只用 `requests` + 标准库；超时、HTTP 非 200、API 业务错误码、空 content 都按可重试错误处理。
+
+## 验证情况
+
+- `py_compile` 通过；无 Key 路径实测报错退出。
+- 纯函数离线单测 11 例全过：干净 JSON / 带 ```json 围栏 / 前后夹散文三种解析；合法输入、英文 sentiment、多余字段、缺字段、score 越界（1.2）、score 为布尔、score 为数字字符串、输出为数组等校验用例。
+- API 调用路径未实际执行（环境无 Key），接口细节已对照技能包与 docs.bigmodel.cn 核实。
+
+运行方式：
+
+```bash
+export ZHIPUAI_API_KEY=你的Key
+python3 main.py
+# stdout（示例格式）：
+# {"sentiment":"负面","score":0.95}
+# {"sentiment":"中性","score":0.8}
+# {"sentiment":"正面","score":0.97}
+```

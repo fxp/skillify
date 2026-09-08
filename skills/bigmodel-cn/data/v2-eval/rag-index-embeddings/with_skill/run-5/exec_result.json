@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在向量化 150 条 FAQ（embedding-3，1024 维，每批 64 条）……\n向量已写入 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/rag-index-embeddings/with_skill/run-5/work/vectors.json\n\n查询：发票怎么开\n最相近的 top-3：\n1. [0.7860] 如何申请发票相关的服务？\n2. [0.7833] 发票失败了怎么办？\n3. [0.7803] 发票需要提供哪些材料？\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 9.5
+}

@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，JSONL 构造逻辑在沙箱里实测正确。
+
+## 关键决策：模型为什么是 `glm-5.1` 而不是 `glm-5.3`
+
+这是本任务最容易踩的坑：你要"最好的模型"，平台旗舰确实是 `glm-5.3`，但 skill 的实测数据（2026-09）确认 **Batch 有一份独立于平台的模型白名单，`glm-5.3`/`glm-5.2` 都不在名单内**——`.jsonl` 里写了它，会在文件上传阶段直接报 `1210 模型名称错误`，根本走不到创建任务那步。白名单内质量最强的是 **`glm-5.1`**（200K 上下文，官方模型表中定位对标 Claude Opus 级别），所以质量优先的正确答案是它。我也用 WebFetch 对照了官方文档，确认了 Batch 的参数、jsonl 格式和 `purpose=batch` 等细节。
+
+## 脚本要点
+
+- **流程**：读同目录 `comments.txt`（自动跳过空行）→ 生成 `batch_requests.jsonl` → `POST /paas/v4/files`（`purpose=batch`）→ `POST /paas/v4/batches` → 把任务 id 打到 stdout。进度信息全部走 stderr，**stdout 只有纯 batch id**，方便管道消费。
+- **已规避的坑**：
+  - `custom_id` 用 `request-0001` 格式（有未文档化的 6 字符下限，短 id 上传即拒）；
+  - `temperature: 0.1` 保证分类稳定；
+  - `thinking: {"type": "disabled"}` 显式关思考——分类任务不需要推理，且思考 token 会计入 `max_tokens`，可能把输出预算吃光导致空结果（`glm-5.1` 支持关闭；`glm-5.3` 不支持，所以这个写法不能随模型照搬）；
+  - 错误处理同时拦 HTTP 非 2xx 和"HTTP 200 但 body 带 `error`"两种失败，业务错误码（如白名单 1210）会原样打出。
+- 只用 `requests` + 标准库，`python3 main.py` 直接跑（本机 Python 3.9 兼容）。
+
+**运行方式**：`ZHIPUAI_API_KEY=你的key python3 main.py`。按你的要求没有轮询取结果；后续可用 `GET /paas/v4/batches/{id}` 查状态（建议 20–30 秒轮询一次），完成后下载 `output_file_id` 内容，每行结果的 `custom_id` 与输入一一对应。

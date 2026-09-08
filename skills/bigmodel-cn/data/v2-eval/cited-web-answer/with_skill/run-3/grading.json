@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 66.5s :: 错误：答案被 max_tokens 截断（finish_reason=length），请调大 max_tokens 重试\n"
+    },
+    {
+      "text": "stdout 至少出现 2 条 http(s) 来源链接",
+      "passed": false,
+      "evidence": "找到 0 条: []"
+    },
+    {
+      "text": "来源取自接口返回（读了 web_search / search_result 数组）",
+      "passed": true,
+      "evidence": "reads_api_sources=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.333
+  },
+  "executor": "glm-5.3",
+  "skill": "v2",
+  "notes": "graded with the frozen grader from glm-round3b"
+}

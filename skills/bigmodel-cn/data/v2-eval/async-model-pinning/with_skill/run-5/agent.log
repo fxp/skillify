@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，缺 Key 时的报错路径也验证了（退出码 2，提示去控制台拿 Key）。
+
+## 实现要点
+
+**接口**（skill reference + 官方文档 `docs.bigmodel.cn` 双向核实过）：
+- 提交：`POST https://open.bigmodel.cn/api/paas/v4/async/chat/completions`（不支持 `stream`，脚本里没传）
+- 轮询：`GET /paas/v4/async-result/{id}`，按 `task_status`（`PROCESSING`/`SUCCESS`/`FAIL`）循环，间隔 2s、单任务总超时 180s
+- 三句话先全部提交拿 task_id，再逐个轮询——这才是异步接口的批量姿势
+
+**模型审计**（这个任务的核心，来自 skill 速查表第 2 条实测坑）：
+- 异步端点会**静默换模型**：实测 `glm-4.6` → `glm-4.7`，同步端点不换。所以脚本不信任请求体，从**两处**读回 `model` 字段核对：提交接口回显 + 轮询结果回显（后者是权威的“实际运行模型”）
+- 每个任务打印「我请求的模型」和「接口实际使用的模型」原文，不一致时打 `*** 模型不一致报警 ***`，整体以**退出码 1** 结束，审计流水线可以直接机器判定
+- 比对忽略大小写：平台回显大小写不稳定（实测请求 `glm-5.3` 回显 `GLM-5.3`，属同一模型），纯大小写差异不误报；其余任何差异（`glm-4.6`→`glm-4.7`）一律报警
+- 另按第 13 条坑检查了 `finish_reason != "stop"`（思考 token 会吃 `max_tokens` 预算，截断时不只看空串）
+
+**一个需要提前告知的预期行为**：按 skill 里 2026-09-07 的真实 API 实测，`glm-4.6` 打异步端点**大概率会被换成 `glm-4.7`**——所以真实跑的时候报警很可能会触发，且退出码为 1。这是审计检查在正确工作，不是脚本 bug；如果审计上必须严格 glm-4.6 产出，需要和平台确认或改用同步端点（同步实测不换模型）。
+
+依赖只有 `requests` + 标准库，Key 从 `ZHIPUAI_API_KEY` 读取，`python3 main.py` 直接跑。

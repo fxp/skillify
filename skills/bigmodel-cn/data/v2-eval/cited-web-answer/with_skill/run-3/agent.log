@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过。
+
+## 实现要点
+
+脚本走 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`（`glm-5.3`），通过 `tools` 里的 `web_search` 工具联网搜索后回答，来源**只从响应体顶层的 `web_search` 数组读取**（每条含 `title`/`link`/`media`/`publish_date`），模型没有任何机会自己编链接。
+
+按说明书实测记录处理了三个会静默失效的坑：
+
+1. **`search_result: true` 必须显式传**（SKILL.md 速查表 #5）——不传的话搜索照跑、答案照给，但响应里根本没有 `web_search` 来源数组，“列出出处”这个需求会无声落空。
+2. **引擎选错则 `link` 恒为空串**（速查表 #4）——`search_std`/`search_pro` 返回的来源只有标题和摘要、没有链接；所以用 `search_pro_bing`（官方参数表未列但实测可用），并带 `_quark`/`_sogou` 回退链，遇到 400 参数错误自动换下一个引擎。鉴权/余额类错误不重试，直接报出平台的 `code`/`message`。
+3. **思考 token 计入 `max_tokens`**（速查表 #13）——`glm-5.3` 标准端点强制思考，预算给小了会出现 `finish_reason=length`、答案空串；脚本显式给 4096，并按 `finish_reason`（而非空串）判断截断。
+
+另外对 `link` 为空的来源做了兜底（跳过并提示条数），若一条带链接的来源都没有会以非零码退出并说明，而不是装作有来源。环境变量 `ZHIPUAI_API_KEY` 未设置时也会先给出明确提示。
+
+运行方式：
+
+```bash
+export ZHIPUAI_API_KEY=你的Key
+python3 main.py
+```

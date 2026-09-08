@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过。脚本已交付到指定路径，说明如下。
+
+## 交付物
+
+`outputs/main.py` — 只依赖 `requests`，纯 Python 算余弦（不用 numpy），`python3 main.py` 直接跑。
+
+## 实现要点（依据 SKILL.md / references/tools.md，并用官方文档核实）
+
+- **接口**：`POST https://open.bigmodel.cn/api/paas/v4/embeddings`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 环境变量读取（skill 第 3 条通用规则：绝不硬编码）。请求/响应字段已与 docs.bigmodel.cn 官方页面逐项核对一致。
+- **分批**：`embedding-3` 的 `input` 数组单次最多 64 条，150 条 FAQ 按 64/64/22 三批请求（官方文档明示的限制，超限会报错）。
+- **结果对齐**：按响应 `data[].index` 排序后再取向量——reference 的注意事项明确说不要假设返回顺序与输入一致。
+- **维度一致性**：显式固定 `model=embedding-3` + `dimensions=1024` 并写进 vectors.json 元数据，索引和查询用同一组合，规避“向量空间不一致、检索失真”的坑。
+- **容错**：缺 Key、HTTP 非 200、响应条数不符都有明确报错退出；faq.txt 在脚本目录/当前目录/上级目录中自动查找，vectors.json 写在 faq.txt 同目录。
+
+## 已做的验证（未真实调 API，环境无 Key）
+
+- `python3 -m py_compile` 通过（本机 Python 3.9，顺带修了一个 3.9 不支持 `Path.parents` 切片的兼容问题）；
+- 缺 Key 时给出明确提示退出；
+- monkeypatch 掉 `embed` 做了端到端干跑：找到 `v2-eval/faq.txt`（150 行）→ 分批向量化 → 写出 vectors.json（150 条、含元数据）→ 第二次运行复用缓存 → 查询「发票怎么开」打印 top-3 原文到 stdout。测试产物已清理。
+
+真实运行时唯一区别就是 `embed` 会走真 HTTP，top-3 会是语义真正最相近的条目（faq 里 16–20 行附近那批发票问题）。

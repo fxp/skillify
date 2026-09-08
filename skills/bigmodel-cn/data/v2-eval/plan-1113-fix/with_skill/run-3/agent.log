@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+搞定，已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/plan-1113-fix/with_skill/run-3/outputs/main.py`，`py_compile` 编译通过（按要求没有实际调 API）。
+
+## 429 + 1113 的真正原因
+
+**不是余额问题，不用充值。** 智谱有两套隔离的计费体系，Key 不通用、Base URL 不同：
+
+| | 你打的（错） | 应该打的 |
+| :-- | :-- | :-- |
+| 端点 | `…/api/paas/v4/chat/completions`（标准 API） | `…/api/**coding**/paas/v4/chat/completions`（套餐专用） |
+| 计费 | 只认账户余额/资源包，**看不到套餐额度** | 套餐额度 |
+
+套餐 Key 打标准端点 → 标准端点查不到余额 → 报 `1113 余额不足`。官方文档原话：“错误配置端点将导致无法使用 GLM Coding Plan 套餐额度”。技能包里的实测记录也逐条复现过：同一把套餐 Key，标准端点 429 `1113`，Coding 端点 200。
+
+## 改动点
+
+1. **Base URL** 换成 `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`（路径里没有 `/v1`，别让客户端自动追加）。
+2. **顺带修了个原代码必炸的 bug**：`os.environ[chr(39)+chr(39)]` 是在读名为 `''`（两个单引号字符）的环境变量，还没发请求就会 KeyError。现在正确读 `GLM_KEY`，缺失时给出明确提示。
+3. 模型用 `glm-5.3`（套餐各档位均支持），鉴权仍是 `Authorization: Bearer <KEY>`，请求体与标准端点完全一致。
+4. 回答从 `choices[0].message.content` 取出打到 stdout；非 2xx 时把状态码和响应体打到 stderr 并以非零码退出，方便再排查。
+5. 不设 `max_tokens`——`glm-5.3` 是始终思考的模型，思考 token 会计入该预算，设小了会出现“成功但内容为空”。
+
+两点提醒：
+
+- **别依赖模型自动路由**：套餐端点上旧模型名会被静默换掉（如 `glm-4.6` 实际跑 `glm-5.3-flash`），日志里看到的模型名可能和代码写的不一致，写死 `glm-5.3` 最稳。
+- 官方条款规定套餐“仅限在官方支持的指定工具与产品环境中使用”（Claude Code、OpenCode 等）；自己写脚本打 Coding 端点技术上能通，但属于条款之外的用法，生产系统建议用标准 API Key 走 `paas/v4`。
+
+运行方式：`export GLM_KEY=<你的套餐Key>` 然后 `python3 main.py`。

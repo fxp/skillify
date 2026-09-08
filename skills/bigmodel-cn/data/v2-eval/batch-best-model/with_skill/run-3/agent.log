@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，验证均通过（`py_compile` 编译 OK；本地逻辑测试 20 条评论 → 20 行合规请求；未调用任何 API）。
+
+## 关键决策：模型用 `glm-5.1`，不是 `glm-5.3`
+
+这是本任务最核心的坑。你要求“用能用的最好的模型”——平台上真正的旗舰是 `glm-5.3`，但 **Batch 接口有一份独立的模型白名单，旗舰 `glm-5.3`/`glm-5.2` 都不在其中**：把白名单外的模型写进 .jsonl，会在**文件上传阶段**就报 `1210 模型名称错误`，根本到不了创建任务那一步。白名单内最强的是 `glm-5.1`（对齐 Claude Opus 4.6 档位、200K 上下文，见 `references/models.md`），所以脚本用它——既是 Batch 里能跑的最强模型，也享受半价。这一点我同时用官方文档核对过：官方 Batch 页面的支持模型表也只列到 GLM-4 系列，与技能文档“白名单比文档更窄、只出现在报错里”的实测结论一致。
+
+## 脚本处理的其他实测坑（均来自技能文档）
+
+| 坑 | 处理方式 |
+| :-- | :-- |
+| `custom_id` 有未文档化的 **≥6 字符下限**，短了上传即报错 | 用 `request-001` 格式（11 字符），每条唯一 |
+| Batch 文件上传 `purpose` 必须是 `batch` | multipart 上传显式指定 |
+| `completion_window` 参数已废弃 | 创建任务时不传 |
+| 业务错误可能藏在 HTTP 200 里 | 同时检查状态码和响应体的 `error`/`code` 字段，失败即带原始响应退出 |
+| 分类任务要输出可解析 | system prompt 限定“只输出一个词：正面/负面/中性”，`temperature: 0.1` |
+
+## 行为说明
+
+- 进度信息走 **stderr**，stdout 只打印一行 **batch 任务 id**，方便后续脚本直接接管（`BATCH_ID=$(python3 main.py)`）。
+- `comments.txt` 实际在 `v2-eval/` 目录（run-3 的上级），脚本会从当前目录、脚本目录逐级向上查找，从哪里运行都能找到；空行已跳过。
+- 运行时在脚本同目录生成 `batch_sentiment_requests.jsonl`（`.jsonl` 每行含 `custom_id`/`method`/`url`/`body`，`url` 与任务的 `endpoint` 均为 `/v4/chat/completions`，单文件单模型）。
+- Key 从 `ZHIPUAI_API_KEY` 读取，缺失时报清晰错误退出；只依赖 `requests` + 标准库。
+
+另外提醒一点：调用 Batch 前账号需完成**实名认证**，且 Batch 文件（含结果文件）只保留 30 天，跑完记得及时下载结果。

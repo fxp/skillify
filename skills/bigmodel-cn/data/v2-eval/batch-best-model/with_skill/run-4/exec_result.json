@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "batch_2097168533411594240\n",
+  "stderr": "从 comments.txt 读到 20 条评论\n已构造批量请求文件 batch_requests.jsonl（模型 glm-5.1）\n上传成功，input_file_id=1788838914_adfd45cfb4724a7ea8af9ec48d3b3aea\nbatch 任务创建成功，状态：validating\n",
+  "timed_out": false,
+  "seconds": 3.7
+}

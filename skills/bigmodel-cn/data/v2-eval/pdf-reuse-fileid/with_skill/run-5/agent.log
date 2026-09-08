@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过（已清理编译缓存，outputs 目录只有这一个文件）。
+
+## 实现要点
+
+按 SKILL.md 的指引读了 `references/files-batch.md`（上传接口）、`references/chat.md`（file 内容块）、`references/models.md`（选型），并用 WebFetch 对照了官方文档确认，代码里规避了手册点出的几个静默陷阱：
+
+| 决策 | 依据 |
+| :-- | :-- |
+| 上传时 `purpose="user_data"` | 手册实测陷阱 #6：用 `agent`/`code-interpreter` 上传也能成功，但对话里引用 file_id 时必报 `1210 文件解析失败`；只有 `user_data` 被 chat 接口认可（官方文件理解示例恰好就用 PDF + `user_data` 验证过） |
+| 三问复用同一 `file_id` | 文件只 `POST /paas/v4/files` 传一次；每轮对话在 `content` 数组里带 `{"type":"file","file":{"file_id":...}}` + 问题文本，后续加问只需再调 `ask()` |
+| 模型 `glm-5.3-flash` | 原生多模态、支持文件输入，是官方文档「文件理解」示例所用模型 |
+| 不设 `max_tokens`，改查 `finish_reason` | 陷阱 #13：思考 token 计入 `max_tokens`，预算给小会得到 `finish_reason=length` + 空 content 的静默失败 |
+| 本地零 PDF 解析 | 只用 `requests` + 标准库，解析全由平台完成 |
+
+脚本会在脚本目录及其上级目录查找 `contract.pdf`（当前仓库里它在 `v2-eval/contract.pdf`，能被找到），API Key 从 `ZHIPUAI_API_KEY` 读取，三个问答逐条打印到 stdout。配置好 Key 后 `python3 main.py` 即可跑通；任一步失败（缺 Key、上传失败、业务错误码、空回复）都会带响应体明确退出，方便排查。
+
+Sources: [智谱AI开放文档 · 对话补全 API](https://docs.bigmodel.cn/api-reference/模型-api/对话补全)、[上传文件 API](https://docs.bigmodel.cn/api-reference/文件-api/上传文件)、[GLM-5.3-Flash 模型文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)

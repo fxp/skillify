@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，可直接 `export ZHIPUAI_API_KEY=... && python3 main.py` 运行。
+
+## 实现要点
+
+这个任务最大的坑是**“严格符合结构”不能靠 API 参数保证**——技能包实测和官方文档都确认：平台没有 `json_schema` 严格模式（传了会被静默忽略），`response_format` 只有 `json_object` 一档。所以结构约束是三层防线：
+
+1. **Prompt 层**：system prompt 写死字段名、三分类取值、score 范围，禁止输出 JSON 以外内容；请求带 `response_format: {"type":"json_object"}`；
+2. **解析层**：`json_object` 模式仍可能夹带围栏/散文，用花括号配对扫描（正确跳过字符串内的 `{}`）截出 JSON 再 `json.loads`；
+3. **校验层**：`sentiment` 必须 ∈ {正面, 负面, 中性}，`score` 必须是 [0,1] 的数字（`bool` 和非数字字符串拒绝，`"0.9"` 这类容错转换）。**输出 dict 由代码重建而非透传模型原文**，保证入库对象恰好只有两个键；校验失败自动重试（最多 3 次），耗尽则报错退出——宁可不写也不写脏数据。
+
+其他避坑：`glm-5.3` 标准端点强制思考，只传 `thinking: enabled` + `reasoning_effort: low`（简单分类不需要深度推理）；`max_tokens` 给到 2048 且检查 `finish_reason == "stop"`（思考 token 计入预算，`length` 时空 content 不算成功）；进度信息走 stderr，stdout 每行一个严格合规的 JSON（与输入顺序一致）。
+
+## 验证（未调真实 API）
+
+- `python3 -m py_compile` 通过；
+- 纯函数测试 7 组：夹带文字/围栏提取、多余字段丢弃、非法 sentiment/score（含 `True`、越界、缺字段）、截断 JSON 拒绝——测试还真抓出一个 `score=True` 漏网 bug，已修复；
+- mock 端到端测试：脏输出触发重试后成功、`finish_reason=length` 重试、重试耗尽抛 `RuntimeError`；
+- 无 Key 时清晰报错退出（exit 1），交付目录已清理，只剩 `main.py`。
+
+一条备注：运行时本地环境会打印一条 `NotOpenSSLWarning`（来自 urllib3/Python 3.9，与脚本无关，任何 `import requests` 都会出现），不影响结果。

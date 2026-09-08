@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+全部通过。交付完成，总结如下：
+
+## 交付
+
+脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/batch-best-model/with_skill/run-2/outputs/main.py`，只依赖 `requests`，`python3 main.py` 直接可跑。流程：读取脚本同目录的 `comments.txt`（每行一条，自动跳过空行）→ 生成 `batch_requests.jsonl` → `purpose=batch` 上传 → 创建 batch 任务 → **stdout 只输出 batch 任务 id**（进度信息走 stderr，方便管道取 id）。
+
+## 关键决策：模型用 `glm-5.1`，不是旗舰 `glm-5.3`
+
+这是本任务最大的坑：**Batch 支持的是一份独立模型白名单，不是平台全部模型，且校验发生在文件上传阶段**。平台最强的 `glm-5.3`/`glm-5.2` 不在白名单内，上传 `.jsonl` 时就会直接报 `1210 模型名称错误`，任务根本建不起来。白名单内质量最强的是 `glm-5.1`（5.x 旗舰系列，对齐 Claude Opus 4.6 档位）——在“质量优先 + 必须能跑通 Batch”双重约束下的最优解，没有退到 glm-4 系或 flash 档。官方文档首页不会告诉你这份白名单，它只出现在报错信息里。
+
+## 其他规避的坑
+
+- **`custom_id` 最短 6 字符**（未文档化）：`r1` 这种短 id 上传即报错，脚本用 `request-000001` 格式，唯一且可读
+- 上传 `purpose` 必须是 `batch`，创建任务时 `endpoint` 固定 `/v4/chat/completions`，与 jsonl 每行的 `url` 一致
+- 业务错误不一定伴随 4xx/5xx，脚本对 HTTP 状态码和响应体（`error` 字段）双重检查后才取 id
+- `temperature: 0.1` 保证分类输出稳定；system prompt 约束只输出「正面/负面/中性」三选一
+- `auto_delete_input_file: False`，保留输入文件便于校验失败时排查重提
+
+## 验证情况
+
+按约定**没有真实调用 API**（环境无 Key）。已做：`python3 -m py_compile` 编译通过；离线单测通过（jsonl 行结构、custom_id 长度/唯一性、评论与请求一一对应、合法 JSONL 落盘、缺 Key / 缺 `comments.txt` 时给出明确报错退出）。
+
+⚠️ 注意：`comments.txt` 当前不在 `outputs/` 目录里（整个 run-2 下都没有），运行前需把它放到 `main.py` 同目录。
+
+Sources:
+- [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)
+- [Batch API 常见问题 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/faq/batch-api-issues)

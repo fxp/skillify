@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 3.7s :: 从 comments.txt 读到 20 条评论\n已构造批量请求文件 batch_requests.jsonl（模型 glm-5.1）\n上传成功，input_file_id=1788838914_adfd45cfb4724a7ea8af9ec48d3b3aea\nbatch 任务创建成功，状态：validating\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": true,
+      "evidence": "matched=batch_2097168533411594240"
+    },
+    {
+      "text": "全程未出现 1210（模型不在 Batch 白名单）",
+      "passed": true,
+      "evidence": "no_1210=True model=?"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2",
+  "notes": "graded with the frozen grader from glm-round2"
+}

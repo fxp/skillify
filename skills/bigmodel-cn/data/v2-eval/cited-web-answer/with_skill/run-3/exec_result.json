@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "错误：答案被 max_tokens 截断（finish_reason=length），请调大 max_tokens 重试\n",
+  "timed_out": false,
+  "seconds": 66.5
+}

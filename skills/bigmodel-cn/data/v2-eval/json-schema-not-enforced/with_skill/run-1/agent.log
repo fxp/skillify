@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 编译通过，校验逻辑离线测试 6 正 5 反全部符合预期。
+
+## 关键设计依据
+
+这个任务正好踩中技能包速查表**第 16 条静默陷阱**：GLM 的 `response_format: json_schema` 会被**静默忽略**，可能返回夹带解释文字的散文。我也抓了官方文档核实——[结构化输出指南](https://docs.bigmodel.cn/cn/guide/capabilities/struct-output)确认平台只有 `json_object` 弱约束模式、无服务端强 Schema，官方自己都建议“Schema 验证 + 业务逻辑验证”加降级方案。所以脚本的核心思路是：
+
+**服务端弱约束 + 客户端强校验兜底**，保证入库数据干净：
+
+1. **请求层**：`response_format: {"type":"json_object"}`，并在 system prompt 里把结构、字段名、三个中文枚举值、“不要新增字段”写死。
+2. **解析层**（`_extract_json`）：容忍模型偶发的 markdown 代码块包裹和前后夹带文字，取首尾大括号间的内容再 `json.loads`。
+3. **校验层**（`_validate`）——真正的入库保证：
+   - `sentiment` 只认 正面/负面/中性；英文值（`positive` 等）归一化映射成中文；其他值判非法
+   - `score` 排除 bool、字符串可转数字则转、越界夹回 [0,1]（夹取时 stderr 留痕，不静默改数）
+   - **多余字段直接丢弃**，输出恒为 `{"sentiment", "score"}` 两字段
+4. **重试层**：单条最多 3 次尝试（网络错误/HTTP 429、5xx/输出不合法才重试，鉴权类 4xx 立即失败），退避 2s/4s；3 次仍不合法就抛错退出——**宁可不写也不写脏数据**。
+
+另外规避了速查表 **第 13/14 条**：`glm-5.3` 在标准端点思考关不掉（传 `disabled` 报 1210），且思考 token 计入 `max_tokens`，所以用 `reasoning_effort: "low"` + `max_tokens: 2048` 给足预算，并检查 `finish_reason != "stop"` 时按截断处理，避免拿到空 `content` 误判。
+
+## 运行方式
+
+```bash
+ZHIPUAI_API_KEY=你的key python3 main.py
+```
+
+stdout 按输入顺序每行输出一个严格结构的 JSON（预期依次为 负面/中性/正面），重试和归一化日志走 stderr，不污染 stdout；未设置环境变量时报错退出码 1。仅依赖 `requests` 和标准库。
+
+Sources:
+- [结构化输出 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/capabilities/struct-output)
+- [对话补全 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)

@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，实际运行验证了缺文件时是干净报错（不是堆栈）。设计说明：
+
+## 实现要点
+
+**上传一次，三问复用**
+- `POST /paas/v4/files` 以 multipart 上传 `contract.pdf`，拿到 `file_id` 后，三个问题都在 `chat/completions` 的 content 数组里以 `{"type": "file", "file": {"file_id": ...}}` 引用同一个 id，文件内容不进请求体
+- 上传时 **`purpose=user_data`**——这是技能包实测踩过的坑（速查表 #6）：用 `agent`/`code-interpreter` 上传虽然能成功，但 chat 引用时会报 `1210 文件解析失败`；`user_data` 恰好支持 pdf
+
+**模型与端点**
+- 模型选 `glm-5.3-flash`：原生多模态（图片/视频/文件输入），官方模型页确认「视觉理解：原生多模态输入，支持图片，视频，文件」
+- 标准端点 `https://open.bigmodel.cn/api/paas/v4`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读
+
+**避开的坑（均来自技能包速查表）**
+- 坑 #13/#14：`glm-5.3-flash` 在标准端点思考强制开启且思考 token 计入 `max_tokens`，所以不传 `thinking: disabled`（会报 1210），而是给足 `max_tokens=32768` 并检查 `finish_reason != "stop"` 就报错退出，防止拿到空回答还误以为正常
+- 统一的 `check()` 同时判 HTTP 状态码和 `{"error": {"code", "message"}}` 业务错误体
+
+**约束满足**：零本地 PDF 解析（无 PyPDF2/pdfplumber/pypdf，文件只以二进制流上传）、第三方库仅 `requests`、`python3 main.py` 直接可跑；找不到 PDF / 缺 Key / 网络失败都是一行干净报错 + 非零退出码。
+
+一个环境观察：`run-4/` 目录下目前**没有** `contract.pdf`，脚本会依次找当前工作目录和脚本所在目录，把 PDF 放到任一处即可。
+
+Sources: [GLM-5.3-Flash - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)、[对话补全 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%25E6%25A8%25A1%25E5%259E%258B-api/%25E5%25AF%25B9%25E8%25AF%259D%25E8%25A1%25A5%25E5%2585%2588)

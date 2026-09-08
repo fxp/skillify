@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，交付目录只有这一个文件。
+
+## 关键结论（来自技能包 + 官方文档交叉确认）
+
+这个任务最大的坑在技能包速查表第 16 条，且我用官方文档复核过：**智谱 `response_format` 只有 `text` / `json_object` 两种取值，没有 `json_schema` 强约束**。`json_object` 只保证“像 JSON”，字段名和取值仍可能跑偏（夹带解释文字、英文枚举、`"95%"` 这种写法）。所以“严格符合结构”不能靠 API 参数，必须靠 prompt 约定 + 客户端硬校验。
+
+## 脚本设计
+
+| 环节 | 做法 |
+| :-- | :-- |
+| 模型 | `glm-5.2` + `thinking: {"type": "disabled"}`。选它而不是 `glm-5.3` 是因为 5.3 在标准端点**强制开思考**，且思考 token 计入 `max_tokens`（速查表 #13/#14），预算小了会拿到空 content |
+| 请求 | `POST /api/paas/v4/chat/completions`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读取；`json_object` 模式 + system prompt 里把两个字段的结构写成硬性要求；`temperature=0.1` |
+| 解析降级 | 直接 `json.loads` → 剥 ```` ```json ```` 栅栏 → 截取首尾大括号 |
+| 归一化 | `sentiment` 只认三个中文值（`positive/negative/neutral` 等常见英文变体映射回中文）；`score` 归一到 `[0,1]`（`"95%"` 换算，纯数字越界如 `95` **不猜不截断**，判无效重试）；白名单构造输出——模型多吐的字段一律剔除，入库对象恰好只有 `sentiment`/`score` 两个键 |
+| 重试 | 校验失败带**具体原因**（“score 必须是 0~1，实际为 95”）重新请求，最多 3 次；网络层另有 429/5xx/超时重试 |
+| 防脏数据 | stdout 每条文本恰好一行结果、无任何其他输出；`finish_reason` 异常（`length`/`sensitive`）有提示；彻底失败的条目只进 stderr、脚本非零退出——宁缺毋脏 |
+
+## 验证结果
+
+- `python3 -m py_compile` 通过（本机 Python 3.9）
+- 缺 Key 时正确报错退出（exit 2），未发请求
+- 不联网单测 24 个断言全过：栅栏/夹文字输出解析、英文枚举映射、百分比换算、越界拒绝、白名单剔字段、输出行恰好两键
+- 端到端 mock：HTTP 500 → 脏输出（夹文字 + `negative` + `score: 95`）→ 干净结果，三次调用后正确恢复为 `{"sentiment": "负面", "score": 0.93}`；持续失败时正确抛错不产出结果
+
+唯一未验证的是真实 API 调用（环境无 Key，按约定未调用）。

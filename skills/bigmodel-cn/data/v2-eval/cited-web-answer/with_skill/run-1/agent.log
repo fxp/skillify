@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，解析逻辑用模拟响应离线验证过（未调用真实 API）。
+
+## 实现要点
+
+**调用方式**：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，`glm-5.3` + `tools` 里挂 `web_search` 工具，Bearer 鉴权从 `ZHIPUAI_API_KEY` 读取，只依赖 `requests`。
+
+**来源真实性是这个任务的两个隐性命门**，都来自技能包的实测踩坑记录（官方文档没写或写反），也是这份代码和“随手写”版本的核心区别：
+
+1. **`search_result: true` 必须显式传**——不传时搜索照跑、答案照给，但响应体里压根不出现 `web_search` 来源数组，"列来源"会静默失效（速查表陷阱 5）。
+2. **搜索引擎不能用常见的 `search_pro`/`search_std`**——这两个返回的来源 `link` 恒为空字符串，只有标题摘要（陷阱 4）。代码用 `search_pro_bing`（`search_pro_quark`/`_sogou`/`_jina` 也可，改一个常量即可切换）。
+
+**其余细节**：
+- 来源只从响应的 `web_search` 数组提取，过滤空链接、按 URL 去重，以 `[序号] 标题（媒体）` + 独立一行裸 URL 的格式打印，终端里可直接点击；
+- 检查 `finish_reason`——`glm-5.3` 在标准端点强制开思考且思考 token 计入预算，若非 `stop` 会在 stderr 提示可能截断（陷阱 13）；
+- `search_recency_filter: "oneYear"` 贴合“2026 年发布”这类时效性问题；超时给到 180 秒；
+- 缺 Key、网络失败、接口报错（含 `{"error": {...}}` body）都有明确的错误输出和退出码；万一某次引擎没返回链接，也会明确告知而不是假装有出处。
+
+跑法：`export ZHIPUAI_API_KEY="你的 Key"` 后 `python3 main.py`。本地验证内容：`py_compile` 通过；模拟响应下答案提取、空链接过滤、去重、缺字段兜底全部符合预期；无 Key 时正确报错退出（exit 1）。真实接口行为需要你拿到 Key 后实际跑一次确认。

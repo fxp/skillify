@@ -1,0 +1,21 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，无 Key 时的守卫路径也验证正常（退出码 2 + 明确提示；那条 urllib3 警告来自本机 Python 3.9 环境，与脚本无关）。
+
+## 实现要点
+
+**接口流程**（按 SKILL.md → `references/chat-advanced.md`，并经官方文档核对）：
+- 提交：`POST https://open.bigmodel.cn/api/paas/v4/async/chat/completions`，Bearer 鉴权，请求体同同步接口但**不传 `stream`**，返回 `id` + `task_status`
+- 轮询：`GET /paas/v4/async-result/{id}`（id 在路径里），2 秒间隔、单任务 180 秒总超时，`SUCCESS` 取结果、`FAIL`/超时抛错；另兼容了「不带 `task_status` 直接回 `choices`」的响应形态
+
+**审计核对（本任务的核心）**：技能包速查表第 2 条的实测记录明确指出——异步端点会**静默换模型**（请求 `glm-4.6` 实际回显 `glm-4.7`，HTTP 完全不报错）。所以脚本：
+- 在**提交回执**和**轮询结果**两处都读回响应体的 `model` 字段，与请求的 `glm-4.6` 逐条核对
+- 按忽略大小写比较（平台回显大小写不统一，如 `GLM-4.7` vs `glm-4.7`，同一模型的大小写差异不算替换），但两个回显值都**原样打印**留痕
+- 不一致时逐条打印 `⚠️ 模型不一致报警`，结束时输出汇总明细并以**退出码 1** 结束——审计口径上不含糊
+
+**其余细节**：Key 从 `ZHIPUAI_API_KEY` 读取（未设置则退出码 2）；只依赖 `requests`；每条结果检查 `finish_reason`（防速查表第 13 条「思考吃掉 max_tokens 导致空内容」被误判为分类失败）；分类输出做了宽松解析兜底。直接 `python3 main.py` 即可运行。
+
+一点提醒：按技能包的实测对照表，这个脚本真实跑起来时 `glm-4.6` 很可能在异步端点被换成 `glm-4.7` 而触发报警——那不是脚本 bug，正是审计核对要抓的现象；若业务上必须跑 `glm-4.6`，需改用同步端点或与平台确认。
+
+Sources: [对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8%E5%BC%82%E6%AD%A5)、[查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%9F%A5%E8%AF%A2%E5%BC%82%E6%AD%A5%E7%BB%93%E6%9E%9C)

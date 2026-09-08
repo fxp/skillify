@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（唯一交付文件），编译通过，且缺文件时的报错分支实测正常退出（那条 urllib3 警告是本机 Python 3.9 环境的 SSL 提示，与脚本无关）。没有实际调用 API。
+
+**实现要点**（均依据技能包 + 官方文档 docs.bigmodel.cn 双重确认）：
+
+1. **只上传一次，三轮全复用 file_id**
+   - `POST /paas/v4/files`，multipart 上传 `contract.pdf`，拿响应里的 `id`；
+   - 之后每个问题在 `content` 数组里只带 `{"type": "file", "file": {"file_id": ...}}` 这一个字符串引用，请求体里不再出现文件字节，不重复上传、不 base64 内联。
+
+2. **`purpose` 必须是 `user_data`** —— 这是最容易踩的坑：用 `agent` / `code-interpreter` 上传同样会成功，但那个 file_id 在 chat 里引用时必报 `1210 文件解析失败`（技能包实测结论，官方文档没写）。`user_data` 恰好支持 pdf。
+
+3. **模型选 `glm-5.3-flash`**：官方 OpenAPI 里 `file` 类型挂在视觉模型请求（`ChatCompletionVisionRequest`）下，纯文本模型不适用；官方“文件理解”示例用的正是这个模型。
+
+4. **完全不在本地解析 PDF**：没有 PyPDF2 / pdfplumber / pypdf，文件以二进制流原样交给平台。
+
+5. **防御性细节**：
+   - 错误处理同时检查 HTTP 状态码和响应体里的 `error.code/message`（智谱真实错误在 body 里）；
+   - `max_tokens=8192` 并检查 `finish_reason`——思考 token 计入 max_tokens，glm-5.3-flash 在标准端点强制思考，预算太小会拿到空 content；
+   - `reasoning_effort: "low"`，事实抽取类问题压低思考开销；
+   - API Key 只从 `ZHIPUAI_API_KEY` 读取，缺失时给出明确提示；
+   - `contract.pdf` 按脚本所在目录解析，任意工作目录下 `python3 main.py` 都能跑通。
+
+实际使用时把 `contract.pdf` 放到 `main.py` 同目录、`export ZHIPUAI_API_KEY=...` 后直接运行即可；将来追加更多轮提问，往 `QUESTIONS` 列表里加条目就行，file_id 复用逻辑不变。

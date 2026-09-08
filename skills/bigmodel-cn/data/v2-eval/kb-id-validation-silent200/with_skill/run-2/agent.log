@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，无配置场景实测打印「校验结论：无效」并以退出码 1 拦截（那条 urllib3 警告来自本机 Python 环境，与脚本无关）。
+
+## 核心设计：防住「静默 200」这个坑
+
+技能手册的实测结论（速查表第 9 条 + `knowledge-rag.md`）指出：`/llm-application/open/*` 这族知识库接口**出错时 HTTP 状态码依然是 200**，真实结果在响应体 `code` 字段里——查一个不存在的知识库，返回的是 `HTTP 200 + {"code":100013,"message":"知识库不存在"}`，`raise_for_status()` 永远不会触发。我也抓了官方文档确认：端点为 `GET https://open.bigmodel.cn/api/llm-application/open/knowledge/{id}`（Bearer 鉴权），且官方文档恰好**没有**写明错误码和出错时的 HTTP 状态——全靠实测结论兜底。
+
+## 校验逻辑（fail-closed，卡点安全）
+
+校验接口选「知识库详情」，判定链条上任何一环不满足都判**无效**并 `exit 1`：
+
+| 场景 | 结论 |
+| :--- | :--- |
+| `ZHIPU_KB_ID` / `ZHIPUAI_API_KEY` 缺失或为空 | 无效（无法确认 = 拦截） |
+| 网络异常/超时（重试 1 次后仍失败） | 无效 |
+| HTTP 状态码非 200（网关/鉴权层） | 无效 |
+| 响应体不是合法 JSON | 无效 |
+| `body.code != 200`（含 `100013 知识库不存在`、鉴权失败等） | 无效，打印 `code`+`message` |
+| `code=200` 但缺 `data` 对象，或回显 `data.id` 与配置 ID 不一致 | 无效（防“成功但答非所问”） |
+| 以上全部通过 | **有效**，`exit 0` |
+
+细节：`code` 用 `str()` 归一化比较，兼容 `"200"` 字符串形式；`kb_id` 做 URL quote 防路径注入；结论行固定打印「校验结论：有效/无效」，流水线直接看退出码。
+
+一个有意识的取舍：知识库**存在但 0 文档**时只打警告、不拦截——空库是新库上线流程中的合法中间态，不算“坏 ID”；警告里提示了需确认文档向量化完成（`embedding_stat==1`，对应速查表第 10 条的坑）。如果你们的流水线要求“必须有文档才放行”，把那段警告改成 `return conclude(False, ...)` 即可。
+
+Sources: [知识库详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E8%AF%A6%E6%83%85)、[知识库检索](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2)

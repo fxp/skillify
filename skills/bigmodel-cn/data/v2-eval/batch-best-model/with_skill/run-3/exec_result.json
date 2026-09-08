@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "batch_2097168518457077760\n",
+  "stderr": "读取到 20 条评论（/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/batch-best-model/with_skill/run-3/work/comments.txt）\n已生成请求文件 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/batch-best-model/with_skill/run-3/work/batch_sentiment_requests.jsonl（模型 glm-5.1）\n文件上传成功：1788838911_692d3a0a43f34e25aaa644d728d157d2\nbatch 任务已创建，状态：validating\n",
+  "timed_out": false,
+  "seconds": 3.4
+}

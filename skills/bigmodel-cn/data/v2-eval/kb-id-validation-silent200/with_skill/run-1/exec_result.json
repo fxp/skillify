@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "正在校验智谱知识库 ID：999999999999999999\n请求：GET https://open.bigmodel.cn/api/llm-application/open/knowledge/999999999999999999\n校验结论：不通过 —— 知识库不存在或不可用（接口返回错误码）\n详情：code=100013, message=知识库不存在\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 2.0
+}

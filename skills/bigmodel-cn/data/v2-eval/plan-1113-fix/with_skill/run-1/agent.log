@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 验证通过，目录里只有这一个文件。
+
+## 问题根因
+
+报 `429 + 1113` 不是余额问题，**不用充值**。技能包速查表第 1 条和官方 FAQ 都确认：GLM Coding Plan 的 Key 和标准 API 是两套隔离计费体系，套餐 Key 打标准端点 `…/api/paas/v4` 必报 1113——标准端点只认账户余额，看不到套餐额度。
+
+另外原代码还有一个独立 bug：`os.environ[chr(39)+chr(39)]` 取的是名为 `''`（两个引号字符）的环境变量，会直接 KeyError，根本不是在读 `GLM_KEY`。
+
+## 改了什么
+
+| 项 | 原代码 | 修复后 |
+| :--- | :--- | :--- |
+| Base URL | `…/api/paas/v4/chat/completions`（标准端点）| `…/api/coding/paas/v4/chat/completions`（Coding 端点，只多一级 `/coding`）|
+| Key 读取 | `os.environ[chr(39)+chr(39)]`（错的）| `os.environ.get("GLM_KEY")`，缺失时给出明确提示退出 |
+| 模型 | `glm-5.3` ✅ 本来就对，套餐支持 | 保持 `glm-5.3` |
+| 输出 | `print(r.json())` 打整个响应 | 只打印 `choices[0].message.content` 到 stdout |
+
+另外加了两处防御：`max_tokens: 1024`（Coding 端点默认开思考、思考 token 计入 `max_tokens`，给小了会拿到空内容）；非 200 时把状态码和响应体打到 stderr 再退出，以后再遇到 1113 这类错误能直接看清是哪一类。
+
+运行方式：
+
+```bash
+GLM_KEY=你的套餐Key python3 main.py
+```
+
+一点提醒（来自技能包/官方条款）：Coding Plan 官方定位是“仅限指定编码工具环境使用”，自己写脚本调 Coding 端点技术上能通（实测 200），但属于条款之外的用法；如果是生产系统，建议换标准 API Key 走 `…/api/paas/v4`。

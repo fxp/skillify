@@ -1,0 +1,19 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`py_compile` 通过，无 Key 时也能给出明确报错（exit=2；那条 urllib3 警告来自本机 Python 3.9 环境，与脚本无关）。
+
+## 实现要点
+
+**接口流程**（细节已经官方文档 `docs.bigmodel.cn` 交叉确认，与技能包一致）：
+1. `POST /api/paas/v4/async/chat/completions` 一次性提交 3 个任务（服务端并行处理），Bearer 鉴权，不传 `stream`（异步接口不支持）
+2. `GET /api/paas/v4/async-result/{id}` 以 2 秒间隔轮询，单任务 120 秒总超时，处理 `PROCESSING/SUCCESS/FAIL` 三态
+
+**模型版本审计**（本任务的核心，对应技能速查表第 2 条实测陷阱）：
+- 智谱**异步端点会静默换模型**——实测 `glm-4.6` 会被替换成 `glm-4.7`，请求体里写什么≠实际跑什么。所以脚本不信任请求体，而是读回**两处**回显：提交接口的 `model` + 最终轮询结果的 `model`（后者为“实际使用”的权威依据），全部原样打印留痕
+- 比对按忽略大小写归一化（平台会把 `glm-5.3` 回显成 `GLM-5.3`，版本身份相同不算不一致），但审计输出里展示的是原始字符串
+- 不一致时：每个任务打印 `❌ 不一致` 核对行 + 结尾独立的审计警报块，并以**退出码 1** 结束（0=通过、1=版本不一致、2=配置/调用失败），CI 和审计流水线都能无歧义地捕获
+
+**其他**：Key 只从 `ZHIPUAI_API_KEY` 环境变量读取；仅依赖 `requests`；对空内容结果会连 `finish_reason` 一起报出（防思考 token 吃光 `max_tokens` 的陷阱干扰排查）。
+
+⚠️ 一个需要提前告知的预期行为：按技能包 2026-09-07 的实测，真实跑这个脚本时 `glm-4.6` **大概率会被异步端点换成 `glm-4.7` 并触发审计警报**——这正是脚本该有的反应（说明锁定失效、结果不可用于审计口径），而不是脚本 bug。若业务上必须严格 glm-4.6 输出，需与平台确认异步端点的版本锁定方案，或改走同步端点（实测不换模型）。

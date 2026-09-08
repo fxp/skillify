@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录只有这一个文件，测试产物都写在 /tmp 并已清理）。
+
+## 交付说明
+
+**接口细节均已对照技能包 `references/tools.md` 并抓取 [官方文档](https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-3) 核实**：
+- 端点 `POST https://open.bigmodel.cn/api/paas/v4/embeddings`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读取
+- `embedding-3` **单次请求 input 数组最多 64 条**——faq.txt 有 150 行，脚本自动按 64/64/22 分三批
+- 官方明确提示"按 `index` 对齐，不要假设返回顺序"，脚本据此对齐（mock 测试里专门用乱序返回验证过）
+- `dimensions` 显式固定为 1024，索引与查询用同一 `model + dimensions` 组合，避免向量空间不一致导致检索失真
+
+**脚本行为**（`python3 main.py` 直接跑）：
+1. 读同目录 `faq.txt`（优先脚本所在目录，找不到退回当前工作目录），逐行向量化
+2. 向量连同原文写入同目录 `vectors.json`；下次运行时若文件存在且内容未变则直接复用，不重复调 API
+3. 将查询「发票怎么开」向量化，纯 Python 手写余弦相似度（不用 numpy），打印 top-3 原文及分数
+
+**验证**（未调真实 API，按你的要求）：
+- `python3 -m py_compile` 通过
+- 伪造 `requests.post` 做了离线端到端测试：150 条正确分 3 批、乱序响应正确对齐、vectors.json 写入并可复用（第二次运行只发 1 次查询请求）、余弦函数自检（正交=0、同向=1）、缺 Key 时给出明确报错并以退出码 1 结束
+
+一个说明：本机 `import requests` 时 stderr 会出一条 urllib3 的 NotOpenSSLWarning（Python 3.9 + LibreSSL 环境所致），与脚本逻辑无关，不影响运行。
+
+Sources:
+- [Embedding-3 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-3)
+- [文本嵌入 API - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E5%B5%8C%E5%85%A5)

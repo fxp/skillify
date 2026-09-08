@@ -1,0 +1,35 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，本地逻辑冒烟测试全部通过（未调用 API）。
+
+## 做法与依据
+
+先按 SKILL.md 指引定点读了 `references/chat.md`（关键参数表）、`references/chat-advanced.md`（JSON 输出一节）、`references/models.md`（模型确认），并用 WebFetch 核实了官方文档。这个任务正中技能包速查表**第 16 条陷阱**，也是方案的核心：
+
+- **平台没有 `json_schema` 严格模式**——`response_format` 只有 `text`/`json_object` 两种取值，传 `json_schema` 会被静默忽略，返回夹带解释文字的散文。官方文档也确认了这一点，其最佳实践就是“system prompt 写清结构 + 客户端二次校验”。
+- 因此脚本用 `{"type": "json_object"}` + prompt 里写死字段规则，**外加客户端严格校验兜底**：
+  - 校验完全对齐你的入库约束：字段名不多不少（多一个字段也拒）、`sentiment` 必须是"正面"/“负面”/“中性”三选一、`score` 必须是 0–1 的数字（字符串、bool 都拒）；
+  - 校验不过就重试（每条最多 3 次），重试耗尽**报错退出而不是输出**——宁失败，不出脏数据；
+  - 解析做了两层兜底：直解失败先剥 Markdown 围栏、再做花括号配对截取（应对极端情况下夹带文字）。
+
+另外还处理了两个实测坑：**思考 token 计入 `max_tokens`**（glm-5.3 标准端点强制开思考）→ 预算给到 2048、`reasoning_effort: "low"`（分类任务不需要深思考）、`finish_reason=length` 视为截断直接重试；速率限制按并发算 → 三条文本顺序调用。
+
+## 输出格式
+
+每行一个严格符合结构的 JSON 对象（JSONL），可直接入库：
+```
+{"sentiment": "负面", "score": 0.97}
+{"sentiment": "中性", "score": 0.6x}
+{"sentiment": "正面", "score": 0.9x}
+```
+（每行具体值由 API 返回，字段名和取值域已由校验保证。）
+
+## 验证结果
+
+- `python3 -m py_compile main.py` ✅
+- `_extract_json`：纯 JSON / 带围栏 / 夹带解释文字 / 字符串含花括号，4 例全过 ✅
+- `_validate`：1 例合法通过 + 7 种脏数据（非对象、缺字段、多字段、英文 sentiment、score 为字符串/bool/超范围）全部拒绝 ✅
+- 缺 `ZHIPUAI_API_KEY` 时：exit 1、stderr 给出明确提示、stdout 零输出 ✅
+
+Sources: [智谱对话补全 API 参考](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8)、[Z.ai 结构化输出指南](https://docs.z.ai/guides/capabilities/struct-output)、[GLM-5.3 模型文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)

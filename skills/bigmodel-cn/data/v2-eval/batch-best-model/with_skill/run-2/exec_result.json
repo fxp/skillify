@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "batch_2097168503617630208\n",
+  "stderr": "读取到 20 条评论\n已生成请求文件：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/batch-best-model/with_skill/run-2/work/batch_requests.jsonl\n文件上传成功：1788838907_10dfe05e686e474da52b789331f72ea8\nbatch 任务创建成功，状态：validating\n",
+  "timed_out": false,
+  "seconds": 3.4
+}

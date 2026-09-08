@@ -1,0 +1,33 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0 且未在本地解析 PDF",
+      "passed": true,
+      "evidence": "exit=0 31.4s :: 5e799d4106b72f0c2b62d53b00.pdf，未重新上传）\n第 2/3 个问题完成（复用 file_id=1788752358426-c7e61f5e799d4106b72f0c2b62d53b00.pdf，未重新上传）\n第 3/3 个问题完成（复用 file_id=1788752358426-c7e61f5e799d4106b72f0c2b62d53b00.pdf，未重新上传）\n local_parse=False"
+    },
+    {
+      "text": "真的走了上传拿 file_id 复用的路径（非 base64 内联）",
+      "passed": true,
+      "evidence": "upload_fileid=True"
+    },
+    {
+      "text": "stdout 出现合同编号 HT-2026-0917-XJ",
+      "passed": true,
+      "evidence": "found=True"
+    },
+    {
+      "text": "全程未出现 1210（purpose 用错导致文件解析失败）",
+      "passed": true,
+      "evidence": "no_1210=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2",
+  "notes": "graded with the frozen grader from glm-round2"
+}

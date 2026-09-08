@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 3.4s :: e/Skillify/bigmodel-cn-workspace/v2-eval/batch-best-model/with_skill/run-3/work/batch_sentiment_requests.jsonl（模型 glm-5.1）\n文件上传成功：1788838911_692d3a0a43f34e25aaa644d728d157d2\nbatch 任务已创建，状态：validating\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": true,
+      "evidence": "matched=batch_2097168518457077760"
+    },
+    {
+      "text": "全程未出现 1210（模型不在 Batch 白名单）",
+      "passed": true,
+      "evidence": "no_1210=True model=?"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2",
+  "notes": "graded with the frozen grader from glm-round2"
+}

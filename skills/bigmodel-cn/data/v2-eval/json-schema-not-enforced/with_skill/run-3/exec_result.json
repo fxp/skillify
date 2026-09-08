@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "{\"sentiment\":\"负面\",\"score\":0.99}\n{\"sentiment\":\"中性\",\"score\":0.95}\n{\"sentiment\":\"正面\",\"score\":0.99}\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.4
+}

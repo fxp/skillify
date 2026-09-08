@@ -1,0 +1,18 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，并在临时目录用真实 comments.txt 离线验证了 jsonl 生成逻辑（20 条请求、跳过尾部空行、缺 Key 时干净报错退出），未调用任何 API。
+
+**最关键的决策——模型选择**：您要求“用最好的模型”，但平台的旗舰 `glm-5.3` **不能用于 Batch**。Batch 有一份独立的模型白名单（官方文档页面至今只列到 GLM-4 时代，已过时；真实白名单只出现在报错里），拿旗舰模型传会在**文件上传阶段**就被拒（`1210 模型名称错误`）。白名单内质量最强的是 **`glm-5.1`**（Coding 对齐 Claude Opus 4.6、200K 上下文的旗舰级模型），脚本用的就是它——这是走 Batch 还能把质量拉满的最优解，且同样享受半价。
+
+实现要点（都来自技能包实测踩坑记录）：
+
+- **`custom_id` 用 `request-001` 格式**：有未文档化的 6 字符下限，`r1`/`id-1` 这种短 id 上传时就报 1214；
+- **上传 `purpose="batch"`**，multipart 里显式传干净的 `batch_requests.jsonl` 文件名；
+- **创建任务只传必需字段**，`endpoint` 固定 `/v4/chat/completions`（已废弃的 `completion_window` 不传）；
+- **分类 prompt**：system 限定只输出 正面/负面/中性 一个词（褒贬参半判中性），`temperature: 0.1` 求稳定——没有用 `response_format: json_schema`，因为该参数会被静默忽略；
+- 不设过小的 `max_tokens`（思考 token 计入预算，容易截断成空回复）；错误处理带响应体输出，方便看到 `1210` 这类业务码；文件路径相对脚本自身解析，`comments.txt` 与脚本同目录即可。
+
+注意两点运行前提：需要先在平台完成**实名认证**才能调 Batch API；结果文件平台只保留 30 天，届时用打印出的 batch id 轮询 `GET /paas/v4/batches/{id}`，完成后经 `output_file_id`/`error_file_id` 下载。
+
+Sources: [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)、[Batch API FAQ - 智谱AI开放文档](https://docs.bigmodel.cn/cn/faq/batch-api-issues)、[GLM-5.1 模型介绍](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.1)

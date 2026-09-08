@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过。交付完成，`outputs/main.py` 是唯一产出的文件。
+
+## 完成情况
+
+**脚本**：`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/pdf-reuse-fileid/with_skill/run-3/outputs/main.py`（已通过 `python3 -m py_compile`，仅依赖 `os`/`sys`/`requests`）
+
+**工作流程**（每一步都对照了技能手册和官方文档）：
+
+1. **上传一次**：`POST /paas/v4/files`，multipart 传 `purpose=user_data`。这是本次任务最关键的坑——技能速查表第 6 条 + 官方文档均确认：用 `agent`/`code-interpreter` 等 purpose 上传虽然能成功，但拿到的 file_id 在对话里引用必报 `1210 文件解析失败`；**只有 `user_data`（支持 pdf）上传的文件才能被 chat 读取**（该路径已被实测验证过，场景恰好就是从 PDF 提取合同编号）。
+2. **三轮提问全部复用同一个 file_id**：每次请求的 content 数组里只放 `{"type": "file", "file": {"file_id": ...}}` 这个 ID 引用，请求体不含文件内容，不重复上传。模型用 `glm-5.3-flash`（多模态旗舰，官方确认支持"文件"输入模态，`file` 内容块属于其多模态 content 数组）。
+3. **三个答案依次打印到 stdout**，附带问题编号；同时把 file_id 打印出来，并支持 `ZHIPUAI_FILE_ID` 环境变量——后续“反复问很多轮”时可直接复用、完全跳过上传。
+
+**细节处理**：
+- 完全不在本地解析 PDF，没有任何 PDF 库；
+- Key 只从 `ZHIPUAI_API_KEY` 读取，缺失时给出明确提示再退出（已干跑验证）；
+- 不设 `max_tokens`：`glm-5.3-flash` 强制开思考且思考 token 计入预算，设小了会出现 `finish_reason=length` + 空回答（速查表第 13 条）；空回答时脚本会报出 finish_reason 便于排查；
+- 统一检查业务错误体（`body.error.code/message`，如 1210）而非只看 HTTP 状态；
+- contract.pdf 实际位于 eval 根目录而非脚本旁，脚本会从 CWD／脚本目录向上搜索定位（已验证能找到），也支持 `CONTRACT_PDF` 环境变量或命令行参数指定。
+
+未真实调用 API（环境无 Key），接口细节已与官方文档核对。
+
+Sources: [智谱开放文档 · 对话补全](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8) · [智谱开放文档 · 上传文件](https://docs.bigmodel.cn/api-reference/%E6%96%87%E4%BB%B6-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6) · [GLM-5.3-Flash 模型页](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)

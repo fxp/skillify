@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录下仅此一个文件）。
+
+## 做了什么
+
+**先读了接入说明**：`bigmodel-cn-v2/SKILL.md` 的静默陷阱速查表第 2 条正中本任务要害——智谱**异步端点会静默换模型**（实测 `glm-4.6` → `glm-4.7`，且 `glm-4.7-ali` 这类名字官方文档里根本没有），同步端点则原样透传。随后按读取纪律只读了 `references/chat-advanced.md` 的异步章节，并用 WebFetch 对照官方文档确认了两个端点的路径、Bearer 鉴权和响应字段。
+
+**脚本设计**（只依赖 `requests` + 标准库，`python3 main.py` 直接跑）：
+
+- **提交**：`POST /paas/v4/async/chat/completions`，逐句提交三句话（正/负/中性各一），先拿全 `task_id`（异步批处理的标准姿势）；不带 `stream`（异步接口不支持）。
+- **轮询**：`GET /paas/v4/async-result/{task_id}`，2 秒间隔、300 秒总超时。成功判定兼容两种响应形态——官方 OpenAPI 里对话补全最终结果只带 `choices` 不带 `task_status`，平台实测则可能两者都给；`FAIL` 和非 `stop` 的 `finish_reason` 都会显式提示。
+- **审计核对（核心）**：对每个任务在**两个点**读回模型——提交响应的 `model` 回显 + 轮询结果的 `model` 回显——与请求体的 `glm-4.6` 比对并全部打印。比较按小写归一：回显大小写不统一（官方对 `glm-4.5-air` 就回显 `GLM-4.5-Air`），大小写差异不算换版本，`glm-4.6` vs `glm-4.7` 才报警，避免误报稀释告警。不一致时打印醒目告警块并**以退出码 2 结束**，方便审计流水线捕获；核对通过则明确打印“一致”。
+- Key 从 `ZHIPUAI_API_KEY` 读取，缺失时给出获取地址的明确提示。
+
+## 验证结果
+
+- `python3 -m py_compile` 通过；
+- 无 Key 环境下实跑一次：正确走守卫路径退出（码 1、提示清晰、未发任何网络请求）。
+- 按你的要求未真实调 API。**预期行为提醒**：真跑时若平台仍按实测行为把 `glm-4.6` 换成 `glm-4.7`，脚本会如设计所示打出审计告警并退出码 2——这正是审计要抓的情况，不是脚本故障。
+
+Sources: [对话补全(异步) - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E5%AF%B9%E8%AF%9D%E8%A1%A5%E5%85%A8%E5%BC%82%E6%AD%A5)、[查询异步结果 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%9F%A5%E8%AF%A2%E5%BC%82%E6%AD%A5%E7%BB%93%E6%9E%9C)

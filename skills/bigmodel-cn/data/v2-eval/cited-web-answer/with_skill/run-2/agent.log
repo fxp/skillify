@@ -1,0 +1,15 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v2-eval/cited-web-answer/with_skill/run-2/outputs/main.py`，`py_compile` 编译通过，无 Key 时也能正确报错退出（exit=1；那条 urllib3 警告来自你本机 Python 环境，与脚本无关）。
+
+**实现要点**（依据 SKILL.md 速查表 + `references/chat-advanced.md`、`tools.md`，并用 WebFetch 对照过 docs.bigmodel.cn）：
+
+- **走标准端点** `POST /paas/v4/chat/completions`，模型 `glm-5.3`，Key 从 `ZHIPUAI_API_KEY` 读取，只用 `requests`，非流式。
+- **来源可信是这个任务的核心**，因此做了三件事：
+  1. `search_engine` 选 **`search_pro_bing`** —— 速查表 #4 实测：`search_std`/`search_pro` 返回的来源 `link` 恒为空串，只有 `_bing`/`_sogou`/`_quark`/`_jina` 带真实链接（官方参数表没列后两个，但接口可用）；
+  2. **显式传 `search_result: true`** —— 不传的话搜索照跑、答案照给，但响应里根本没有 `web_search` 来源数组（速查表 #5 的静默陷阱）；
+  3. 来源列表**只从响应顶层 `web_search` 数组**提取（接口真实返回的检索结果），按 `link` 去重、过滤空链接后打印「标题 + 媒体/日期 + URL」，不采信模型正文里自己写的链接。
+- 防御性处理：`max_tokens: 8192` 给足预算（glm-5.3 标准端点强制思考且思考 token 计入预算，给小了会 `finish_reason=length` 拿到空正文，速查表 #13），并对非 `stop` 的 `finish_reason` 打警告；若来源 `link` 全空会提示检查 `search_engine` 是否选错。
+
+配好 `ZHIPUAI_API_KEY` 后直接 `python3 main.py` 即可运行。

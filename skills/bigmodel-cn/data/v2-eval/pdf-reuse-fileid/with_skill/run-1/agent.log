@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+编译通过，`find_pdf` 也能正确定位到 `v2-eval/contract.pdf`（它实际在 outputs 往上 3 层的目录，向上搜索逻辑覆盖了这种情况）。脚本已完成，保存在 `outputs/main.py`。
+
+## 完成情况
+
+脚本工作流程：
+
+1. **上传一次**：`POST /paas/v4/files`（multipart），`purpose=user_data`，拿回 `file_id`
+2. **三问复用**：每个问题独立调 `POST /paas/v4/chat/completions`，messages 里只带 `{"type": "file", "file": {"file_id": ...}}` + 问题文本，文件不再进请求体
+
+```python
+"content": [
+    {"type": "file", "file": {"file_id": file_id}},
+    {"type": "text", "text": question},
+],
+```
+
+## 依据说明书做的关键决策
+
+- **`purpose` 必须传 `user_data`**——这是速查表第 6 条静默陷阱：用 `agent`/`code-interpreter`/`file-extract` 上传都会成功，但 chat 里引用时必报 `1210 文件解析失败`。官方文档（我也抓取核实了 `docs.bigmodel.cn`）完全没写这个要求，只有技能包里 2026-09 的实测记录提到了，而且实测场景恰好就是“用 PDF 提取合同编号”。
+- **模型选 `glm-5.3-flash`**：官方对话补全文档明确 `file` 内容类型由多模态模型（如 glm-5.3-flash）支持，1M 上下文足够整份合同。
+- **不设 `max_tokens` + 检查 `finish_reason`**（陷阱 13/14）：glm-5.3 系列在标准端点强制开思考且思考 token 计入输出预算，设小预算会拿到 `finish_reason=length` 的空回答；脚本在非 `stop` 时向 stderr 打警告。
+- **进度信息走 stderr、问答走 stdout**，方便把答案直接管道出去；同时把 `file_id` 打印出来，你后面“反复问很多轮”的其他脚本可以直接复用它，连上传都省掉。
+
+约束核对：未用任何本地 PDF 解析库（仅 `requests` + `os`/`sys`）、Key 从 `ZHIPUAI_API_KEY` 读取（缺失时明确报错退出）、`python3 main.py` 可直接跑（已验证编译通过和 PDF 定位）。API 调用部分因环境无 Key 未实际执行，但请求结构已与官方文档和技能包双向核对。

@@ -1,0 +1,3 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+很抱歉，我无法访问智谱AI的官方文档，因为提供的URL无法解析。由于缺少API密钥，我无法使用其他方法来获取必要的接口细节。因此，我无法完成您要求的任务，即编写一个使用智谱AI联网搜索能力的`main.py`脚本来回答关于中国新能源汽车出口的问题。如果您有其他解决方案或可以提供更多信息，请告诉我。

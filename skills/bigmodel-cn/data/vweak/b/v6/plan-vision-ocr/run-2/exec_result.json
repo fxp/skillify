@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v6/plan-vision-ocr/run-2/work/main.py\", line 19\n    response = requests.post(f'{base_url}{endpoint}', headers={'Authorization': f'Bearer {api_key}'}).\n                                                                                                      ^\nSyntaxError: invalid syntax\n",
+  "timed_out": false,
+  "seconds": 0.0,
+  "audio_files": []
+}

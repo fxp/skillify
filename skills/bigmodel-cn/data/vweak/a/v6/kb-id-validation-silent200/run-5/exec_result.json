@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/kb-id-validation-silent200/run-5/work/main.py\", line 17, in <module>\n    response = requests.get(url, headers=headers)\nNameError: name 'requests' is not defined\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

@@ -1,0 +1,60 @@
+{
+  "tts-asr-roundtrip": {
+    "runs": 4,
+    "scores": [
+      0.25,
+      0.25,
+      0.25,
+      0.0
+    ],
+    "mean": 0.188,
+    "stdev": 0.108
+  },
+  "plan-vision-ocr": {
+    "runs": 3,
+    "scores": [
+      0.25,
+      0.25,
+      0.25
+    ],
+    "mean": 0.25,
+    "stdev": 0.0
+  },
+  "long-cited-answer": {
+    "runs": 1,
+    "scores": [
+      0.5
+    ],
+    "mean": 0.5,
+    "stdev": 0.0
+  },
+  "long-report-complete": {
+    "runs": 2,
+    "scores": [
+      0.25,
+      0.25
+    ],
+    "mean": 0.25,
+    "stdev": 0.0
+  },
+  "tight-budget-complete": {
+    "runs": 4,
+    "scores": [
+      0.75,
+      0.75,
+      0.75,
+      0.5
+    ],
+    "mean": 0.688,
+    "stdev": 0.108
+  },
+  "kb-fallback": {
+    "runs": 2,
+    "scores": [
+      0.5,
+      0.25
+    ],
+    "mean": 0.375,
+    "stdev": 0.125
+  }
+}

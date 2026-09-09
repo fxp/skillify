@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/json-schema-not-enforced/run-2/work/main.py\", line 35, in <module>\n    print(sentiment_classification(text))\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/json-schema-not-enforced/run-2/work/main.py\", line 22, in sentiment_classification\n    score = float(result['choices'][0]['confidence'])\nKeyError: 'confidence'\n",
+  "timed_out": false,
+  "seconds": 22.6
+}

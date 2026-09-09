@@ -1,0 +1,45 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+python
+import os
+import requests
+
+# 读取环境变量中的API Key
+api_key = os.getenv('ZHIPUAI_API_KEY')
+
+# 定义请求头，包括API Key
+headers = {
+    'Authorization': f'Bearer {api_key}',
+    'Content-Type': 'application/json'
+}
+
+# 定义批量处理API的URL
+batch_url = 'https://open.bigmodel.cn/api/paas/v4/batches'
+
+# 定义上传文件的URL
+files_url = 'https://open.bigmodel.cn/api/paas/v4/files'
+
+# 定义上传文件的参数
+files_data = {
+    'purpose': 'batch'
+}
+
+# 上传文件
+response = requests.post(files_url, headers=headers, files={'file': ('b.jsonl', open('b.jsonl', 'w'), 'application/json')})
+
+# 读取上传文件返回的文件ID
+file_id = response.json().get('id')
+
+# 创建批量任务
+batch_data = {
+    'input_file_id': file_id,
+    'endpoint': '/v4/chat/completions',
+    'completion_window': '24h'
+}
+
+# 发送创建批量任务的请求
+batch_response = requests.post(batch_url, headers=headers, json=batch_data)
+
+# 打印批量任务的ID
+batch_id = batch_response.json().get('id')
+batch_id

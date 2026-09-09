@@ -1,0 +1,62 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+由于无法访问智谱AI的官方文档，我无法直接获取embedding-3 API的具体使用细节。不过，我可以根据您提供的任务描述和一些常见的向量搜索方法来编写代码。
+
+以下是一个基于Python的示例脚本，该脚本使用余弦相似度进行文本向量化搜索。请注意，以下代码假定您已经将环境变量`ZHIPUAI_API_KEY`设置为您从智谱AI获取的有效API密钥。
+
+```python
+import requests
+import json
+import numpy as np
+
+# 读取环境变量中的API密钥
+api_key = os.environ.get('ZHIPUAI_API_KEY')
+
+# 函数：将文本转换为向量
+def text_to_vector(text):
+    # 假设这是调用智谱AI embedding-3 API的代码
+    url = 'https://api.zhipu.ai/embedding-3'
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'text': text
+    }
+    response = requests.post(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()['vector']
+    else:
+        raise Exception('Failed to get vector')
+
+# 读取faq.txt文件并向量化
+def read_and_vectorize_faq(file_path):
+    vectors = []
+    with open(file_path, 'r', encoding='utf-8') as file:
+        for line in file:
+            vector = text_to_vector(line.strip())
+            vectors.append(vector)
+    return vectors
+
+# 读取向量化的FAQ
+vectors = read_and_vectorize_faq('faq.txt')
+
+# 定义查询语句
+query = '发票怎么开'
+
+# 向量化查询语句
+query_vector = text_to_vector(query)
+
+# 计算余弦相似度并获取最相似的3个向量
+cosine_similarities = [np.dot(query_vector, vec) / (np.linalg.norm(query_vector) * np.linalg.norm(vec)) for vec in vectors]
+top_3_indices = np.argsort(cosine_similarities)[-3:]
+top_3_lines = [vectors[i][0] for i in top_3_indices]
+
+# 打印最相似的3条FAQ
+for line in top_3_lines:
+    print(line)
+```
+
+请将上述代码保存为`main.py`，并在终端中运行`python3 main.py`。这将读取`faq.txt`文件中的文本，将其转换为向量，并使用余弦相似度查找与查询语句“发票怎么开”最相似的3条FAQ。
+
+请注意，此代码是一个示例，它没有实际的API调用，因为环境中没有可用的API密钥。您需要将示例中的API调用部分替换为实际的智谱AI embedding-3 API调用，并确保您的API密钥正确设置。

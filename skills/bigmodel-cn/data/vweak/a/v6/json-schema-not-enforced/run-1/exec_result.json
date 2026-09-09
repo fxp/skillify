@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "{'sentiment': None, 'score': None}\n{'sentiment': None, 'score': None}\n{'sentiment': None, 'score': None}\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 102.9
+}

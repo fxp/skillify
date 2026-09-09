@@ -1,0 +1,43 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据您提供的智谱AI开放平台接入指南和GLM Coding Plan（编程套餐）接入与排错文档，以下是针对您的需求的代码实现：
+
+1. 首先确认您使用的是标准API Key还是GLM Coding Plan（编程套餐）Key。根据文档，GLM Coding Plan（编程套餐）Key只能用于指定编码工具，且只能使用`glm-5.3`或`glm-5.3-flash`模型。
+
+2. 使用`requests`库调用API，以下是一个示例代码：
+
+```python
+import os
+import requests
+
+# 确保设置了环境变量 GLM_CODING_PLAN_API_KEY
+api_key = os.environ['GLM_CODING_PLAN_API_KEY']
+base_url = "https://open.bigmodel.cn/api/coding/paas/v4"
+
+# 读取图片文件
+with open('invoice.png', 'rb') as f:
+    image_data = f.read()
+
+# 构建API请求
+headers = {
+    "Authorization": f"Bearer {api_key}",
+    "Content-Type": "application/json"
+}
+data = {
+    "model": "glm-5.3",
+    "messages": [
+        {"role": "user", "content": "Describe the content of the invoice in this image."}
+    ]
+}
+
+# 发送API请求
+response = requests.post(base_url + "/chat/completions", headers=headers, json=data)
+
+# 打印服务端实际使用的模型名和模型的回答
+print("Server used model:", response.json().get('model'))
+print("Response:", response.json().get('choices')[0].get('message').get('content'))
+```
+
+3. 请将此代码保存到`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/plan-vision-ocr/run-5/outputs/main.py`路径。
+
+请注意，由于当前环境没有可用的API Key，您需要自行设置环境变量`GLM_CODING_PLAN_API_KEY`并确保您有权限使用相应的模型。如果您确认套餐确实无法使用视觉能力，请在代码中添加相应的错误处理逻辑。

@@ -1,0 +1,48 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+由于无法直接访问智谱 AI 的 Batch API 的官方文档，我将基于一般的情感分析 API 的使用流程来编写代码。以下是一个可能的实现：
+
+```python
+import requests
+import json
+
+def main():
+    # 从环境变量中读取 API Key
+    api_key = os.getenv('ZHIPUAI_API_KEY')
+
+    # 读取 comments.txt 文件中的评论
+    with open('comments.txt', 'r', encoding='utf-8') as file:
+        comments = file.readlines()
+
+    # 构造 JSONL 文件
+    jsonl_data = []
+    for comment in comments:
+        jsonl_data.append(json.dumps({'text': comment.strip()}))
+
+    # 定义 API 的 URL
+    url = 'https://api.zhipu.ai/batch/v1'
+
+    # 构造请求头
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {api_key}'
+    }
+
+    # 上传数据并创建 batch 任务
+    response = requests.post(url, headers=headers, data='\n'.join(jsonl_data))
+
+    # 检查响应状态码
+    if response.status_code == 200:
+        # 解析响应内容，获取 batch 任务的 ID
+        batch_id = response.json()['batch_id']
+        print(batch_id)
+    else:
+        print('Failed to create batch task.')
+
+if __name__ == '__main__':
+    main()
+```
+
+请注意，这段代码假设 API 的 URL、请求头和数据格式是正确的。如果您有具体的 API 文档或示例，请提供给我，以便我能够调整代码以匹配实际的 API 规范。
+
+如果您需要进一步的帮助，请告诉我。

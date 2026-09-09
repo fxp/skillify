@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/tts-asr-roundtrip/run-5/work/main.py\", line 36, in <module>\n    response.raise_for_status()\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/models.py\", line 1026, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/audio/speech\n",
+  "timed_out": false,
+  "seconds": 0.2,
+  "audio_files": []
+}

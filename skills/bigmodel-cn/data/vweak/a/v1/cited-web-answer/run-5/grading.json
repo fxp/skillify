@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 0.1s ::   File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/cited-web-answer/run-5/work/main.py\", line 17, in fetch_answer\n    \"stream\": false\nNameError: name 'false' is not defined\n"
+    },
+    {
+      "text": "stdout 至少出现 2 条 http(s) 来源链接",
+      "passed": false,
+      "evidence": "找到 0 条: []"
+    },
+    {
+      "text": "来源取自接口返回（读了 web_search / search_result 数组）",
+      "passed": false,
+      "evidence": "reads_api_sources=False"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 3,
+    "total": 3,
+    "pass_rate": 0.0
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v1",
+  "notes": "graded with the frozen grader from glm-round3b"
+}

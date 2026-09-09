@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/pdf-reuse-fileid/run-3/work/main.py\", line 12, in <module>\n    with open(pdf_file_path, 'rb') as pdf_file:\nFileNotFoundError: [Errno 2] No such file or directory: '/path/to/contract.pdf'\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

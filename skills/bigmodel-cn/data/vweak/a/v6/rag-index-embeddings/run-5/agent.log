@@ -1,0 +1,71 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据智谱AI开放平台（bigmodel.cn）的接入指南，以下是您需要遵循的步骤：
+
+1. 确保您拥有正确的API Key。您需要区分标准API Key和GLM Coding Plan（编程套餐）Key，因为它们是两套隔离的计费体系。API Key可以从控制台获取：[https://bigmodel.cn/usercenter/proj-mgmt/apikeys](https://bigmodel.cn/usercenter/proj-mgmt/apikeys)。
+
+2. 所有接口的Base URL为`https://open.bigmodel.cn/api/`。
+
+3. 使用HTTP Bearer进行鉴权，请求头格式为`Authorization: Bearer <API_KEY>`。
+
+4. 在调用API之前，请确认`model`字段，因为智谱的模型迭代很快，很多模型名字长得很像，容易混淆。
+
+以下是一个使用Python调用智谱API的示例代码：
+
+```python
+import os
+import requests
+
+H = {"Authorization": f"Bearer {os.environ['ZHIPUAI_API_KEY']}"}
+B = "https://open.bigmodel.cn/api/paas/v4"
+
+# 调用API的示例
+response = requests.post(f"{B}/chat/completions", headers=H, json={
+    "model": "glm-5.3",
+    "messages": [{"role": "user", "content": "你好，请介绍一下自己。"}],
+    "stream": False
+})
+
+print(response.json())
+```
+
+请注意，您需要将`ZHIPUAI_API_KEY`替换为您自己的API Key。
+
+接下来，您可以根据您的需求编写代码，实现从`faq.txt`中读取问题、向量化、查询和输出相似问题的功能。以下是实现该功能的示例代码：
+
+```python
+import json
+import os
+import requests
+from sklearn.metrics.pairwise import cosine_similarity
+
+# 读取向量化的结果
+with open("vectors.json", "r") as f:
+    vectors = json.load(f)
+
+# 读取问题
+with open("faq.txt", "r") as f:
+    questions = f.readlines()
+
+# 向量化问题
+vectors = [vector for line, vector in zip(questions, vectors)]
+
+# 查询问题
+query = "发票怎么开"
+query_vector = [vector for line, vector in zip([query], vectors)]
+
+# 计算余弦相似度
+cosine_similarities = [cosine_similarity(query_vector[0], v)[0] for v in vectors]
+
+# 获取最相似的三个问题
+top_3_indices = sorted(range(len(cosine_similarities)), key=lambda i: cosine_similarities[i])[:3]
+top_3_questions = [questions[i].strip() for i in top_3_indices]
+
+# 输出最相似的问题
+for q in top_3_questions:
+    print(q)
+```
+
+请注意，您需要将向量化的结果存储在`vectors.json`文件中，并将问题存储在`faq.txt`文件中。
+
+希望这些信息对您有所帮助！

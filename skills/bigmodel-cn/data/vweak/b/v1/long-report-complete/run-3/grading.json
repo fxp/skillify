@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": false,
+      "evidence": "exit=1 0.1s :: del-cn-workspace/vweak/b/v1/long-report-complete/run-3/work/main.py\", line 20, in <module>\n    \"stream\": false\nNameError: name 'false' is not defined\n"
+    },
+    {
+      "text": "简报正文 ≥600 汉字",
+      "passed": false,
+      "evidence": "正文汉字=0"
+    },
+    {
+      "text": "没有把被截断的半截内容丢出来",
+      "passed": true,
+      "evidence": "truncated=False enough=False"
+    },
+    {
+      "text": "有小标题结构",
+      "passed": false,
+      "evidence": "标题数=0"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-5.3",
+  "skill": "v1"
+}

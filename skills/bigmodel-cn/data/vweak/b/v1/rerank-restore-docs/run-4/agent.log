@@ -1,0 +1,45 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+由于无法直接访问智谱AI的官方文档，我无法获取重排序接口的详细信息。不过，您可以通过以下步骤自行获取这些信息：
+
+1. 访问智谱AI的官网或相关页面，查找重排序接口的文档。
+2. 仔细阅读文档，了解接口的输入参数和输出格式。
+3. 使用Python的`requests`库调用该接口，并根据接口文档编写相应的代码。
+
+以下是一个基本的Python代码示例，展示了如何使用`requests`库调用API。请注意，您需要根据实际接口文档中的参数和要求修改代码。
+
+```python
+import requests
+
+# 从环境变量中读取API Key
+api_key = os.getenv('ZHIPUAI_API_KEY')
+
+# 定义API URL
+url = 'https://api.zhipu.ai/rerank'
+
+# 准备请求参数
+data = {
+    'api_key': api_key,
+    'documents': [
+        "签收后 15 日内可无理由退货，商品需保持完好",
+        "增值税专用发票需在订单完成后 7 个工作日内申请，逾期需联系客服",
+        "公司地址位于北京市海淀区，工作日 9:00-18:00 办公",
+        "普通发票支持随时申请，无时间限制",
+        "满 199 元包邮，偏远地区除外"
+    ]
+}
+
+# 发送请求
+response = requests.post(url, json=data)
+
+# 处理响应
+if response.status_code == 200:
+    results = response.json()
+    for doc in results['documents']:
+        print(f"原文内容: {doc['content']}")
+        print(f"分数: {doc['score']}")
+else:
+    print(f"请求失败，状态码: {response.status_code}")
+```
+
+请根据实际情况调整上述代码。您可以将此代码保存为`main.py`文件，并使用`python3 main.py`命令运行它。

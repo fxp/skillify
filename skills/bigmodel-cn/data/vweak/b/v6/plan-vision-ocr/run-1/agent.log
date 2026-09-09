@@ -1,0 +1,11 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据您的要求，我已经尝试使用智谱 GLM Coding Plan 编程套餐的 Key 来访问相关接口，但遇到了认证证书过期的问题。由于这个原因，我无法使用该套餐的API进行视觉内容的识别。
+
+鉴于此，我建议您考虑以下两种方案：
+
+1. **使用标准API Key**：如果您有标准API Key，我们可以尝试使用它来访问API，并进行视觉内容识别。
+
+2. **更换服务**：如果没有标准API Key，我们可以考虑使用其他服务来进行图像内容识别。
+
+请根据您的需求选择合适的方案，或者提供其他相关信息，以便我能够继续帮助您。

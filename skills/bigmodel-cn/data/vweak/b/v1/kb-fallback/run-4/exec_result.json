@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/kb-fallback/run-4/work/main.py\", line 6, in <module>\n    api_key = os.environ['ZHIPUAI_API_KEY']\nNameError: name 'os' is not defined\n",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

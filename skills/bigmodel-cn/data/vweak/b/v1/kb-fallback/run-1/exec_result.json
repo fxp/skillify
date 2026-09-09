@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "Question: 退换货政策的有效期是多久？\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/kb-fallback/run-1/work/main.py\", line 30, in <module>\n    print(\"Answer: \" + fetch_text_from_knowledge_base(question))\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/kb-fallback/run-1/work/main.py\", line 21, in fetch_text_from_knowledge_base\n    return response.json()[\"results\"][0][\"document\"][\"content\"]\nKeyError: 'results'\n",
+  "timed_out": false,
+  "seconds": 0.3,
+  "audio_files": []
+}

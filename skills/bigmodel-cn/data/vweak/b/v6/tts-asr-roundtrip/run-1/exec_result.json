@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v6/tts-asr-roundtrip/run-1/work/main.py\", line 26, in <module>\n    raise Exception('语音合成请求失败')\nException: 语音合成请求失败\n",
+  "timed_out": false,
+  "seconds": 0.2,
+  "audio_files": []
+}

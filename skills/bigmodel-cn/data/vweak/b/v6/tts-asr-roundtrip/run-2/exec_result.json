@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v6/tts-asr-roundtrip/run-2/work/main.py\", line 25\n    def main):\n            ^\nSyntaxError: unmatched ')'\n",
+  "timed_out": false,
+  "seconds": 0.0,
+  "audio_files": []
+}

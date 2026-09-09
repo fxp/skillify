@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/batch-best-model/run-3/work/main.py\", line 17, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/batch-best-model/run-3/work/main.py\", line 14, in main\n    print(response.json()['id'])\nKeyError: 'id'\n",
+  "timed_out": false,
+  "seconds": 0.2
+}

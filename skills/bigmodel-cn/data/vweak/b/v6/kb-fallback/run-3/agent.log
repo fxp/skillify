@@ -1,0 +1,9 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+脚本已成功保存到指定路径。您可以使用以下命令运行脚本：
+
+```bash
+python3 main.py
+```
+
+脚本将读取 `faq.txt` 文件，并在智谱的托管知识库中进行搜索，然后打印出与“退换货政策的有效期是多久”相关的内容。如果托管知识库不可用，脚本将无法检索到内容，并会打印出空的结果。

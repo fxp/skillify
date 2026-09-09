@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v6/rerank-restore-docs/run-4/work/main.py\", line 25\n    print(f\"{result['text']}\n                            ^\nSyntaxError: EOL while scanning string literal\n",
+  "timed_out": false,
+  "seconds": 0.0,
+  "audio_files": []
+}

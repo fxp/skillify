@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/cited-web-answer/run-5/work/main.py\", line 24, in <module>\n    answer = fetch_answer(question)\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/cited-web-answer/run-5/work/main.py\", line 17, in fetch_answer\n    \"stream\": false\nNameError: name 'false' is not defined\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

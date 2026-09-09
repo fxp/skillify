@@ -1,0 +1,33 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": false,
+      "evidence": "exit=1 1.7s :: 99999999 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1129)')))\n"
+    },
+    {
+      "text": "正确判定为无效 / 不存在",
+      "passed": false,
+      "evidence": "neg=False"
+    },
+    {
+      "text": "没有误报为有效",
+      "passed": false,
+      "evidence": "pos=True"
+    },
+    {
+      "text": "代码检查了响应体里的业务码",
+      "passed": true,
+      "evidence": "cond_on_code"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v6",
+  "notes": "graded with the frozen grader from glm-round5"
+}

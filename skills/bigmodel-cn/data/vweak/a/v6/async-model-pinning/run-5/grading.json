@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常（非零退出码若属主动报警则不扣分）",
+      "passed": true,
+      "evidence": "exit=1 0.0s :: bigmodel-cn-workspace/vweak/a/v6/async-model-pinning/run-5/work/main.py\", line 32\n    print(f\"Text: {text}\n                        ^\nSyntaxError: EOL while scanning string literal\n traceback=False"
+    },
+    {
+      "text": "stdout 同时出现请求模型 glm-4.6 与实际模型 glm-4.7",
+      "passed": false,
+      "evidence": "asked=False actual=False"
+    },
+    {
+      "text": "正确检出模型不一致并报警",
+      "passed": false,
+      "evidence": "flagged=False"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.333
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v6",
+  "notes": "graded with the frozen grader from glm-round4"
+}

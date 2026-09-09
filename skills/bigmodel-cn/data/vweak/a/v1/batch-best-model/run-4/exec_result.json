@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/batch-best-model/run-4/work/main.py\", line 32, in <module>\n    print(response.json()['batch_id'])\nKeyError: 'batch_id'\n",
+  "timed_out": false,
+  "seconds": 0.2
+}

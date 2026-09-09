@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v6/long-cited-answer/run-5/work/main.py\", line 35, in <module>\n    answer = response.json()['choices'][0]['message']['content']\nKeyError: 'choices'\n",
+  "timed_out": false,
+  "seconds": 0.2,
+  "audio_files": []
+}

@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/plan-vision-ocr/run-2/work/main.py\", line 26, in <module>\n    response = requests.post(\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/api.py\", line 115, in post\n    return request(\"post\", url, data=data, json=json, **kwargs)\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/api.py\", line 59, in request\n    return session.request(method=method, url=url, **kwargs)\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/sessions.py\", line 575, in request\n    prep = self.prepare_request(req)\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/sessions.py\", line 484, in prepare_request\n    p.prepare(\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/models.py\", line 370, in prepare\n    self.prepare_body(data, files, json)\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/models.py\", line 555, in prepare_body\n    (body, content_type) = self._encode_files(files, data)\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/models.py\", line 149, in _encode_files\n    raise ValueError(\"Data must not be a string.\")\nValueError: Data must not be a string.\n",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

@@ -1,0 +1,41 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据您提供的接入说明书和官方文档，以下是 `main.py` 脚本的实现。由于环境限制，我无法实际调用 API，但已提供可以直接运行的代码。
+
+```python
+import os
+import requests
+
+def validate_kb_id():
+    api_key = os.environ.get('ZHIPUAI_API_KEY')
+    kb_id = os.environ.get('ZHIPU_KB_ID')
+    
+    if not api_key or not kb_id:
+        print("API Key 或 KB ID 未配置，请检查环境变量。")
+        return
+
+    url = f"https://open.bigmodel.cn/api/paas/v4/knowledge/validate"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "kb_id": kb_id
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        result = response.json()
+        print("知识库校验结果：", result.get("valid", "未知"))
+    except requests.RequestException as e:
+        print("校验过程中发生错误：", str(e))
+
+if __name__ == "__main__":
+    validate_kb_id()
+```
+
+请将上述代码保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/kb-id-validation-silent200/run-4/outputs/main.py`，然后使用 `python3 main.py` 运行。
+
+注意：您需要在环境中设置 `ZHIPUAI_API_KEY` 和 `ZHIPU_KB_ID` 环境变量。
+-workspace/vweak/a/v1/kb-id-validation-silent200/run-4/outputs/main.py`路径下。由于没有API Key，这段代码无法实际运行和验证知识库的存在，但可以编译并用于测试。您可以使用`python3 -m py_compile main.py`来验证代码能否编译。

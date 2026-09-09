@@ -1,0 +1,42 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据您的要求，我已经阅读了接入说明书`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-v6/SKILL.md`，并查阅了智谱AI开放平台API的最新文档链接。以下是关于如何实现您的任务的指导：
+
+1. **确定API Key**：首先，您需要确定您是否有标准API Key还是GLM Coding Plan（编程套餐）Key。这两个Key是两套隔离的计费体系，Key不通用，Base URL也不同。如果您使用的是编程套餐Key，请确保不要与标准API端点混淆。
+
+2. **Base URL**：所有接口的Base URL都是`https://open.bigmodel.cn/api/`。
+
+3. **鉴权**：使用HTTP Bearer进行鉴权，请求头格式为`Authorization: Bearer <API_KEY>`，其中API Key应从控制台获取，并存储在环境变量中，如`ZHIPUAI_API_KEY`。
+
+4. **模型选择**：在调用API之前，请确认您选择的模型代码和它支持的能力。智谱的模型迭代很快，很多模型名字很相似，选错模型是最常见的接入bug来源。
+
+5. **上传文件**：您可以使用以下代码上传文件并在对话中引用：
+
+```python
+import os
+import requests
+
+H = {"Authorization": f"Bearer {os.environ['ZHIPUAI_API_KEY']}"}
+B = "https://open.bigmodel.cn/api/paas/v4"
+
+# 上传文件
+with open("contract.pdf", "rb") as f:
+    file_data = f.read()
+    files = {"file": ("contract.pdf", file_data, "application/pdf")}
+    response = requests.post(f"{B}/files", headers=H, files=files)
+    file_id = response.json().get("id")
+
+# 使用file_id进行对话
+response = requests.post(f"{B}/chat/completions", headers=H, json={
+    "model": "glm-5.3",
+    "messages": [{"role": "user", "content": "合同编号是什么"}],
+    "file": {"file_id": file_id}
+})
+print(response.json()["choices"][0]["message"]["content"])
+```
+
+请注意，上面的代码示例是一个基本的模板，您可能需要根据实际情况调整模型、消息内容等参数。
+
+6. **其他能力域**：根据您的需求，您还可以参考接入说明书中其他能力域的参考文件，例如文本对话、图像/视频生成、语音识别与合成等。
+
+请根据这些指导编写您的`main.py`脚本。由于当前环境没有可用的API Key，您只需确保代码能够正确地构造请求并调用API接口。您可以使用`python3 -m py_compile`来验证代码是否能编译。

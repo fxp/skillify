@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": false,
+      "evidence": "exit=1 0.2s :: ttp_error_msg, response=self)\nrequests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/audio/speech\n"
+    },
+    {
+      "text": "落盘音频是真 WAV/MP3 而非裸 PCM",
+      "passed": false,
+      "evidence": "files=[]"
+    },
+    {
+      "text": "ASR 真的转写出了内容",
+      "passed": false,
+      "evidence": "最长汉字重合=0"
+    },
+    {
+      "text": "给出了比对结论且转写确实成功",
+      "passed": false,
+      "evidence": "verdict=False"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 4,
+    "total": 4,
+    "pass_rate": 0.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v6"
+}

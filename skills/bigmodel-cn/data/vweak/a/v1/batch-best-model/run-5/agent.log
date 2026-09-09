@@ -1,0 +1,48 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+```python
+import os
+import requests
+
+def main():
+    api_key = os.environ.get('ZHIPUAI_API_KEY')
+    if not api_key:
+        print("API Key not found in environment variables.")
+        return
+
+    url = "https://open.bigmodel.cn/api/paas/v4/batches"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "glm-5.3",
+        "texts": ["Sample text for sentiment analysis."]
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 202:
+        batch_id = response.json().get('batch_id')
+        print(batch_id)
+    else:
+        print("Failed to create batch task.")
+
+if __name__ == "__main__":
+    main()
+```
+   for line in file:
+        # 假设每行是一个有效的 JSON 字符串
+        request_data = json.loads(line)
+        requests_list.append(request_data)
+
+# 上传请求到 API 并创建 batch 任务
+response = requests.post(url, headers=headers, json={'requests': requests_list})
+batch_task_id = response.json().get('batch_task_id')
+
+# 打印 batch 任务 id
+print(batch_task_id)
+```
+
+请根据实际的 API 文档修改上述代码中的 URL、请求头和请求参数。此外，确保 `.jsonl` 文件中的每一行都是一个有效的 JSON 字符串，代表一个推理请求。
+
+由于无法验证代码的正确性，您可能需要根据实际的 API 接口进行调整。在您有 API Key 和详细的 API 文档后，可以使用 `python3 -m py_compile main.py` 来验证代码是否可以编译。

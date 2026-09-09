@@ -1,0 +1,34 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+```python
+import os
+import requests
+
+def rerank_documents(documents, api_key):
+    base_url = "https://open.bigmodel.cn/api/paas/v4/rerank"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "documents": documents
+    }
+    response = requests.post(base_url, headers=headers, json=data)
+    response.raise_for_status()
+    return response.json()
+
+if __name__ == "__main__":
+    api_key = os.environ.get("ZHIPUAI_API_KEY")
+    documents = [
+        "签收后 15 日内可无理由退货，商品需保持完好",
+        "增值税专用发票需在订单完成后 7 个工作日内申请，逾期需联系客服",
+        "公司地址位于北京市海淀区，工作日 9:00-18:00 办公",
+        "普通发票支持随时申请，无时间限制",
+        "满 199 元包邮，偏远地区除外"
+    ]
+    results = rerank_documents(documents, api_key)
+    sorted_documents = sorted(results, key=lambda x: x['score'], reverse=True)
+    for i, doc in enumerate(sorted_documents):
+        print(f"Document {i+1}: {doc['document']}")
+        print(f"Score: {doc['score']}\n")
+```

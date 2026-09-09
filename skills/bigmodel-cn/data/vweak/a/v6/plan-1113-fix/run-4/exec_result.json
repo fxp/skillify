@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/plan-1113-fix/run-4/work/main.py\", line 1\n    \"},\nIndentationError: unexpected indent\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

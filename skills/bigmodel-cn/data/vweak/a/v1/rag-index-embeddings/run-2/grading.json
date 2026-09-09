@@ -1,0 +1,33 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 0.1s :: igmodel-cn-workspace/vweak/a/v1/rag-index-embeddings/run-2/work/main.py\", line 6, in <module>\n    from sklearn.metrics.pairwise import cosine_similarity\nModuleNotFoundError: No module named 'sklearn'\n"
+    },
+    {
+      "text": "vectors.json 含 150 条向量",
+      "passed": false,
+      "evidence": "实际 0 条"
+    },
+    {
+      "text": "全程未出现 1214（embeddings 单次最多 64 条）",
+      "passed": true,
+      "evidence": "no_1214=True"
+    },
+    {
+      "text": "stdout 打印了 top-3 检索结果（命中 faq 原文）",
+      "passed": false,
+      "evidence": "命中 0 条原文"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v1",
+  "notes": "graded with the frozen grader from glm-round3"
+}

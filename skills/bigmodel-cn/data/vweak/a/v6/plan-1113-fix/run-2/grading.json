@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 0.2s :: ng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/plan-1113-fix/run-2/work/main.py\", line 17, in <module>\n    print(response.json()['choices'][0]['text'])\nKeyError: 'choices'\n"
+    },
+    {
+      "text": "stdout 有非空模型回答且不是报错栈",
+      "passed": false,
+      "evidence": "stdout_len=0"
+    },
+    {
+      "text": "全程未出现 1113",
+      "passed": true,
+      "evidence": "no_1113=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.333
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v6",
+  "notes": "graded with the frozen grader from glm-round4"
+}

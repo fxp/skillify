@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/rag-index-embeddings/run-2/work/main.py\", line 6, in <module>\n    from sklearn.metrics.pairwise import cosine_similarity\nModuleNotFoundError: No module named 'sklearn'\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

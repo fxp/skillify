@@ -1,0 +1,55 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+```python
+import requests
+import json
+import numpy as np
+
+# 读取API Key
+api_key = os.environ['ZHIPUAI_API_KEY']
+
+# 读取faq.txt文件，将其内容分割成行
+with open('faq.txt', 'r', encoding='utf-8') as file:
+    lines = file.readlines()
+
+# 使用智谱的embedding-3模型将每行文本向量化
+vectors = []
+for line in lines:
+    response = requests.post(
+        "https://open.bigmodel.cn/api/paas/v4/embeddings",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={
+            "model": "embedding-3",
+            "text": line.strip()
+        }
+    )
+    response.raise_for_status()
+    vectors.append(response.json()['result']['vector'])
+
+# 将向量存储到vectors.json文件中
+with open('vectors.json', 'w', encoding='utf-8') as file:
+    json.dump(vectors, file, ensure_ascii=False, indent=4)
+
+# 读取查询语句并向量化
+query = "发票怎么开"
+query_response = requests.post(
+    "https://open.bigmodel.cn/api/paas/v4/embeddings",
+    headers={"Authorization": f"Bearer {api_key}"},
+    json={
+        "model": "embedding-3",
+        "text": query
+    }
+)
+query_response.raise_for_status()
+query_vector = query_response.json()['result']['vector']
+
+# 计算查询语句与所有向量的余弦相似度
+cosine_similarities = [np.dot(query_vector, vector) for vector in vectors]
+
+# 获取余弦相似度最高的三个索引
+top_indices = np.argsort(cosine_similarities)[-3:]
+
+# 打印最相似的原文
+for index in top_indices:
+    print(lines[index].strip())
+```

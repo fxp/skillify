@@ -1,0 +1,81 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+Based on the provided information and the user's task, here is the Python script for the minimal viable search as described:
+
+```python
+import os
+import requests
+import json
+import numpy as np
+
+# API Key from environment variable
+api_key = os.environ['ZHIPUAI_API_KEY']
+base_url = "https://open.bigmodel.cn/api/paas/v4"
+
+def get_embedding(text):
+    response = requests.post(
+        f"{base_url}/embeddings",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"model": "embedding-3", "input": [text]}
+    )
+    response.raise_for_status()
+    return response.json()['data'][0]['embedding']
+
+def search(query):
+    query_embedding = get_embedding(query)
+    faq_embeddings = [get_embedding(line) for line in faq_lines]
+
+    similarities = np.dot(query_embedding, faq_embeddings)
+    top_3_indices = np.argsort(similarities)[-3:]
+    return [faq_lines[i] for i in top_3_indices]
+
+# Read the FAQ file
+with open("faq.txt", "r", encoding="utf-8") as faq_file:
+    faq_lines = faq_file.readlines()
+
+# Query and print the top 3 similar FAQs
+query = "发票怎么开"
+results = search(query)
+for result in results:
+    print(result.strip())
+
+# Save the script to the specified path
+script_path = "/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/rag-index-embeddings/run-4/outputs/main.py"
+with open(script_path, "w", encoding="utf-8") as script_file:
+    script_file.write("""
+import os
+import requests
+import json
+import numpy as np
+
+api_key = os.environ['ZHIPUAI_API_KEY']
+base_url = "https://open.bigmodel.cn/api/paas/v4"
+
+def get_embedding(text):
+    response = requests.post(
+        f"{base_url}/embeddings",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json={"model": "embedding-3", "input": [text]}
+    )
+    response.raise_for_status()
+    return response.json()['data'][0]['embedding']
+
+def search(query):
+    query_embedding = get_embedding(query)
+    faq_embeddings = [get_embedding(line) for line in faq_lines]
+
+    similarities = np.dot(query_embedding, faq_embeddings)
+    top_3_indices = np.argsort(similarities)[-3:]
+    return [faq_lines[i] for i in top_3_indices]
+
+with open("faq.txt", "r", encoding="utf-8") as faq_file:
+    faq_lines = faq_file.readlines()
+
+query = "发票怎么开"
+results = search(query)
+for result in results:
+    print(result.strip())
+""")
+```
+
+This script should be run with the environment variable `ZHIPUAI_API_KEY` set to your actual API key. The script reads the `faq.txt` file, computes embeddings for each line, and then searches for the top 3 similar lines to the query "发票怎么开" using cosine similarity. The results are printed to the standard output. The script is then saved to the specified path.

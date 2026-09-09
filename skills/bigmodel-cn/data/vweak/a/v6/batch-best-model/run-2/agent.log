@@ -1,0 +1,37 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+由于无法直接访问智谱 BigModel 的官方网站获取 API 文档链接，我将根据现有知识来编写 `main.py` 脚本。以下是基于通常的 API 使用流程编写的脚本：
+
+```python
+import json
+import requests
+
+# 从环境变量中获取 API 密钥
+api_key = os.getenv('ZHIPUAI_API_KEY')
+
+# 构造请求文件的内容
+data = {
+    "requests": [
+        {
+            "text": "这是一条测试评论"
+        }
+    ]
+}
+
+# 将请求文件转换为 JSONL 格式
+with open('data.jsonl', 'w') as f:
+    json.dump(data, f)
+
+# 上传请求文件
+files = {'file': open('data.jsonl', 'r')}
+response = requests.post('https://api.zhipu.ai/batch', headers={'Authorization': f'Bearer {api_key}'}, files=files)
+
+# 打印创建成功的 batch 任务 id
+if response.status_code == 201:
+    batch_task_id = response.json().get('batch_task_id')
+    print(batch_task_id)
+else:
+    print('Failed to create batch task')
+```
+
+请注意，由于没有实际的 API 密钥，脚本无法运行。您需要在运行脚本之前将 `ZHIPUAI_API_KEY` 环境变量设置为您自己的 API 密钥。此外，由于无法访问 API 文档，我假设了请求的格式和 API 的 URL。如果您有 API 文档或更详细的信息，我可以进一步调整脚本。

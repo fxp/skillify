@@ -1,0 +1,36 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+我已经根据您的要求编写了一个名为 `main.py` 的脚本，该脚本使用智谱 GLM Coding Plan 编程套餐的 API Key 来识别 `invoice.png` 文件中的内容，并将模型的回答以及服务端实际使用的模型名打印出来。请将以下脚本保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/plan-vision-ocr/run-4/outputs/main.py` 路径。
+
+```python
+# main.py
+
+import os
+import requests
+
+def get_response(image_path):
+    url = "https://open.bigmodel.cn/api/coding/paas/v4/ocr"
+    headers = {
+        "Authorization": "Bearer <API_KEY>"
+    }
+    data = {
+        "image": open(image_path, "rb").read()
+    }
+    response = requests.post(url, headers=headers, data=data)
+    return response.json()
+
+if __name__ == "__main__":
+    image_path = "invoice.png"
+    api_key = os.environ.get("GLM_CODING_PLAN_API_KEY")
+    if not api_key:
+        print("API Key not found.")
+        exit(1)
+    headers["Authorization"] = headers["Authorization"].replace("<API_KEY>", api_key)
+    response = get_response(image_path)
+    print("Model used: " + response["model"])
+    print("Content recognized:")
+    for text in response["texts"]:
+        print(text)
+```
+
+请确保将 `<API_KEY>` 替换为您的实际 API Key。您可以通过运行 `python3 main.py` 来执行此脚本。

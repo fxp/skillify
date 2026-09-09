@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 0.0s :: pace/Skillify/bigmodel-cn-workspace/vweak/b/v1/tts-asr-roundtrip/run-4/work/main.py\", line 42\n    def main):\n            ^\nSyntaxError: unmatched ')'\n"
+    },
+    {
+      "text": "落盘音频是真 WAV/MP3 而非裸 PCM",
+      "passed": false,
+      "evidence": "files=[]"
+    },
+    {
+      "text": "ASR 真的转写出了内容",
+      "passed": false,
+      "evidence": "最长汉字重合=0"
+    },
+    {
+      "text": "给出了比对结论且转写确实成功",
+      "passed": false,
+      "evidence": "verdict=False"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-5.3",
+  "skill": "v1"
+}

@@ -1,0 +1,44 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+```python
+import os
+import requests
+
+# 获取API Key
+api_key = os.environ['ZHIPUAI_API_KEY']
+
+# 模型版本
+model_version = "glm-4.6"
+
+# 对话内容
+messages = [
+    {"role": "user", "content": "这是一句正面情感的话。"},
+    {"role": "user", "content": "这是一句负面情感的话。"},
+    {"role": "user", "content": "这是一句中性情感的话。"}
+]
+
+# 发送请求
+response = requests.post(
+    f"https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    headers={"Authorization": f"Bearer {api_key}"},
+    json={"model": model_version, "messages": messages}
+)
+
+# 检查模型是否正确
+if response.status_code == 200:
+    # 打印请求的模型和实际使用的模型
+    requested_model = response.json().get("model")
+    if requested_model != model_version:
+        print(f"报警：请求的模型是 {model_version}，但实际使用的模型是 {requested_model}")
+    else:
+        print(f"核对通过：请求的模型和实际使用的模型都是 {model_version}")
+else:
+    print(f"请求失败，错误码：{response.status_code}")
+
+# 打印情感分类结果
+for message in messages:
+    print(f"对于句子 '{message['content']}':")
+    print(response.json()[0]["choices"][0]["message"]["content"])
+```
+
+这段代码首先从环境变量中获取API Key，然后设置模型版本和对话内容。之后，它发送一个POST请求到智谱AI开放平台的`async/chat/completions`接口，并检查响应中的模型是否与请求的模型匹配。如果两者不匹配，它将打印一个报警信息。最后，它打印每个句子的情感分类结果。请确保将API Key设置在环境变量`ZHIPUAI_API_KEY`中。

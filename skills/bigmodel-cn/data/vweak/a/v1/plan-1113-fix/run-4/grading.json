@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 0.1s :: per/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/os.py\", line 679, in __getitem__\n    raise KeyError(key) from None\nKeyError: 'ZHIPUAI_API_KEY'\n"
+    },
+    {
+      "text": "stdout 有非空模型回答且不是报错栈",
+      "passed": false,
+      "evidence": "stdout_len=0"
+    },
+    {
+      "text": "全程未出现 1113",
+      "passed": true,
+      "evidence": "no_1113=True"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.333
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v1",
+  "notes": "graded with the frozen grader from glm-round4"
+}

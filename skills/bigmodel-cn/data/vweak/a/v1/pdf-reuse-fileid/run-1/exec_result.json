@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/pdf-reuse-fileid/run-1/work/main.py\", line 88, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/pdf-reuse-fileid/run-1/work/main.py\", line 31, in main\n    file_id = file_info['file_id']\nKeyError: 'file_id'\n",
+  "timed_out": false,
+  "seconds": 0.2
+}

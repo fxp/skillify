@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/rag-index-embeddings/run-1/work/main.py\", line 52\n    ).json()['data'][0]['embedding'])\n                                    ^\nSyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 42\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

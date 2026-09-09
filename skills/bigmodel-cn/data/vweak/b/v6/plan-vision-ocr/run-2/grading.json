@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 0.0s :: rer {api_key}'}).\n                                                                                                      ^\nSyntaxError: invalid syntax\n"
+    },
+    {
+      "text": "真的调通了视觉模型（没有错误地断言套餐不支持）",
+      "passed": false,
+      "evidence": "answered=False gave_up=False"
+    },
+    {
+      "text": "用的是套餐端点",
+      "passed": true,
+      "evidence": "plan_endpoint=True"
+    },
+    {
+      "text": "打印了服务端回显的实际模型名",
+      "passed": false,
+      "evidence": "echoed=False"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "executor": "glm-5.3",
+  "skill": "v6"
+}

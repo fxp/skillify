@@ -1,0 +1,49 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据接入说明书的内容，下面是一个满足要求的 `main.py` 脚本示例：
+
+```python
+import os
+import requests
+
+def read_pdf_and_answer_questions(file_path):
+    base_url = "https://open.bigmodel.cn/api/paas/v4"
+    headers = {
+        "Authorization": f"Bearer {os.environ['ZHIPUAI_API_KEY']}",
+        "Content-Type": "application/json"
+    }
+
+    # 上传文件
+    with open(file_path, "rb") as f:
+        files = {"file": ("file.pdf", f, "application/pdf")}
+        response = requests.post(f"{base_url}/files", headers=headers, files=files)
+        response.raise_for_status()
+        file_data = response.json()
+        file_id = file_data["id"]
+
+    # 提问并获取答案
+    questions = [
+        "合同编号是什么",
+        "合同总金额是多少",
+        "违约金怎么算"
+    ]
+
+    for question in questions:
+        data = {
+            "model": "glm-5.3",
+            "messages": [
+                {"role": "user", "content": [{"type": "file", "file": {"file_id": file_id}}],
+                 {"type": "text", "text": question}]
+            }
+        }
+        response = requests.post(f"{base_url}/chat/completions", headers=headers, json=data)
+        response.raise_for_status()
+        answer = response.json()["choices"][0]["message"]["content"]
+        print(f"{question}: {answer}")
+
+# 使用示例
+file_path = "/path/to/contract.pdf"
+read_pdf_and_answer_questions(file_path)
+```
+
+请将此脚本保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/pdf-reuse-fileid/run-3/outputs/main.py`，并确保在运行脚本之前设置环境变量 `ZHIPUAI_API_KEY` 为有效的 API Key。

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/plan-1113-fix/run-4/work/main.py\", line 5, in <module>\n    api_key = os.environ['ZHIPUAI_API_KEY']\n  File \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/os.py\", line 679, in __getitem__\n    raise KeyError(key) from None\nKeyError: 'ZHIPUAI_API_KEY'\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

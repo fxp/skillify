@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": false,
+      "evidence": "exit=1 0.2s :: b/v6/long-cited-answer/run-5/work/main.py\", line 35, in <module>\n    answer = response.json()['choices'][0]['message']['content']\nKeyError: 'choices'\n"
+    },
+    {
+      "text": "答案完整未被截断",
+      "passed": true,
+      "evidence": "truncated_end=False"
+    },
+    {
+      "text": "至少 2 条 http(s) 来源链接",
+      "passed": false,
+      "evidence": "links=0"
+    },
+    {
+      "text": "来源取自接口返回而非编造",
+      "passed": false,
+      "evidence": "reads_api=False"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-5.3",
+  "skill": "v6"
+}

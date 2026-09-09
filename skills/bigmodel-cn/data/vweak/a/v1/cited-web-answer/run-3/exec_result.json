@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/cited-web-answer/run-3/work/main.py\", line 27\n    }\n    ^\nSyntaxError: unmatched '}'\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

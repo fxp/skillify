@@ -1,0 +1,23 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+```python
+import os
+import requests
+
+API_KEY = os.getenv('ZHIPUAI_API_KEY')
+url = "https://open.bigmodel.cn/api/paas/v4/batches"
+
+# 构造 JSONL 请求文件内容
+requests_content = [
+    '{"model": "glm-5.3", "messages": [{"role": "user", "content": "这是一个测试评论。"}]}',
+    '{"model": "glm-5.3", "messages": [{"role": "user", "content": "这是另一个测试评论。"}]}',
+    '{"model": "glm-5.3", "messages": [{"role": "user", "content": "这是一个正面评论。"}]}',
+    '{"model": "glm-5.3", "messages": [{"role": "user", "content": "这是一个负面评论。"}]}'
+]
+
+# 上传请求文件到智谱AI开放平台
+response = requests.post(url, headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "text/plain"}, data="\n".join(requests_content))
+
+# 打印创建的 batch 任务 id
+print(response.json()['id'])
+```

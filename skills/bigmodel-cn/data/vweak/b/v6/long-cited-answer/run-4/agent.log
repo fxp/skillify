@@ -1,0 +1,42 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据您的要求，我将使用智谱AI开放平台的联网搜索能力来回答“2026年中国新能源汽车出口的主要目的地国家有哪些”。以下是实现该功能的代码示例：
+
+```python
+import os
+import requests
+
+# 从环境变量中获取API Key
+api_key = os.environ.get('ZHIPUAI_API_KEY')
+
+# 设置API的Base URL
+base_url = "https://open.bigmodel.cn/api/paas/v4"
+
+# 构造请求头
+headers = {
+    "Authorization": f"Bearer {api_key}",
+    "Content-Type": "application/json"
+}
+
+# 构造搜索请求
+search_data = {
+    "model": "glm-4.6",
+    "messages": [{"role": "user", "content": "2026年中国新能源汽车出口的主要目的地国家有哪些"}],
+    "tools": [{"type": "web_search", "web_search": {
+        "enable": True, "search_engine": "search_pro_bing", "search_result": True}}]}
+}
+
+# 发送请求
+response = requests.post(f"{base_url}/chat/completions", headers=headers, json=search_data)
+
+# 解析响应
+if response.status_code == 200:
+    search_results = response.json().get("choices", [])
+    for result in search_results:
+        message = result.get("message", {}).get("content", "")
+        print(message)
+else:
+    print("Failed to get search results:", response.status_code)
+```
+
+确保您已经在环境变量`ZHIPUAI_API_KEY`中设置了有效的API Key。您可以直接运行此脚本以获取搜索结果。请注意，由于没有实际的API Key，所以这段代码无法直接运行以获取实际的搜索结果。

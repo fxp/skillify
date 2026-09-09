@@ -1,0 +1,44 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据接入说明书和官方文档，以下是 `main.py` 脚本的示例：
+
+```python
+import os
+import requests
+
+# 从环境变量获取 GLM Coding Plan API Key
+coding_plan_api_key = os.getenv('GLM_CODING_PLAN_API_KEY')
+
+# 指定要分析的图片路径
+image_path = '/path/to/invoice.png'
+
+# 构建请求 URL
+url = f'https://open.bigmodel.cn/api/coding/paas/v4/ocr'
+
+# 准备请求头部
+headers = {
+    'Authorization': f'Bearer {coding_plan_api_key}',
+    'Content-Type': 'application/json'
+}
+
+# 准备请求体
+data = {
+    'images': [image_path]
+}
+
+# 发送请求
+response = requests.post(url, headers=headers, json=data)
+
+# 检查响应状态码
+if response.status_code == 200:
+    # 打印模型回答
+    print('Model Response:', response.json()['results'][0]['text'])
+    # 打印服务端实际使用的模型名
+    print('Server Model:', response.json()['results'][0]['model'])
+else:
+    print('Error:', response.status_code, response.json().get('error', 'Unknown error'))
+```
+
+请确保将 `GLM_CODING_PLAN_API_KEY` 环境变量设置为你的智谱 GLM Coding Plan API Key，并将 `image_path` 替换为 `invoice.png` 图片的实际路径。
+
+请注意，此脚本没有调用任何实际的 API，因为没有提供有效的 API Key。你可以使用 `python3 -m py_compile main.py` 来验证脚本是否能够编译。如果编译成功，但没有调用 API，脚本将不会执行任何操作。

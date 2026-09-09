@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "Failed to fetch news data.\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.4,
+  "audio_files": []
+}

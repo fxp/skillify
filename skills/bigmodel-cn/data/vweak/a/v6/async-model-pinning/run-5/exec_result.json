@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/async-model-pinning/run-5/work/main.py\", line 32\n    print(f\"Text: {text}\n                        ^\nSyntaxError: EOL while scanning string literal\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

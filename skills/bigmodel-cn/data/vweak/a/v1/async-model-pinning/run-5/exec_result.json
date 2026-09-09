@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "我请求的模型: glm-4.6\n接口实际使用的模型: glm-4.6\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 26.2
+}

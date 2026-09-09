@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/rag-index-embeddings/run-3/work/main.py\", line 18\n    def query vectors, query_vector:\n              ^\nSyntaxError: invalid syntax\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

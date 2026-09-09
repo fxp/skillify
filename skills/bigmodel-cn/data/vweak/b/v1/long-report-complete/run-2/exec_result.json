@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/long-report-complete/run-2/work/main.py\", line 20, in <module>\n    \"stream\": false\nNameError: name 'false' is not defined\n",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

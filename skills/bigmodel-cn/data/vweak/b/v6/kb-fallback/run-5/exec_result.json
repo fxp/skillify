@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "Failed to retrieve search results.\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v6/kb-fallback/run-5/work/main.py\", line 52, in <module>\n    file.write(json.dumps({}))\nNameError: name 'json' is not defined\n",
+  "timed_out": false,
+  "seconds": 0.2,
+  "audio_files": []
+}

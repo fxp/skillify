@@ -1,0 +1,76 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+为了完成这个任务，我们将遵循以下步骤：
+
+1. 使用智谱的语音合成API将“发票需要在七个工作日内申请”这句话合成成音频文件，并将其保存到本地。
+2. 使用平台的语音识别API将生成的音频文件转写回文字。
+3. 将转写结果与原文进行比对，并打印出来。
+4. 如果转写结果与原文不匹配，或者在任何步骤中出现问题，将报错并说明卡在哪一步。
+
+以下是实现这些步骤的代码：
+
+```python
+import os
+import requests
+
+# 读取环境变量中的API Key
+api_key = os.environ.get('ZHIPUAI_API_KEY')
+
+# 检查API Key是否存在
+if not api_key:
+    print("API Key未找到，请设置环境变量ZHIPUAI_API_KEY。")
+    exit(1)
+
+# 语音合成API的URL
+tts_url = "https://open.bigmodel.cn/api/paas/v4/audio/speech"
+
+# 语音识别API的URL
+asr_url = "https://open.bigmodel.cn/api/paas/v4/audio/transcriptions"
+
+# 要合成的文本
+text = "发票需要在七个工作日内申请"
+
+# 发送语音合成请求
+tts_data = {
+    "model": "glm-5.3",
+    "text": text,
+    "voice": "female",  # 使用女声
+    "volume": 1.0,
+    "speed": 1.0
+}
+
+response = requests.post(tts_url, headers={"Authorization": f"Bearer {api_key}"}, json=tts_data)
+if response.status_code != 200:
+    print("语音合成失败，状态码：", response.status_code)
+    exit(1)
+
+# 保存音频文件
+audio_file = "output.wav"
+with open(audio_file, "wb") as f:
+    f.write(response.content)
+
+# 发送语音识别请求
+asr_data = {
+    "model": "glm-5.3",
+    "audio": open(audio_file, "rb")
+}
+
+response = requests.post(asr_url, headers={"Authorization": f"Bearer {api_key}"}, files=asr_data)
+if response.status_code != 200:
+    print("语音识别失败，状态码：", response.status_code)
+    exit(1)
+
+# 获取识别结果
+transcription = response.json().get("results", [])[0]["text"]
+
+# 打印识别结果
+print("识别结果：", transcription)
+
+# 比对原文和识别结果
+if text == transcription:
+    print("语音链路打通成功。")
+else:
+    print("语音链路未打通，原文：", text, "，识别结果：", transcription)
+```
+
+请确保在运行此脚本之前已设置环境变量ZHIPUAI_API_KEY。此外，由于当前环境没有可用的API Key，这段代码无法实际运行和验证。

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/async-model-pinning/run-3/work/main.py\", line 49, in <module>\n    asyncio.run(check_model_version(api_key))\n  File \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/runners.py\", line 44, in run\n    return loop.run_until_complete(main)\n  File \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/base_events.py\", line 642, in run_until_complete\n    return future.result()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/async-model-pinning/run-3/work/main.py\", line 13, in check_model_version\n    response = await requests.get(url, headers=headers)\nTypeError: object Response can't be used in 'await' expression\n",
+  "timed_out": false,
+  "seconds": 0.6
+}

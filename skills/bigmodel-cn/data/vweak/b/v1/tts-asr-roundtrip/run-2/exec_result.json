@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/b/v1/tts-asr-roundtrip/run-2/work/main.py\", line 32\n    print(f\"Original text: {text_to_speak}\n                                          ^\nSyntaxError: EOL while scanning string literal\n",
+  "timed_out": false,
+  "seconds": 0.0,
+  "audio_files": []
+}

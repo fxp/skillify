@@ -1,0 +1,41 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+根据 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-v6/SKILL.md` 文件和智谱AI开放平台官方文档，以下是接入智谱AI开放平台API的规范总结：
+
+1. **API Key**：需要从智谱AI开放平台控制台获取，并使用环境变量（如 `ZHIPUAI_API_KEY`）读取，避免硬编码在代码中。
+
+2. **Base URL**：所有接口路径都拼接在固定的Base URL `https://open.bigmodel.cn/api/` 后面。
+
+3. **鉴权方式**：统一使用HTTP Bearer进行鉴权，请求头包含 `Authorization: Bearer <API_KEY>`。
+
+4. **模型选择**：智谱的模型迭代较快，需要先确认模型代码和它支持的能力，例如是否支持视觉输入、工具调用、思考模式等，可以在 `references/models.md` 中核实。
+
+以下是一个使用智谱AI开放平台API进行情感分类的Python示例代码：
+
+```python
+import os
+import requests
+
+# 读取API Key
+api_key = os.environ['ZHIPUAI_API_KEY']
+
+# 构造请求头部
+headers = {
+    "Authorization": f"Bearer {api_key}",
+    "Content-Type": "application/json"
+}
+
+# 构造请求体
+data = {
+    "model": "glm-5.3",
+    "messages": [{"role": "user", "content": "用户评论内容"}]
+}
+
+# 发送请求
+response = requests.post("https://open.bigmodel.cn/api/paas/v4/chat/completions", headers=headers, json=data)
+
+# 打印响应结果
+print(response.json())
+```
+
+请根据实际情况修改模型名称和用户评论内容。由于当前环境没有可用的API Key，无法直接运行此代码。你可以使用 `python3 -m py_compile` 验证代码是否能编译。

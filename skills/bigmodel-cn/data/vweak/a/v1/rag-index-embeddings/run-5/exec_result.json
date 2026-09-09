@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/rag-index-embeddings/run-5/work/main.py\", line 23, in <module>\n    response.raise_for_status()\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/models.py\", line 1026, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/embeddings\n",
+  "timed_out": false,
+  "seconds": 2.9
+}

@@ -1,0 +1,33 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": false,
+      "evidence": "exit=1 22.6s :: json-schema-not-enforced/run-2/work/main.py\", line 22, in sentiment_classification\n    score = float(result['choices'][0]['confidence'])\nKeyError: 'confidence'\n"
+    },
+    {
+      "text": "拿到 3 条严格符合 schema 的结果",
+      "passed": false,
+      "evidence": "valid_objs=0"
+    },
+    {
+      "text": "脚本自己做了结构校验或兜底",
+      "passed": false,
+      "evidence": "validated=False"
+    },
+    {
+      "text": "没有把不合规输出当成功",
+      "passed": true,
+      "evidence": "failed_claim=False"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v1",
+  "notes": "graded with the frozen grader from glm-round5"
+}

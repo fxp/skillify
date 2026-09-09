@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/pdf-reuse-fileid/run-4/work/main.py\", line 31, in <module>\n    file_id = upload_file(file_path)\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/pdf-reuse-fileid/run-4/work/main.py\", line 16, in upload_file\n    return response.json()['id']\nKeyError: 'id'\n",
+  "timed_out": false,
+  "seconds": 0.3
+}

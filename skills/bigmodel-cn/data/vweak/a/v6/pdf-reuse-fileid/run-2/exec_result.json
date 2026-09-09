@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/pdf-reuse-fileid/run-2/work/main.py\", line 20\n    f \"{base_url}/chat/completions\",\n      ^\nSyntaxError: invalid syntax\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

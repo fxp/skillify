@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v1/kb-id-validation-silent200/run-2/work/main.py\", line 14\n    kb_endpoint = f \"{base_url}/knowledge/{kb_id}\"\n                    ^\nSyntaxError: invalid syntax\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

@@ -1,0 +1,44 @@
+"glm-4-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4-flash","query_source":"sdk"}
+I encountered an issue while trying to fetch the official documentation for the ZhipuAI Batch BigModel Server. The requested URL returned a 404 Not Found error. Since I cannot access the documentation directly, I will proceed with the information available to me and create the `main.py` script based on that. Please note that without the official documentation, there might be inaccuracies in the implementation. Let's start by creating the `main.py` script that meets the user's requirements. 
+
+Here is the script:
+
+```python
+import json
+import requests
+
+# Function to create a .jsonl file with user comments
+def create_jsonl_file(comments_file_path, output_file_path):
+    with open(comments_file_path, 'r', encoding='utf-8') as file:
+        with open(output_file_path, 'w', encoding='utf-8') as outfile:
+            for line in file:
+                outfile.write(json.dumps({"text": line.strip()}) + '\n')
+
+# Function to upload the .jsonl file and create a batch task
+def upload_and_create_batch_task(jsonl_file_path):
+    api_key = os.getenv('ZHIPUAI_API_KEY')
+    url = f"https://api.zhipu.ai/batch/v1/tasks"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "data": [f"file://{jsonl_file_path}"]
+    }
+    response = requests.post(url, headers=headers, json=data)
+    return response.json()
+
+# Main function to run the script
+def main():
+    comments_file_path = 'comments.txt'
+    output_file_path = 'comments.jsonl'
+    create_jsonl_file(comments_file_path, output_file_path)
+    batch_task_response = upload_and_create_batch_task(output_file_path)
+    print(batch_task_response['task_id'])
+
+if __name__ == "__main__":
+    main()
+```
+
+Please save this script as `main.py` in the `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/vweak/a/v6/batch-best-model/run-4/outputs/` directory. Remember to set the `ZHIPUAI_API_KEY` environment variable with your API key before running the script.

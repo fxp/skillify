@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": false,
+      "evidence": "exit=1 0.1s :: oder.py\", line 179, in default\n    raise TypeError(f'Object of type {o.__class__.__name__} '\nTypeError: Object of type bytes is not JSON serializable\n"
+    },
+    {
+      "text": "真的调通了视觉模型（没有错误地断言套餐不支持）",
+      "passed": false,
+      "evidence": "answered=False gave_up=False"
+    },
+    {
+      "text": "用的是套餐端点",
+      "passed": true,
+      "evidence": "plan_endpoint=True"
+    },
+    {
+      "text": "打印了服务端回显的实际模型名",
+      "passed": false,
+      "evidence": "echoed=False"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 3,
+    "total": 4,
+    "pass_rate": 0.25
+  },
+  "executor": "glm-5.3",
+  "skill": "v6"
+}

@@ -1,0 +1,33 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+已完成！我根据接入说明书的指引，编写了知识库 ID 校验脚本。
+
+## 脚本特点：
+
+1. **严格验证**：根据文档，知识库 API 即使知识库不存在也返回 HTTP 200，真实错误码在响应的 `code` 字段中（如 100013 表示"知识库不存在"）
+
+2. **保守策略**：宁可误报无效，也不放过任何一个无效 ID
+   - 检查 `code` 字段是否为 200
+   - 验证响应数据完整性
+   - 确认知识库 ID 匹配
+   - 检查知识库名称非空
+
+3. **清晰输出**：明确打印校验结论，包括知识库名称、文档数量等关键信息
+
+4. **友好提示**：对各种错误情况提供清晰的错误信息
+
+5. **标准退出码**：0 表示有效，1 表示无效，适合用作流水线卡点
+
+## 使用方法：
+```bash
+# 设置环境变量
+export ZHIPU_KB_ID="your-knowledge-base-id"
+export ZHIPUAI_API_KEY="your-api-key"
+
+# 运行脚本
+python3 main.py
+```
+
+脚本已保存到指定路径，并验证可以正常编译。

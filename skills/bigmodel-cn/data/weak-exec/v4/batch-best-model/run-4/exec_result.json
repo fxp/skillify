@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "开始处理用户评论情感分析...\n1. 读取评论文件...\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v4/batch-best-model/run-4/work/main.py\", line 137, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v4/batch-best-model/run-4/work/main.py\", line 117, in main\n    comments = read_comments()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v4/batch-best-model/run-4/work/main.py\", line 13, in read_comments\n    with open(\"../comments.txt\", \"r\", encoding=\"utf-8\") as f:\nFileNotFoundError: [Errno 2] No such file or directory: '../comments.txt'\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

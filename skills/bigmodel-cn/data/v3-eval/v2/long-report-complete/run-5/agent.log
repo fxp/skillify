@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件），`python3 -m py_compile` 编译通过。
+
+## 方案要点
+
+**接口与模型**（依据 SKILL.md → `chat.md`/`models.md`，并用 WebFetch 核对了 docs.bigmodel.cn 官方文档，两边一致）：
+- 标准 API：`POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读取，仅用 `requests`
+- 模型选 `glm-4.6`：同步端点不会静默换模型（避开陷阱 2/3），且支持 `thinking: {"type": "disabled"}` 显式关思考——思考 token 会计入 `max_tokens`（陷阱 13），关掉后预算全部留给正文，从源头防截断
+
+**保证「完整、不断掉」的三道防线**（这是本任务核心）：
+1. `max_tokens=8192`（约 1200 字只需 ~2500 token），从源头避免截断；
+2. 检查 `finish_reason`：若为 `length`（被截断），自动带上下文续写并做接缝去重拼接，直到 `stop` 自然收尾；`sensitive`/`network_error` 等显式报错；
+3. 结构校验：字数 ≥600（不含空白）、≥2 个小标题、≥3 处数字数据，不达标就丢弃换强化提示词整体重试（最多 3 次）——**只有全部通过才打印全文**，重试用尽则报错退出，绝不输出半截内容。
+
+**验证情况**（未真实调用 API，按要求 mock 验证）：
+- 接缝去重修了两轮：4 字以下中文重叠（如「同比同比」）也要去，但 2–3 字含数字的重叠不删（防「句尾数字+新句数字开头」误删）
+- mock 端到端跑了完整链路：首轮 `finish_reason=length` → 续写 → 拼接干净 → 695 字 → 打印全文 + `✅ 确认：简报完整无残缺，字数已达标` 
+- 顺带验证了拒绝路径：mock 给了不足 600 字的内容时，脚本 3 次重试后报「拒绝输出残缺内容」退出，没有把半成品交给用户
+
+**运行方式**：
+```bash
+export ZHIPUAI_API_KEY=<你的Key>
+python3 main.py
+```
+过程日志（轮次、finish_reason、字数）走 stderr，stdout 只输出简报全文和交付自检（字数、小标题清单、数据处数、完整性确认），可直接粘进周报。

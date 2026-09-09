@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 48.5s :: 提示：小节[一、总体规模与增长] reasoning_tokens=20，思考在消耗输出预算\n生成小节：二、区域市场格局 ...\n提示：小节[二、区域市场格局] reasoning_tokens=12，思考在消耗输出预算\n生成小节：三、竞争态势与产业链 ...\n生成小节：四、风险与趋势展望 ...\n"
+    },
+    {
+      "text": "正文 ≥600 汉字",
+      "passed": true,
+      "evidence": "正文汉字=1174"
+    },
+    {
+      "text": "遵守 max_tokens ≤ 1000",
+      "passed": true,
+      "evidence": "max_tokens取值=[1000]"
+    },
+    {
+      "text": "没有把截断的半截内容丢出来",
+      "passed": true,
+      "evidence": "enough=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2"
+}

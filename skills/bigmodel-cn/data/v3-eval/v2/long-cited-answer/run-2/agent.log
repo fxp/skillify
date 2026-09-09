@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（仅此一个文件），`python3 -m py_compile` 通过，无 Key 时实测报错路径正常（明确提示 + 退出码 1）。
+
+## 实现说明
+
+**调用方式**：标准端点 `POST /paas/v4/chat/completions`，模型 `glm-5.3`，挂 `tools: [{"type": "web_search", "web_search": {...}}]` 让平台自动「检索 + 生成带出处的回答」。接口结构已用官方文档（docs.bigmodel.cn）交叉验证。
+
+**针对你的两条硬性要求，以及说明书里三个实测静默陷阱的对策**：
+
+| 陷阱（说明书实测结论） | 脚本对策 |
+| :-- | :-- |
+| #4 `search_std`/`search_pro` 的来源 `link` 恒为空串（HTTP 200、条数正常，只有链接是空的） | 引擎降级链 `search_pro_sogou` → `_quark` → `_bing`（三者实测返回真链接），链接不足 2 条自动换下一个引擎 |
+| #5 不显式传 `search_result: true`，响应里根本没有 `web_search` 引用数组 | 显式传 `true` |
+| #13 思考 token 计入 `max_tokens`，截断的判据是 `finish_reason` 不是空串 | `max_tokens` 起步 16384，遇 `finish_reason=length` 自动翻倍重试（最多 3 次，上限在 128K 内）；同时 `reasoning_effort: "low"` 压思考开销 |
+
+**「完整性」的三层校验**：① `finish_reason` 必须为 `stop`（`sensitive`/`network_error`/`length` 等均不放过）；② 正文非空；③ 收尾启发式——配合 system prompt 里「以句号结尾」的要求，末字符必须是句末标点。任一层失败，重试耗尽后**以退出码 1 报错并说明具体原因**，绝不输出半截答案。
+
+**「至少 2 条可点击链接」的校验**：从响应顶层 `web_search` 数组逐条提取 `link`，用 `urlparse` 校验 http/https 协议且有主机名，去重后要求 ≥2 条；全部引擎都不达标时汇总每个引擎的返回情况后报错。
+
+**错误路径全覆盖**：Key 缺失、网络失败/超时、平台错误码（含 HTTP 200 带 error 体的情形）、响应无 `choices`，均明确报错退出，不静默糊弄。
+
+运行方式：`ZHIPUAI_API_KEY=<你的Key> python3 main.py`，成功时输出答案正文 + 带标题/媒体/日期的编号来源列表 + 校验通过标记。

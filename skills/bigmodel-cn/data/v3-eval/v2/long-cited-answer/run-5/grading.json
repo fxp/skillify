@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 89.9s :: "
+    },
+    {
+      "text": "答案完整未被截断",
+      "passed": true,
+      "evidence": "truncated_end=False"
+    },
+    {
+      "text": "至少 2 条 http(s) 来源链接",
+      "passed": true,
+      "evidence": "links=10"
+    },
+    {
+      "text": "来源取自接口返回而非编造",
+      "passed": true,
+      "evidence": "reads_api=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2"
+}

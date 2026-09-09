@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件），`python3 -m py_compile` 通过，无 Key 冒烟测试和本地检索逻辑离线测试均通过。按你的要求**没有真正调用 API**（环境无 Key），但主路和降级路都是照技能包里实测验证过的调用规范写的。
+
+## 脚本做什么
+
+**主路（托管知识库）**，按 `references/knowledge-rag.md` 的流程：
+1. `POST /llm-application/open/knowledge` 创建临时知识库（Embedding-3）
+2. `POST .../document/upload_document/{id}` 上传 faq.txt（`knowledge_type=1` 按标题段落切）
+3. **轮询 `GET /document/{id}` 直到 `embedding_stat == 1`** —— 这是技能包坑 #10：上传成功 ≠ 可检索，向量化失败时检索端永远返回 200+空数组。若 `embedding_stat=2`，先调 `POST .../document/embedding/{id}` 补救重试一轮（对应 SKILL.md 的补救表，不是检测到就放弃）
+4. `POST /knowledge/retrieve` 检索「退换货政策的有效期是多久」，打印每条 `text` 原文片段 + 分数 + 来源
+5. `finally` 里删除临时文档和知识库，**无论成功失败都清理**
+
+每一步都显式判 `body["code"] == 200`（坑 #9：这族接口出错时 HTTP 恒为 200，`raise_for_status()` 永不触发）。
+
+**降级路（自建检索）**——主路任何环节走不通（业务码失败 / 向量化失败 / 检索空数组）时自动切换，不中断：
+- faq.txt 按空行切块（超长块按行再切到 ≤600 字），`/paas/v4/embeddings`（embedding-3，失败退 embedding-2）做向量召回 top10，纯 Python 余弦相似度排序
+- `/paas/v4/rerank` 精排 top5（坑 #19：`return_documents: true`，且用 `index` 映射回自己的切块拿原文）；rerank 不可用再退化为纯向量排序
+- 同样打印原文片段 + 分数 + 来源；本地检索不在服务端创建任何资源，天然无需清理
+
+**兜底链**：托管知识库 → 重写向量化重试 → embeddings+rerank → 纯向量召回，四层都能打印出真实检索到的原文，只有两条路全挂才 exit 1。Key 从 `ZHIPUAI_API_KEY` 读取，仅依赖 `requests`。
+
+接口细节已与官方文档核对（[知识库检索](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2)：`query`/`knowledge_ids` 必填、`data[].text/score/metadata`、`code:200` 为成功，与技能包一致）。
+
+一个如实说明：脚本本身没在真实账号上端到端跑过（无 Key），主路在个人版账号上存在技能包记录的「向量化失败 → 检索恒空」风险——这正是降级路存在的原因，届时会打印失败原因并自动走自建检索。
+
+Sources: [知识库检索 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2)、[创建知识库](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93)、[文档详情](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E8%AF%A6%E6%83%85)

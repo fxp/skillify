@@ -1,0 +1,33 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付与结论如下：
+
+## 交付
+
+脚本已保存到 `outputs/main.py`（该目录只有这一个文件），`python3 -m py_compile` 通过。
+
+## 核心问题与解法
+
+**矛盾**：≥600 汉字的完整正文，单次 `max_tokens ≤ 1000` 的预算装不下——尤其智谱的思考 token 会计入 `max_tokens`（技能速查表第 13 条：预算小时会拿到空 content + `finish_reason=length`），而 `glm-5.3/5.3-flash` 在标准端点又关不掉思考（第 14 条）。我抓官方文档核实过：`thinking:{"type":"disabled"}` 对 **glm-5.2** 可用，且**该 API 不存在 `max_completion_tokens`**，所以压预算只有「关思考」一条路。
+
+脚本的三层设计：
+
+1. **模型 glm-5.2 + 显式关思考**——1000 token 预算全部留给正文（模型可用 `GLM_MODEL` 环境变量覆盖）；
+2. **分段生成**——按大纲拆 5 节（总览/区域/车企/风险/趋势，目标合计 790~1040 汉字），每次请求只写一节，`max_tokens=1000`（等于、不超过上限）；代码里 `GATEWAY_MAX_TOKENS_CAP` 常量 clamp + 发送前断言，**结构上不可能超限**；
+3. **达标闭环**——逐节校验（`## ` 小标题、单节 ≥80 汉字、`finish_reason`）；汇总不足 600 汉字自动补写小节；最终打印全文 + 实际汉字数（只计 `一-鿿`）+ 总字符数 + 请求审计。网络/限流退避重试，4xx 直接报错误码；**任何一节彻底失败或最终不足 600 字，就把每条卡点（HTTP 状态、平台错误码、finish_reason）打到 stderr、非零退出，残稿明确标注「不完整、勿当交付」**——不会丢半截给你。
+
+## 验证情况
+
+按你的要求**没有调用真实 API**。除了编译检查和无 Key 守卫路径实测，我用 mock 掉 `requests.post` 的方式离线跑了 4 个场景（还顺带抓出并修掉了一个大纲解包 bug）：
+
+| 场景 | 结果 |
+| :-- | :-- |
+| 5 节正常返回 | ✅ exit 0，679 汉字，未触发补写 |
+| 每节偏短（544 字） | ✅ 自动补写 1 节 → 650 字，exit 0 |
+| 首次输出无小标题 | ✅ 被校验拦下，重试后成功 |
+| 全部 401（模拟 1113） | ✅ 打印 8 条卡点 + 标注残稿，exit 1 |
+
+每次 mock 请求都断言了 `max_tokens ≤ 1000` 和 `thinking=disabled`。真实 API 路径（鉴权、限流细节、glm-5.2 实际篇幅）需要你有 Key 时跑 `ZHIPUAI_API_KEY=xxx python3 main.py` 做最终确认。
+
+一个提醒：正文里的数据是模型基于行业信息的估计值，简报如果要对外用，数据需要另行核实。

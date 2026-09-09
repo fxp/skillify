@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "🚀 开始创建 Batch 情感分析任务...\n📝 读取到 20 条评论\n📄 正在构造 JSONL 请求文件...\n📄 已构造 20 条请求\n📤 正在上传文件...\n✅ 文件上传成功，ID: 1788918598_9e09b8c3b09841ecb18349d17dbeb405\n🔄 正在创建 Batch 任务...\n✅ Batch 任务创建成功\n\n==================================================\n🎉 Batch 任务创建成功！\n📋 任务 ID: batch_2097502742416195584\n📊 任务状态: validating\n📝 请求数量: 20\n==================================================\n\n💡 提示：\n- 任务预计 24 小时内完成\n- 可以使用任务 ID 查询任务状态\n- 完成后可以通过 output_file_id 下载结果\n\n🔍 查询任务状态命令：\ncurl -H 'Authorization: Bearer <KEY>' 'https://open.bigmodel.cn/api/paas/v4/batches/batch_2097502742416195584'\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.3
+}

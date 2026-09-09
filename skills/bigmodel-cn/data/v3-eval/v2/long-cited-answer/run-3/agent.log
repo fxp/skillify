@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/long-cited-answer/run-3/outputs/main.py`，目录里只有这一个文件。
+
+## 实现要点
+
+**调用路线**：`chat/completions`（`glm-5.3`，同步端点不会静默换模型）+ `web_search` 工具，让模型自动联网检索并生成回答。技能包和官方文档（已用 WebFetch 抓取 docs.bigmodel.cn 交叉核对）确认了三个直接决定本任务成败的坑，脚本全部处理了：
+
+| 坑 | 对策 |
+| :--- | :--- |
+| `search_pro`/`search_std` 返回的来源 `link` **恒为空串**（HTTP 200、条数正常，典型静默失效） | 只用实测带真链接的引擎，按 `search_pro_quark` → `search_pro_sogou` → `search_pro_bing` 依次回退（前两个官方在列，bing 实测可用） |
+| 不显式传 `search_result: true`，响应里**根本没有** `web_search` 来源数组 | 显式传 `true`；提取时同时兜底读官方文档写的 `search_result` 字段名 |
+| 思考 token 计入 `max_tokens`，预算不足时 `finish_reason=length`、**答案被截断** | `max_tokens=16384`（上限 131072）；**用 `finish_reason == "stop"` 作为完整性判据**，`length`/`sensitive`/`network_error` 都明确报错拒绝输出 |
+
+**验收逻辑**（两条硬性要求都有显式校验，不糊弄）：
+- 答案不完整（finish_reason 异常或 content 为空）→ 报错并退出码 1，明确说明原因和“不要把半截答案贴进周报”；
+- 来源链接去重后过滤 `http` 开头，不足 2 条 → 报错说明哪个引擎缺链接，三个引擎全部失败才最终失败；
+- 无 Key、HTTP 非 200、API 返回 `error` 体（如 1113）、网络异常、非法 JSON 都有明确中文报错。
+
+**验证情况**：`python3 -m py_compile` 通过；无 Key 场景实测按预期打印明确报错、退出码 1（未发起任何网络请求）。按你的要求**没有真实调 API**——配好 `ZHIPUAI_API_KEY` 后 `python3 main.py` 即可跑通，成功时输出答案正文 + 带标题/媒体/日期的可点击来源列表。
+
+一个提醒：本机 `python3` 是 3.9 且带一条 urllib3/LibreSSL 警告，不影响运行；若在别处跑，脚本本身兼容 3.8+。

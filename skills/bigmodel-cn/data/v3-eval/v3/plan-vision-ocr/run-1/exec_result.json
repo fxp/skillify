@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "图片：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/plan-vision-ocr/run-1/work/invoice.png（3 KB）\n端点：https://open.bigmodel.cn/api/coding/paas/v4/chat/completions\n候选模型（按序尝试）：glm-5.3-flash → glm-4.6v → glm-5v-turbo\n\n==> 尝试模型 glm-5.3-flash …\n\n===== 模型回答 =====\n# 图片内容识别\n\n这张图片整体为**空白背景，仅包含两行黑色英文文本**，看起来像是一张发票（INVOICE）的局部截图或极简样式的票据，具体内容如下：\n\n## 可识别的文字内容\n\n| 项目 | 内容 |\n|------|------|\n| 发票号码（Invoice No.） | **2026-0917** |\n| 总金额（TOTAL） | **48,600 CNY**（即人民币 48,600 元） |\n\n## 关键信息分析\n\n**✅ 已有信息：**\n- **票据类型**：从 \"INVOICE\" 字样可判断这是一张**发票/账单**（形式发票或商业发票性质的英文票据）\n- **发票号码**：2026-0917\n- **价税合计金额**：48,600 元人民币（CNY）\n\n**❌ 图片中缺失的信息：**\n- 开票方（卖方/出具方名称）：未显示\n- 受票方（买方/客户名称）：未显示\n- 开票日期：未显示\n- 税额/税率明细：未显示\n- 商品或服务明细：未显示\n- 发票盖章、签名等其他要素：无\n\n## 结论\n\n这**不是一张完整的正式发票**，而更像是一张发票的**局部片段**或简化摘要，只包含发票号和总金额两项核心信息。如需核实真伪或获取完整开票信息（开票方、受票方、日期等），建议查看票据的完整版本。\n\n===== 对账信息 =====\n请求模型：glm-5.3-flash\n服务端实际使用模型：glm-5.3-flash\nrequest_id：20260908151719a76476bcd47a4d0f\n用量：{\"completion_tokens\": 654, \"completion_tokens_details\": {\"reasoning_tokens\": 326}, \"prompt_tokens\": 211, \"prompt_tokens_details\": {\"cached_tokens\": 0}, \"total_tokens\": 865}\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 21.1,
+  "audio_files": []
+}

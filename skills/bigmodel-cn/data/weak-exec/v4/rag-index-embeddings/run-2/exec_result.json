@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "=== FAQ 向量检索系统 ===\n加载了 150 个FAQ问题\n正在调用 embedding API...\nAPI请求失败: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/embeddings\n响应内容: {\"error\":{\"code\":\"1214\",\"message\":\"input数组最大不得超过64条\"}}\n无法获取向量，退出程序\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.2
+}

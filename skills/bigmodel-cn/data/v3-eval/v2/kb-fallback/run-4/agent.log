@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付文件：`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/kb-fallback/run-4/outputs/main.py`（已通过 `python3 -m py_compile`，纯 `requests` + 标准库，`python3 main.py` 直接可跑）。
+
+## 方案设计
+
+**方案一（首选）：托管知识库**，完整走 `创建知识库 → 上传 faq.txt → 检索`，并针对技能手册里两条实测陷阱做了防御：
+- **HTTP 恒为 200 陷阱**：`/llm-application/open/*` 出错时状态码仍是 200，真状态在 `body.code`——每一步都判 `code == 200`，`raise_for_status()` 只作兜底；
+- **上传成功 ≠ 可检索陷阱**：上传后轮询 `GET /document/{id}` 的 `embedding_stat`（0 处理中 / 1 就绪 / 2 失败），等到 `1` 才检索；`2` 或超时直接降级；**检索返回空数组也降级**（向量化失败时检索端只会返回 200+空数组，和“没有相关内容”无法区分，而 faq.txt 里明明有退换货政策）。
+
+**方案二（自动降级）：自建向量检索**——托管知识库任何一步走不通就切换，不抛一句“不可用”了事：
+- 本地按空行切分 faq.txt（超长块再硬切），调标准 `POST /paas/v4/embeddings`（`embedding-3`，1024 维，批量≤32、按返回 `index` 对齐）；
+- 查询向量化后本地算余弦相似度召回 top20，再尽力调 `/paas/v4/rerank` 精排（失败不影响余弦结果）；
+- 这条路只依赖标准 API 的 embeddings 能力，正是托管知识库在个人账号上向量化报“知识不可用，文档损坏”（手册实测记录）时仍能跑通的替代方案。
+
+**清理**：`finally` 中无论成败都删除本次创建的知识库（连文档一起删，删库失败再逐个删文档兜底）；自建通道不在服务端创建任何资源。Key 从 `ZHIPUAI_API_KEY` 读取，缺失或 faq.txt 不在脚本同目录时给出明确报错并以退出码 1 结束。
+
+## 验证情况
+
+- 接口细节已与官方文档核对一致（路径、`successInfos.documentId`、`embedding_stat`、检索响应 `data[].text/score/metadata`）；
+- `py_compile` 通过；离线冒烟测试通过（空行切分、超长硬切、余弦计算、缺 Key 退出路径）；
+- **未发起真实 API 调用**（本环境无 Key），真实检索结果需带 Key 运行后由脚本打印。
+
+运行方式：把 `faq.txt` 放到 `main.py` 同目录，然后 `ZHIPUAI_API_KEY=你的key python3 main.py`。
+
+Sources: [创建知识库](https://docs.bigmodel.cn/api-reference/知识库-api/创建知识库)、[上传文件文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档)、[知识库检索](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索)、[知识库详情](https://docs.bigmodel.cn/api-reference/知识库-api/知识库详情)

@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付文件：`outputs/main.py`（已通过 `py_compile`，目录里只有这一个文件，临时测试文件均已清理）。
+
+## 方案设计
+
+脚本按**三级降级**组织，核心目标是「一定把检索到的原文片段打印出来」，而不是检测到失败就退出：
+
+| 路线 | 做法 | 说明 |
+| :-: | :-- | :-- |
+| **A** | `POST /llm-application/open/knowledge` 建库（Embedding-3）→ `upload_document` 上传 faq.txt → 轮询 `GET /document/{id}` 的 `embedding_stat` 直到 `==1` → `POST /knowledge/retrieve` 检索 | 首选托管知识库 |
+| **B** | faq.txt 按空行+句子切成 ≤400 字的段 → `embedding-3` 批量向量化 + 纯 Python 余弦召回 top10 → `rerank`（`return_documents: true`）精排 | A 走不通时自建检索 |
+| **C** | 字符 bigram 覆盖率打分的本地检索，零 API 依赖 | 连 embeddings 也不可用时的兜底，保证有输出 |
+
+## 针对技能包实测坑做的处理
+
+- **坑 #9**：知识库族接口出错时 HTTP 仍是 200，真状态在 `body.code` —— `kb_call()` 统一判 `code != 200` 抛异常触发降级，绝不依赖 `raise_for_status()`。
+- **坑 #10**：上传成功 ≠ 可检索 —— 必须**轮询 `embedding_stat`（0 处理中/1 成功/2 失败）**，拿到 2 时先按补救表触发一次 `POST /document/embedding/{id}` 重新向量化，仍失败才降级到 B；不靠“检索返回空数组”推断。
+- **坑 #19**：rerank 结果默认不带原文，显式传 `return_documents: true`，并用 `index` 回溯原文。
+- **清理**：方案 A 的临时知识库在 `finally` 里 `DELETE /knowledge/{id}`（连库内文档一起删），无论成功失败都会执行；B/C 无服务端资源。
+- **无 Key 容错**：`ZHIPUAI_API_KEY` 未设置时直接走 C，脚本照样 `python3 main.py` 跑通并打印结果。
+
+## 验证情况
+
+- `python3 -m py_compile` 通过。
+- 用临时 faq.txt 做了**无 Key 冒烟测试**（真实运行）：完整走了一遍降级链，正确打印出退换货政策段落原文（score=0.3636，其余 0 分噪声已过滤），退出码 0；测试用 faq.txt 和 `__pycache__` 已删除。
+- 如实说明：A/B 两条 API 路径因当前环境无 Key **未真实执行**，代码按技能包 2026-09-07 实测记录编写，并已与官方文档核对（retrieve 的参数/响应结构、`body.code` 语义、`files` multipart 字段均一致；`embedding_stat` 的 0/1/2 枚举官方文档未明示，采用实测值）。
+
+Sources: [知识库检索 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索)、[文档详情 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/文档详情)、[上传文件文档 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档)、[创建知识库 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/创建知识库)

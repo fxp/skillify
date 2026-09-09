@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "读取 comments.txt：共 20 条评论\n以模型 glm-5.3 构造请求文件（20 行，10066 字节），上传中 …\n  ⚠ 上传被拒：HTTP 400 code=1210 [logID=202609081600116c6c5463ff2a4dae] 模型名称错误: glm-5.3, 目前支持的模型: glm-5.1, glm-5-turbo, glm-4, glm-4-0520, glm-4-plus, glm-4-long, glm-4-plus-0111, glm-4-air, glm-4-air-0111, glm-4-air-250414, glm-4-flash, glm-4-flashx-250414, glm-3-turbo, glm-4v, glm-4v-plus, glm-5v-turbo, glm-4v-plus-0111, cogview-3, cogview-3-plus, cogview-4-250304, embedding-2, embedding-3, cogvideox, cogvideox-2\n  ⚠ 原因：Batch 只支持一份独立的模型白名单（官方文档不公开，完整名单只出现在\n    该报错里），旗舰 glm-5.3 不在其中，且校验就发生在文件上传阶段。\n  → 按「白名单内质量最强」原则改用 glm-5.1（来源：1210 报错里解析出的白名单），重建 jsonl 重新上传。\n以模型 glm-5.1 构造请求文件（20 行，10066 字节），上传中 …\n\n【调整说明】请求的 glm-5.3 走不通 Batch，已自动降级为 glm-5.1。\n理由：见上方报错——glm-5.3 不在 Batch 白名单内；glm-5.1 是白名单内质量最强的\n文本模型，在『把任务跑成』与『分类质量』之间取最优折中。\n\n上传成功：input_file_id = 1788854412_2c495a8abe2341c4946e1567d67094bc\n\n✅ Batch 任务创建成功（不等待完成）\n   batch id      : batch_2097233535636078592\n   模型          : glm-5.1\n   状态          : validating\n   请求数        : 20\n   input_file_id : 1788854412_2c495a8abe2341c4946e1567d67094bc\n\n之后可用下面命令查询进度（建议间隔 20~30 秒轮询）：\n  curl -H \"Authorization: Bearer $ZHIPUAI_API_KEY\" https://open.bigmodel.cn/api/paas/v4/batches/batch_2097233535636078592\n状态到 completed 后，下载 output_file_id 对应文件即为分类结果；\n结果按 custom_id（request-000001…）与输入行一一对应。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.0,
+  "audio_files": []
+}

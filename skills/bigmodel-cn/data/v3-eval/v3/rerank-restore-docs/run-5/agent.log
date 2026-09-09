@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已写好并通过 `python3 -m py_compile` 编译验证，保存在 `outputs/main.py`。没有实际调用 API（环境无 Key）。
+
+**接入依据**（SKILL.md → `references/tools.md` + 官方文档核实）：
+- 端点 `POST https://open.bigmodel.cn/api/paas/v4/rerank`，`model` 固定为 `rerank`，鉴权 `Authorization: Bearer <key>`
+- 请求传了 `return_documents: true`——这正是 SKILL.md 速查表第 19 条的坑：不传的话结果里**只有 index 和分数、没有原文**
+- 官方文档确认响应 `results[]` 每项含 `index`（对应输入数组下标）、`relevance_score`、`document`（纯字符串）
+
+**针对你的输出要求做的处理**：
+- 打印的是**逐字原文 + 分数**，无序号——而且原文不是取自响应的 `document` 字段，而是用 `index` 回查脚本本地的 `documents` 列表，从根上保证贴进工单的内容与候选原文完全一致（`document` 字段仅作越界兜底）
+- 客户端按 `relevance_score` 降序稳定排序（第 19 条还提醒语义相近的候选分数可能并列，稳定排序下并列时保持接口返回顺序）
+- Key 从 `ZHIPUAI_API_KEY` 环境变量读取，缺失时给出明确提示；只用 `requests` + 标准库，`python3 main.py` 直接跑
+
+预期输出形如（供参考，实际分数以接口返回为准）：
+
+```
+增值税专用发票需在订单完成后 7 个工作日内申请，逾期需联系客服 （相关性：0.9986）
+普通发票支持随时申请，无时间限制 （相关性：0.35xx）
+...
+```
+
+Sources: [智谱AI开放文档 - 文本重排序](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E9%87%8D%E6%8E%92%E5%BA%8F)

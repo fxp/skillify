@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "已加载 invoice.png（3221 字节），套餐端点：https://open.bigmodel.cn/api/coding/paas/v4/chat/completions\n按候选列表逐个真试：glm-4.6v -> glm-5v-turbo -> glm-5.3-flash -> glm-4.6v-flash\n\n--- 尝试模型 glm-4.6v ---\n    成功。\n\n=== 模型回答 ===\n\nINVOICE NO. 2026-0917\nTOTAL: 48,600 CNY\n\n=== 对账信息（以服务端响应为准） ===\n请求的模型: glm-4.6v\n服务端实际使用的模型: glm-4.6v\nfinish_reason: stop\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 3.8,
+  "audio_files": []
+}

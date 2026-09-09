@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "[\n  {\n    \"sentiment\": \"中性\",\n    \"score\": 0.5\n  },\n  {\n    \"sentiment\": \"中性\",\n    \"score\": 0.5\n  },\n  {\n    \"sentiment\": \"中性\",\n    \"score\": 0.5\n  }\n]\n",
+  "stderr": "JSON解析失败: Expecting value: line 1 column 1 (char 0)\nJSON解析失败: Expecting value: line 1 column 1 (char 0)\nJSON解析失败: Expecting value: line 1 column 1 (char 0)\n",
+  "timed_out": false,
+  "seconds": 12.4
+}

@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已交付到 `outputs/main.py`（该目录仅此一个文件），未调用真实 API，全部验证均为离线完成。
+
+## 设计要点
+
+**1000 token 硬约束怎么守住的**
+- 全脚本只有一个出口 `call_chat()`，`max_tokens` 恒为 `SEGMENT_MAX_TOKENS=900`（留安全余量），函数内还有第二道钳制 `min(900, 1000)`，模块加载时校验配置，任何请求都不可能超 1000。
+- 结束时打印**每笔请求明细**（purpose / max_tokens / 回显 model / finish_reason / completion_tokens / reasoning_tokens / 汉字数），可逐条核对约束。
+
+**为什么不是「一次生成 600 字」**（这决定了成败，依据技能包实测结论 + 官方文档交叉确认）：
+- 陷阱 #13：**思考 token 计入 `max_tokens`**，技能实测一份 600 字简报思考链就吃掉 2400+ token；而 `glm-5.3` 在标准端点**强制思考且 `disabled` 会报 1210**（官方文档同样确认「GLM-5.3/GLM-5.3-FLASH 强制需开启」）——单请求 ≤1000 token 必被吃空。所以选 **`glm-4.6`**（官方确认「自动判断是否思考、可显式开关」）+ `thinking:{"type":"disabled"}`。
+- 预算不能加码，就走补救表第③条：**分段生成再拼接**——4 个主干小节（规模增速/目的地市场/竞争格局/风险挑战）各约 200 汉字（约 350 token），2 个备选小节兜底，拼成目标 780+ 汉字。
+- 每段检查 `finish_reason`：`length` 截断段**绝不入稿**，不加码 token 而是缩小目标字数重试（200→130→90）；若 `thinking` 参数被端点拒绝（1210）会自动去掉降级重试；回显 model 换了家族会立即报警停止（陷阱 #2）。
+
+**「不要丢半截」**：无 Key → 明说卡在鉴权；某段反复截断 → 该段弃用、备选小节补足；最终仍 <600 汉字 → 打印逐小节逐次的卡点诊断 + 请求日志，退出码 1，不打印半截全文。成功时才打印全文，并报出汉字数（只计 `[\u4e00-\u9fff]`）、总字符数与 max_tokens 明细。
+
+## 验证结果（均未发真实请求）
+
+| 验证项 | 结果 |
+| :-- | :-- |
+| `python3 -m py_compile` | ✅ 通过 |
+| 无 Key 运行 | ✅ 明确报「卡点：鉴权凭证」，exit 1 |
+| 离线正向仿真（mock `requests.post`，含 1 次模拟截断） | ✅ 截断段被弃用并缩小字数重试，最终 928 汉字 ≥600，5 次请求 max_tokens 全为 900 |
+| 离线负向仿真（所有请求返回 `length`） | ✅ 逐段报卡点、exit 1、未输出半截全文 |
+
+运行方式：`ZHIPUAI_API_KEY=<Key> python3 main.py`，仅依赖 `requests`。一个诚实的提醒：正向仿真里的正文是我 mock 的填充文本，真实输出质量（数字合理性）取决于模型本身，脚本已加「数据为模型估算，引用前请核对官方统计」的脚注。

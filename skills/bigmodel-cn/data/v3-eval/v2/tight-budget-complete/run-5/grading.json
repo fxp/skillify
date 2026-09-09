@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 31.4s :: ax_tokens=1000（网关上限 1000，硬约束）\n[ok] 小节「一、市场总览」：199 汉字\n[ok] 小节「二、区域格局」：143 汉字\n[ok] 小节「三、车企与产品表现」：203 汉字\n[ok] 小节「四、挑战与风险」：157 汉字\n[ok] 小节「五、趋势与建议」：227 汉字\n"
+    },
+    {
+      "text": "正文 ≥600 汉字",
+      "passed": true,
+      "evidence": "正文汉字=1031"
+    },
+    {
+      "text": "遵守 max_tokens ≤ 1000",
+      "passed": true,
+      "evidence": "max_tokens取值=[1000]"
+    },
+    {
+      "text": "没有把截断的半截内容丢出来",
+      "passed": true,
+      "evidence": "enough=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2"
+}

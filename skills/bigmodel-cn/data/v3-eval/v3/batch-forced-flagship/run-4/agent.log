@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，仅此一个文件。
+
+## 结论先说：glm-5.3 走不通 Batch，脚本已内置自动降级
+
+**撞上的坑（技能速查表第 7 条 + 官方 FAQ 双重证实）**：智谱 Batch API 有一份**独立于平台的模型白名单**，旗舰 `glm-5.3` 不在其中，而且校验发生在**文件上传阶段**（`POST /paas/v4/files` 直接报业务码 `1210 模型名称错误`），根本轮不到创建 batch。官方 FAQ 页面列出的支持模型里连 glm-5.x 都没有（该 FAQ 比实际接口还旧）；技能包 2026-09 的真实调用测试确认白名单内实际可用、且质量最强的是 **`glm-5.1`**。
+
+**脚本做的调整**：按你的要求先原样用 `glm-5.3` 构造并上传；若报 `1210` 就自动降级到 `glm-5.1`（其后 `glm-5-turbo`、`glm-4-plus` 兜底），并在运行输出里打印完整的调整说明和报错附带的最新白名单。白名单内没有比 `glm-5.1` 更强的模型，这已是“任务跑成 + 质量优先”的最优解；若必须要 glm-5.3 的质量，只能放弃 Batch 半价改走同步/异步 chat completions（脚本注释里也写了这点）。
+
+## 脚本要点
+
+- 流程：读同目录 `comments.txt`（跳过空行）→ 构造 jsonl（`custom_id` 用 `request-001` 格式，满足**未文档化的 ≥6 字符下限**，短了上传就 1214）→ `purpose=batch` 上传 → `POST /paas/v4/batches` 创建 → **打印 batch id 后退出，不等待**
+- 规避的已知陷阱：`endpoint` 与 jsonl 里的 `url` 一致（`/v4/chat/completions`）；计数字段按嵌套的 `request_counts.total` 读；不设 `max_tokens`（思考 token 计入该预算，小了会拿到空内容）；错误判定同时兼容 `error.code` 嵌套与顶层两种格式；网络异常/5xx 带退避重试
+- Key 从 `ZHIPUAI_API_KEY` 读取，仅用 `requests`，`temperature=0.1` + 严格“只输出正面/负面/中性”的系统提示保证分类稳定
+
+## 验证情况（未调用真实 API）
+
+- `python3 -m py_compile` 通过
+- 无 Key 运行 → 友好报错退出，不发任何请求
+- **离线 mock 全流程测试**（伪 `requests.request`）：模拟 glm-5.3 上传报 1210 → 警告并降级 glm-5.1 → 上传成功 → 创建 batch → 正确打印 `batch_id`、嵌套的请求数、进度查询 URL；jsonl 行格式、`purpose=batch`、custom_id 长度等断言全部通过
+
+Sources:
+- [Batch API FAQ - 智谱AI开放文档](https://docs.bigmodel.cn/cn/faq/batch-api-issues)
+- [GLM-5.3 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)
+- [GLM-5.1 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.1)

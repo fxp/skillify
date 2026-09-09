@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，缺 Key / 缺图片两条本地错误路径也实测正常（本机 python3 是 3.9，所以没用 3.10+ 语法）。
+
+## 结论先说：套餐额度**大概率能用**视觉，但属于“无文档背书”的用法
+
+依据（来自技能包实测记录 + 我刚抓取的官方文档核实）：
+
+- **官方文档口径**（docs.bigmodel.cn/cn/coding-plan/overview）：Coding Plan 只绑定 `glm-5.3` / `glm-5.3-flash`，页面明确说图片/视频理解走套餐附带的“视觉理解 MCP”，**没有**独立视觉模型。
+- **但技能包 2026-09-03 用真实套餐 Key 逐条验证过**：套餐 Key 打 Coding 端点 `…/api/coding/paas/v4` 直接请求视觉模型 `glm-4.6v`、`glm-5v-turbo` 返回 200，原样可用（官方没写，行为随时可能被收紧）。`models.md` 里“视觉模型不在套餐内”的表述与这条实测记录冲突，我以实测记录为准，但脚本按“不押注单一模型”设计。
+
+## 脚本怎么落实“先真的试过再下结论”
+
+1. **端点用套餐专属** `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`（套餐 Key 打标准端点必报 `1113 余额不足`，不是真要充值）；
+2. **按优先级依次尝试 4 个候选**：`glm-4.6v` → `glm-5v-turbo`（实测可用）→ `glm-4.6v-flash`（免费，探测时恰好过载未验证）→ `glm-5.3-flash`（官方套餐模型、文档标注原生多模态），谁先成功用谁，每个失败都会打印具体 HTTP 状态码 + 错误码；
+3. **对账信息**单独打印：请求模型 vs **服务端回显的 `model` 字段**（Coding 端点存在静默重路由，比如请求 `glm-4.5-air` 实际跑 `glm-5.3-flash`），不一致会告警；附带请求 ID 和 token 用量；
+4. **全部失败才下结论**，且按失败性质区分：全是 `1113` → 明确输出“套餐用不了图片输入”+依据+两条替代路（标准 Key 走 `paas/v4`，或官方视觉 MCP `npx -y "@z_ai/mcp-server"`）；全是网络异常 → 提示不能下结论；有 401/403 → 先查 Key；
+5. 图片以 base64 data URI 内联（接口限制单图 ≤5MB，超限会提前报错），`max_tokens=8192` 防止思考 token 把预算吃光导致空回答。
+
+## 运行方式
+
+```bash
+export GLM_CODING_PLAN_API_KEY=<你的套餐Key>
+python3 main.py   # invoice.png 与 main.py 同目录
+```
+
+一点诚实说明：当前环境没有可用 Key，我无法替你真正发出这次请求——“试过”这一步内建在脚本里，由你运行时完成。按实测记录，第一个候选 `glm-4.6v` 应该直接成功；若官方已收紧该行为，脚本会给出带错误码证据的明确结论。另提醒：官方条款规定套餐仅限指定工具环境使用，自写脚本调 Coding 端点技术上能通，但属条款外用法，生产场景建议换标准 API Key。

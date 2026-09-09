@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付物已保存到 `outputs/main.py`，验证全部通过。
+
+## 交付说明
+
+**脚本**：`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/long-report-complete/run-5/outputs/main.py`（仅此一个文件）
+
+**核心设计**（按 SKILL.md 实测坑位对症下药，接口细节已用官方文档二次确认）：
+
+| 坑位 | 脚本的处理 |
+| :-- | :-- |
+| #13 思考 token 计入 `max_tokens`，600 字简报思考链就吃 2400+ token | 首轮预算直接给 **8192**，不按正文长度估 |
+| #14 `glm-5.3` 标准端点关不掉 thinking（传 `disabled` 报 1210） | 省 token 的手段用 `reasoning_effort: "low"`（官方文档确认 glm-5.3 仅接受 low/high/max），不碰 thinking 开关 |
+| `finish_reason == "length"` 截断 | **绝不把半截内容交出去**，按补救表阶梯自动救：预算翻倍 16384 重试 → low 档压缩思考 → 截断处续写拼接（带重叠消除）；`stop` 但字数不足则带原稿扩写 |
+| #2/#3 模型被静默替换 | 每次读回响应 `model` 字段核对，版本后缀放行、换成别的模型家族立即报警停下 |
+
+**质量闸门**（交付前逐项校验并打印确认）：字数 ≥600（含标点非空白字符，另报汉字数）、小标题 ≥3 个、具体数据 ≥6 处、结尾完整（不停在小标题/断句上）。全部通过才打印全文 + 校验结论；所有手段用尽仍不达标则报错退出并**扣住残稿**。Prompt 目标字数设为 800，给硬指标留余量。
+
+**验证情况**（无 Key，未真实调用 API）：
+- `python3 -m py_compile` 通过；无 Key 运行走友好报错路径干净退出
+- 纯逻辑函数单测：字数/标题/数字统计、结尾完整性、无缝拼接（含重复前文削除）、model 回显核对，全部通过
+- 用 mock API 端到端模拟了 4 个场景：截断→翻倍救回 ✅、三档全截断→续写拼接救回 ✅、stop 但字数不足→扩写救回 ✅、全部失败→拒绝交付残稿 ✅
+
+一点如实说明：真实 API 行为（如思考链实际消耗、平台偶发拦截）本次无法实测，但补救路径是按技能包的实测结论编写的，且每个失败分支都有兜底和明确诊断输出。有 Key 后直接 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可。

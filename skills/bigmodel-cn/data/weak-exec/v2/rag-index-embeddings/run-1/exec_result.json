@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "开始构建 FAQ 向量库...\n成功读取了 150 条 FAQ\nAPI 请求失败：400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/embeddings\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.2
+}

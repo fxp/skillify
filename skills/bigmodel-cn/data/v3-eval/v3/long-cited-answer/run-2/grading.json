@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 280.0s :: [提示] 调用联网搜索（引擎 search_pro_bing）…\n[提示] 引擎 search_pro_bing：返回 10 条，其中带可点击链接的 10 条。\n[提示] 第 1 次生成不完整（finish_reason=length，长度 0），max_tokens 翻倍到 16384 重试…\n"
+    },
+    {
+      "text": "答案完整未被截断",
+      "passed": false,
+      "evidence": "truncated_end=True"
+    },
+    {
+      "text": "至少 2 条 http(s) 来源链接",
+      "passed": true,
+      "evidence": "links=6"
+    },
+    {
+      "text": "来源取自接口返回而非编造",
+      "passed": true,
+      "evidence": "reads_api=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "executor": "glm-5.3",
+  "skill": "v3"
+}

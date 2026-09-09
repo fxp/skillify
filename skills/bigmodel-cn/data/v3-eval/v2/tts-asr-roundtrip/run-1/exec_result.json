@@ -1,0 +1,14 @@
+{
+  "exit_code": 0,
+  "stdout": "智谱语音链路冒烟测试：原文「发票需要在七个工作日内申请」\n========================================================\n[1/4] 调用 GLM-TTS 合成语音 ...\n      合成成功，收到 222480 字节音频\n[2/4] 音频落盘 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/tts-asr-roundtrip/run-1/work/tts_output.wav ...\n      已写入 222480 字节，时长约 4.63 秒（在 ASR 30 秒限制内）\n[3/4] 调用 GLM-ASR-2512 转写刚生成的音频 ...\n      ASR 响应 model 字段：None\n      转写结果：发票需要在7个工作日内申请。\n[4/4] 与原文比对 ...\n      原文：发票需要在七个工作日内申请\n      转写：发票需要在7个工作日内申请。\n      归一化后完全一致\n========================================================\n[PASS] 语音链路打通：TTS 合成 → 本地 wav（/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/tts-asr-roundtrip/run-1/work/tts_output.wav）→ ASR 转写 → 比对。转写与原文归一化后完全一致\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 7.0,
+  "audio_files": [
+    {
+      "name": "tts_output.wav",
+      "size": 222480,
+      "head": "52494646"
+    }
+  ]
+}

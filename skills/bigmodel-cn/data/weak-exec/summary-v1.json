@@ -1,0 +1,106 @@
+{
+  "cited-web-answer": {
+    "runs": 5,
+    "scores": [
+      0.667,
+      1.0,
+      1.0,
+      0.667,
+      1.0
+    ],
+    "mean": 0.867,
+    "stdev": 0.163,
+    "grader_round": "glm-round3b"
+  },
+  "rag-index-embeddings": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      0.5,
+      0.5
+    ],
+    "mean": 0.8,
+    "stdev": 0.245,
+    "grader_round": "glm-round3"
+  },
+  "plan-1113-fix": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0,
+    "grader_round": "glm-round4"
+  },
+  "async-model-pinning": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      0.0
+    ],
+    "mean": 0.8,
+    "stdev": 0.4,
+    "grader_round": "glm-round4"
+  },
+  "json-schema-not-enforced": {
+    "runs": 5,
+    "scores": [
+      0.75,
+      0.75,
+      1.0,
+      1.0,
+      0.75
+    ],
+    "mean": 0.85,
+    "stdev": 0.122,
+    "grader_round": "glm-round5"
+  },
+  "kb-id-validation-silent200": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0,
+    "grader_round": "glm-round5"
+  },
+  "batch-best-model": {
+    "runs": 5,
+    "scores": [
+      0.333,
+      1.0,
+      0.667,
+      1.0,
+      1.0
+    ],
+    "mean": 0.8,
+    "stdev": 0.267,
+    "grader_round": "glm-round2"
+  },
+  "pdf-reuse-fileid": {
+    "runs": 5,
+    "scores": [
+      0.5,
+      0.5,
+      1.0,
+      1.0,
+      0.5
+    ],
+    "mean": 0.7,
+    "stdev": 0.245,
+    "grader_round": "glm-round2"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "已载入 invoice.png（4318 字节），套餐端点：https://open.bigmodel.cn/api/coding/paas/v4/chat/completions\n\n—— 正在尝试模型 glm-5.3-flash ……\n\n=== 模型回答 ===\n根据图片内容，这是一张**发票（INVOICE）**的片段，可见信息非常有限，逐项列出如下：\n\n| 项目 | 内容 |\n|---|---|\n| 单据类型 | 发票（INVOICE） |\n| 发票号码 | 2026-0917 |\n| 总金额 | 48,600 CNY（人民币） |\n| 抬头/购买方 | 无法辨认（图中未显示） |\n| 销售方 | 无法辨认（图中未显示） |\n| 开票日期 | 无法辨认（图中未显示） |\n| 商品/服务明细 | 无法辨认（图中未显示） |\n| 税额/税率 | 无法辨认（图中未显示） |\n| 其他（付款方式、签章等） | 无法辨认（图中未显示） |\n\n说明：图片仅显示左上角两行文字——\"INVOICE NO. 2026-0917\" 和 \"TOTAL: 48,600 CNY\"，其余内容均为空白，无法提供更多信息。\n\n=== 对账信息 ===\n请求模型           : glm-5.3-flash\n服务端实际使用模型 : glm-5.3-flash（来自响应 model 字段）\nfinish_reason      : stop\ntoken 用量         : {\"completion_tokens\": 214, \"completion_tokens_details\": {\"reasoning_tokens\": 0}, \"prompt_tokens\": 206, \"prompt_tokens_details\": {\"cached_tokens\": 0}, \"total_tokens\": 420}\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 9.6,
+  "audio_files": []
+}

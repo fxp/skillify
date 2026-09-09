@@ -1,0 +1,14 @@
+{
+  "exit_code": 0,
+  "stdout": "==============================================================\n智谱语音链路冒烟测试：TTS 合成 -> 本地 wav -> ASR 转写 -> 比对\n==============================================================\n[1/4] API Key：已从环境变量 ZHIPUAI_API_KEY 读取\n[2/4] TTS 语音合成：'发票需要在七个工作日内申请'\n      model=glm-tts，voice=tongtong，response_format=wav\n      音频已落盘：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/tts-asr-roundtrip/run-4/work/tts_asr_roundtrip.wav（212880 字节）\n[3/4] ASR 语音识别：上传 tts_asr_roundtrip.wav，model=glm-asr-2512\n      转写结果：'发票需要在7个工作日内申请。'\n[4/4] 与原文比对：\n      原文：发票需要在七个工作日内申请\n      转写：发票需要在7个工作日内申请。\n      归一化后不一致，相似度 92%\n--------------------------------------------------------------\n✅ 冒烟测试通过：TTS -> ASR 语音链路已打通，转写内容与原文一致。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 6.3,
+  "audio_files": [
+    {
+      "name": "tts_asr_roundtrip.wav",
+      "size": 212880,
+      "head": "52494646"
+    }
+  ]
+}

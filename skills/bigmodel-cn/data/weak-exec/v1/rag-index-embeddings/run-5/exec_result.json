@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "Read 21 FAQ lines from ../../run-3/faq.txt\nProcessing line 1/21: 发票怎么开...\nProcessing line 2/21: 如何开具增值税发票...\nProcessing line 3/21: 电子发票申请流程...\nProcessing line 4/21: 发票抬头怎么填写...\nProcessing line 5/21: 发票丢失了怎么办...\nProcessing line 6/21: 公司开票需要什么资料...\nProcessing line 7/21: 个人如何申请发票...\nProcessing line 8/21: 发票税点是多少...\nProcessing line 9/21: 发票认证流程...\nProcessing line 10/21: 专票和普票的区别...\nProcessing line 11/21: 发票抬头变更流程...\nProcessing line 12/21: 发票作废条件...\nProcessing line 13/21: 发票开具时间限制...\nProcessing line 14/21: 发票邮寄费用谁承担...\nProcessing line 15/21: 发票报销需要什么材料...\nProcessing line 16/21: 小规模纳税人开票规定...\nProcessing line 17/21: 一般纳税人开票规定...\nProcessing line 18/21: 发票冲红流程...\nProcessing line 19/21: 发票真伪查询方法...\nProcessing line 20/21: 发票查验平台入口...\nProcessing line 21/21: 跨境发票怎么处理...\nSaved 21 vectors to vectors.json\n\nQuery: 发票怎么开\nGot query embedding\n\nTop 3 most similar results:\n1. Similarity: 1.0000\n   Text: 发票怎么开\n\n2. Similarity: 0.8843\n   Text: 如何开具增值税发票\n\n3. Similarity: 0.8396\n   Text: 发票抬头怎么填写\n\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.5
+}

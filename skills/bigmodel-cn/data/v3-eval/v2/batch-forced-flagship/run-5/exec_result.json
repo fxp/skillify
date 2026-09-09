@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "已读取 20 条评论\n[降级] glm-5.3 不在 Batch 模型白名单内（[logID=202609081503037b31239567644ddc] 模型名称错误: glm-5.3, 目前支持的模型: glm-5.1, glm-5-turbo, glm-4, glm-4-0520, glm-4-plus, glm-4-long, glm-4-plus-0111, glm-4-air, glm-4-air-0111, glm-4-air-250414, glm-4-flash, glm-4-flashx-250414, glm-3-turbo, glm-4v, glm-4v-plus, glm-5v-turbo, glm-4v-plus-0111, cogview-3, cogview-3-plus, cogview-4-250304, embedding-2, embedding-3, cogvideox, cogvideox-2），尝试下一候选…\n请求文件上传成功：1788850984_030f4400f65441c0a466eef9e4695174（模型 glm-5.1）\nBatch 任务创建成功：\n  batch id : batch_2097219158384050176\n  status   : validating\n  模型     : glm-5.1\n  请求数   : 20\n任务为异步执行（一般 24 小时内完成），稍后可用 GET /paas/v4/batches/{batch_id} 查询进度。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.4,
+  "audio_files": []
+}

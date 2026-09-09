@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/long-report-complete/run-3/outputs/main.py`（目录里只有这一个文件），`python3 -m py_compile` 编译通过，本地 Python 3.9 可正常导入运行。
+
+## 脚本怎么保证“不给你半截东西”
+
+针对技能包速查表里那个 exactly 的坑——**#13 思考 token 计入 `max_tokens`**（600 字简报思考链就要 2400+ token，预算小了就 `finish_reason=length` 截断）——脚本做了四层防护：
+
+1. **预算给足**：`max_tokens` 起步 8192，`reasoning_effort: "low"` 压思考开销（`glm-5.3` 标准端点思考强制开启、传 `thinking:disabled` 会报 1210，所以不传 `thinking`）；拿到空正文且 `finish=length` 时自动翻倍预算重试（上限 32768）。
+2. **截断自动续写**：判据是 `finish_reason` 而非空串；撞上 `length` 或结尾停在句中标点，就把已写内容作为 assistant 消息回传、要求从中断处无缝续写再拼接，最多修 4 轮，直到 `finish_reason=stop` 且收尾完整。
+3. **字数/结构兜底**：不足 600 字或缺小标题/数据时**追加式**扩写（绝不整篇替换，防模型重写丢内容）。字数用保守口径（中文字符+英文单词，不含标点和 Markdown 符号），这个口径达标则任何口径都达标。
+4. **交付门禁**：四项校验（字数 ≥600、小标题 ≥3、具体数据 ≥5 处、收尾完整）全过才打印全文和明确确认；救不回来就打错误原因、exit 1，**不会把残缺内容包装成品输出**。
+
+另有网络层重试（429/5xx/超时指数退避）、回显 `model` 与请求不一致时告警（陷阱 #2 保险）、无 Key 时给出清晰中文提示。
+
+## 离线验证结果
+
+- 完整性判定：句号收尾 ✓ 通过、逗号/标题符/空串 ✓ 拦截（这轮测试还真抓出一个我把句号误放进截断黑名单的 bug，已修）
+- 837 字模拟完整稿 → 诊断零问题；截断稿 → `finish_reason=length` 正确命中
+- 无 Key → 报错退出 exit 1
+
+因为环境没有 Key，真实 API 调用没跑过，这点如实说明；接口细节（URL、鉴权、`max_tokens` 语义、`reasoning_effort` 取值、`finish_reason` 枚举）已逐条与 docs.bigmodel.cn 官方文档核验一致。拿到 Key 后 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可。

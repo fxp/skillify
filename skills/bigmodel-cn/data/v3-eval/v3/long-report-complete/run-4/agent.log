@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，未真实调用 API（当前无 Key），但用 mock 把所有防御路径实测跑通了。
+
+## 脚本设计（对照接入手册的实测陷阱）
+
+**基本接入**
+- 端点 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`（标准 API），模型 `glm-5.3`，Key 从 `ZHIPUAI_API_KEY` 读取，仅依赖 `requests` + 标准库，直接 `python3 main.py` 运行。
+
+**防截断是核心**（手册陷阱 #13：思考 token 计入 `max_tokens`，600 字简报思考链就要 2400+ token）
+- 初始 `max_tokens=8192`（远高于实测所需的 3000 门槛）；一旦 `finish_reason=length` 自动翻倍预算（8192→16384→…→131072 封顶）并叠加 `reasoning_effort=low` 省思考开销。
+- 标准端点 `glm-5.3` 关不掉 thinking（陷阱 #14，传 `disabled` 会报 1210），所以脚本不传 `thinking`，靠足量预算保完整。
+- 每次调用都核对回显 `model` 字段（陷阱 #2/#3）：带版本后缀放行，换成了别的模型直接报警停止，不静默交付。
+
+**残缺内容绝不交付**（手册补救表的硬要求），四道闸门层层兜底：
+1. 截断 → 预算翻倍重试；
+2. `finish=stop` 但结尾悬空（断在半句）→ 把半截稿作为 assistant 历史发起**续写修复**，去重拼接；
+3. 字数/小标题/数据不达标 → **扩写修复**（要求输出修订后全文，两版自动取优）；
+4. 以上全失败 → **分段生成再拼接**兜底（4 个小节 + 结语各自独立调用、独立校验后拼装）。
+最终无论走哪条路径，都要过一遍总校验（≥600 字、≥3 个小标题、≥3 处数字、结尾收束）才打印；实在救不回来就以非零码退出并明说原因，绝不打印半截内容。
+
+**输出格式**：简报全文 + 逐项校验结果（字数/小标题/数据/完整性，各带 ✅）+ 一句明确结论「内容完整、无截断、字数达标，可直接放入周报」。
+
+## 验证情况（mock，无真实调用）
+
+- 场景 A：截断→翻倍重试→续写修复→扩写修复→校验后交付 ✅（确认了预算序列 8192→16384、`reasoning_effort=low` 生效、修复提示词正确）
+- 场景 B：回显模型变成 `glm-4.7` → 被检测并停止交付 ✅
+- 场景 C：整篇连续截断 4 次 → 自动转分段兜底，9 次调用拼接出完整简报 ✅
+- 场景 D：缺 API Key → 给出 `export ZHIPUAI_API_KEY=...` 指引后退出 ✅
+
+一点提示：简报中的数据由模型生成（脚本未开联网搜索），正式放进周报前建议复核关键数字——这行提示也印在脚本输出末尾。

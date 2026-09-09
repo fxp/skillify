@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+编译通过，无 Key 时的报错路径也符合预期（明确报错、退出码 1）。本地那个 urllib3 警告来自环境的 Python 3.9 站点包，与脚本无关。
+
+任务完成。脚本已保存到 `outputs/main.py`（仅此一个文件）。
+
+## 实现说明
+
+**调用方式**：`POST /paas/v4/chat/completions`（`glm-5.3`，同步端点），通过 `tools: [{"type": "web_search", ...}]` 挂联网搜索，仅依赖 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取。
+
+**针对「答案必须完整」**：
+- 以 `finish_reason == "stop"` 作为完整性判据（技能包实测结论：思考 token 计入 `max_tokens`，判截断要看 `finish_reason` 而不是内容长短）；
+- 首次就给 `max_tokens=8192`，若返回 `length` 自动翻倍重试（最高 32768），重试用尽仍截断才报错退出——不会把半截答案交付出来；
+- 刻意**不传** `thinking:{"type":"disabled"}`：标准端点上 `glm-5.3` 传它会报 1210（速查表 #14），完整性靠大预算保证。
+
+**针对「至少 2 条可点击来源」**：
+- 显式传 `search_result: true`——不传的话搜索照跑、答案照给，但响应里根本没有 `web_search` 来源数组（#5 静默陷阱）；
+- 引擎按 `search_pro_bing → _quark → _sogou → _jina` 逐个尝试——`search_std`/`search_pro` 的来源 `link` 恒为空串（#4），绝不用；某引擎链接不足 2 条就自动换下一个重跑；
+- 只接受 `link` 以 `http` 开头且去重后的真实网址，不足 2 条即报错。
+
+**报错纪律**：Key 未设置、网络/HTTP 失败、API 业务错误（带 code/message）、`finish_reason` 为 `length`/`sensitive`/`network_error`、内容为空、链接不足——每种情况都给出具体原因；所有引擎都失败时逐项列出失败清单并附排查建议（如 1113 → 套餐 Key 打错端点）。另加了服务端回显 `model` 与请求不一致的告警（速查表 #2/#3）。
+
+**验证情况**：`python3 -m py_compile` 通过；无 Key 场景实测能明确报错并以退出码 1 退出。带真实 Key 的完整链路当前环境无法验证（无可用 Key）。

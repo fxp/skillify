@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "成功读取 8 条评论\n已生成JSONL请求文件: outputs/batch_requests.jsonl\n文件上传成功，文件ID: 1788918155_678e3aade37a49398e492afac697dc2c\nBatch任务创建成功！\n任务ID: batch_2097500887594303488\n初始状态: validating\n\n任务已提交，请稍后使用任务ID查询结果。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.4
+}

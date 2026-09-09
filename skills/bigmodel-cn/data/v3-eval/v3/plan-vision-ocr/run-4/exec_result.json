@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "\n===== 尝试模型 glm-5.3-flash =====\n\n----- 模型的回答 -----\n# 图片内容描述\n\n这张图片显示的是一个**发票（Invoice）片段**，内容非常简洁，仅包含以下两行信息：\n\n## 可识别的关键信息\n\n| 项目 | 内容 |\n|------|------|\n| **发票编号** | 2026-0917 |\n| **总金额** | 48,600 CNY（人民币） |\n\n## 缺失的信息\n\n需要说明的是，这张图片**并不完整**，缺少发票通常包含的其他关键内容，例如：\n\n- ❌ 发票标题/开票方名称\n- ❌ 开票日期\n- ❌ 抬头（购买方信息）\n- ❌ 商品或服务明细\n- ❌ 税率、税额\n- ❌ 付款方式、银行账户信息\n\n如果您需要完整的发票信息，建议提供完整的票据图片，我可以帮您进一步转写和分析。\n\n----- 对账信息 -----\n请求的模型: glm-5.3-flash\n服务端实际使用的模型: glm-5.3-flash\ntoken 用量: {'completion_tokens': 343, 'completion_tokens_details': {'reasoning_tokens': 160}, 'prompt_tokens': 188, 'prompt_tokens_details': {'cached_tokens': 0}, 'total_tokens': 531}\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 11.2,
+  "audio_files": []
+}

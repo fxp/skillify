@@ -1,0 +1,45 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+代码已成功保存。让我总结一下这个联网问答小工具的特点：
+
+## 功能特点
+
+1. **问题设定**：脚本中写死了问题「2026 年智谱 BigModel 发布了哪些新模型」
+
+2. **联网搜索**：
+   - 使用 `glm-5.3` 模型，该模型支持联网搜索功能
+   - 配置了 `web_search` 工具，使用 `search_pro_bing` 搜索引擎以确保返回可点击的链接
+   - 设置了 `search_result: true` 以确保返回来源信息
+
+3. **API 调用**：
+   - 从环境变量 `ZHIPUAI_API_KEY` 读取 API Key
+   - 使用 requests 库发送 HTTP 请求
+   - 正确配置了请求头和请求体
+
+4. **来源展示**：
+   - 检查返回的 `web_search` 字段
+   - 过滤掉 `link` 为空的来源（根据文档，某些搜索引擎会返回空链接）
+   - 显示来源标题和可点击的 URL
+
+5. **错误处理**：
+   - 检查环境变量是否设置
+   - 处理网络请求异常
+   - 处理响应格式错误
+
+## 使用方法
+
+```bash
+# 设置API Key
+export ZHIPUAI_API_KEY="your_api_key_here"
+
+# 运行脚本
+python3 main.py
+```
+
+脚本会输出：
+- 问题的答案
+- 信息来源列表（包含标题和可点击的URL）
+
+代码已通过 Python 编译验证，可以直接运行。

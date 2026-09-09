@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录只有这一个文件）。
+
+## 做了什么
+
+**按 SKILL.md 指引读了 references**（`knowledge-rag.md` + `tools.md` 的 Embeddings/Rerank 节），并用 WebFetch 对照官方文档核实了四个接口的路径、参数、响应结构，全部一致。还发现一个官方文档没强调的硬限制：`embedding-3` 单次 input 数组最多 64 条，而 faq.txt 有 150 行——替代路径做了分批。
+
+**脚本设计（三级检索，保证一定打印出原文片段）**：
+
+1. **主路径·托管知识库**：建库（`embedding_id=11`）→ 上传 faq.txt（`knowledge_type=5` + `\n` 分隔符，一行一切片，贴合这个一行一问的文件）→ **轮询 `GET /document/{id}` 的 `embedding_stat` 到 `==1` 才检索** → `POST /knowledge/retrieve`（带 rerank，失败自动退回混合检索）
+2. **替代路径·自建管线**：`embedding-3` 分批向量化 → 余弦召回 Top20 → `rerank` 精排取 Top5（rerank 不可用就直接用余弦排序）
+3. **最后兜底·本地 bigram 词面匹配**：连 API 都不通时也能打印检索结果
+
+**针对技能包里的实测坑做了防御**：
+- 坑 #9：知识库接口出错时 HTTP 仍是 200，所有调用都判 `body.code == 200`，不依赖 `raise_for_status()`
+- 坑 #10：上传成功 ≠ 可检索，轮询 `embedding_stat`（`2` 直接降级，不靠“检索为空”猜）；文档就绪但召回为空也视为不可用并降级
+- 清理：`finally` 里删临时文档 + 删知识库，**成功、失败、异常路径都会执行**
+
+**验证情况（说实话的部分）**：没有真的调 API（环境无 Key），但做了——`python3 -m py_compile` 通过；离线冒烟测试全过：本地兜底检索用真实 faq.txt 跑出 Top1 = `退换货政策的有效期是多久？`（0.9167 分）、余弦边界、64 条分批下标无缝覆盖、缺 Key 时清晰报错退出。运行方式：`export ZHIPUAI_API_KEY=... && python3 main.py`（faq.txt 放 main.py 同目录）。退出码：`0` = API 检索成功，`2` = 仅本地兜底，`1` = 彻底失败。
+
+Sources:
+- [知识库检索 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索)
+- [上传文件文档 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档)
+- [文本嵌入 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/文本嵌入)
+- [文本重排序 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/文本重排序)

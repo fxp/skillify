@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件），未调用真实 API，但编译与逻辑均已验证。
+
+## 交付说明
+
+**接口依据**（SKILL.md + 官方文档 docs.bigmodel.cn 双重核对一致）：
+- `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，模型 `glm-5.3`，Bearer 鉴权，仅依赖 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取
+- `max_tokens` 上限 131072；`finish_reason` 六种取值语义照官方定义处理
+
+**「不能断在半截」的完整保障链**（针对技能包实测的两个坑）：
+1. **预算从宽**：`glm-5.3` 在标准端点强制开思考、且思考 token 计入 `max_tokens`（技能包陷阱 #13），所以显式给 16384 起、失败逐级升到 131072 的预算
+2. **截断自动续写**：`finish_reason == "length"` 时带着已生成内容发续写请求，拼接时做最长重叠去重（下限 1 字符——测试中发现截断常落在数字中间，如 `8` + `50万辆`，单字符对齐才能拼对），最多续写 6 轮
+3. **成文四项校验**：字数 ≥600（非空白字符）、小标题 ≥2、具体数字 ≥5 处、以终止标点收尾；不合格整篇换预算重生成，最多 3 轮；`sensitive`/`network_error` 的产出直接作废重试
+4. **不外漏半成品**：全部通过才打印全文 + 交付确认（`[OK] 字数达标` / `[OK] 内容完整`）；彻底失败则非零退出、明确说明不输出残缺内容。另有 429/5xx 指数退避重试（4xx 配置类错误直接报错不空转）
+
+**验证情况**（无法真调 API，用 mock `requests` 驱动了 17 项控制流测试，全部通过）：
+- 截断→续写→拼接去重→交付确认 ✅
+- 空内容/太短/sensitive → 预算升级整篇重生成 ✅
+- 持续 5xx → 退避重试后干净失败、不打印任何正文 ✅
+- 缺 Key → 友好提示退出 1（真实跑过）✅
+- `python3 -m py_compile` 通过；测试临时文件与 `__pycache__` 已清理
+
+**使用**：`export ZHIPUAI_API_KEY=<你的Key>` 后 `python3 main.py` 即可。唯一未覆盖的是对真实服务的端到端联调（环境无 Key），拿到 Key 后如有异常，脚本会把 HTTP 状态与业务错误码原样打到 stderr 便于定位。

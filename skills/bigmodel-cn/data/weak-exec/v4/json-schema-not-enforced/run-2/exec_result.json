@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "开始情感分析...\n==================================================\n\n分析文本 1: 这家店服务太差了，再也不来了\n分析失败: JSON解析失败: Expecting value: line 1 column 1 (char 0)\n\n分析文本 2: 东西还行吧，没什么特别的\n分析失败: JSON解析失败: Expecting value: line 1 column 1 (char 0)\n\n分析文本 3: 太惊喜了，比我预期好太多，强烈推荐\n分析失败: JSON解析失败: Expecting value: line 1 column 1 (char 0)\n\n==================================================\n最终分析结果:\n[\n  {\n    \"sentiment\": \"中性\",\n    \"score\": 0.5\n  },\n  {\n    \"sentiment\": \"中性\",\n    \"score\": 0.5\n  },\n  {\n    \"sentiment\": \"中性\",\n    \"score\": 0.5\n  }\n]\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 12.9
+}

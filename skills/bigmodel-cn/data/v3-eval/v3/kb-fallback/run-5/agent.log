@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付物已就位：`outputs/main.py`（唯一文件，编译通过）。
+
+## 方案说明
+
+**先读了** `SKILL.md` → `references/knowledge-rag.md`、`references/tools.md`，并用 WebFetch 核对了官方文档，接口细节与技能包一致（含一个文档没写、但实测很重要的字段：`embedding_stat`）。
+
+**脚本按三层降级设计**，核心目标就是你说的「真的能检索到内容」，任何一层成功都会把**原文片段**打印出来：
+
+| 路线 | 做法 | 触发条件 |
+|---|---|---|
+| 1️⃣ 托管知识库 | 建库（embedding_id=11）→ multipart 传 faq.txt → **轮询 `GET /document/{id}` 到 `embedding_stat==1`** → 检索 → `finally` 里删库 | 默认首选 |
+| 2️⃣ embeddings + rerank 自建检索 | faq.txt 按空行/句界切块 → `embedding-3` 向量化 → 纯 Python 余弦召回 top10 → `rerank` 精排取 top5 | 托管库创建失败 / **向量化失败（stat=2）** / 检索返回空 / 等待超时 |
+| 3️⃣ 本地字符二元组词法检索 | 无任何外部依赖的余弦匹配 | 连 embeddings 都 401/1113（比如没配 Key）时兜底 |
+
+**针对性处理的平台坑**（都来自技能包实测）：
+- `llm-application/*` 出错时 HTTP 仍是 200 → 全程判响应体顶层 `code==200`，`raise_for_status()` 不可信；
+- 上传成功 ≠ 可检索，向量化失败时检索端只回空数组 → 必须轮询 `embedding_stat`（0/1/2），拿到 2 直接带着 `failInfo` 降级，不空等；
+- rerank 的 `results` 默认不带原文 → 显式 `return_documents: true`；
+- rerank 挂了但 embeddings 活着 → 退回纯向量排序，不整链报废；
+- 清理兜底：知识库删除在 `finally` 里，删失败会提示控制台手动删；运行时生成的演示 faq.txt（同目录没有语料时才生成）也会在结束时删掉，**用户预置的 faq.txt 绝不动**。
+
+**验证方式**（未调真实 API）：`py_compile` 通过；另写了打桩测试把 `http_request` 模拟成各种响应，覆盖了全部关键分支——托管库全流程成功+删库、向量化 stat=2 正确识别并降级、自建检索命中退换货段落、无 Key 全降级时本地检索仍把「7 天无理由退货」那段排第一并打印、退出码 0、临时文件清理干净。
+
+跑法就是 `python3 main.py`（Key 走 `ZHIPUAI_API_KEY` 环境变量），依赖仅 requests。
+
+Sources: [知识库检索 API](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2) · [上传文件文档 API](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E6%96%87%E6%A1%A3)

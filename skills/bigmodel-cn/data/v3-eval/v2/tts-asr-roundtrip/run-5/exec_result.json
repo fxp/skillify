@@ -1,0 +1,14 @@
+{
+  "exit_code": 0,
+  "stdout": "=== 智谱语音链路冒烟测试（TTS -> 本地音频 -> ASR 回读） ===\n[1/4] 检查环境变量 ZHIPUAI_API_KEY ...\n      OK\n[2/4] 调用 glm-tts 合成音频 ...\n      OK：已写入 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/tts-asr-roundtrip/run-5/work/tts_smoke_test.wav（212880 字节）\n[3/4] 调用 glm-asr-2512 把音频转写回文字 ...\n      OK：转写结果 -> 发票需要在7个工作日内申请。\n[4/4] 与原文比对 ...\n      原文     : 发票需要在七个工作日内申请\n      转写     : 发票需要在7个工作日内申请。\n      归一化后 : 发票需要在7个工作日内申请\n      相似度   : 92%\n\n✅ 语音链路已打通：转写内容与原文基本一致（相似度 92%，差异可能来自标点或同音字，原文/转写均已打印，建议人工复核）。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 6.7,
+  "audio_files": [
+    {
+      "name": "tts_smoke_test.wav",
+      "size": 212880,
+      "head": "52494646"
+    }
+  ]
+}

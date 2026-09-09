@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "==================================================\n开始异步情感分析任务\n==================================================\n\n处理第 1 句话: 今天天气真好，心情很愉快！\n提交异步任务，请求模型: glm-4.6\n处理第 1 句话时出错: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/async/chat/completions\n\n处理第 2 句话: 这个产品太差了，完全不值这个价钱。\n提交异步任务，请求模型: glm-4.6\n处理第 2 句话时出错: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/async/chat/completions\n\n处理第 3 句话: 我觉得这件事还可以，没有特别的感觉。\n提交异步任务，请求模型: glm-4.6\n处理第 3 句话时出错: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/async/chat/completions\n\n==================================================\n情感分析结果汇总\n==================================================\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v1/async-model-pinning/run-5/work/main.py\", line 236, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v1/async-model-pinning/run-5/work/main.py\", line 177, in main\n    print(f\"\\n第 {i+1} 句话: {result['original_text']}\")\nKeyError: 'original_text'\n",
+  "timed_out": false,
+  "seconds": 0.6
+}

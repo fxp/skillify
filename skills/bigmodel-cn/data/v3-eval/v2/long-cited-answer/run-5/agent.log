@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，可直接 `python3 main.py` 运行。
+
+## 实现要点
+
+**调用方式**：标准端点 `POST /paas/v4/chat/completions`，`glm-5.3` + `tools: [{"type": "web_search", ...}]` 非流式调用，Key 从 `ZHIPUAI_API_KEY` 读取，仅依赖 requests。
+
+**两条硬性要求分别靠什么保证**：
+
+1. **答案完整（不截断）**
+   - 完整性判据是 `finish_reason == "stop"`，不是看内容非空——因为 `glm-5.3` 标准端点强制开启思考且思考 token 计入 `max_tokens`，预算不足会出现“HTTP 200 但正文被截断甚至为空”的静默失效；
+   - 遇到 `finish_reason == "length"` 自动把预算从 16384 翻到 65536 重试，仍截断则报错退出，不输出半截答案；
+   - `sensitive`/`network_error`/`model_context_window_exceeded` 等也逐项给出明确的报错说明。
+
+2. **≥2 条可点击来源链接**
+   - 显式传 `search_result: true`（不传的话搜索照跑，但响应里根本没有 `web_search` 来源数组）；
+   - 搜索引擎只用 `search_pro_bing → _quark → _sogou → _jina` 按序尝试——已用官方文档核实：文档只列了 4 个引擎且**完全没有记载** `search_std`/`search_pro` 的来源 `link` 恒为空串这一行为（这是技能包 2026-09 真实 API 实测发现的典型静默陷阱），所以代码里对 `link` 非空且 `http` 开头做了校验，某引擎不足 2 条就自动换下一个，四个引擎全部失败则汇总各引擎具体原因后报错退出（退出码 1）。
+
+**其他健壮性**：网络异常/429/5xx 指数退避重试；4xx（Key 无效、参数非法）直接报错不浪费重试；缺 Key 时提示了标准 Key 与 Coding Plan 套餐 Key 不通用（套餐 Key 打这个端点会报 1113）。
+
+## 验证情况（未调真实 API，按约定）
+
+- `python3 -m py_compile` 通过；
+- 缺 Key 路径实测：输出明确中文报错、退出码 1；
+- 用 mock 替换 `call_chat` 跑了 5 组离线逻辑测试，全部通过：来源提取与去重、link 全空时自动换引擎后成功输出、截断自动加大预算、四引擎链接均不足时逐一尝试后汇总报错、`sensitive` 立即报错。
+
+拿到真实 Key 后 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可；答案正文会先打印（标注 finish_reason=stop），随后列出带标题/媒体/日期的编号来源链接供人工复核。

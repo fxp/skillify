@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在调用智谱AI API进行联网搜索...\n\n=== 回答 ===\n**2026年智谱BigModel平台发布的新模型一览（信息截至2026年9月9日）**\n\n2026年智谱BigModel平台围绕GLM-5系列进行了多轮密集发布，并对API进行了多次调整（来源：百度百科）。按时间线\n\n=== 信息来源 ===\n1. [模型与产品发布记录 - 智谱AI开放文档]\n   链接：https://docs.bigmodel.cn/cn/update/new-releases\n\n2. [智谱丨BigModel 平台]\n   链接：https://bigmodel.cn/\n\n3. [BigModel开放平台_百度百科]\n   链接：https://baike.baidu.com/item/BigModel%25E5%25BC%2580%25E6%2594%25BE%25E5%25B9%25B3%25E5%258F%25B0/68064176\n\n4. [上新活动 - 智谱AI开放文档]\n   链接：https://docs.bigmodel.cn/cn/update/promotion\n\n5. [GLM-5.3 - 智谱AI开放文档]\n   链接：https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3\n\n6. [智谱丨BigModel 平台 - 智谱AI]\n   链接：https://open.bigmodel.cn/\n\n7. [七月起，大模型进入「无限战争」 - 华尔街见闻] - Jul 21, 2026\n   链接：https://wallstreetcn.com/articles/3777552\n\n8. [重磅：智谱大模型最靠谱 - 雪球] - May 22, 2026\n   链接：https://xueqiu.com/3191867971/390436720\n\n9. [智谱AI]\n   链接：https://bigmodel.cn/special_area\n\n10. [https://mp.weixin.qq.com/s/JdBx3B12L7Mhxruf4Nfr4g]\n   链接：https://mp.weixin.qq.com/s/JdBx3B12L7Mhxruf4Nfr4g\n\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 46.4
+}

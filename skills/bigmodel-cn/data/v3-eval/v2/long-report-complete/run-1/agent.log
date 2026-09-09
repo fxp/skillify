@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，未生成其他文件。
+
+## 实现要点（依据 SKILL.md 实测陷阱）
+
+- **截断判据用 `finish_reason`，不用「内容非空」**（陷阱 #13）：glm-5.3 思考 token 计入 `max_tokens`，预算不够时正文会被拦腰截断。因此 `max_tokens` 给到 8192 留足余量，且只有 `finish_reason == "stop"` 的文本才算成品；一旦收到 `length`，自动把半截正文作为 assistant 历史回传、让模型从中断处续写拼接（最多 6 轮）。
+- **标准端点不传 `thinking: disabled`**（陷阱 #14）：该参数在 `…/api/paas/v4` 会报 1210，脚本完全不传。
+- **重试策略**：429（1113 余额/套餐 Key 打错端点单独识别并提示成因）、5xx、网络错误做指数退避重试；400/401/403 等配置类错误不重试直接报清原因。
+- **硬校验门**：字数（不含空白，口径更严）≥600、小标题 ≥3、含数字数据、末句收束完整。不达标就带着问题清单让模型重写整篇（最多 3 稿）；仍不达标则 **exit 1 且不输出任何全文**——绝不把半截东西交出去。
+- Key 从 `ZHIPUAI_API_KEY` 读取，仅依赖 requests；`request_id` 用 uuid 便于平台侧排查。
+
+## 验证情况（未调真实 API，按你的要求）
+
+- `python3 -m py_compile` 通过；
+- 用假响应驱动了 5 个端到端场景，全部符合预期：
+  1. 首轮 `length` 截断 → 自动续写 → 打印全文并输出「✅ 简报完整、字数达标（688 字 ≥ 600 字）」；
+  2. `stop` 但字数不足 → 自动重写后交付；
+  3. `sensitive` 异常终止 → 整篇重试成功；
+  4. 永远截断 → 18 次调用后 exit 1，**未输出全文**；
+  5. 缺 Key → exit 2 并给出明确提示。
+
+跑法：`ZHIPUAI_API_KEY=你的Key python3 main.py`。成功时打印简报全文 + 交付校验清单（字数/小标题/数据/完整性逐项 ✅）；接口细节已用 WebFetch 对照官方 docs.bigmodel.cn 核实（endpoint、`finish_reason` 六种取值、`max_tokens` 上限 131072）均与技能包一致。

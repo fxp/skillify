@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/plan-vision-ocr/run-3/outputs/main.py`，`py_compile` 编译通过，无 Key 时的守卫路径也实测正常退出。受环境限制（无可用 Key）没有真正调 API。
+
+## 先回答核心问题：套餐能不能做视觉？
+
+**不能直接下“不行”的结论，所以脚本按“先试再下结论”写了**。两方面的依据：
+
+- **官方文档口径**（已用 WebFetch 核对 `docs.bigmodel.cn/cn/coding-plan/overview`）：所有套餐明面上只支持 `glm-5.3` / `glm-5.3-flash`，图像/视频理解官方路线是附赠的**视觉理解 MCP**，不是 chat 接口。
+- **技能包实测记录**（2026-09-03，用真实套餐 Key 逐条验证）：视觉模型 `glm-4.6v`、`glm-5v-turbo` 在套餐端点 `…/api/coding/paas/v4` 上**原样可用**——这正是速查表第 20 条警告的坑：“别照文档直接回套餐不支持视觉”。
+
+所以脚本用**模型回退链 `glm-4.6v → glm-5v-turbo → glm-5.3-flash`**（最后一个官方在套餐内、且为原生多模态）。三个都真实试失败后，才会打印“套餐用不了视觉”的结论，并附上每个模型的具体报错作为依据、以及 MCP / 标准 Key 两条出路。
+
+## 脚本要点（都对应技能包里的实测坑）
+
+| 设计 | 对应的坑 |
+| :-- | :-- |
+| 端点用 `…/api/coding/paas/v4/chat/completions`，Key 读 `GLM_CODING_PLAN_API_KEY` | 套餐 Key 打标准端点必报 `1113` |
+| 打印**响应回显的 `model` 字段**做对账，与请求模型不一致时告警 | 服务端会静默换模型（如 `glm-4.6`→`glm-5.3-flash`），计费按实际模型算 |
+| `max_tokens` 给 8192，`finish_reason == "length"` 时先翻倍、再关 `thinking` 重试 | 思考 token 计入 `max_tokens`，预算小了会拿到空正文 |
+| 打印前剥掉 `<think>…</think>` 标签 | 视觉模型 content 里可能夹思考标签 |
+| 图片 base64 data URI，校验 ≤5M；同时打印 `usage` 便于额度对账 | 官方单图上限 |
+| 报错时解析业务码，`1113` 给出三成因提示（端点/能力/模型） | 1113 不一定是余额问题，不该让用户去充值 |
+
+运行方式：`export GLM_CODING_PLAN_API_KEY=...` 后在脚本同目录放好 `invoice.png`，直接 `python3 main.py`。
+
+一点提醒：官方条款规定套餐“仅限指定工具环境使用”，自己写脚本调 Coding 端点技术上能通、实测也在消耗套餐额度，但属于条款之外的用法；生产系统建议换标准 API Key。

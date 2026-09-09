@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "读取到 20 条评论：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/batch-forced-flagship/run-3/work/comments.txt\n  模型 glm-5.3 不在 Batch 白名单（1210 [logID=202609081502526fce8bbf5fbf4ac2] 模型名称错误: glm-5.3, 目前支持的模型: glm-5.1, glm-5-turbo, glm-4, glm-4-0520, glm-4-plus, glm-4-long, glm-4-plus-0111, glm-4-air, glm-4-air-0111, glm-4-air-250414, glm-4-flash, glm-4-flashx-250414, glm-3-turbo, glm-4v, glm-4v-plus, glm-5v-turbo, glm-4v-plus-0111, cogview-3, cogview-3-plus, cogview-4-250304, embedding-2, embedding-3, cogvideox, cogvideox-2），尝试降级……\n请求文件已上传：batch_requests.jsonl -> file id 1788850973_e001054520f14cb0b6d20b6fe585faaf（模型 glm-5.1）\n\nBatch 任务创建成功！\n  batch id : batch_2097219113295282176\n  status   : validating\n  模型     : glm-5.1（请求总数 20）\n  后续查询 : GET https://open.bigmodel.cn/api/paas/v4/batches/batch_2097219113295282176\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 7.2,
+  "audio_files": []
+}

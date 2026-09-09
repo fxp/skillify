@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在上传PDF文件...\n发生错误: [Errno 2] No such file or directory: '/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v4/pdf-reuse-fileid/run-1/contract.pdf'\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1
+}

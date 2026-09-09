@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "已读取 20 条评论：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/batch-forced-flagship/run-2/work/comments.txt\n尝试模型 glm-5.3：构造 jsonl（20 个请求）并上传 ...\n  被拒绝（[1210] [logID=20260908150244800cc401633740b0] 模型名称错误: glm-5.3, 目前支持的模型: glm-5.1, glm-5-turbo, glm-4, glm-4-0520, glm-4-plus, glm-4-long, glm-4-plus-0111, glm-4-air, glm-4-air-0111, glm-4-air-250414, glm-4-flash, glm-4-flashx-250414, glm-3-turbo, glm-4v, glm-4v-plus, glm-5v-turbo, glm-4v-plus-0111, cogview-3, cogview-3-plus, cogview-4-250304, embedding-2, embedding-3, cogvideox, cogvideox-2）——该模型不在 Batch 白名单，按候选列表降级重试\n尝试模型 glm-5.1：构造 jsonl（20 个请求）并上传 ...\n上传成功：input_file_id = 1788850966_c1f6346d67884514830cf423d1d881ba\n注意：首选模型 glm-5.3 不被 Batch 接受（不在白名单），已改用 glm-5.1（白名单内质量最强的候选）\n创建 batch 任务 ...\nBatch 任务创建成功（不需要等它跑完）。\n  batch 任务 id：batch_2097219082079449088\n  状态：validating\n  模型：glm-5.1，共 20 个请求\n  之后可用该 id 轮询进度：GET https://open.bigmodel.cn/api/paas/v4/batches/batch_2097219082079449088\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 7.4,
+  "audio_files": []
+}

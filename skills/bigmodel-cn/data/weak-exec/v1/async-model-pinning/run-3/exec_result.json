@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "开始批量情感分析任务\n请求的模型版本: glm-4.6\nAPI Key: 已设置\n\n=== 处理第 1 句话 ===\n句子: 今天天气真好，心情很愉快！\n提交任务，请求模型: glm-4.6\n任务ID: 20260909094024caffc63b21034b44\n提交接口回显模型: glm-4.7\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: SUCCESS\n最终结果模型: GLM-4.7\n🚨 审计警告：模型版本不一致！\n   请求的模型: glm-4.6\n   提交接口回显: glm-4.7\n   最终结果使用: GLM-4.7\n情感: positive, 置信度: 0.99\n\n=== 处理第 2 句话 ===\n句子: 这个产品太差了，完全不值这个价钱。\n提交任务，请求模型: glm-4.6\n任务ID: 2026090909403390e28d5b4a334c73\n提交接口回显模型: glm-4.7\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: SUCCESS\n最终结果模型: GLM-4.7\n🚨 审计警告：模型版本不一致！\n   请求的模型: glm-4.6\n   提交接口回显: glm-4.7\n   最终结果使用: GLM-4.7\n情感: negative, 置信度: 0.98\n\n=== 处理第 3 句话 ===\n句子: 我觉得这部电影还不错，但情节有些拖沓。\n提交任务，请求模型: glm-4.6\n任务ID: 20260909094042715af7f087be4850\n提交接口回显模型: glm-4.7\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: PROCESSING\n任务状态: SUCCESS\n最终结果模型: GLM-4.7\n🚨 审计警告：模型版本不一致！\n   请求的模型: glm-4.6\n   提交接口回显: glm-4.7\n   最终结果使用: GLM-4.7\n情感: neutral, 置信度: 0.85\n\n==================================================\n批量情感分析结果汇总\n==================================================\n\n句子 1: 今天天气真好，心情很愉快！\n  情感: positive\n  置信度: 0.99\n\n句子 2: 这个产品太差了，完全不值这个价钱。\n  情感: negative\n  置信度: 0.98\n\n句子 3: 我觉得这部电影还不错，但情节有些拖沓。\n  情感: neutral\n  置信度: 0.85\n\n任务完成！\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 41.2
+}

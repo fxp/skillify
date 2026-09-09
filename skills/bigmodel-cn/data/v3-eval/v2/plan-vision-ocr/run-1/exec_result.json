@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "\n===== 尝试 glm-5.3-flash（关闭思考） =====\n\n----- 模型的回答 -----\n根据图片内容，可辨认的信息如下：\n\n| 项目 | 内容 |\n|---|---|\n| 发票名称/类型 | INVOICE（发票），具体类型无法辨认 |\n| 发票号码 | 2026-0917 |\n| 开票日期 | 无法辨认 |\n| 购买方 | 无法辨认 |\n| 销售方 | 无法辨认 |\n| 金额（不含税） | 无法辨认 |\n| 税额 | 无法辨认 |\n| 价税合计 | 48,600 CNY（人民币 48,600 元） |\n\n**说明：** 图中仅显示两行文字：\"INVOICE NO. 2026-0917\" 和 \"TOTAL: 48,600 CNY\"，其余字段（日期、买卖双方、税额明细等）均未显示，无法辨认。\n\n----- 对账信息 -----\n请求模型     : glm-5.3-flash\n服务端实际模型: glm-5.3-flash\nfinish_reason: stop\ntoken 用量   : {\"completion_tokens\": 173, \"completion_tokens_details\": {\"reasoning_tokens\": 0}, \"prompt_tokens\": 209, \"prompt_tokens_details\": {\"cached_tokens\": 0}, \"total_tokens\": 382}\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.9,
+  "audio_files": []
+}

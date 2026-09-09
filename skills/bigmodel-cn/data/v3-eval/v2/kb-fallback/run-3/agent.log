@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部完成。定稿已通读复核，交付内容如下。
+
+## 交付
+
+`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/kb-fallback/run-3/outputs/main.py`（仅此一个文件，`py_compile` 通过）
+
+## 设计：三级降级，保证一定打印出检索片段
+
+| 路径 | 方案 | 触发条件 |
+|---|---|---|
+| **A** | 智谱托管知识库：`POST /llm-application/open/knowledge` 建库 → `upload_document` 上传 faq.txt → 轮询文档 `embedding_stat==1` → `knowledge/retrieve` 打印切片原文 | Key 可用且知识库服务正常 |
+| **B** | 平台 Embeddings 自建检索：本地切片 + `/paas/v4/embeddings`（embedding-3, 1024 维）向量化，纯 Python 余弦排序 | 知识库任一环节失败（技能手册实测过个人账号向量化全部失败的案例） |
+| **C** | 纯本地字符二元组词法检索，零外部依赖 | Key 缺失 / 网络全断，兜底到底 |
+
+**清理**：路径 A 无论成败都在 `finally` 里 `DELETE /llm-application/open/knowledge/{id}`（级联删文档）；B/C 不产生服务端资源。
+
+## 按手册避坑（速查表第 9、10 条）
+
+- 知识库族接口**出错时 HTTP 仍是 200**，`kb_call` 统一判 `body["code"] == 200`，不依赖 `raise_for_status()`；
+- **上传成功 ≠ 可检索**：轮询 `GET /document/{id}` 的 `embedding_stat`（0 处理中/1 成功/2 失败），拿到 2 连同 `failInfo.embedding_msg` 直接降级；超时（约 3 分钟）也降级；
+- 检索返回空数组同样视为路径不可用降级，不停在报错上。
+
+## 验证情况（如实说明）
+
+- `python3 -m py_compile` 通过；
+- 实际执行过**无 Key 场景**（设计为零网络调用，直接走路径 C）：exit 0，top-1 命中完整「退换货政策」段落（0.40 分，明显领先第二名 0.19），原文片段全部打印；
+- 路径 A/B 的接口细节已与官方文档逐字段核对（[创建知识库](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93)、[知识库检索](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2)、[知识库 FAQ](https://docs.bigmodel.cn/cn/faq/knowledge-base)），但因当前环境没有可用 Key，**未对真实 API 发起过调用**——设好 `ZHIPUAI_API_KEY` 后 `python3 main.py` 即可实测 A/B 路径。

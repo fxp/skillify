@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "模型：glm-4.6（thinking 已关闭，避免推理 token 占用 max_tokens 预算）\n网关硬上限 max_tokens=1000，本脚本单次请求 max_tokens=800，共 5 次请求\n\n[请求 1] 第 1/5 节《一、出口总体规模与增速》（第 1 次尝试，max_tokens=800，<= 上限 1000）...\n  finish_reason=stop, completion_tokens=66, 本节汉字数=102\n  [重试] 第 1 节《一、出口总体规模与增速》正文仅 102 个汉字，低于单节下限 130，内容不完整\n[请求 2] 第 1/5 节《一、出口总体规模与增速》（第 2 次尝试，max_tokens=800，<= 上限 1000）...\n  finish_reason=stop, completion_tokens=66, 本节汉字数=106\n  [重试] 第 1 节《一、出口总体规模与增速》正文仅 106 个汉字，低于单节下限 130，内容不完整\n[请求 3] 第 1/5 节《一、出口总体规模与增速》（第 3 次尝试，max_tokens=800，<= 上限 1000）...\n  finish_reason=stop, completion_tokens=77, 本节汉字数=116\n  [重试] 第 1 节《一、出口总体规模与增速》正文仅 116 个汉字，低于单节下限 130，内容不完整\n",
+  "stderr": "生成失败：卡在第 1 节《一、出口总体规模与增速》：重试 2 次仍失败，最后原因：第 1 节《一、出口总体规模与增速》正文仅 116 个汉字，低于单节下限 130，内容不完整\n",
+  "timed_out": false,
+  "seconds": 22.6,
+  "audio_files": []
+}

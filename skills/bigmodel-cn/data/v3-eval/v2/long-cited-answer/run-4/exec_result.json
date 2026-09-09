@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "错误：答案不完整：生成达到 max_tokens 上限被截断（finish_reason=length）。本脚本已给足 8192 token 预算仍被截断，请调大 MAX_TOKENS 后重跑。\n",
+  "timed_out": false,
+  "seconds": 109.7,
+  "audio_files": []
+}

@@ -1,0 +1,16 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+完成！我已经帮你修复了代码。主要改动如下：
+
+1. **修正了 API 端点**：从标准的 `https://open.bigmodel.cn/api/paas/v4/chat/completions` 改为 Coding Plan 专用的 `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`
+
+2. **优化了环境变量读取**：使用 `os.environ.get("GLM_KEY")` 并添加了检查，如果未设置环境变量会抛出明确的错误
+
+3. **添加了 Content-Type 头**：虽然 requests 通常会自动设置，但显式声明更规范
+
+4. **保留了原有的功能逻辑**：仍然读取 GLM_KEY 环境变量，询问模型"用一句话介绍 Python"，并将回答打印到 stdout
+
+5. **添加了错误处理**：使用 `raise_for_status()` 来检查 HTTP 请求是否成功
+
+代码已经通过编译验证，语法正确。现在你只需要设置环境变量 `GLM_KEY` 为你的 Coding Plan API Key，然后运行这个脚本就能正常工作了。

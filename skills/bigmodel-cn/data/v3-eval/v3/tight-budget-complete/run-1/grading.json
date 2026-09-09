@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 44.5s :: thinking 已关闭，思考 token 不占 max_tokens 预算）\n[进度] 撰写小节：一、总体规模与增长态势\n[进度] 撰写小节：二、区域市场与目的地结构\n[进度] 撰写小节：三、竞争格局与头部企业\n[进度] 撰写小节：四、价格、成本与盈利\n[进度] 撰写小节：五、风险因素与全年展望\n"
+    },
+    {
+      "text": "正文 ≥600 汉字",
+      "passed": true,
+      "evidence": "正文汉字=1067"
+    },
+    {
+      "text": "遵守 max_tokens ≤ 1000",
+      "passed": true,
+      "evidence": "max_tokens取值=[32]"
+    },
+    {
+      "text": "没有把截断的半截内容丢出来",
+      "passed": true,
+      "evidence": "enough=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v3"
+}

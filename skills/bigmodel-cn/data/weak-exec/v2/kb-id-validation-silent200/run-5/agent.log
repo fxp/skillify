@@ -1,0 +1,30 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+完成！我已经按照要求创建了一个完整的知识库ID校验脚本。以下是脚本的主要特点：
+
+## 脚本特点
+
+1. **严格校验**：遵循"宁可误报无效，不能放坏ID上线"的原则
+2. **正确处理智谱API特性**：
+   - 知识库接口总是返回HTTP 200，真实错误在`code`字段中
+   - 已正确处理这个静默陷阱
+3. **清晰的输出**：明确打印校验结论和详细信息
+4. **环境变量配置**：
+   - `ZHIPU_KB_ID`: 要验证的知识库ID
+   - `ZHIPUAI_API_KEY`: 智谱API Key
+5. **可靠的错误处理**：包括网络错误、认证错误、API错误等
+6. **可集成到流水线**：设置了不同的退出码供流水线判断
+
+## 使用方法
+
+```bash
+# 设置环境变量
+export ZHIPU_KB_ID="your_knowledge_base_id"
+export ZHIPUAI_API_KEY="your_api_key"
+
+# 运行脚本
+python3 main.py
+```
+
+脚本已经通过编译测试，可以直接运行。成功时返回退出码0，失败时返回1或2（根据错误类型），适合用作发布流水线的卡点检查。

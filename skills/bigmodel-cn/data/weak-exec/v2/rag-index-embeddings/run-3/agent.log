@@ -1,0 +1,24 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+太好了！脚本编译成功。让我再检查一下脚本是否完整符合要求：
+
+1. ✅ 读取 faq.txt 文件（150行）
+2. ✅ 使用 embedding-3 模型向量化每一行
+3. ✅ 保存结果到 vectors.json
+4. ✅ 查询"发票怎么开"
+5. ✅ 计算余弦相似度，取top-3
+6. ✅ 输出到stdout
+7. ✅ 从环境变量 ZHIPUAI_API_KEY 读取API Key
+8. ✅ 只使用requests库，没有使用numpy
+9. ✅ 可以直接 python3 main.py 运行
+
+脚本已经创建并保存到指定路径。由于没有可用的 API Key，我无法实际运行测试，但代码逻辑完全符合要求，并且已经通过编译验证。
+
+脚本的核心功能说明：
+- `load_faq_questions()`：读取 FAQ 文件，每行作为一个问题
+- `get_embedding()`：调用智谱 embedding-3 API 获取文本向量
+- `cosine_similarity()`：手动计算余弦相似度（没有使用numpy）
+- `main()`：主流程，包含完整的向量化、保存和检索逻辑
+
+脚本会输出处理进度和最终找到的 top-3 最相关问题。

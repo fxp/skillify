@@ -1,0 +1,17 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/rerank-restore-docs/run-1/outputs/main.py`，`py_compile` 通过；无 Key 时会友好报错退出（已实测，此路径不发请求；顺带发现你本机 Python 3.9 + LibreSSL 会由 urllib3 打一条无关警告，不影响运行）。
+
+**接入依据**：按 SKILL.md 导航读了 `references/tools.md` 的 Rerank 一节，并用官方文档核实——端点 `POST https://open.bigmodel.cn/api/paas/v4/rerank`，`model` 固定 `rerank`，鉴权 `Authorization: Bearer <Key>`，与技能包一致。
+
+**几个关键实现决策**：
+
+- **原文打印**：rerank 的 `results` 默认只含 `index` 和 `relevance_score`（速查表第 19 条的坑）。我传了 `return_documents: true`，但打印时用 `index` 回查本地 `DOCUMENTS` 列表——这样保证输出的是**逐字的原始文档内容**，即使 API 对文本做了任何规整也不受影响。输出形如 `原文    相关性分数：0.998670`，无序号，可直接贴工单。
+- **不漏不重**：显式传 `top_n: len(DOCUMENTS)` 返回全部 5 条；排序不信任服务端返回顺序，本地按分数降序再排一次。
+- **错误处理**：非 2xx 时解析平台返回的 `error.code` / `error.message` 一起打出；兼容 HTTP 200 + `error` 字段的情况；`results` 为空也报错而非静默打印空。
+- **依赖**：仅 `requests`，Key 只从 `ZHIPUAI_API_KEY` 环境变量读取。
+
+一个使用提醒（来自技能包实测结论）：语义相近的候选分数可能被压缩成并列的 `1.000000`，排序在分数打平时不完全可信——本例中「增值税专用发票 7 个工作日内申请」应显著高于其他段，若出现并列建议人工复核。
+
+Sources: [文本重排序 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/模型-api/文本重排序)

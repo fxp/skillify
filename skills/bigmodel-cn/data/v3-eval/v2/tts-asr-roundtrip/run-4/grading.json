@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 6.1s :: \n[FAIL] 步骤 3/3 比对：转写内容与原文不一致（音频能合成、也能转写，但回环内容校验未通过）\n       归一化后原文：'发票需要在七个工作日内申请'\n       归一化后转写：'发票需要在7个工作日内申请'\n\n冒烟测试结论：❌ 语音链路未打通，卡在上述步骤。\n"
+    },
+    {
+      "text": "落盘音频是真 WAV/MP3 而非裸 PCM",
+      "passed": true,
+      "evidence": "files=[('smoke_audio.wav', '52494646')]"
+    },
+    {
+      "text": "ASR 真的转写出了内容",
+      "passed": true,
+      "evidence": "最长汉字重合=13"
+    },
+    {
+      "text": "给出了比对结论且转写确实成功",
+      "passed": true,
+      "evidence": "verdict=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2"
+}

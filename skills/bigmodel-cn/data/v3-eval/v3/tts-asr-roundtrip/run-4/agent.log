@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/tts-asr-roundtrip/run-4/outputs/main.py`，`py_compile` 编译通过，无 Key 时的报错路径也实测正常（exit 1 并明确指出卡在哪一步）。
+
+## 脚本做什么
+
+```
+ZHIPUAI_API_KEY → TTS 合成 → 落盘 wav → ASR 转写 → 与原文比对 → ✅/❌ 结论
+```
+
+- **TTS**：`POST /paas/v4/audio/speech`，`model=glm-tts`、`voice=tongtong`、`response_format="wav"`，成功响应是二进制音频（不是 JSON），直接写文件
+- **ASR**：`POST /paas/v4/audio/transcriptions`，multipart 上传刚生成的 wav，`model=glm-asr-2512`，从响应 `text` 字段取转写结果
+- **比对**：去掉标点/空白归一化后比较，再用 `difflib` 算相似度——完全一致或 ≥90% 判通过（容忍 ASR 把「七个」写成「7个」这类数字写法差异）
+
+## 按说明书避开的坑（速查表第 18 条）
+
+**TTS 默认返回裸 PCM，而 ASR 只收 wav/mp3**——所以脚本显式传 `response_format: "wav"`，并且不信任后缀：落盘前校验首 4 字节是 `RIFF`，拿到 JSON 错误体或疑似裸 PCM 都会当场报错说明，而不是改个 `.wav` 后缀糊弄过去。
+
+## 失败时怎么报
+
+每步失败都带步骤名 + 平台错误码退出（exit 1），例如 `链路在【ASR 语音识别】这一步断了：HTTP 400，code=1210，message=...`，且音频文件保留在本地供手动排查。转写返回空文本同样算失败，不会出现「已生成音频」就收工的情况。
+
+运行方式：`ZHIPUAI_API_KEY=你的Key python3 main.py`（当前环境没有 Key，我只做了编译和无 Key 报错路径的验证，未实际调 API）。
+
+Sources: [文本转语音 API 参考](https://docs.bigmodel.cn/api-reference/模型-api/文本转语音)、[语音转文本 API 参考](https://docs.bigmodel.cn/api-reference/模型-api/语音转文本)、[GLM-ASR-2512 模型文档](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-asr-2512)

@@ -1,0 +1,16 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/rerank-restore-docs/run-4/outputs/main.py`，未产生其他文件。
+
+**依据**：按 `SKILL.md` 指引读了 `references/tools.md` 的 Rerank 章节，并用 WebFetch 核对了[官方文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E9%87%8D%E6%8E%92%E5%BA%8F)——两者一致：`POST https://open.bigmodel.cn/api/paas/v4/rerank`，Bearer 鉴权，`model` 固定为 `rerank`，响应为 `results[].{index, document, relevance_score}`。
+
+**脚本要点**：
+
+- **只依赖 `requests`**（加标准库 `os`/`sys`），`python3 main.py` 直接可跑；Key 从 `ZHIPUAI_API_KEY` 环境变量读取，缺失时给出明确提示退出。
+- **打印的一定是原文**：不使用响应里的 `document` 字段，而是按 `results` 的 `index` 回溯到输入的 `DOCUMENTS` 列表，保证逐字与候选原文一致（这也使脚本不依赖 `return_documents` 参数）。
+- **排序在代码里做**：官方文档未承诺 `results` 按分数降序返回，所以客户端按 `relevance_score` 从高到低 `sorted`，输出顺序有保证。
+- **输出格式**为每行 `原文（相关性：0.xxxx）`，无序号、无额外字段，可直接整段贴进工单。
+- 对非 200 响应、返回体缺 `results`、`index` 越界都做了带原始响应文本的报错退出，方便排障。
+
+**验证**：`python3 -m py_compile` 通过；无 Key 空跑确认走缺 Key 分支干净退出（输出中的 urllib3 OpenSSL 警告来自本机 Python 3.9 + LibreSSL 环境，与脚本无关）。未真实调用 API。

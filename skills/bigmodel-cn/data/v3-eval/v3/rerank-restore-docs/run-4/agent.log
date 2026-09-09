@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/rerank-restore-docs/run-4/outputs/main.py`，`python3 -m py_compile` 编译通过；无 Key 时运行会干净地报错提示（exit 1，无堆栈），未真正调用 API。
+
+**接口细节已对照技能包 references/tools.md 并用 WebFetch 核实官方文档**：`POST https://open.bigmodel.cn/api/paas/v4/rerank`，`model` 固定为 `rerank`，鉴权 `Authorization: Bearer <ZHIPUAI_API_KEY>`。
+
+针对你的输出要求，有两个关键实现决策：
+
+1. **打印的一定是原文**——技能包速查表第 19 条坑指出：rerank 的 `results` 默认**只有 `index` 和分数、没有原文**。脚本因此传了 `return_documents: true`，且打印时用 `index` 回溯本地候选数组取原文（双保险，即使接口对文本做了处理也保证输出的是你给的原文）。输出不带序号，每行格式为 `原文  分数: x.xx`，可直接贴进工单。
+2. **全部 5 条都输出、按分数降序**——不传 `top_n`（默认 0 = 返回全部），并对结果再按 `relevance_score` 降序排一次，确保从高到低。
+
+预期有 Key 时输出类似（分数以实际返回为准）：
+
+```
+增值税专用发票需在订单完成后 7 个工作日内申请，逾期需联系客服  分数: 0.99...
+普通发票支持随时申请，无时间限制  分数: 0.6...
+签收后 15 日内可无理由退货，商品需保持完好  分数: 0.1...
+公司地址位于北京市海淀区，工作日 9:00-18:00 办公  分数: 0.0...
+满 199 元包邮，偏远地区除外  分数: 0.0...
+```
+
+另外提醒一点（同样来自速查表第 19 条实测）：语义相近的候选分数可能被压缩到并列 `1.0000000000`，如果遇到两个 1.0 并列，排序不完全可信，建议把前几条都留给客服看，不要只取第一名。
+
+Sources: [文本重排序 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E9%87%8D%E6%8E%92%E5%BA%8F)

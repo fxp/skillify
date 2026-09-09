@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，交付目录只有这一个文件。
+
+## 我做了什么调整、为什么
+
+**核心问题：`glm-5.3` 目前不能跑 Batch。** 智谱的 Batch API 有一份独立的模型白名单（不是平台全部模型），旗舰 `glm-5.3` 不在其中——而且校验发生在**文件上传阶段**（`purpose=batch` 上传时就报 `1210 模型名称错误`），根本轮不到创建 batch 任务。
+
+**我的调整：模型候选链自动降级。** 脚本按质量从高到低依次尝试 `glm-5.3 → glm-5.1 → glm-4-plus`：
+
+- 先照原要求试 `glm-5.3`——白名单会随平台更新变化，如果哪天它进了白名单就直接用上，不留遗憾
+- 被拒后自动降级到 **`glm-5.1`**（白名单内质量最强的模型），兜底 `glm-4-plus`
+- 降级发生时运行输出会明确打印原因和最终用了哪个模型，不会悄悄换
+
+这样「任务跑成」和「质量尽量高」两个目标都保住了：白名单内 `glm-5.1` 是最优解，比它更好的模型在 Batch 里根本提交不进去。
+
+## 脚本要点（对应接入手册里的实测坑）
+
+- **`custom_id` 用 `request-l0001` 格式**——有未文档化的 6 字符下限，短了上传直接报错
+- **输出约束用 `response_format: {"type": "json_object"}` + prompt 写死结构**——`json_schema` 会被静默忽略；要求模型只回 `{"sentiment": "正面|负面|中性"}`
+- **`max_tokens=2048`**——思考模型的推理 token 也计入预算，给少了会拿到空内容
+- 只依赖 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取；限流/5xx 指数退避重试，鉴权、余额不足（`1113`，含误用 Coding Plan 套餐 Key 的提示）这类重试无意义的错误直接报清楚退出
+- 上传 `purpose=batch` → 创建 batch（`endpoint: /v4/chat/completions`）→ 打印 `batch_id` 后退出，不等待跑完；创建失败时会顺手清理刚上传的输入文件
+
+## 验证情况（如实说明）
+
+环境里没有可用 Key，**没有真实调过 API**。做了三层不联网的验证：`py_compile` 编译通过；本地逻辑测试（读文件跳空行、jsonl 每行结构和 `custom_id` 长度、`1210+模型` 错误识别、鉴权/余额错误路径）；mock 掉 HTTP 层的端到端干跑——`glm-5.3` 被拒自动降级 `glm-5.1` 成功打印 batch id，以及 `glm-5.3` 直接可用两条路径都验证通过。测试还顺手逮住并修掉一个真 bug（prompt 模板里的 JSON 花括号会被 `str.format()` 当占位符，已改用 `replace`）。
+
+跑的时候把 `comments.txt` 放到 `main.py` 同目录，`export ZHIPUAI_API_KEY=...` 后 `python3 main.py` 即可。注意必须用**标准 API Key**（Coding Plan 套餐 Key 不含 Batch 能力），且账户需完成实名认证。

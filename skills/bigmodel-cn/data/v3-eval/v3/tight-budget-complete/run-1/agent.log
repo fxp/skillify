@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 思路：1000 token 硄预算下怎么拿到 600+ 汉字完整正文
+
+按 SKILL.md 的实测结论推演，单请求 1000 token 直接生成整篇是死路：
+
+| 问题 | 依据 | 对策 |
+| :-- | :-- | :-- |
+| 思考 token 计入 `max_tokens`，600 字简报的思考链就要 2400+ token | 速查表 #13 | 显式传 `thinking:{"type":"disabled"}` |
+| `glm-5.3`/`glm-4.7` 在标准端点**关不掉思考**（传 disabled 报 1210） | 速查表 #14、models.md | 选可关思考的 `glm-5.2`，备选 `glm-4.6`/`glm-4.5`（探测降级） |
+| 关思考后整篇也要 ~1500 token，仍超 1000 | 补救表第 ③ 条 | **分段生成再拼接**：5 个小节 × 约 200 汉字，单节 ~250 token，预算内绰绰有余 |
+| 撞上 `finish_reason=length` 怎么办 | 补救表“不要报错退出” | max_tokens 不能加（硬约束），只能压篇幅重写：180→120→70 字三级阶梯，拿到完整稿才继续 |
+| 字数不达标 / 拿不到 | “不要丢半截给我” | 拼接后实数汉字，<600 自动补写延伸小节；仍不行就明确报卡点退出，不把半截当成品 |
+
+其它落实的实测细节：完成度判 `finish_reason` 而非空串（#13）、回显 `model` 与请求不一致只报警不中断（#2/#3）、1113 报错附带“套餐 Key 别打标准端点”的排查提示而非让用户充值。
+
+## 硬约束的保障
+
+- 所有请求统一 `MAX_TOKENS_PER_REQUEST = 1000`，请求函数入口有断言，任何路径都发不出超限请求；
+- 结束时打印**请求审计**（每次的 model / max_tokens / finish_reason / completion_tokens），运行后可自证。
+
+## 验证结果
+
+- `python3 -m py_compile` 通过；
+- 无 Key 路径：`env -u ZHIPUAI_API_KEY python3 main.py` → 明确报“环境变量未设置”退出码 2，不输出半截内容；
+- 离线 mock 两个场景（不碰真实 API）：**正常路径** 6 次请求全部 ≤1000、拼出 1258 汉字并打印全文与字数；**每节首稿被截断**的路径下，压缩阶梯全部自动救回，11 次请求仍全部 ≤1000；
+- 按你的要求没有真实调用 API（环境无 Key），真实运行执行：`export ZHIPUAI_API_KEY=<Key> && python3 main.py`。
+
+一个说明：简报中的数据由模型生成（未接联网搜索工具），若需要可核查的来源数据，可以再加 `web_search` 工具链，但那会引入 `search_result`/`search_engine` 一系列新坑，本次任务未要求，我没有加。

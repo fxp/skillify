@@ -1,0 +1,23 @@
+Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+完成！我已经修复了代码中的问题：
+
+## 问题分析
+原代码报 429 错误 `{"error": {"code": "1113", "message": "余额不足或无可用资源包,请充值。"}}` 的原因是：
+- 你使用的是 GLM Coding Plan Max 套餐的 API Key
+- 但代码错误地使用了标准 API 的端点 `https://open.bigmodel.cn/api/paas/v4`
+- Coding Plan 套餐必须使用专用端点 `https://open.bigmodel.cn/api/coding/paas/v4`
+
+## 修复内容
+1. **Base URL 修改**：从 `https://open.bigmodel.cn/api/paas/v4` 改为 `https://open.bigmodel.cn/api/coding/paas/v4`
+2. **环境变量**：从 `ZHIPUAI_API_KEY` 改为 `GLM_KEY`（按照你的要求）
+3. **代码结构**：保持了原有的简洁风格，只是修复了关键问题
+
+## 验证结果
+- 代码已成功编译，没有语法错误
+- 脚本会读取环境变量 `GLM_KEY` 获取你的 Coding Plan API Key
+- 调用后会打印模型的回答到 stdout
+
+现在这段代码应该能正常运行了。记得在使用前设置环境变量 `export GLM_KEY="你的Coding Plan API Key"`。

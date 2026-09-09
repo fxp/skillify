@@ -1,0 +1,34 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付并验证通过。
+
+## 交付内容
+
+`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/rerank-restore-docs/run-5/outputs/main.py`
+
+- **接口**：`POST https://open.bigmodel.cn/api/paas/v4/rerank`，`model: "rerank"`，Bearer 鉴权从 `ZHIPUAI_API_KEY` 环境变量读取（SKILL.md 与官方文档交叉确认一致）
+- **只依赖 `requests`**（外加标准库 `os`/`sys`），可直接 `python3 main.py` 运行，`python3 -m py_compile` 编译通过
+- **输出格式**：每行 = 文档原文 + 分数，按相关性从高到低，**无序号**，可直接贴进工单
+
+## 两个关键实现决策
+
+1. **客户端自行降序排序**：官方文档并未承诺 `results` 数组按分数降序返回（只说 `top_n` 取最高分的前 n 条），所以脚本用 `relevance_score` 在本地重新排序，不依赖服务端行为。
+2. **用 `index` 回溯本地列表取原文**：而不是直接用响应里的 `document` 字段——`index` 对应输入数组下标，从本地 `DOCUMENTS` 取值能保证打印的是逐字原文，不受服务端可能做文本处理的影响。
+
+## 验证
+
+用 mock 响应（故意乱序、index 打乱）离线跑通了完整逻辑，输出符合预期：
+
+```
+增值税专用发票需在订单完成后 7 个工作日内申请，逾期需联系客服 （相关性分数：0.9865）
+普通发票支持随时申请，无时间限制 （相关性分数：0.5120）
+签收后 15 日内可无理由退货，商品需保持完好 （相关性分数：0.0741）
+公司地址位于北京市海淀区，工作日 9:00-18:00 办公 （相关性分数：0.0234）
+满 199 元包邮，偏远地区除外 （相关性分数：0.0081）
+```
+
+（分数为 mock 数据，真实分数以实际调用为准。测试时的 urllib3 警告来自本机 Python 3.9 的 requests 环境，与脚本本身无关。）
+
+Sources:
+- [文本重排序 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%25E6%25A8%25A1%25E5%259E%258B-api/%25E6%2596%2587%25E6%259C%25AC%25E9%2587%258D%25E6%258E%2592%25E5%25BA%258F)

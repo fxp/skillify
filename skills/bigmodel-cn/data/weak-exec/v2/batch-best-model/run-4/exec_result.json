@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/batch-best-model/run-4/work/main.py\", line 107, in main\n    comments = read_comments()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/batch-best-model/run-4/work/main.py\", line 18, in read_comments\n    with open(comments_file, 'r', encoding='utf-8') as f:\nFileNotFoundError: [Errno 2] No such file or directory: '/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/batch-best-model/comments.txt'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/batch-best-model/run-4/work/main.py\", line 138, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/batch-best-model/run-4/work/main.py\", line 128, in main\n    except requests.exceptions.RequestException as e:\nUnboundLocalError: local variable 'requests' referenced before assignment\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录下只有这一个文件），`python3 -m py_compile` 编译通过，无 Key 时优雅报错退出（exit 1，不发网络请求；那条 OpenSSL warning 是本机 Python 3.9 环境的 urllib3 提示，与脚本无关）。
+
+**依据**：先读了 `bigmodel-cn-v3/SKILL.md`，其速查表第 19 条直接命中本任务（rerank 的 `results` 默认只有 `index` 和分数、没有原文，需传 `return_documents: true`），再到 `references/tools.md` 的 Rerank 一节拿到完整参数表，并用 WebFetch 核对了官方文档——端点 `POST https://open.bigmodel.cn/api/paas/v4/rerank`、`model` 固定为 `rerank`、`top_n` 默认 0 返回全部，与技能包一致。
+
+**脚本关键点**：
+
+- **原文输出**：用响应里的 `index` 回溯到本地 `DOCUMENTS` 列表取原文（以本地为准，不依赖 API 回显），每行只打印 `原文 + 相关性分数`，没有任何序号——可以直接贴工单。
+- **显式降序排序**：官方文档未保证 `results` 按分数降序，代码里自己按 `relevance_score` 排序兜底。
+- 只用了 `requests`；Key 从 `ZHIPUAI_API_KEY` 读取，缺失时给出明确提示；带 `timeout=30` 和 `raise_for_status()`。
+- `return_documents: true` 照速查表第 19 条传上，双保险。
+
+预期输出形如（分数以实际调用为准）：
+
+```
+问题：增值税专用发票要多久内申请
+按相关性从高到低：
+增值税专用发票需在订单完成后 7 个工作日内申请，逾期需联系客服    相关性分数：0.9987
+普通发票支持随时申请，无时间限制    相关性分数：0.4xxx
+...
+```
+
+一个提醒（来自速查表第 19 条的实测结论）：语义相近的候选分数可能被压缩到接近甚至并列，若客服工单需要严格依赖排序，建议把前几名都贴上而不是只取第一名——本脚本已输出全部 5 条及分数，满足这个用法。
+
+Sources: [文本重排序 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E9%87%8D%E6%8E%92%E5%BA%8F)

@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，可直接 `ZHIPUAI_API_KEY=xxx python3 main.py` 运行（本环境无 Key，未真实调用 API）。
+
+**`max_tokens ≤ 1000` 硬约束是怎么满足的**
+- 简报拆成 **5 节、每节独立一次请求**，每次 `max_tokens=800`（留 200 余量），请求前还有断言 `MAX_TOKENS_PER_REQUEST ≤ 1000` 兜底；5 节拼装后正文目标 750–1100 汉字，稳超 600。
+- 模型选 `glm-4.6` 并显式传 `thinking: {"type": "disabled"}`。这是关键：技能包实测陷阱 #13/#14 指出**思考 token 计入 `max_tokens`**，而 `glm-5.3` 在标准端点强制思考关不掉（传 `disabled` 报 1210）——小预算下会拿到 `finish_reason=length` + 空 content。`glm-4.6` 支持显式关闭，已用官方文档核实。
+
+**完整性保障（不丢半截）**
+- 每节校验 `finish_reason == "stop"`、content 非空、单节 ≥130 汉字，失败自动重试 2 次；
+- 终检：正文（不含标题）≥600 汉字才交付，否则打印卡在哪一节/哪一步（缺 Key、HTTP 错误、API 错误码、截断、字数不足），`exit 1`；
+- 附带防坑细节：读回响应 `model` 字段核对是否被静默换模型。
+
+**验证结果**
+- `python3 -m py_compile` 通过；
+- 无 Key 运行 → 立即报「卡在鉴权」，exit 1；
+- 离线桩测试：短内容被正确拒绝不交付；正常路径 5 次请求全部走完，正文 840 汉字 ≥ 600，末尾打印全文 + 「正文字数（不含标题，汉字）」与「全文字数（含标题，汉字）」两个口径。
+
+一处说明：简报里的市场数据由模型按公开口径估计生成（未接联网搜索），如需真实数据可以再加 `web_search` 工具，但那会引入新的参数面，当前版本优先保证约束下的完整交付。

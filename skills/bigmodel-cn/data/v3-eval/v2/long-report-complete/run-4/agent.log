@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/long-report-complete/run-4/outputs/main.py`，未实际调用 API（无可用 Key），但已通过编译和逻辑干跑验证。
+
+## 脚本设计（对应说明书的实测踩坑点）
+
+| 措施 | 依据 |
+| :-- | :-- |
+| `max_tokens: 8192` 给足预算，并用 `reasoning_effort: "low"` 调低思考强度 | 速查表 #13：glm-5.3 思考 token 计入 `max_tokens`，预算小了会 `finish_reason=length` 且 content 为空 |
+| **不传** `thinking` 参数（保持默认开启） | 速查表 #14：标准端点传 `disabled` 直接报 1210 |
+| 完整性判据用 `finish_reason` + 结尾句读检查，而非"内容非空" | 速查表 #13 的明确建议 |
+| 同步端点 `POST /paas/v4/chat/completions`，不读回显 model 做版本核对的需求 | 速查表 #2/#3 只影响异步/Coding 端点，同步不换模型 |
+
+**残缺内容自愈（核心需求）**：
+1. `finish_reason == "length"` 或结尾不是自然句读 → 自动把已生成内容拼回对话、要求“从中断处续写”，循环直到自然收尾（最多 4 轮）；
+2. 续写后仍不合格（字数 <600 / 小标题 <3 / 具体数据 <5 处）→ 带具体问题反馈重新生成（最多 4 次，`max_tokens` 逐次翻倍）；
+3. 全部失败 → 报错退出（exit 1），**绝不打印半截简报**。
+
+**最终输出**：打印简报全文 + 明确的交付确认行（字数达标：X 字 ≥ 600 字，含汉字数口径；内容完整：自然收尾、未截断、小节数与数据处数）。Key 从 `ZHIPUAI_API_KEY` 读取，缺失时给出明确提示并退出。运行方式：`ZHIPUAI_API_KEY=你的Key python3 main.py`。
+
+**验证情况**：`py_compile` 通过；用 mock `call_chat` 干跑了 5 条路径——正常生成、中句截断后续写拼接（拼接后去空白与全文一致、校验零问题）、过短带反馈重试、反复失败拒绝兜底、缺 Key 退出码 1——全部符合预期。请求参数（端点、`reasoning_effort` 取值、max_tokens 上限）已用 WebFetch 对照 docs.bigmodel.cn 官方页面核实。
+
+唯一未覆盖的是真实 API 的端到端行为（环境无 Key 跑不了），拿到 Key 后直接跑即可；如果模型侧出现说明书未记载的新报错，脚本会把 API 原始错误信息打出来便于排查。

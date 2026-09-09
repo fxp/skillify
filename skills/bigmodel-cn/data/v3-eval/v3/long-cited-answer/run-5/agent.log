@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，所有失败路径都用模拟数据验证过。
+
+## 方案要点
+
+按 SKILL.md 指引读了 `references/tools.md`（联网搜索）、`chat.md` / `chat-advanced.md`（web_search 工具参数），并用 WebFetch 对照了官方文档确认参数名。走的是 `chat/completions` + `web_search` 工具一体化路径（模型自动检索并生成回答），针对任务两条硬性要求逐一设防：
+
+**① 答案完整性（速查表 #13）**
+- 用 `finish_reason` 判断而非内容长度：`length` = 被 `max_tokens` 截断（glm-5.3 思考 token 计入预算）
+- 撞上后不报错退出，按 8192 → 24576 → 65536 的梯度自动放大预算重试；`sensitive`/`network_error` 等非正常结束直接放弃该引擎
+- 全部失败才报错，且逐条列出每次尝试的失败原因
+
+**② 可点击来源链接（速查表 #4、#5，两个最隐蔽的静默陷阱）**
+- 引擎选 `search_pro_bing`（官方参数表没列但实测可用）——**没有用 `search_pro`**，它的 `link` 恒为空串，HTTP 200 一切正常就是没链接
+- 显式传 `search_result: true`，否则响应里根本没有 `web_search` 来源数组
+- 链接校验只认 `http(s)://` 开头的真实 URL，去重后需 ≥2 条；不足则自动换 `_quark` → `_sogou` → `_jina` 引擎重跑，全空才报错（对应补救表「换 search_engine 重跑，不要当成平台不提供链接」）
+
+**其他细节**：Key 从 `ZHIPUAI_API_KEY` 读取，缺失时明确报错；只用 requests；回显 `model` 与请求不一致时告警（速查表 #2）；网络超时/连接错误带退避重试 3 次。
+
+## 已验证的行为（离线模拟，未调真实 API）
+
+- 编译通过；无 Key → 明确报错 exit 1
+- 链接提取：空串 link、`javascript:` 伪协议、重复 URL 均被正确过滤
+- 模拟「截断 + link 全空 + 1113 欠费」组合失败 → 汇总报错列出全部 6 次尝试的具体原因，exit 1，不输出半截结果
+
+拿到有效 Key 后 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可跑通；输出为「答案 + 编号来源列表（标题/URL/媒体/日期）」，可直接贴进周报。

@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "错误: [Errno 2] No such file or directory: '../run-3/faq.txt'\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1
+}

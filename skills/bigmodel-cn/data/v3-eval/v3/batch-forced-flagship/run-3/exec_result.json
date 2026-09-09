@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "从 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/batch-forced-flagship/run-3/work/comments.txt 读到 20 条评论\n正在上传 batch 请求文件（模型 glm-5.3）…\n\n⚠️  服务端拒绝了 glm-5.3 的请求文件：\n    错误码 1210：[logID=20260908160000d42ff8cad0ed4cab] 模型名称错误: glm-5.3, 目前支持的模型: glm-5.1, glm-5-turbo, glm-4, glm-4-0520, glm-4-plus, glm-4-long, glm-4-plus-0111, glm-4-air, glm-4-air-0111, glm-4-air-250414, glm-4-flash, glm-4-flashx-250414, glm-3-turbo, glm-4v, glm-4v-plus, glm-5v-turbo, glm-4v-plus-0111, cogview-3, cogview-3-plus, cogview-4-250304, embedding-2, embedding-3, cogvideox, cogvideox-2\n    原因：Batch API 只支持一份独立的模型白名单，且在文件上传\n    阶段就校验；旗舰 glm-5.3 不在白名单内，重试同样的\n    模型没有意义。自动改用白名单内质量最强的 glm-5.1。\n\n正在上传 batch 请求文件（模型 glm-5.1）…\n上传成功（文件 id：1788854402_f6f8f1d8266a4d57a15c4fbb0ab0d9c9），正在创建 batch 任务…\n\n============================================================\n✅ Batch 任务创建成功（不等待跑完）\n   batch 任务 id : batch_2097233492900315136\n   实际使用模型  : glm-5.1\n   状态          : validating\n   请求数        : 20\n============================================================\n注：首选 glm-5.3 被 Batch 白名单拒绝，已降级为 glm-5.1\n    （白名单内质量最优的选择）。完整白名单见上面的服务端报错原文。\n任务通常 24 小时内完成，稍后可用下面命令查询进度：\n  curl -H \"Authorization: Bearer $ZHIPUAI_API_KEY\" \\\n    https://open.bigmodel.cn/api/paas/v4/batches/batch_2097233492900315136\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.2,
+  "audio_files": []
+}

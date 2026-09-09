@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 22.8s :: "
+    },
+    {
+      "text": "stdout 至少出现 2 条 http(s) 来源链接",
+      "passed": false,
+      "evidence": "找到 0 条: []"
+    },
+    {
+      "text": "来源取自接口返回（读了 web_search / search_result 数组）",
+      "passed": true,
+      "evidence": "reads_api_sources=True"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 1,
+    "total": 3,
+    "pass_rate": 0.667
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v2",
+  "notes": "graded with the frozen grader from glm-round3b"
+}

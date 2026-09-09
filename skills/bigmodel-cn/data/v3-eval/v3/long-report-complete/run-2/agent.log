@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/long-report-complete/run-2/outputs/main.py`，目录里只有这一个文件。
+
+## 实现要点（依据技能手册的实测陷阱 + 官方文档交叉确认）
+
+**核心风险是截断**。技能陷阱 #13 指出：GLM 思考 token 计入 `max_tokens`，预算不足时 `finish_reason=length`、600 字简报实测要 3000+ token；且 `glm-5.3` 在标准端点思考强制开启、传 `thinking.type=disabled` 直接报 1210（陷阱 #14，官方文档同样确认）。所以脚本的策略是：
+
+| 环节 | 做法 |
+| :-- | :-- |
+| 首轮预算 | `max_tokens=8192`（远超实测 3000 下限），端点 `…/api/paas/v4/chat/completions`，`ZHIPUAI_API_KEY` 环境变量鉴权 |
+| 完整性判据 | `finish_reason == "stop"`（而非"内容非空"）**且** 非空白字数 ≥ 600 **且** 小标题 ≥ 2 个，三项全过才输出 |
+| 三级补救链 | ① 整篇生成 → ② 截断则 `max_tokens` 翻倍至 16384 + `reasoning_effort="low"` 压缩思考开销（glm-5.3 官方支持的降档方式，规避 `disabled` 报错）→ ③ 分三节分段生成、多轮对话承接上下文后拼接，逐节校验 |
+| 不交半截货 | 每轮只打印 `[main]` 进度行；未通过校验的正文**一次都不打印**，三轮全败则列明原因、退出码 1 |
+| 其他加固 | 网络/429/5xx 带退避重试；读回响应 `model` 字段核对回显（日期后缀视为同基座，真正换模型则 ⚠️ 报警）；小标题正则只认 `##`+ 及序号标题，不会把行首 `38.5` 这类数据误判成标题 |
+
+**输出**：跑通后先打印分隔线包住的简报全文，再打印明确确认——`✅ 字数达标：N 字（≥600）`、`✅ 内容完整：finish_reason=stop，未被截断`、`✅ 结构完整`、所用模型与生成轮次；若经历过补救会附一行说明。
+
+**验证情况**（按要求未真实调 API）：`python3 -m py_compile` 通过；另跑了离线冒烟测试——700 字样例通过校验、残缺短文正确拒绝、小标题/字数统计、回显模型比对、缺 Key 时干净报错退出且不发请求，全部符合预期。拿到 Key 后 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可直接跑。

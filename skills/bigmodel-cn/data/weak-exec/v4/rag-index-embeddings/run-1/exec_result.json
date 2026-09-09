@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v4/rag-index-embeddings/run-1/work/main.py\", line 111\n    if __name__ == \"__main__\":\nIndentationError: unexpected unindent\n",
+  "timed_out": false,
+  "seconds": 0.0
+}

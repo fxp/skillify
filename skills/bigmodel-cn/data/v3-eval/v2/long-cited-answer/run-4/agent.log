@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部通过。脚本已交付到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/long-cited-answer/run-4/outputs/main.py`。
+
+## 做法
+
+按 SKILL.md 指引读了速查表和 `tools.md` / `chat.md` / `chat-advanced.md` 的定点章节，并用 WebFetch 对照了 docs.bigmodel.cn 官方文档。任务正好命中速查表里三个「HTTP 200 但静默失效」的坑，脚本针对性处理：
+
+| 坑 | 对策（`main.py` 位置） |
+| :-- | :-- |
+| #4 `search_pro`/`search_std` 的来源 `link` **恒为空串**（官方参数表还在推荐它） | 引擎只用 `search_pro_quark`（官方在列+实测带真实链接），不够 2 条时自动换 `search_pro_sogou` 兜底（`SEARCH_ENGINES`） |
+| #5 不显式传 `search_result: true`，响应里**根本没有** `web_search` 数组——搜索照跑、答案照给、就是没出处 | 显式传 `search_result: true` + `require_search: true`，并对数组缺失给出独立诊断 |
+| #13 思考 token 计入 `max_tokens`，`finish_reason=length` 时 content 为空串——像参数没生效，其实是预算被吃光 | 完整性判据用 `finish_reason == "stop"`（不是看空串），`max_tokens` 显式给足 8192 |
+
+## 报错不糊弄
+
+- 答案被截断（`length`）→ 报错说明「达到 max_tokens 上限被截断」并退出，**不输出半截结果**（换搜索引擎解决不了截断，所以不做无意义重试）；
+- 链接不足 2 条 → 逐引擎报出「返回 N 条、http 开头的仅 M 条 / 未出现引用数组」，退出码 1；
+- `finish_reason=sensitive`/`network_error`、业务错误码（如 1113）、非 JSON 响应、网络异常都有独立报错文案；仅 429/5xx 做指数退避重试（4xx 配置类错误重试无意义，直接报）。
+
+## 验证（未调真实 API）
+
+- `python3 -m py_compile` 通过；
+- 无 Key 运行：清晰中文报错 + 退出码 1；
+- 用 mock 响应离线验证了校验分支：正常路径（去重后恰好 2 条链接）、`length` 截断拦截、`sensitive` 拦截、`stop` 但空 content 拦截、缺 `choices` 拦截，全部按预期。
+
+真跑时 `export ZHIPUAI_API_KEY=<key>` 后 `python3 main.py` 即可，输出为完整答案 + 编号来源列表（标题｜媒体｜可点击 URL）。

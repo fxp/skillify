@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付物在 `outputs/main.py`(目录里只有这一个文件)，编译通过。
+
+## 关键调整：glm-5.3 走不通，已自动降级到 glm-5.1
+
+**这是技能包实测确认的坑(速查表第 7 条)**:Batch 有一份独立于平台的模型白名单，旗舰 `glm-5.3` 不在其中——而且校验发生在**文件上传阶段**(`POST /paas/v4/files`),直接报业务码 `1210 模型名称错误`，根本轮不到创建 batch。官方文档也不登这份白名单(我抓了 docs.bigmodel.cn 的 Batch 页面核对，只有排队上限表)，**报错信息本身是白名单唯一的权威来源**。
+
+所以脚本的处理是：先按你的要求用 `glm-5.3` 上传；撞上 1210 后不重试同款，而是**解析报错信息里的白名单，按质量优先级降级到名单内最强的 `glm-5.1`**(技能包实测的白名单内最优解)，降级原因会在运行时打印出来。如果哪天平台把 glm-5.3 加进白名单，脚本第一次尝试就会直接成功，不需要改代码。
+
+## 脚本流程(按你的要求)
+
+读同目录 `comments.txt`(每行一条)→ 构造 jsonl(`custom_id=request-0001` 格式，每行一个 `/v4/chat/completions` 请求，system prompt 限定只输出 正面/负面/中性)→ `purpose=batch` 上传 → 创建 batch → **打印 batch 任务 id,不等待跑完**。Key 从 `ZHIPUAI_API_KEY` 读，只用 `requests`,`python3 main.py` 直接跑。
+
+## 落实的其他实测细节
+
+- **`custom_id` ≥6 字符**——短了上传阶段就报 1210(与模型错误同码，脚本靠报错文案区分二者)
+- **不传 `thinking` 参数**——首选尝试的 glm-5.3 在标准端点传 `thinking:disabled` 本身就会 1210,统一不传;`max_tokens` 给 2048,防思考链吃光预算拿到空正文
+- **`request_counts` 是嵌套对象**，读 `request_counts.total`(顶层字段是旧文档的错)
+- 网络异常/429/5xx 自动重试 3 次；无 Key、无 comments.txt、空文件都有明确报错
+
+## 验证情况(未真调 API)
+
+- `py_compile` 通过
+- 纯逻辑单测：jsonl 结构与 custom_id 长度、白名单解析(过程中修了一个真 bug:正则漏了版本号里的点号，`glm-5.1` 会被截成 `glm-5`)、1210 三种情形的判别
+- 端到端桩演练：模拟白名单不含 glm-5.3,完整走通 降级→上传→创建→打印 batch_id,尝试顺序 `glm-5.3 → glm-5.1`(解析出白名单后跳过注定失败的 glm-5.2)
+
+Sources: [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)、[Batch API 常见问题](https://docs.bigmodel.cn/cn/faq/batch-api-issues)

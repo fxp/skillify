@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "错误：找不到评论文件 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v1/batch-best-model/run-3/run-2/comments.txt\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1
+}

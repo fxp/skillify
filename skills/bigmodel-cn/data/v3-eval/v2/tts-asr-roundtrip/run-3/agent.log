@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，比对逻辑做了离线自测。
+
+## 做了什么
+
+**按 SKILL.md 指引**：速查表无 TTS/ASR 相关陷阱，按导航读了 `references/media.md` 的「语音转文本（ASR）」「文本转语音（TTS）」两节，并用 WebFetch 核对了官方 API 参考页，两边一致：
+
+| 步骤 | 端点 | 要点 |
+|---|---|---|
+| TTS | `POST /paas/v4/audio/speech` | JSON 请求（`model=glm-tts`、`voice=tongtong`、`response_format=wav`），**成功响应是二进制 WAV 不是 JSON**，直接 `resp.content` 落盘 |
+| ASR | `POST /paas/v4/audio/transcriptions` | multipart 上传 `.wav`（≤25MB / ≤30s），`model=glm-asr-2512`，转写文本在 `text` 字段 |
+
+## 脚本的关键设计（针对“冒烟测试别糊弄”的要求）
+
+- **分步报错**：每步失败都抛 `SmokeTestError`，消息带步骤号和接口的 `error.code`/`message`（兼容 HTTP 200 但 body 带错误的形态），退出码 1；stderr 会写明卡在第几步，不会只说“已生成音频”。
+- **防错误体落盘**：TTS 响应先校验 `RIFF....WAVE` 魔数，JSON 错误体不会被当成音频写进 `.wav`——否则问题会在 ASR 步才炸，报错位置就串了。
+- **ASR 空结果即失败**：`text` 缺失或为空直接报错并打印完整响应体。
+- **归一化比对**：转写与原文比对前做 NFKC、阿拉伯数字→汉字（「7个」→「七个」）、去标点空白（转写常带句号），完全一致或相似度 ≥80% 判通并打印差异字符，低于阈值判失败。
+- **只用 `requests`** + 标准库；Key 从 `ZHIPUAI_API_KEY` 读取，缺失时给出明确的设置提示。
+
+## 验证情况
+
+- `python3 -m py_compile main.py` 通过。
+- 离线自测了纯逻辑部分（不发真实请求）：归一化（`7个`/`７个`/带句号三种变体）、比对三分支（完全一致/基本一致/差异过大报错）、缺 Key 报错路径，全部符合预期。**TTS→ASR 真实链路因本环境无 Key 未实际调用**，需要你拿 Key 跑一次：`export ZHIPUAI_API_KEY=... && python3 main.py`。
+
+Sources: [GLM-TTS 模型文档](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-tts) · [文本转语音 API](https://docs.bigmodel.cn/api-reference/模型-api/文本转语音) · [GLM-ASR-2512 模型文档](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-asr-2512) · [语音转文本 API](https://docs.bigmodel.cn/api-reference/模型-api/语音转文本)

@@ -1,0 +1,22 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/long-report-complete/run-2/outputs/main.py`，未存放其他文件。按你的要求没有真实调用 API（无 Key），但已做了一切离线能做的验证。
+
+## 实现要点
+
+**接口层（按 SKILL.md + 官方文档双重核对）**
+- 端点 `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，模型 `glm-5.3`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读取，仅用 `requests`
+- `max_tokens=16384` + `reasoning_effort="low"`：glm-5.3 在标准端点思考**强制开启**且思考 token 计入 `max_tokens`（坑 #13/#14），所以预算给足、思考强度压到最低；不传 `thinking` 参数（标准端点传 `disabled` 会报 1210）
+- 传输层自动重试（408/429/5xx/网络异常，指数退避）；401/400 等不可重试错误直接报清原因
+
+**完整性保障（核心需求「不能写到一半断掉」）**
+1. 截断判定只信 `finish_reason == "length"`，不信 content 是否为空
+2. 一旦截断：把已写内容作为 assistant 消息回传，要求「从停下的那个字接着写」，多轮拼接直到 `finish_reason == "stop"` 且以句末标点（。！？；等）收尾；接缝处做重复前缀裁剪，续写重复的字不会出现
+3. 空内容（预算被思考吃光的典型症状）自动换轮重试
+4. 成稿终检四项：**字数（不含空白）≥600、小标题 ≥3、具体数据 ≥5 处、完整收尾**——不达标整体重写（最多 3 次），全部失败则以非零码退出并明确报错，**绝不把半截内容当成功交付**
+5. 跑通后打印简报全文 + 逐项校验结果，并明确输出「字数达标、内容完整，可直接进周报」的结论
+
+**已验证**：`python3 -m py_compile` 通过；纯文本逻辑离线单测全过（截断检测能抓住被砍掉结尾的长文、围栏清理、接缝去重、四项校验判罚正确）；无 Key 时直接运行会给出明确错误并以 exit=1 退出。
+
+有 Key 后 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可跑通。唯一没法离线验证的是真实生成效果，但所有已知的截断/空内容路径都有对应的处理分支。

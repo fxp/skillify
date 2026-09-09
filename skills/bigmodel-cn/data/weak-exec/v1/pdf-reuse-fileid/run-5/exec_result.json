@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在上传文件...\n文件上传成功，file_id: 1788752358426-c7e61f5e799d4106b72f0c2b62d53b00.pdf\n\n开始提问...\n\n问题 1: 合同编号是什么？\n提问失败: {\"error\":{\"code\":\"1210\",\"message\":\"messages.content.type 参数非法，取值范围 ['text']\"}}\n问题 1 获取答案失败\n\n问题 2: 合同总金额是多少？\n提问失败: {\"error\":{\"code\":\"1210\",\"message\":\"messages.content.type 参数非法，取值范围 ['text']\"}}\n问题 2 获取答案失败\n\n问题 3: 违约金怎么算？\n提问失败: {\"error\":{\"code\":\"1210\",\"message\":\"messages.content.type 参数非法，取值范围 ['text']\"}}\n问题 3 获取答案失败\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.7
+}

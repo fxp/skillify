@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/kb-fallback/run-2/outputs/main.py`，`python3 -m py_compile` 通过，仅依赖 `requests`，`ZHIPUAI_API_KEY=xxx python3 main.py` 可直接运行。
+
+## 脚本设计
+
+**主路：智谱托管知识库**（接口细节均与官方文档核对过）
+1. `POST /llm-application/open/knowledge` 创建知识库（Embedding-3，`embedding_id=11`）
+2. `POST /llm-application/open/document/upload_document/{知识库id}` 上传 faq.txt（multipart `files` 字段，txt 按标题段落切 `knowledge_type=1`）
+3. **轮询** `GET /document/{id}` 直到 `embedding_stat==1` 才去检索
+4. `POST /knowledge/retrieve` 用「退换货政策的有效期是多久」检索（`top_k=5`，空结果时换 `mixed`/`keyword`/`embedding` 三种召回方式各试一次）
+5. 打印每条结果的原文片段（`text`）和 `score`
+
+针对技能包里两条实测陷阱做了防御：该族接口**出错时 HTTP 仍是 200**（真状态在 `body.code`，脚本判 `code==200` 而非 `raise_for_status`）；**上传成功 ≠ 可检索**（向量化是后台异步的，失败时检索端只返回空数组，所以必须轮询 `embedding_stat`）。`embedding_stat==2` 时还会先触发一次重新向量化补救，仍失败才降级。
+
+**降级路（三级，保证一定有检索结果打印出来）**：托管知识库任何一步走不通就自动切换——
+- ① `embeddings` 向量召回（分批 ≤64 条）+ `rerank` 精排（`return_documents=true` 拿回原文）
+- ② embeddings 也不可用时，直接用 `rerank` 对全部分片打分（≤128 条/4096 字符限制内）
+- ③ API 完全不可用时，本地字符 bigram 关键词匹配兜底（离线）
+
+**清理**：无论走哪条路、在哪一步失败，`finally` 里都会删除本次创建的文档和临时知识库；降级路的 embeddings/rerank 是无状态接口，无需清理。
+
+## 验证情况（未发起任何真实 API 调用）
+
+- `py_compile` 编译通过
+- 用样例 faq.txt 实测了纯离线逻辑：按空行正确切出 4 个问答片段；本地兜底排序把「退换货政策有效期」片段以 1.0000 分排在第一（次优仅 0.087，区分度清晰）；无 Key 时报错退出码 1
+- 把网络层整体 stub 掉模拟全链路故障：主路失败 → 方案①②失败 → 方案③照常打印检索结果、退出码 0，降级链路闭合
+
+一点说明：脚本找 faq.txt 的顺序是「脚本目录 → 当前目录 → 脚本上级目录」，所以无论 faq.txt 是和 main.py 并排放，还是放在 run-2/ 而 main.py 在 outputs/ 里，都能找到。
+
+Sources: [知识库检索 API](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E7%9F%A5%E8%AF%86%E5%BA%93%E6%A3%80%E7%B4%A2) · [上传文件文档 API](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E4%B8%8A%E4%BC%A0%E6%96%87%E4%BB%B6%E6%96%87%E6%A1%A3) · [文档详情 API](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E6%96%87%E6%A1%A3%E8%AF%A6%E6%83%85) · [创建知识库 API](https://docs.bigmodel.cn/api-reference/%E7%9F%A5%E8%AF%86%E5%BA%93-api/%E5%88%9B%E5%BB%BA%E7%9F%A5%E8%AF%86%E5%BA%93)

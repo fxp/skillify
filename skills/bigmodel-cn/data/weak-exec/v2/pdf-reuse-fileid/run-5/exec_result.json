@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "=== 合同PDF信息提取程序 ===\n正在上传文件: ../run-1/contract.pdf\n发生错误: [Errno 2] No such file or directory: '../run-1/contract.pdf'\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/pdf-reuse-fileid/run-5/work/main.py\", line 96, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/pdf-reuse-fileid/run-5/work/main.py\", line 72, in main\n    file_id = upload_file(CONTRACT_PDF_PATH)\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/pdf-reuse-fileid/run-5/work/main.py\", line 29, in upload_file\n    with open(file_path, \"rb\") as f:\nFileNotFoundError: [Errno 2] No such file or directory: '../run-1/contract.pdf'\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

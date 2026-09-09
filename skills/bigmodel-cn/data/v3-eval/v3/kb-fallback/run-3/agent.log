@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/kb-fallback/run-3/outputs/main.py`，`py_compile` 通过，纯逻辑（切块/余弦/index 映射/批量上限）已离线测试通过，无 Key 时直接运行会给出明确提示并以退出码 1 结束。
+
+## 脚本设计：两条路径，自动降级
+
+**路径 A：托管知识库（优先）**
+1. `POST /llm-application/open/knowledge` 创建临时知识库（`embedding_id=11`，Embedding-3）
+2. `POST …/document/upload_document/{id}` 上传 `faq.txt`（`knowledge_type=1`）
+3. **轮询** `GET /document/{id}` 直到 `embedding_stat==1` 才去检索
+4. `POST /knowledge/retrieve` 混合检索 + `rerank-pro` 精排，打印 `data[].text` 原文片段
+
+**路径 B：自建检索（A 走不通时自动降级，不卡死在半路）**
+按行切块（150 条 QA → 150 块）→ `embedding-3` 批量向量化（64 条/批，共 3 批）→ 余弦召回 top32 → `/paas/v4/rerank` 精排 top5 打印原文。rerank 也失败时再退到纯向量召回排序，保证只要 Key 能用就一定打印出真实检索结果。触发降级的条件包括：接口 `code != 200`、向量化重试一次后仍失败、检索持续返回空数组。
+
+**清理**：无论哪条路结束，`finally` 里删除临时知识库（删库失败再兜底删文档并提示手动清理）；路径 B 本身不产生服务端资源。
+
+## 按技能包实测经验处理的坑
+
+- **HTTP 恒为 200**：`/llm-application/open/*` 出错也返回 200，真状态在 `body["code"]`，脚本全程判 `code`，`raise_for_status` 在这里不可靠
+- **上传成功 ≠ 可检索**：向量化后台异步跑，失败时检索端只回空数组——所以轮询 `embedding_stat`（`2` 时触发一次重新向量化），而不是靠“检索为空”猜
+- **rerank 结果默认无原文**：显式传 `return_documents: true`，且以自己手里的 `chunks[index]` 作为权威原文回溯
+- **约束**：embedding-3 单批 ≤64 条、rerank 候选 ≤128 条（召回 32 条）、查询与文档用同一 `model+dimensions`（1024）
+
+一个运行提醒：`faq.txt` 需要和 `main.py` 放同目录（脚本按 `__file__` 所在目录找）。当前 `run-3/` 下没有它，fixture 在 `v3-eval/fixtures/faq.txt`，实际运行前拷一份过去即可：`ZHIPUAI_API_KEY=xxx python3 main.py`。第 1 行正是「退换货政策的有效期是多久？」，两条路径都会把它检出为 top-1。
+
+Sources: [创建知识库](https://docs.bigmodel.cn/api-reference/知识库-api/创建知识库)、[上传文件文档](https://docs.bigmodel.cn/api-reference/知识库-api/上传文件文档)、[知识库检索](https://docs.bigmodel.cn/api-reference/知识库-api/知识库检索)

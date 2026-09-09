@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "从 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/batch-forced-flagship/run-4/work/comments.txt 读取到 20 条评论。\n[1] 尝试模型 glm-5.3：构造并上传 batch 请求文件 ...\n    被拒绝（1210）：[logID=202609081502577ac094a745db4cd4] 模型名称错误: glm-5.3, 目前支持的模型: glm-5.1, glm-5-turbo, glm-4, glm-4-0520, glm-4-plus, glm-4-long, glm-4-plus-0111, glm-4-air, gl\n    从报错信息解析到 Batch 白名单（24 个模型），按质量优先重排候选。\n[2] 尝试模型 glm-5.1：构造并上传 batch 请求文件 ...\n    上传成功，input_file_id = 1788850979_41eb76a0b0be4dd7830ebd21b6d38bf9\n\n[调整说明] 要求使用 glm-5.3，但 Batch API 有一份独立于平台模型列表的白名单，\n           glm-5.3 目前不在白名单内（文件上传阶段即被拒，业务码 1210）。\n           已自动改用白名单内质量最强的文本模型 glm-5.1——这是 Batch 通道下最接近旗舰的选择。\n============================================================\nBatch 任务创建成功（异步执行，预计 24 小时内完成，脚本不等待）\n  batch 任务 id : batch_2097219135365709824\n  状态          : validating\n  模型          : glm-5.1\n  请求总数      : 20\n============================================================\n之后可用该 id 查询进度：GET https://open.bigmodel.cn/api/paas/v4/batches/batch_2097219135365709824\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.3,
+  "audio_files": []
+}

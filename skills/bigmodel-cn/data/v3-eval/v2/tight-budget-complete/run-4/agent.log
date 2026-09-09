@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/tight-budget-complete/run-4/outputs/main.py`（目录里只有这一个文件）。
+
+## 方案：如何在不超 1000 max_tokens 的前提下拿到 600+ 汉字
+
+**分段生成 + 本地拼接**。单次 1000 token 放不下一篇 600 汉字以上、还要带思考余量的完整简报，所以把简报拆成 5 个小节，每次请求只写一节（`max_tokens=700`，给网关硬上限留 300 余量），脚本自己拼全文、数字数。
+
+## 关键决策（都来自技能包实测坑 + 官方文档核对）
+
+| 决策 | 依据 |
+| :-- | :-- |
+| 模型用 `glm-4.6` 而非 `glm-5.3` | 官方文档确认 GLM-5.3 系列在标准端点**强制开思考**，且思考 token 计入 `max_tokens`——1000 预算下极易 `finish_reason=length`、正文为空（速查表 #13/#14）。glm-4.6 属"自动判断"组，可显式 `thinking: {"type": "disabled"}` |
+| 走同步端点 `/paas/v4/chat/completions` | 异步端点会静默换模型（速查表 #2） |
+| 判 `finish_reason` 而非空串 | `length` 时裁掉不完整句尾并告警；`sensitive`/`network_error` 明确报错退出 |
+| 小标题由脚本自带、prompt 禁止模型复述 | 保证结构稳定、不重复 |
+
+## 「不丢半截」的保障
+
+- 正常路径：前 4 节核心叙事必生成（约 880 汉字），达标即停，最多 8 次请求
+- 字数不足：自动对**最短小节**循环续写扩写（每次仍是独立请求、仍 ≤1000），直到 ≥600
+- 真拿不到（网络重试 2 次仍败 / 平台错误码如 1210 / 内容安全拦截 / 请求上限用尽仍不达标）：stderr 报清卡在哪一步（HTTP 状态、平台 code/message、finish_reason），**不打印成品**，exit 1
+- 最后打印全文 + `正文汉字数`（纯正则统计汉字，不含标点数字）+ 总字符数 + 请求数与 max_tokens 核对
+
+## 验证情况（未调用真实 API）
+
+- `python3 -m py_compile` 通过；本机 `requests 2.32.5` 可用
+- monkeypatch 假响应离线跑了 6 个用例，全过：4 节达标即停（864 字/4 请求）、短小节触发扩写兜底（605 字/6 请求）、极端短内容到上限后报卡点不吐半成品、`length` 截断裁尾、平台 1210 错误上报、缺 Key 明确报错
+- 真实 CLI 无 Key 运行：正确 exit 1 并提示先 `export ZHIPUAI_API_KEY`
+
+**没做的事**：没有真实 API 调用（环境无 Key），所以模型实际返回的节长、真实 token 消耗未实测；测试里每次请求的 `max_tokens ≤ 1000`、`thinking disabled` 是用断言验证的。有 Key 后 `ZHIPUAI_API_KEY=xxx python3 main.py` 即可跑通。

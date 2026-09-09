@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在调用智谱AI联网搜索...\n请求错误：HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=60)\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 60.2
+}

@@ -1,0 +1,17 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过；无 Key 环境下实测运行，能正确报「请先设置环境变量 ZHIPUAI_API_KEY」并以退出码 1 结束（输出中的 urllib3 警告来自本机 Python 环境，与脚本无关）。
+
+**接口细节已双重核实**（技能包 `references/tools.md` + 官方文档）：
+- `POST https://open.bigmodel.cn/api/paas/v4/rerank`，Bearer 鉴权，`model` 固定为 `rerank`
+- 响应 `results[]` 每项含 `index`（对应输入数组下标）和 `relevance_score`
+
+**针对「贴工单」需求的两个关键设计**：
+1. **不用接口返回的 `document` 字段，而是用 `index` 回溯本地 `DOCUMENTS` 数组取原文**——官方说明 `index` 就是用于回溯原文档的，这样保证打印内容与输入逐字一致，不受接口端任何加工影响
+2. 输出格式为每行 `原文 | 相关性分数：0.xxxx`，无序号、无多余装饰，直接可贴
+
+另外做了几层兜底：`top_n` 显式传 5（虽然默认 0 也是全量返回）、拿到结果后本地再按分数降序排一次保证顺序稳定、缺 Key / HTTP 错误 / 业务错误（`error.code`）/ 空结果分别给出明确报错。依赖只有 `requests`（加标准库 `os`/`sys`），`python3 main.py` 直接可跑。
+
+Sources:
+- [文本重排序 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E9%87%8D%E6%8E%92%E5%BA%8F)

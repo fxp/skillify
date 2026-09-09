@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "错误: 找不到合同文件 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/pdf-reuse-fileid/run-3/contract.pdf\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1
+}

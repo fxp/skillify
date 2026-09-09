@@ -1,0 +1,33 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": true,
+      "evidence": "exit=0 34.6s :: "
+    },
+    {
+      "text": "vectors.json 含 150 条向量",
+      "passed": false,
+      "evidence": "实际 98 条"
+    },
+    {
+      "text": "全程未出现 1214（embeddings 单次最多 64 条）",
+      "passed": true,
+      "evidence": "no_1214=True"
+    },
+    {
+      "text": "stdout 打印了 top-3 检索结果（命中 faq 原文）",
+      "passed": false,
+      "evidence": "命中 0 条原文"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v2",
+  "notes": "graded with the frozen grader from glm-round3"
+}

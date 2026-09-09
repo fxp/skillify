@@ -1,0 +1,22 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`,编译通过，缺 Key 时的报错路径也实测正常(环境里那条 urllib3 警告来自本机旧版 LibreSSL,与脚本无关)。按你的要求**没有真实调用 API**。
+
+## 实现要点(每条硬需求对应的做法)
+
+**① 答案完整，不截断**
+- 判据是 `finish_reason == "stop"`,不是“有内容就行”——GLM 的思考 token 计入 `max_tokens`,预算被吃光时正文可能是空串或半截，HTTP 依然 200;
+- 撞上 `finish_reason == "length"` 不报错退出，而是在同一引擎上沿 `8192 → 16384 → 32768` 翻倍预算自动重试；预算已给足(起步 8192,远超技能包实测“600 字简报需 3000”的水位)；
+- 特意**没传** `thinking: {"type": "disabled"}`——`glm-5.3` 在标准端点传它会直接报 1210(速查表第 14 条)，不能靠它省预算。
+
+**② 至少 2 条可点击来源**
+- 只用实测会返回非空 `link` 的引擎，按 `search_pro_bing → sogou → quark → jina` 轮换兜底；**坚决不用 `search_std`/`search_pro`**(它们 `link` 恒为空串，HTTP 200、条数正常，典型静默失效)；
+- 显式传 `web_search.search_result: true`——不传的话响应里**根本没有** `web_search` 来源数组，搜索照跑、答案照给、就是没出处(第 5 条坑)；
+- 另传 `search_query` 强制触发搜索，不依赖模型自行判断要不要搜；链接按 `http` 前缀过滤并去重，不足 2 条自动换引擎，加预算无效就不浪费调用。
+
+**③ 失败显式报错**
+- 全部尝试失败时逐条打印每次的具体原因(截断/引擎无链接/回显模型被偷换/平台错误码)后以退出码 1 结束，绝不输出半截或无出处的答案；错误码 `1113` 会附带“编程套餐 Key 不支持标准端点联网搜索，请换标准 Key”的提示，而不是误导去充值；
+- 附带回显 `model` 核对：仅版本号后缀差异放行，整个模型被换则弃用重试(防异步/路由层静默换模型)。
+
+运行方式:`export ZHIPUAI_API_KEY=<标准API Key>` 后 `python3 main.py`(依赖仅 `requests`)。进度日志走 stderr,stdout 只有答案 + 编号来源链接 + 元信息，可直接粘进周报。

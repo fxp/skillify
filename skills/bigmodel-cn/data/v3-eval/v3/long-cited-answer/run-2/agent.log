@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，目录里只有这一个文件。
+
+## 设计说明
+
+按 SKILL.md 的指引，脚本绕开了说明书里点名的几个“HTTP 200 但静默失效”的坑：
+
+**拿真链接（速查表 #4）**
+- 用独立的 `POST /paas/v4/web_search` 而不是让 chat 里的搜索工具自己转述——链接直接从搜索响应的 `search_result[].link` 里取，模型碰不到、编造不了；
+- 引擎选 `search_pro_bing`（实测 10/10 条带链接），异常时自动降级 `search_pro_quark` → `search_pro_sogou`。**绝不用** `search_std`/`search_pro`——它们返回的 `link` 恒为空串；
+- 每条链接都校验 `http://`/`https://` 开头并去重。三个引擎试完仍凑不齐 2 条 → `exit(1)`，报错里写明试过哪些引擎、各返回多少条、多少条带链接。
+
+**答案完整（速查表 #13）**
+- `glm-5.3` 在标准端点思考强制开启（传 `thinking: disabled` 会报 1210，所以不传），思考 token 计入 `max_tokens`，起步就显式给 8192；
+- 判据用 `finish_reason` 不用空串：`== "length"` 就把 `max_tokens` 翻倍重试（上限 131072，最多 4 次）；最终不是 `stop`、正文为空、或长度 < 80 字 → `exit(1)` 并说明具体原因，stdout 不输出任何“看起来像答案”的半截内容；
+- `sensitive`/`network_error`/`model_context_window_exceeded` 等异常结束状态各有明确报错文案。
+
+**其他**
+- 附带的核对回显 `model` 字段（同步端点实测不换模型，回显族名不一致即中止，防能力/计费偏差）；
+- 来源列表优先列答案里被 `[n]` 实际引用的条目，不足 2 条按搜索排名补齐，每条附标题/媒体/日期 + 独占一行的裸 URL，方便周报里直接点击；
+- 只依赖 `requests` + 标准库，Key 从 `ZHIPUAI_API_KEY` 读取，`python3 main.py` 直接跑。
+
+按你的要求没有真实调用 API（环境无 Key），只做了 `py_compile` 验证；报错分支的文案都按“说明原因、不糊弄”写了，拿到 Key 后跑一遍即可确认链路。

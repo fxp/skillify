@@ -1,0 +1,14 @@
+{
+  "exit_code": 0,
+  "stdout": "[1/3] TTS 合成原文「发票需要在七个工作日内申请」（model=glm-tts, voice=tongtong, response_format=wav）\n      音频已保存：/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/tts-asr-roundtrip/run-3/work/smoke_test_output.wav（212880 字节，WAV）\n[2/3] ASR 转写该音频（model=glm-asr-2512）\n      转写结果：「发票需要在7个工作日内申请」\n[3/3] 与原文比对\n      原文（归一化）：发票需要在七个工作日内申请\n      转写（归一化）：发票需要在七个工作日内申请\n\n✅ 语音链路已打通：TTS 合成 → 本地 WAV → ASR 转写 → 与原文完全一致。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 6.2,
+  "audio_files": [
+    {
+      "name": "smoke_test_output.wav",
+      "size": 212880,
+      "head": "52494646"
+    }
+  ]
+}

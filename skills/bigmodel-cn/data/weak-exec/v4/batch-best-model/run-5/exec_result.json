@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "开始创建批处理任务...\n✓ 已创建JSONL文件: batch_requests.jsonl\n✓ 文件上传成功，文件ID: 1788921924_82d3fbca90ee4beea5830fadf98077db\n✓ 批处理任务创建成功\n✓ 任务ID: batch_2097516695640866816\n✓ 任务状态: validating\nbatch_2097516695640866816\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.4
+}

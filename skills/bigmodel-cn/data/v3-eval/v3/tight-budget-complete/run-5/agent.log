@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付物已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/tight-budget-complete/run-5/outputs/main.py`（仅此一个文件），`python3 -m py_compile` 通过。
+
+## 设计要点（为什么这么写）
+
+任务的核心矛盾在技能包速查表里正好命中两条实测坑：
+
+| 坑 | 对策（已写进脚本） |
+| :--- | :--- |
+| **#13** 思考 token 计入 `max_tokens`，预算小了会 `finish_reason=length`、正文为空 | 逐请求检查 `finish_reason`；`length` 截断时**缩小该节目标字数重试，绝不放大 `max_tokens`** |
+| **#14** `glm-5.3` 在标准端点（`…/api/paas/v4`）强制思考，传 `disabled` 报 `1210` | **改用 `glm-4.6`**（官方文档确认支持 `thinking.type=disabled`），把 1000 token 预算全留给正文；若端点仍报 `1210`，自动降级为不传该参数重试 |
+
+技能实测 600 字简报即便关了思考也要按 ~1500 token 预算，单请求 1000 出不稳，所以主体策略是补救方案 ③——**分段生成 + 本地拼接**：4 个小节（总量增速 / 区域格局 / 竞争格局 / 风险展望）各约 200 汉字、每次请求 `max_tokens` 恒为 `MAX_TOKENS_PER_REQUEST = 1000`，全脚本只有这一个取值点，且 `chat()` 入口有硬性拒绝检查。
+
+**兜底链**（不会丢半截结果）：
+- 小节失败 → 记录诊断、继续其他小节；
+- 拼接后正文 < 600 汉字 → 自动追加 2 个补量小节（产业链出海 / 滚装船运力）直到达标；
+- 仍不达标 → 打印完整卡点诊断（失败小节、`finish_reason`、错误码人话提示，如 `1113` 会提示"疑似套餐 Key 打了标准端点"）并返回 1，**不把半截简报当交付物输出**。
+
+成功路径最后打印简报全文 + 字数统计（正文汉字数按 CJK 基本区严格计数，数字标点不计入，且不含标题——口径从严）+ 请求合规声明。Key 从 `ZHIPUAI_API_KEY` 读取，缺 Key 时明确说明并退出。
+
+## 已验证 / 未验证
+
+- ✅ `py_compile` 编译通过；AST 静态检查确认 `MAX_TOKENS_PER_REQUEST = 1000`
+- ✅ 无 Key 路径：正确打印卡点、返回 1
+- ✅ 本地纯逻辑（围栏/小标题清洗、拼装、汉字计数）冒烟自测通过
+- ⚠️ 真实 API 调用**未执行**（本环境无可用 Key，遵照你的要求）；`ERROR_HINTS` 中的错误码提示按技能包实测记录编写

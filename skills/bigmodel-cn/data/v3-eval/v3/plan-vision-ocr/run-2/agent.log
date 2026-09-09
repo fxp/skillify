@@ -1,0 +1,32 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/plan-vision-ocr/run-2/outputs/main.py`（只此一个文件，`py_compile` 通过）。
+
+## 结论：套餐大概率能用视觉，脚本会“先真试再下结论”
+
+依据（文档 + 实测两条线，我都核实过）：
+
+- **官方文档（今天抓取 docs.bigmodel.cn）**：套餐明文只保证 `glm-5.3` / `glm-5.3-flash`；视觉能力的官方交付方式是**套餐附赠的视觉 MCP**（原文“GLM-5.3-Flash（含视觉理解 MCP）”、“套餐包含专属图像视频理解…MCP”）。
+- **技能包实测记录（2026-09-03）**：`glm-4.6v`、`glm-5v-turbo` 在套餐端点 `…/api/coding/paas/v4` 直调实测可用（无文档背书）；且 `glm-5.3-flash` 本身是原生多模态模型，可直接收 `image_url`。
+
+所以没有照文档直接回“套餐不支持视觉”，而是写成了候选链逐个真试。
+
+## 脚本设计要点
+
+| 关注点 | 实现 |
+| :-- | :-- |
+| 端点 | 套餐专属 `…/api/coding/paas/v4/chat/completions`（`main.py:32`）——套餐 Key 打标准端点必报 `1113`“余额不足”，是端点错不是真没钱 |
+| 候选链 | `glm-5.3-flash`（官方在套餐内且原生多模态）→ `glm-4.6v` → `glm-5v-turbo`（后两个实测可用），`main.py:39`；撞 `1113`/`1210`/`1305` 自动换下一个，401/网络错直接终止 |
+| **对账** | 打印响应回显的 `model` 字段并标注与请求是否一致（`main.py:152`）——服务端会静默换模型，只看请求参数对不了账 |
+| 截断自愈 | `finish_reason=length`（思考 token 计入 `max_tokens` 的坑）时按 4096→16384 加预算并关思考重试；关思考被拒（1210）就只加预算再试 |
+| 输入 | `invoice.png` 按**脚本所在目录**解析（不依赖 CWD），base64 data URI 内联，含 5MB 上限检查；回答里的 `<think>` 标签会剥掉再打印 |
+| 兜底结论 | 三个候选全失败时才宣告“套餐用不了视觉”，并**逐条打印每个模型的真实错误码**作为依据，附替代方案（标准 Key 走 `paas/v4`，或套餐附赠的视觉 MCP `npx -y "@z_ai/mcp-server"`） |
+
+## 验证情况（如实说明）
+
+- `python3 -m py_compile main.py` ✅
+- 无 Key、缺图片两条错误路径实测正常退出并给出中文提示 ✅
+- **真实 API 未调用**（本环境无 Key）。跑通与否要看你本地：`export GLM_CODING_PLAN_API_KEY=… && python3 main.py`，预期 `glm-5.3-flash` 首选命中；若平台已收紧直调，脚本会把三个模型的错误码打出来再下结论。
+
+一个提醒（来自官方条款）：套餐“仅限官方支持的指定工具与产品环境中使用”，自己写脚本直调技术上能通、也走套餐额度，但属条款之外的用法，生产系统建议用标准 API Key。

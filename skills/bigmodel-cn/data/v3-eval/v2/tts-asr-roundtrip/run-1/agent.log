@@ -1,0 +1,35 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。交付文件在 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/tts-asr-roundtrip/run-1/outputs/main.py`，目录里只有这一个文件。
+
+## 接口核对结果
+
+按 SKILL.md 指引读了 `references/media.md`，并用 WebFetch 对照官方文档交叉确认，两处一致：
+
+| 环节 | 端点 | 关键点 |
+| :-- | :-- | :-- |
+| TTS | `POST /paas/v4/audio/speech` | `model=glm-tts`、`voice=tongtong`、非流式 `response_format=wav`；**成功响应是二进制音频**，错误体是 `{"error":{"code","message"}}` |
+| ASR | `POST /paas/v4/audio/transcriptions` | `multipart/form-data`，`model=glm-asr-2512` + `file`；转写文本在 `text` 字段；限制 .wav/.mp3、≤25MB、≤30 秒 |
+
+## 脚本行为（`python3 main.py` 直接跑）
+
+四步流水线，每步失败都会**指明卡在哪一步、为什么**并以退出码 1 结束，不会只说“已生成音频”：
+
+1. **TTS 合成** — 网络异常、非 200、错误体都会带 `code`/`message` 报出
+2. **落盘 + 预检** — 存到 `./tts_output.wav`，解析 WAV 头报时长，预先检查 25MB/30 秒限制，避免上传才被拒
+3. **ASR 转写** — 立刻回读刚生成的文件转写，打印结果，并读回响应 `model` 字段核对（对应技能里“平台会静默换模型”的坑）
+4. **比对** — 归一化（去标点/空白、数字「7」→「七」）后先比一致性，再比相似度（阈值 80%），最后明确打印 `[PASS] 语音链路打通` 或 `[FAIL] 卡在【文本比对】…`
+
+针对技能速查表里“HTTP 200 也可能回错误体”这类静默陷阱，做了两层防护：TTS 响应若 Content-Type 是 JSON 或缺 RIFF 头就直接报错（防止把 JSON 错误体存成 .wav，到 ASR 那步才莫名失败）；ASR 响应非 JSON、`text` 缺失或为空也都会报清楚。
+
+## 已验证 / 未验证
+
+- ✅ `py_compile` 编译通过；无 Key 时跑过一次真实失败路径：退出码 1、输出「卡在【读取环境变量】」
+- ✅ 比对逻辑离线测了四种转写变体（完全一致 / 「7个…。」数字标点变体 / 多句号 / 完全跑偏），判定全部正确
+- ⚠️ 真实 API 回环没跑（本环境无 Key）——你拿 Key 跑一次即是最终结论
+
+Sources:
+- [GLM-ASR-2512 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-asr-2512)
+- [语音转文本 API - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E8%AF%AD%E9%9F%B3%E8%BD%AC%E6%96%87%E6%9C%AC)
+- [GLM-TTS - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-tts)

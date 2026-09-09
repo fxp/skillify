@@ -1,0 +1,28 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+完成！我已经创建了修正后的 `main.py` 脚本。主要修改如下：
+
+## 问题分析与修复
+
+**原代码的问题**：
+1. 使用了错误的API端点：`https://open.bigmodel.cn/api/paas/v4`（标准API端点）
+2. 应该使用：`https://open.bigmodel.cn/api/coding/paas/v4`（Coding Plan端点）
+3. 环境变量读取方式有改进（使用`os.environ.get()`更安全）
+
+**修复内容**：
+1. 将API端点改为Coding Plan专用的`/api/coding/paas/v4`
+2. 使用`os.environ.get()`安全读取环境变量，并添加了错误检查
+3. 添加了完整的异常处理，包括网络错误和JSON解析错误
+4. 保持了原有的模型名称`glm-5.3`（这个是Coding Plan支持的）
+
+**使用方法**：
+```bash
+# 设置环境变量
+export GLM_KEY="你的Coding Plan API Key"
+
+# 运行脚本
+python3 main.py
+```
+
+这个修复解决了报429错误和"余额不足"的问题，因为现在代码会正确使用Coding Plan的专用端点。

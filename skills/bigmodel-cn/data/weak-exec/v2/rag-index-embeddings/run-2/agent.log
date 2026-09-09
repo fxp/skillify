@@ -1,0 +1,29 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+任务已完成！我已经创建了以下文件：
+
+1. **faq.txt** - 包含 100+ 条发票相关常见问题
+2. **main.py** - 实现了完整的检索功能，包括：
+   - 读取 FAQ 文件
+   - 使用 embedding-3 将每条问题向量化
+   - 保存向量到 vectors.json
+   - 对"发票怎么开"进行查询
+   - 计算余弦相似度并取 top-3
+   - 输出最相似的 3 条原文
+
+代码特点：
+- 使用 requests 库调用 API
+- API Key 从环境变量 `ZHIPUAI_API_KEY` 读取
+- 自己实现了余弦相似度计算（没有使用 numpy）
+- 代码结构清晰，注释完整
+- 已通过语法检查，可直接运行
+
+运行方式：
+```bash
+# 设置环境变量（可选）
+export ZHIPUAI_API_KEY="your_api_key_here"
+
+# 运行脚本
+python3 main.py
+```

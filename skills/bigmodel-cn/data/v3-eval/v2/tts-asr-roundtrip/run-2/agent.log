@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件），`py_compile` 编译通过，无 Key 场景实测能正确报错并以退出码 1 结束。
+
+## 做了什么
+
+1. 按 SKILL.md 指引读了 `references/media.md` 的 ASR/TTS 两节，并用 WebFetch 核对了官方文档，两处一致：
+   - **TTS**：`POST /paas/v4/audio/speech`，JSON 体（`glm-tts` + `voice=tongtong` + `response_format=wav`），成功返回二进制 `audio/wav`
+   - **ASR**：`POST /paas/v4/audio/transcriptions`，multipart 上传（`file` + `model=glm-asr-2512`），转写文本在响应的 `text` 字段
+2. 写了 `main.py`，直接 `python3 main.py` 即可跑（Key 从 `ZHIPUAI_API_KEY` 读，只用 `requests`）。
+
+## 脚本的关键设计（针对“不要只说已生成音频”）
+
+- **三步都各自校验，任何一步卡住都以非零退出码结束，并打印卡在哪一步 + 具体原因**（网络/超时、鉴权、平台错误码、落盘失败、转写为空、相似度不达标）。
+- 防了几类静默陷阱：TTS 返回 HTTP 200 但 body 是 JSON 报错（校验 Content-Type + `RIFF/WAVE` 文件头 + 文件大小下限）；ASR 200 但带 `error` 体或 `text` 为空；平台错误会解析出 `error.code/message` 原样打出来。
+- 比对逻辑：两侧去标点归一化后，打印逐字一致性和 `difflib` 相似度，相似度 ≥80% 判通，最后明确打印「✅ 语音链路已打通」或「❌ 卡在【某一步】」。音频存在脚本同目录 `smoke_test.wav`。
+
+## 诚实声明
+
+当前环境没有可用的 Key，**我没有实际调过 API，所以没法替你宣称链路已经通了**——通没通由脚本运行时判定。请执行：
+
+```bash
+export ZHIPUAI_API_KEY=<你的Key>
+python3 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/tts-asr-roundtrip/run-2/outputs/main.py
+```
+
+退出码 0 即链路通；非 0 时看 stderr 里标注的卡点。唯一可能需要微调的点是比对阈值（现为 80%，一句话的正常转写通常应 100% 一致）。
+
+Sources: [GLM-TTS 官方文档](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-tts) · [GLM-ASR-2512 官方文档](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-asr-2512) · [语音转文本 API 参考](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E8%AF%AD%E9%9F%B3%E8%BD%AC%E6%96%87%E6%9C%AC) · [文本转语音 API 参考](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E8%BD%AC%E8%AF%AD%E9%9F%B3)

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "正在上传合同文件...\n文件上传成功，file_id: 1788752358426-c7e61f5e799d4106b72f0c2b62d53b00.pdf\n\n文件已上传，file_id: 1788752358426-c7e61f5e799d4106b72f0c2b62d53b00.pdf\n开始分析合同...\n\n问题 1: 合同编号是什么？\n发生错误: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.6
+}

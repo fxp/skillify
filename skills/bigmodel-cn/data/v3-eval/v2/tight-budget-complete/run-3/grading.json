@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 20.4s :: · 一、总量与增速 完成（86 汉字）\n· 二、区域市场结构 完成（112 汉字）\n· 三、品牌与车型格局 完成（137 汉字）\n· 四、出口方式与本地化 完成（98 汉字）\n· 五、风险与挑战 完成（119 汉字）\n· 六、2027 年展望 完成（93 汉字）\n"
+    },
+    {
+      "text": "正文 ≥600 汉字",
+      "passed": true,
+      "evidence": "正文汉字=844"
+    },
+    {
+      "text": "遵守 max_tokens ≤ 1000",
+      "passed": true,
+      "evidence": "max_tokens取值=[800]"
+    },
+    {
+      "text": "没有把截断的半截内容丢出来",
+      "passed": true,
+      "evidence": "enough=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2"
+}

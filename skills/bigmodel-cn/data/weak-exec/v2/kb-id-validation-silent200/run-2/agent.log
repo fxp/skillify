@@ -1,0 +1,50 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+✅ 脚本已成功创建并编译通过！
+
+## 脚本说明
+
+我已按照接入说明书的要求，创建了 `main.py` 脚本，具有以下特点：
+
+### 关键特性
+
+1. **严格验证逻辑**：
+   - 检查环境变量 `ZHIPU_KB_ID` 和 `ZHIPUAI_API_KEY`
+   - 调用知识库详情接口验证存在性
+   - 额外调用检索接口验证可用性
+
+2. **智谱 API 特性处理**：
+   - 处理知识库接口 HTTP 200 但实际错误的情况（code 字段）
+   - 错误代码 100013 专门识别"知识库不存在"
+   - 检索测试确保接口可用
+
+3. **安全保守策略**：
+   - 宁可误报无效，也不放过坏 ID
+   - 任何异常都判定为无效
+   - 详细的错误提示
+
+4. **清晰的输出**：
+   - 验证过程的详细日志
+   - 最终的明确结论
+   - 风险评估
+
+### 使用方法
+
+```bash
+# 设置环境变量
+export ZHIPU_KB_ID="your-knowledge-base-id"
+export ZHIPUAI_API_KEY="your-api-key"
+
+# 运行脚本
+python3 main.py
+```
+
+### 验证逻辑
+
+1. **基础检查**：验证环境变量是否设置
+2. **存在性验证**：调用 `/llm-application/open/knowledge/{id}` 检查知识库是否存在
+3. **可用性验证**：调用 `/llm-application/open/knowledge/retrieve` 测试检索功能
+4. **返回结论**：所有检查通过才判定为有效，否则禁止上线
+
+脚本已保存到指定路径 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/kb-id-validation-silent200/run-2/outputs/main.py`，可以直接使用。

@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+脚本已交付到 `outputs/main.py`，`py_compile` 通过，并用临时目录做了不触网的冒烟测试（读评论 → 生成 jsonl → 错误分类逻辑），测试产物已清理，outputs 里只有 main.py。
+
+## 关键调整：glm-5.3 走不通，已内置自动降级
+
+这是本任务的核心问题，技能包里有实测结论（2026-09 真实 API 验证）：**Batch API 有一份独立的模型白名单，在上传 jsonl 阶段就校验，旗舰 `glm-5.3` 不在白名单内**，会直接报业务码 `1210 模型名称错误`——这不是偶发故障，重试同样的模型没有意义。
+
+所以脚本的处理方式是：
+
+1. **先按你的要求用 `glm-5.3` 构造并上传**——不预设失败，把服务端当成事实来源；
+2. 上传时如果真的撞上 `1210` + 报错含“模型”，**自动改用 `glm-5.1`** 重建 jsonl 重新上传（白名单内质量最强的模型，符合你“质量优先”的要求），并把服务端报错原文和降级原因打印出来；
+3. 其他错误（网络、鉴权、custom_id 等）不会误触发降级，会正常报错退出。
+
+我尝试用 WebFetch 核对官方文档，但 docs.bigmodel.cn 相关页面均不可达（404 / 网络错误）；技能包内容本身是真实调用验证过的，且脚本的降级逻辑只在服务端实际报 `1210` 时才触发，即便白名单未来变化（比如 glm-5.3 被放进去）脚本也能自适应。
+
+## 脚本流程与其他内置的坑位防御
+
+流程：读同目录 `comments.txt`（每行一条，跳过空行）→ 构造 jsonl → `POST /paas/v4/files` 上传（`purpose=batch`）→ `POST /paas/v4/batches` 创建任务 → **打印 batch id，不等待完成**。
+
+按技能包速查表内建的防御：
+
+- **`custom_id` 用 `request-0001` 格式**——有未文档化的 6 字符下限，短了上传就报错（坑 #8）；
+- **`max_tokens` 给 2048**——思考链计入输出预算，给小了会 `finish_reason=length` + 空内容（坑 #13），而分类答案只需几个 token，2048 足够；
+- **计数字段读嵌套的 `request_counts.total`**，不是顶层字段（坑 #8）；
+- 业务错误不只看 HTTP 状态码，同时解析 `error.code` / 顶层 `code` 两种形态；对网络抖动、429、5xx 做少量重试（重试时重新打开文件句柄）；
+- Key 只从 `ZHIPUAI_API_KEY` 读取，只依赖 `requests`，直接 `python3 main.py` 即可跑。
+
+运行后输出示例：batch id、实际使用的模型（若降级会明确标注）、状态、请求数，以及一条可直接粘贴的 curl 查询进度命令。

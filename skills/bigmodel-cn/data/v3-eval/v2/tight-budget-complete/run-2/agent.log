@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（该目录下仅此一个文件），`python3 -m py_compile` 通过，另用打桩方式离线验证了完整流程（未调用真实 API）。
+
+## 核心矛盾与解法
+
+硬约束是**单次请求 max_tokens ≤ 1000**，而正文要 ≥600 汉字——中文约 1 字 1 token，再加上 GLM 的**思考 token 会计入 max_tokens**（技能速查表 #13，判据是 `finish_reason=length` 而非空串），单次请求直接生成全文极易被截断。所以：
+
+- **分段生成 + 客户端拼接**：全文拆 4 个小节（总览/区域/竞争/展望），每节独立请求，小标题由脚本自带（保证结构确定），单次只申请 `max_tokens=800`，留 20% 余量；发送前还有一层 `min(max_tokens, 1000)` 钳位 + 超限直接抛错，代码路径上不可能违反硬顶；
+- **堵住思考吃预算**：`glm-5.3` 在标准端点无法关闭思考（`thinking.type="disabled"` 报 1210，官方文档已确认），统一传 `reasoning_effort="low"`——实测该档 `reasoning_tokens=0`，等效不思考；
+- **完整性兜底**：每段校验 `finish_reason=="stop"` 且非空（截断/过短自动重试）；拼接后客户端数汉字（`[\u4e00-\u9fff]`），不足 600 自动补写「延伸观察」段（最多 3 轮）；仍不达标则**报清卡点、exit 1，不交半成品**。缺 Key 也会明确说卡在哪。
+
+## 验证结果（打桩，未打真实 API）
+
+| 场景 | 结果 |
+| :-- | :-- |
+| 4 段各 ~200 字 | 正文 800 汉字，无补写，正常打印全文+字数 ✅ |
+| 各段偏短（共 480 字） | 自动触发补写 → 640 字达标 ✅ |
+| 首段 `finish_reason=length` | 拦截并重试，总请求数 4+1 ✅ |
+| 缺 `ZHIPUAI_API_KEY` | exit 2，卡点说明清晰 ✅ |
+
+## 两点说明
+
+1. **数据口径**：2023–2024 年数字（如 2024 年新能源车出口 128.4 万辆、占整车出口 585.9 万辆的 21.9%）为公开报道口径；**2025–2026 年数字是脚本内置的情景估算**，放在 `FACT_SHEET` 常量里锚定给模型（输入 token 不受 max_tokens 限制），且 prompt 禁止模型编造新数字。接真实数据时整体替换该常量即可。
+2. 实际运行时结尾会打印全文和三项字数（正文汉字数/全文汉字数/总字符数），并附每次请求的 `completion_tokens` 明细，可核验预算确实未超 1000。
+
+运行方式：`ZHIPUAI_API_KEY=你的Key python3 main.py`

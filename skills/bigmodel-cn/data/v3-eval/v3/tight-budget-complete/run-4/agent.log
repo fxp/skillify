@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过，交付完成。
+
+## 交付
+
+脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/tight-budget-complete/run-4/outputs/main.py`（仅此一个文件，测试脚本在 /tmp 用完即删）。
+
+## 为什么不能“一次请求生成全文”——这是本任务的核心
+
+接入手册的两条实测陷阱正卡在这个约束上：
+
+1. **思考 token 计入 `max_tokens`**：600 字简报的思维链实测要 2400+ token。单次 1000 的预算会被推理吃光，表现为 HTTP 200、不报错、`finish_reason=length`、正文为空。
+2. **`glm-5.3` 在标准端点强制思考**：传 `thinking.type="disabled"` 直接报 1210，压预算这条路对它走不通。
+
+所以脚本的做法（对应手册补救表的 ②+③）：
+
+- **模型选 `glm-5.2`**——标准端点支持显式 `thinking:{"type":"disabled"}`，1000 token 预算全部留给正文（关思考后 1500 token 才够一次成型，仍超限，所以还要拆）；
+- **分 4 个小节分段生成、本地拼接**：总量与增速 / 区域格局 / 竞争格局 / 挑战与展望，每节一次请求、每节要求 160~220 汉字 + 至少 3 个具体数字，合计目标 ~800 字；
+- **`max_tokens=1000` 只在 `chat()` 一处组装**，入口处有 `>1000 即抛错` 的守卫，grep 确认全文件无第二处赋值——硬约束不可能被意外突破；
+- **截断不丢半截**：`finish_reason=length` 时不加预算（不可商量），而是收紧字数要求重试，截断文本裁到最后一个完整句作候补；全文不足 600 汉字会自动追加补充段（每次仍是独立请求、1000 上限）；重试耗尽仍不达标则打印具体卡点、exit 1，**不输出半截正文**；
+- 结尾打印全文 + **实际汉字数**（只数 `[\u4e00-\u9fff]`，数字标点不计入，杜绝凑数）+ 请求次数。
+
+## 验证情况（如实说明）
+
+- ✅ `python3 -m py_compile` 通过；依赖仅 `requests` + 标准库
+- ✅ 无 Key 时报错清晰并 exit 1
+- ✅ 用 mock 验证了三条主流程：正常达标（4 次请求、768 汉字）、短文自动补段（触发第 5 次请求后达标）、彻底失败（exit 1、打印卡点、不输出半截）
+- ❌ **唯一没验证的环节：真实 API 调用**——当前环境没有可用的 `ZHIPUAI_API_KEY`，这正是卡住的地方，我没有编造一份“简报”充当 API 输出。拿到 Key 后 `export ZHIPUAI_API_KEY=<key> && python3 main.py` 即可跑通并打印全文和实际字数。

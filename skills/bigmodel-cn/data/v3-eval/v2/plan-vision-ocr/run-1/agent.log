@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部验证通过：编译 OK、`python3 main.py` 可直接跑、无 Key/无图时给出清晰报错退出（未发起任何网络请求）、outputs/ 下只有 main.py。
+
+## 交付说明
+
+脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/plan-vision-ocr/run-1/outputs/main.py`，只用了 `requests`。
+
+**脚本逻辑**（每一步都基于官方文档 + 技能包实测记录核实过）：
+
+1. **端点**：固定打 Coding 端点 `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`。套餐 Key 打标准端点 `…/api/paas/v4` 必报 `1113 余额不足`，这是两套隔离计费体系，脚本里已避开。
+2. **图片输入**：读同目录 `invoice.png`，base64 编码成 `data:image/png;base64,…` 放进 `content` 数组的 `image_url` 块（官方确认支持 Base64 Data URL，单图 ≤5MB，超限会警告）。
+3. **模型尝试链**（失败才试下一个，每次都是真实调用）：
+   - `glm-5.3-flash` + `thinking: disabled` —— 首选。官方明说**所有套餐档位都含 glm-5.3-flash**，且它是**原生多模态模型**，能直接吃 `image_url`；实测 Coding 端点接受 `thinking:{"type":"disabled"}`（标准端点会报 1210），关思考省额度、也避免思考 token 吃光 `max_tokens` 导致空回复
+   - `glm-5.3-flash` 不带 thinking —— 排除参数干扰
+   - `glm-4.6v`、`glm-5v-turbo` —— 兜底。实测（2026-09-03）这两个视觉模型在 Coding 端点套餐 Key 下可用，但官方未背书
+4. **对账**：打印响应里读回的 `model` 字段作为"服务端实际模型"——Coding 端点存在静默重路由（请求 `glm-4.6` 实际跑 `glm-5.3-flash`），和请求模型不一致时会显式提示。同时打印 `finish_reason` 和 token 用量。
+5. **失败结论有据**：全部尝试失败时，逐条列出服务端原始报错再下结论，并区分 `1113`（模型/能力不在套餐或额度耗尽）与 `1210/1214`（参数问题）。
+
+## 回答你的核心问题：套餐能不能用视觉？
+
+**大概率能用，且脚本会先真试再下结论。** 依据：
+
+- 官方文档（docs.bigmodel.cn/cn/coding-plan/overview + model-overview）确认：所有套餐档位包含 `glm-5.3-flash`，它是"原生多模态模型，能够原生理解图片视频"，`chat/completions` 直接传 `image_url` 即可；
+- 技能包实测记录：套餐 Key 在 Coding 端点调用 `glm-4.6v`/`glm-5v-turbo` 视觉模型返回 200（官方没写，但真实可用）。
+
+我没有可用的 Key，无法在此环境替你实测——**脚本本身就是那次"真的试"**：跑一次，成功则直接打印发票内容 + 实际模型名；若全链失败，会输出带原始报错的结论，此时最可能的替代路径是套餐附赠的视觉理解 MCP（`npx -y "@z_ai/mcp-server"`，官方把套餐的图像理解能力主要放在那里）。另请留意官方条款：套餐"仅限在指定工具与产品环境中使用"，自写脚本消耗套餐额度以官方实际行为为准。

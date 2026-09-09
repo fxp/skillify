@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在读取评论文件...\n读取到 20 条评论\n正在创建 JSONL 请求文件...\n已创建请求文件: /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v1/batch-best-model/run-2/work/batch_requests.jsonl\n正在上传文件...\n文件上传成功，文件ID: 1788918155_38a6bd40bd0d42ae811111edfebca1aa\n正在创建 Batch 任务...\nBatch 任务创建成功，任务ID: batch_2097500885526511616\n\n==================================================\n任务信息：\nBatch ID: batch_2097500885526511616\n任务状态: validating\n请使用此 Batch ID 查询任务状态\n==================================================\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.5
+}

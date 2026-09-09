@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 6.2s :: "
+    },
+    {
+      "text": "最终真的创建成功了 batch",
+      "passed": true,
+      "evidence": "batch_id=batch_2097219048606531584"
+    },
+    {
+      "text": "没有卡在 1210 上退出",
+      "passed": true,
+      "evidence": "hit1210=True got_id=True"
+    },
+    {
+      "text": "说明了为什么换模型",
+      "passed": true,
+      "evidence": "explained=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v2"
+}

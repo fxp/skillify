@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在查询问题： 2026年智谱BigModel发布了哪些新模型\n--------------------------------------------------\n请求错误: HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=30)\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 30.3
+}

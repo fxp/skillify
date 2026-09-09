@@ -1,0 +1,17 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+代码已成功保存到指定路径并通过编译验证。
+
+**主要修改内容：**
+
+1. **修改API端点**：将端点从 `https://open.bigmodel.cn/api/paas/v4/chat/completions` 改为 `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`
+
+2. **改进环境变量读取**：使用 `os.environ.get("GLM_KEY")` 而不是直接访问字典，避免因环境变量未设置导致程序崩溃
+
+3. **添加错误处理**：
+   - 检查GLM_KEY环境变量是否存在
+   - 添加响应状态码检查
+   - 添加响应内容验证
+
+这样修改后，代码应该能正常使用GLM Coding Plan的额度调用模型了。用户只需要设置 `GLM_KEY` 环境变量为自己的套餐API Key即可。

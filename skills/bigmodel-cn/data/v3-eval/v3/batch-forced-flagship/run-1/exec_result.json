@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "→ 尝试用 glm-5.3 上传 Batch 请求文件(20 条评论)…\n  ✗ glm-5.3 被拒绝: [1210] [logID=202609081559471cc565bd207b48fc] 模型名称错误: glm-5.3, 目前支持的模型: glm-5.1, glm-5-turbo, glm-4, glm-4-0520, glm-4-plus, glm-4-long, glm-4-plus-0111, glm-4-air, glm-4-air-0111, glm-4-air-250414, glm-4-flash, glm-4-flashx-250414, glm-3-turbo, glm-4v, glm-4v-plus, glm-5v-turbo, glm-4v-plus-0111, cogview-3, cogview-3-plus, cogview-4-250304, embedding-2, embedding-3, cogvideox, cogvideox-2\n  ↘ 调整: glm-5.3 不在 Batch 白名单内(校验发生在文件上传阶段),按报错信息里的白名单降级,后续候选: glm-5.1、glm-5-turbo、glm-4-plus、glm-4、glm-4-flash\n→ 尝试用 glm-5.1 上传 Batch 请求文件(20 条评论)…\n  ✓ 上传成功,file_id=1788854389_afd57b9abffe47f88040dcf0549929c7\n\nBatch 任务创建成功(按要求不等待执行完成)\n  batch_id : batch_2097233436350885888\n  status   : validating\n  model    : glm-5.1(自 glm-5.3 降级,原因见上)\n  file_id  : 1788854389_afd57b9abffe47f88040dcf0549929c7\n  请求数   : 20\n\n后续: GET https://open.bigmodel.cn/api/paas/v4/batches/batch_2097233436350885888 查询进度;status=completed 后\n用 https://open.bigmodel.cn/api/paas/v4/files/<output_file_id>/content 下载结果(custom_id 与输入一一对应)。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 5.3,
+  "audio_files": []
+}

@@ -1,0 +1,14 @@
+{
+  "exit_code": 0,
+  "stdout": "===== 智谱语音链路冒烟测试（TTS → 落盘 → ASR → 比对） =====\n[1/5] 读取环境变量 ZHIPUAI_API_KEY ...\n      OK\n[2/5] TTS 合成（POST /audio/speech，模型 glm-tts，音色 tongtong）...\n      已保存 212880 字节 → /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/tts-asr-roundtrip/run-1/work/tts_output.wav\n[3/5] 校验音频文件 ...\n      WAV 合法：24000 Hz，1 声道，时长 4.43 秒\n[4/5] ASR 转写（POST /audio/transcriptions，模型 glm-asr-2512）...\n[5/5] 与原文比对 ...\n      原文：发票需要在七个工作日内申请\n      转写：发票需要在7个工作日内申请。\n      归一化后原文：发票需要在七个工作日内申请\n      归一化后转写：发票需要在7个工作日内申请\n      相似度：92%\n\n===== 冒烟测试结论：✅ 语音链路已打通（TTS 合成、落盘、ASR 转写均正常） =====\n      注意：转写与原文不完全一致（相似度 92%），多为标点或「七/7」类写法差异，上线前建议人工确认。\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 6.8,
+  "audio_files": [
+    {
+      "name": "tts_output.wav",
+      "size": 212880,
+      "head": "52494646"
+    }
+  ]
+}

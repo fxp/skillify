@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "[尝试] 用套餐端点 + glm-4.6v 识别图片……\n=== 模型回答 ===\n发票类型/抬头：INVOICE  \n发票号码：2026 - 0917  \n开票日期：无（图中未显示）  \n购买方信息：无（图中未显示）  \n销售方信息：无（图中未显示）  \n金额（含税）：48,600 CNY  \n税额：无（图中未显示）  \n商品或服务明细：无（图中未显示）\n\n=== 对账信息 ===\n请求模型       : glm-4.6v\n服务端实际模型 : glm-4.6v\ntoken 用量     : {'completion_tokens': 328, 'completion_tokens_details': {'reasoning_tokens': 238}, 'prompt_tokens': 179, 'prompt_tokens_details': {'cached_tokens': 5}, 'total_tokens': 507}\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 9.2,
+  "audio_files": []
+}

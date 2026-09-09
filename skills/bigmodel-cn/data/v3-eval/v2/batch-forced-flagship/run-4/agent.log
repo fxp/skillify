@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/batch-forced-flagship/run-4/outputs/main.py`（该目录只有这一个文件），`python3 -m py_compile` 编译通过。
+
+## 关键结论：glm-5.3 走不通 Batch，已按预案自动降级
+
+**glm-5.3 是 Batch 的白名单外模型。** 这不是猜测：技能包里 2026-09 的真实 API 实测（SKILL.md 陷阱表第 7 条 + `references/files-batch.md`）确认 Batch 有一份**独立于平台模型列表的白名单**，旗舰 `glm-5.3`/`glm-5.2` 都不在其中，且校验发生在**文件上传阶段**（`POST /paas/v4/files` 直接报业务码 `1210 模型名称错误`，报错文本里附带完整白名单）。我也抓取了官方文档确认——官方 Batch 页面的模型列表里同样没有 glm-5.3/glm-5.1，印证白名单以报错信息为权威来源。
+
+## 脚本做了什么调整、为什么
+
+- **先真实尝试 glm-5.3**（按你的要求首选），上传被 `1210` 拒绝后，**从报错文本里解析出白名单**，按"质量优先"的预设顺序选出白名单内最强的文本模型——目前是 **`glm-5.1`**（官方文档口径：Coding 对齐 Opus 4.6、200K 上下文；这是 Batch 通道下最接近旗舰的质量选择），重新上传并创建任务。若未来 glm-5.3 进了白名单，脚本会直接用它，无需改代码。
+- 解析不到白名单时按预设顺序逐个降级；白名单里没有认识的模型时兜底挑 glm 系非视觉模型；**非模型类错误（鉴权、网络、配额）直接报错退出**，不盲目换模型掩盖真问题。运行时会把调整原因打印出来。
+- 规避了技能包标注的三个静默坑：`custom_id` 用 `request-000001` 格式（未文档化的 6 字符下限，短了上传就报错）；`max_tokens` 给到 2048（思考 token 计入预算，预算小了会拿到空内容+`finish_reason=length`）；错误判断看响应体里的业务码而不只看 HTTP 状态码。读取 `request_counts.total` 时按嵌套对象处理。
+- 分类 prompt 让模型只输出 `正面/负面/中性` 三选一，`temperature: 0.1`；`url` 与 batch 的 `endpoint` 统一为 `/v4/chat/completions`；只依赖 `requests`，Key 从 `ZHIPUAI_API_KEY` 读取。
+
+## 验证情况（未调用真实 API）
+
+离线单测全部通过：jsonl 构造（行数、custom_id 长度、字段结构）、从真实格式的 1210 报错文本解析白名单（24 个模型名全部正确提取）、glm-5.3→glm-5.1 降级主流程（mock 上传/创建，最终打印 batch id）、鉴权类错误快速失败、缺 Key / 缺 comments.txt 的报错路径。跑通只需：`export ZHIPUAI_API_KEY=...`，把 `comments.txt` 放到 main.py 同目录，`python3 main.py`。
+
+一个提醒：智谱调用 Batch 前要求账号完成实名认证，否则创建会被拒（这是账号状态问题，脚本会原样报出错误信息）。
+
+Sources: [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)、[Batch API FAQ](https://docs.bigmodel.cn/cn/faq/batch-api-issues)

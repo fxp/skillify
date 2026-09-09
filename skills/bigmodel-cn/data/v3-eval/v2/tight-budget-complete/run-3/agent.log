@@ -1,0 +1,19 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`（目录里只有这一个文件），`python3 -m py_compile` 通过。
+
+## 核心设计：在 max_tokens ≤ 1000 的硬约束下保证 ≥600 汉字完整正文
+
+- **分节生成，不做一锤子买卖**：官方口径 1 token ≈ 1.5 个汉字，600 字理论上单请求塞得下，但没有任何余量保证不被截断。所以脚本按固定骨架分 6 节（总量与增速 / 区域结构 / 品牌格局 / 出口方式与本地化 / 风险挑战 / 2027 展望）各发一次请求，每次 `max_tokens=800`（硬上限 1000 只作护栏，实际留了余量），逐节产出约 150 汉字，合计约 900 字。
+- **绝不给半截**：每节响应都校验 `finish_reason == "stop"`——`length` 说明撞上限被截、`sensitive` 说明被审核拦截，任何一节异常立即整体终止并打印具体卡点（第几节、HTTP 状态、平台错误码、finish_reason），不输出残缺正文。
+- **字数兜底**：拼装后统计正文汉字数（正则只计汉字，不含标题），不足 600 时自动对最短一节定向扩写（最多 3 轮，单请求仍 ≤1000），最终不足则判失败退出。
+- **选型 `glm-4.6` + `thinking.type: "disabled"`**：这是关键避坑——SKILL 实测坑 #13/#14 指出思考 token 计入 `max_tokens`，而 `glm-5.3` 在标准端点强制思考且关不掉，会直接吃光 1000 的预算导致空内容；`glm-4.6` 可显式关闭思考，预算全部留给正文。
+- **合规审计**：末尾逐条打印每次请求的 `max_tokens` / `completion_tokens` / `finish_reason`，并有代码级 `assert max_tokens <= 1000` 双保险。
+- 其他：端点 `https://open.bigmodel.cn/api/paas/v4/chat/completions`，Bearer 鉴权，Key 从 `ZHIPUAI_API_KEY` 读取（缺失时明确报错退出），仅依赖 `requests`，带 429/5xx/网络异常重试。
+
+## 验证情况（如实说明）
+
+当前环境没有可用 Key，**没有真实调过 API**，做了三层离线验证：① `py_compile` 编译通过；② 无 Key 路径实测：干净打印“未设置 ZHIPUAI_API_KEY”并以退出码 2 结束；③ 用桩替换网络调用跑了完整主流程：6 节生成 + 2 轮扩写共 8 次请求全部满足 ≤1000 断言，最终打印全文并正确报出“正文汉字数 884 ≥ 600 达标”。真实运行时拿到 Key 执行 `python3 main.py` 即可，输出末尾会有全文、实际汉字数和逐请求的合规审计表。
+
+一点提醒：简报中的数据由模型按“基于公开行业信息的估算口径”生成（文中也加了来源注释），如需精确引用建议再接平台的 `web_search` 做数据核实。

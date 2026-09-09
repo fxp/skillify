@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 通过，无 Key / 缺图片两条错误路径也实测正常（都是网络请求之前的本地检查，没有真调 API）。
+
+## 核心结论：套餐**可以**做视觉，不用换 Key
+
+依据（已向官方文档核实，非猜测）：
+
+1. **官方套餐页原文**：「所有套餐均支持 **GLM-5.3**、GLM-5.3-Flash」——`glm-5.3-flash` 在套餐内。
+2. **官方模型总览页原文**：GLM-5.3-Flash 是「原生多模态模型，能够原生理解图片视频」——即套餐内的 `glm-5.3-flash` 本身就吃图片输入，走 `chat/completions` 的多模态 `content` 数组即可，不需要单独的视觉 API。
+3. 注意 `glm-5.3` 反而是纯文本旗舰（官方归类文本模型），别拿它传图。
+
+技能包 2026-09 的实测还发现视觉模型 `glm-5v-turbo` / `glm-4.6v` 在套餐端点也能原样跑（官方套餐文档未列出，属无背书的实测行为），所以我把它们做成了备选。
+
+## 脚本行为
+
+- **端点**：`https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`（套餐专用，比标准 API 多一级 `/coding`；打标准端点必报 `1113`）。
+- **图片**：读脚本同目录 `invoice.png`（用 `__file__` 定位，任意 cwd 下 `python3 main.py` 都能跑），转 base64 data URI 内联，预检 5MB 上限。
+- **模型尝试顺序**：`glm-5.3-flash`（官方双背书：套餐内 + 原生多模态）→ `glm-5v-turbo` → `glm-4.6v`。全部失败才打印“套餐用不了视觉”的结论，并附每个模型的具体错误码作为依据——满足你“先试过再下结论”的要求。
+- **对账**：打印响应里的 `model` 字段（服务端实际使用的模型），若与请求名不一致会显式告警——Coding 端点存在静默换模型行为（如 `glm-4.6`→`glm-5.3-flash`），只看代码里的模型名会记错账。
+- **稳健性细节**：显式 `thinking: disabled`（Coding 端点实测接受，避免思考 token 挤占输出预算导致空回复）；校验 `finish_reason`（HTTP 200 也可能是 `length` 截断空串）；`1113`/`1210`/401 错误码带针对性排查提示。
+
+一点提醒：官方条款写明套餐「仅限在官方支持的指定工具与产品环境中使用」——自己写脚本调套餐端点技术上能通，但属条款之外的用法，是否扣套餐额度以官方为准；生产场景建议换标准 API Key。

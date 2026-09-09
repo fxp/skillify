@@ -1,0 +1,26 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+完成！我已经成功创建了 `main.py` 脚本，并将其保存到了指定路径 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/async-model-pinning/run-5/outputs/main.py`。
+
+## 脚本功能说明
+
+1. **异步接口调用**：使用智谱的异步接口 `POST /paas/v4/async/chat/completions` 提交任务
+2. **模型版本审计**：
+   - 锁定模型版本为 `glm-4.6`
+   - 打印"我请求的模型"和"接口实际使用的模型"
+   - 如果两者不一致会明确报警
+3. **批量任务处理**：对三句话进行情感分类
+4. **轮询机制**：使用 `GET /paas/v4/async-result/{id}` 轮询结果
+5. **环境变量读取**：从 `ZHIPUAI_API_KEY` 读取 API Key
+6. **错误处理**：包含超时、失败等情况的处理
+
+## 关键审计特性
+
+根据文档中提到的"静默陷阱速查表"，异步接口会静默替换模型（如 `glm-4.6` 可能被替换为 `glm-4.7`），脚本实现了：
+- 在提交任务时检查返回的模型版本
+- 在获取最终结果时再次检查模型版本
+- 如果发现不一致会明确报警
+- 最终汇总所有任务使用的模型进行审计核对
+
+脚本已经通过 Python 编译验证，可以直接运行 `python3 main.py`。

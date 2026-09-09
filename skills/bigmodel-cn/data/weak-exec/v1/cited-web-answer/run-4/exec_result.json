@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "请求错误：500 Server Error: Internal Server Error for url: https://open.bigmodel.cn/api/pas/v4/chat/completions\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.3
+}

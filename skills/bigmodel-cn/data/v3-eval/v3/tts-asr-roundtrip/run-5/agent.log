@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，目录里只有这一个文件。
+
+## 交付说明
+
+**脚本做的事**（`python3 main.py`，只需 `ZHIPUAI_API_KEY` 环境变量 + requests）：
+
+1. **[1/4] 环境检查** — 读 `ZHIPUAI_API_KEY`，缺失立即报错退出（不回显 Key 值）
+2. **[2/4] TTS 合成** — `POST /paas/v4/audio/speech`，`glm-tts` + 音色 `tongtong`，把「发票需要在七个工作日内申请」落盘为脚本同目录的 `tts_asr_roundtrip.wav`
+3. **[3/4] ASR 转写** — 立刻把该文件 multipart 上传到 `POST /paas/v4/audio/transcriptions`（`glm-asr-2512`），取出 `text` 打印
+4. **[4/4] 比对** — NFKC 归一化去掉标点差异后逐字比对 + 相似度，打印「✅ 链路已打通 / ❌ 未打通」的明确结论，退出码 0/1
+
+**关键坑的防御**（来自技能包速查表第 18 条，并经官方文档核实）：
+
+- TTS `response_format` **默认是裸 PCM**，而 ASR 只收 wav/mp3——脚本显式传 `"wav"`，并且落盘前校验首 4 字节是 `RIFF`；万一平台仍返回裸 PCM，会自动按官方采样率（24000Hz/16bit/单声道）补 44 字节 WAV 头自救，而不是改个后缀糊弄
+- 报错带步骤定位：卡在 TTS 还是 ASR、HTTP 状态码、平台错误码和 message 都打出来；报 `1113` 还会提示「可能是 Coding Plan 套餐 Key 打了标准端点」（两套 Key 不通用）
+- 音频落盘后校验大小/时长（ASR 限 25MB/30 秒），空音频、超长、200 但空 `text` 都算失败
+
+**验证情况**（按约定未真实调 API）：`py_compile` 通过；无 Key 跑通失败路径，报错信息正确、退出码 1；WAV 补头/时长解析/归一化比对（含「七」vs「7」、全角数字、标点差异场景）离线单测全过。真实链路结论以你带 Key 跑一次的输出为准。
+
+参考来源：[GLM-TTS API 参考](https://docs.bigmodel.cn/api-reference/模型-api/文本转语音)、[语音转文本 API 参考](https://docs.bigmodel.cn/api-reference/模型-api/语音转文本)、[GLM-ASR-2512 模型文档](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-asr-2512)

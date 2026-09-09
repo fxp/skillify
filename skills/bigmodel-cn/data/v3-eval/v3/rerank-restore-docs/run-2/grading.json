@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 2.1s :: "
+    },
+    {
+      "text": "输出了文档原文而不是序号",
+      "passed": true,
+      "evidence": "命中原文段数=4/5"
+    },
+    {
+      "text": "输出了相关性分数",
+      "passed": true,
+      "evidence": "has_score=True"
+    },
+    {
+      "text": "五段候选都完整呈现（≥4 段）",
+      "passed": true,
+      "evidence": "呈现段数=5/5"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v3"
+}

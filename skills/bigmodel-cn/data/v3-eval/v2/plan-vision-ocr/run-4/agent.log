@@ -1,0 +1,26 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/plan-vision-ocr/run-4/outputs/main.py`，`python3 -m py_compile` 通过，无 Key / 缺图片两条错误路径也实测正常（输出里的 urllib3 OpenSSL warning 是本机环境噪音，与脚本无关）。
+
+## 结论：套餐大概率能用视觉，脚本会“先真的试过”再下结论
+
+我在本环境没有可用 Key，无法替你真调一次，所以把“实测”做进了脚本逻辑里。依据是：
+
+| 证据来源 | 结论 |
+| :--- | :--- |
+| 技能包 `references/coding-plan.md` 实测记录（2026-09-03，真实套餐 Key 打 Coding 端点） | 视觉模型 `glm-4.6v`、`glm-5v-turbo` **原样可用**（读回响应 `model` 字段验证）；官方文档未列出这一点 |
+| `references/models.md` + 官方文档 | `glm-5.3-flash` **原生多模态**（能理解图片），且官方明确“所有套餐均支持 glm-5.3、glm-5.3-flash” |
+| 我 WebFetch 的官方页面（docs.bigmodel.cn/cn/coding-plan） | 官方口径把套餐视觉理解为“附赠的视觉理解 MCP”，未提直接传图——但技能包的 chat.md 官方示例本身就是用 `glm-5.3-flash` + `image_url` |
+
+## 脚本做了什么
+
+1. **端点**：固定走套餐专用的 `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`——套餐 Key 打标准端点必报 `1113 余额不足`，这是最经典的坑。
+2. **真实尝试**：按优先级依次试 `glm-5.3-flash`（官方套餐内 + 原生多模态，首选）→ `glm-5v-turbo` → `glm-4.6v`（后两个实测可用但官方未列）。任一成功即打印回答。
+3. **对账**：打印响应体里的 `model` 字段作为“服务端实际使用模型”，若与请求不一致会显式告警——因为 Coding 端点会静默重路由（请求 `glm-4.6` 实际跑 `glm-5.3-flash` 之类），只看请求名会对错账。
+4. **失败才有结论**：三个模型全失败时，打印“套餐用不了视觉”的结论 + 每个模型的具体错误码作为依据，并给出官方替代路径（套餐附赠的视觉 MCP `npx -y "@z_ai/mcp-server"`，或标准 Key 走 `/api/paas/v4` 调 `glm-4.6v`/`glm-ocr`）。
+5. 只用 `requests` + 标准库；图片从脚本同目录读取并转 base64 data URI（无需先上传）；处理了“思考 token 吃光预算导致空回答”（看 `finish_reason` 而非空串）等已知坑。
+
+跑法：把 `invoice.png` 放到 `outputs/` 目录，`export GLM_CODING_PLAN_API_KEY=你的Key` 后 `python3 main.py`。
+
+两点提醒：官方条款限定套餐在指定编码工具环境使用，脚本直调技术上可行但属条款外用法，是否扣套餐额度以官方为准；`glm-5v-turbo`/`glm-4.6v` 的可用性属实测行为、无文档背书，随时可能变，所以脚本只把它们当备选。

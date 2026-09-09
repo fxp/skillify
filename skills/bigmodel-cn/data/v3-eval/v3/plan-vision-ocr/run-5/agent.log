@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付并验证。汇总如下：
+
+## 交付物
+
+`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/plan-vision-ocr/run-5/outputs/main.py`（已通过 `python3 -m py_compile`，只依赖 `requests` + 标准库，直接 `python3 main.py` 运行）
+
+## 脚本怎么解决问题
+
+**1. 端点**：套餐 Key 与标准 Key 不通用，打标准端点 `/api/paas/v4` 必报 `429 + 1113 余额不足`（技能包实测复现）。所以脚本固定走套餐专用端点 `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`（注意路径没有 `/v1` 这一级）。
+
+**2. 视觉能力——先真试，再下结论**。官方文档（已用 WebFetch 核实 docs.bigmodel.cn）只承诺套餐支持 `glm-5.3` / `glm-5.3-flash`，图像理解官方口径走套餐附赠的 MCP 工具；但技能包 2026-09-03 用真实套餐 Key 逐条探测的结果是：**视觉模型 `glm-4.6v`、`glm-5v-turbo` 在套餐端点原样可用**（文档没写，实测可用）。因此脚本按候选列表逐个发真实请求：
+
+```
+glm-4.6v → glm-5v-turbo → glm-5.3-flash（官方套餐内、原生多模态）→ glm-4.6v-flash（免费兜底）
+```
+
+每个模型成功即停；**全部失败才打印“套餐无法图片识别”的结论**，并把每次尝试的 HTTP 状态码、错误码、错误信息原样列出作为依据——不会照文档直接回“不支持”。
+
+**3. 对账**：套餐端点存在静默换模型（实测 `glm-4.6` 会被换成 `glm-5.3-flash`），所以脚本打印的是**响应体里读回的 `model` 字段**，并附上请求模型名；两者不一致时显式告警“计费与能力按实际模型算”。
+
+**4. 其他实测坑的兜底**：思考 token 计入 `max_tokens`，遇到 `finish_reason=length` 自动翻倍预算重试一次；HTTP 200 但空内容不算成功、换下一个模型；图片读取脚本同目录（找不到再退回当前目录）、超 5MB 官方上限直接报错。
+
+## 两点说明
+
+- **我没有实际调用 API**（当前环境无可用 Key，按你的要求只写代码），以上“套餐端点可用 glm-4.6v”的预期来自技能包的实测记录，最终以你跑脚本时打印的“服务端实际使用的模型”为准。
+- 官方条款规定套餐仅限指定工具环境（Claude Code、OpenCode 等）使用，自己写脚本调 Coding 端点技术上能通，但属条款之外的用法，生产场景建议换标准 API Key。

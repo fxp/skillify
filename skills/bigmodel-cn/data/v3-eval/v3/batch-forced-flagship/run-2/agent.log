@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，这是 outputs/ 目录里唯一的文件。
+
+## 关键结论：`glm-5.3` 走不通 Batch，脚本会自动降级到 `glm-5.1`
+
+**我做了什么调整、为什么：**
+
+技能包实测结论（官方文档的排队限制表也印证了）：**Batch 有一份独立的模型白名单，旗舰 `glm-5.3` 不在其中**，而且校验发生在**文件上传阶段**（`POST /paas/v4/files`）就报业务码 `1210 模型名称错误`，根本轮不到创建 batch 任务。白名单内质量最强的文本模型是 **`glm-5.1`**（200K 上下文，thinking 自动判断），所以这是质量优先前提下的正确降级目标。
+
+脚本不是写死跳过 `glm-5.3`，而是**先按你的要求用 `glm-5.3` 真实尝试上传**——白名单会随平台更新，报错信息才是最权威的来源——撞上 `1210` 后自动解析报错里给出的白名单、按质量优先级降级到 `glm-5.1` 重新构造上传，并把调整原因打印出来。若哪天平台把 `glm-5.3` 加进白名单，脚本会直接用它，零改动。
+
+## 脚本流程（`python3 main.py` 直接跑）
+
+1. 读取同目录 `comments.txt`（按 `__file__` 定位，空行跳过，超 50000 条会明确报错）
+2. 构造 jsonl（内存中，不留临时文件）：`custom_id` 用 `request-000001` 格式（≥6 字符，短了上传就 1210）、`temperature 0.1`、`max_tokens 2048`（思考 token 计入预算，防止截断出空结果）、prompt 约束只输出 正面/负面/中性
+3. 上传 `purpose=batch` → 若 1210 模型拒绝则降级重试（不重试刚被拒的模型）
+4. `POST /paas/v4/batches` 创建任务（`endpoint: /v4/chat/completions`，`auto_delete_input_file: false` 便于核对）
+5. **打印 batch 任务 id + 状态**，不等待完成，附上后续轮询/下载的 URL
+
+常见错误码（1113 套餐 Key 打错端点、1000/1001 鉴权失败等）都有针对性的中文提示，而不是抛原始报错。
+
+## 验证情况（未真调 API，符合环境限制）
+
+- `python3 -m py_compile` 通过
+- 离线单测通过：jsonl 构造、白名单解析（用技能包实测的 1210 报错文案，正确过滤 cogview/embedding/视觉模型，`glm-5.1` 排首位）——期间还修掉一个真 bug（视觉模型过滤正则匹配不到 `glm-4v` 这类命名）
+- mock HTTP 端到端干跑通过：3 条评论 → `glm-5.3` 被 1210 拒 → 解析白名单 → `glm-5.1` 上传成功 → 创建 batch → 正确打印 `batch_2095408344001937408` 与调整说明；缺 Key、缺 comments.txt 的防呆路径也验证过
+
+参考来源：[智谱 Batch 批量处理指南](https://docs.bigmodel.cn/cn/guide/tools/batch)、[Batch API FAQ](https://docs.bigmodel.cn/cn/faq/batch-api-issues)、以及本地技能包 `bigmodel-cn-v3` 的实测踩坑记录。

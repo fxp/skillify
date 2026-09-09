@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部通过（那条 urllib3 警告是本机 Python 3.9 环境的提示，与脚本无关）。交付完成。
+
+## 交付说明
+
+脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v2/batch-forced-flagship/run-2/outputs/main.py`，`python3 -m py_compile` 编译通过，另做了离线逻辑自测（jsonl 构造、`custom_id` 唯一性、字段完整性）均正常。只依赖 `requests` + 标准库，`python3 main.py` 直接可跑（需先 `export ZHIPUAI_API_KEY=...`，同目录放 `comments.txt`）。
+
+**流程**：读 `comments.txt` → 每条评论编成一行 batch 请求（`custom_id=request-00001` 格式、`url=/v4/chat/completions`、`temperature=0.1`、system prompt 限定只输出 正面/负面/中性）→ 上传（`purpose=batch`）→ 创建 batch → 打印任务 id 和轮询地址，不等待跑完。
+
+## 我做的关键调整：glm-5.3 走不通，自动降级到 glm-5.1
+
+**glm-5.3 这条路确实走不通**，而且失败得比想象中早：智谱的 Batch 有一份**独立于平台整体的模型白名单**，旗舰 `glm-5.3` 不在其中——不是创建任务时才报错，而是**上传 jsonl 文件这一步**整份就被拒（业务错误码 `1210 模型名称错误`）。这一点技能包里是用真实 API 验证过的，官方文档的 Batch 队列限制表和 FAQ 里也确实没有 glm-5.3。
+
+**调整方式**：脚本按 `["glm-5.3", "glm-5.1", "glm-5-turbo", "glm-4-plus"]` 的顺序逐个尝试上传——先按你的需求老老实实试 `glm-5.3`；只有被 `1210`（白名单拒绝）时才降级重试，鉴权/网络等其他错误会直接报错退出（换模型解决不了）。默认会落到 **`glm-5.1`**，理由：它是白名单内质量最强的模型，最贴合你“分类质量重要”的诉求；运行时会明确打印降级原因。日后 `glm-5.3` 若进入白名单，脚本无需改动即自动优先用它。
+
+顺带规避了同文档里的另外两个实测坑：`custom_id` 不足 6 字符会在上传阶段被拒（用 `request-00001` 格式）；`request_counts` 是嵌套对象而非顶层字段（打印请求数时按嵌套读取）。
+
+Sources:
+- [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)
+- [Batch API FAQ - 智谱AI开放文档](https://docs.bigmodel.cn/cn/faq/batch-api-issues)
+- [GLM-5.1 模型说明 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.1)

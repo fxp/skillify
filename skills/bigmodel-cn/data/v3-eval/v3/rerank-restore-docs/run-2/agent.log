@@ -1,0 +1,28 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已写好并保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/rerank-restore-docs/run-2/outputs/main.py`,`python3 -m py_compile` 编译通过。
+
+**接口依据**(SKILL.md → `references/tools.md` 的 rerank 一节，并已抓官方文档逐项核实)：
+- `POST https://open.bigmodel.cn/api/paas/v4/rerank`,`Authorization: Bearer <key>`,`model` 固定为 `rerank`
+- 官方参考:[智谱 AI 文本重排序 API](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E9%87%8D%E6%8E%92%E5%BA%8F)
+
+**几个关键设计决策，都是针对技能包实测踩坑点的**：
+
+1. **原文不依赖 API 回传**：SKILL 速查表第 19 条实测发现 rerank 的 `results` 默认**只有 `index` 和分数、没有原文**。虽然请求里传了 `return_documents: True`,但打印时用 `DOCUMENTS[item["index"]]` 把 index 映射回本地列表——保证贴进工单的内容与输入**逐字一致**(含中文标点)，即使接口行为有变也不受影响。
+2. **显式降序排序**：官方文档**未承诺** `results` 按分数排序，所以代码里自己 `sorted(..., reverse=True)`,确保输出严格从高到低。
+3. **全部 5 条都输出、不截断 top_n**:技能提醒语义相近的候选分数可能被压成并列(如并列 1.0),只看第一名不可信；本任务 5 条全打印正好规避。
+4. **错误路径给可用信息**：Key 缺失、HTTP 非 200(会带出响应体里的平台错误码如 1113)、空结果都有明确的中文提示，而不是半截 traceback。
+
+预期输出形如(每行 = 原文 + 分数，无序号，可直接贴工单)：
+
+```
+增值税专用发票需在订单完成后 7 个工作日内申请，逾期需联系客服（相关度：0.9x）
+普通发票支持随时申请，无时间限制（相关度：0.3x）
+...
+```
+
+设置 `ZHIPUAI_API_KEY` 后 `python3 main.py` 即可运行；当前环境无 Key,按你的要求未实际调用，仅验证了编译。
+
+Sources:
+- [文本重排序 - 智谱AI开放文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E9%87%8D%E6%8E%92%E5%BA%8F)

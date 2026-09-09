@@ -1,0 +1,98 @@
+{
+  "tts-asr-roundtrip": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "plan-vision-ocr": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "rerank-restore-docs": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "long-cited-answer": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      0.5,
+      1.0
+    ],
+    "mean": 0.9,
+    "stdev": 0.2
+  },
+  "long-report-complete": {
+    "runs": 5,
+    "scores": [
+      0.5,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 0.9,
+    "stdev": 0.2
+  },
+  "tight-budget-complete": {
+    "runs": 5,
+    "scores": [
+      0.75,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 0.95,
+    "stdev": 0.1
+  },
+  "batch-forced-flagship": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  },
+  "kb-fallback": {
+    "runs": 5,
+    "scores": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "mean": 1.0,
+    "stdev": 0.0
+  }
+}

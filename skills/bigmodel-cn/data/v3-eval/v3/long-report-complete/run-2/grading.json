@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 305.1s :: "
+    },
+    {
+      "text": "简报正文 ≥600 汉字",
+      "passed": true,
+      "evidence": "正文汉字=1068"
+    },
+    {
+      "text": "没有把被截断的半截内容丢出来",
+      "passed": true,
+      "evidence": "truncated=False enough=True"
+    },
+    {
+      "text": "有小标题结构",
+      "passed": true,
+      "evidence": "标题数=4"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v3"
+}

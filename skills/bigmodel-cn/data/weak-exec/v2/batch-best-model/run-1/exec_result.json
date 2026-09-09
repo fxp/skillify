@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "正在读取评论文件...\n错误: [Errno 2] No such file or directory: '/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v2/batch-best-model/weak-exec/comments.txt'\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1
+}

@@ -1,0 +1,23 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，`python3 -m py_compile` 编译通过，依赖仅 `requests` + 标准库（`os`/`re`/`sys`）。
+
+## 脚本做了什么
+
+按 SKILL.md → `references/media.md` 的规范写，并用 WebFetch 对照了官方文档（[语音转文本](https://docs.bigmodel.cn/api-reference/模型-api/语音转文本)、[GLM-TTS](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-tts)），两边参数一致：
+
+| 步骤 | 接口 | 关键点 |
+|---|---|---|
+| 1/3 TTS | `POST /paas/v4/audio/speech` | `model=glm-tts`、`voice=tongtong`、`response_format=wav`（非流式才有 wav）；响应是二进制音频，校验 `RIFF/WAVE` 头后落盘为脚本同目录的 `smoke_audio.wav` |
+| 2/3 ASR | `POST /paas/v4/audio/transcriptions` | `multipart/form-data` 传 `file` + `model=glm-asr-2512`，从响应 JSON 的 `text` 字段取转写结果 |
+| 3/3 比对 | — | 打印转写结果，去掉空白和中英文标点后归一化比对，输出明确的 ✅/❌ 结论 |
+
+## 针对“报错要说清楚卡在哪”的处理
+
+- 每步失败都 `[FAIL] 步骤 N/3 …` 打到 stderr 并 `sys.exit(1)`，附 HTTP 状态码 + 平台 `error.code/message` + 出错 URL（错误体格式按技能包 `errors-and-limits.md` 的 `{"error":{"code","message"}}` 解析）。
+- 专门防了几个静默陷阱：HTTP 200 但返回 JSON（错误体混进来会被当音频写盘）、返回字节不含 RIFF 头、ASR 响应无 `text` 字段或为空——都会在对应步骤报错，不会只说“已生成音频”。
+- 缺 `ZHIPUAI_API_KEY` 时报错并提示控制台地址，还注明 Coding Plan 套餐 Key 调不了语音接口（技能包速查表 #1 的 1113 陷阱）。
+- ASR 响应会读回 `model` 字段核对是否被静默换模型（速查表 #2/#3），不一致打 ⚠️。
+
+未实际调用 API（环境无 Key）。拿到 Key 后 `export ZHIPUAI_API_KEY=... && python3 main.py` 即可跑通；转写与原文归一化后一致时以退出码 0 结束并打印「✅ 语音链路已打通」。

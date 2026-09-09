@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/long-report-complete/run-1/outputs/main.py`（目录里只有这一个文件）。
+
+## 实现要点
+
+**接口**（已用 WebFetch 对照 docs.bigmodel.cn 官方文档确认，与技能包一致）：
+- `POST https://open.bigmodel.cn/api/paas/v4/chat/completions`，Bearer 鉴权，Key 只从环境变量 `ZHIPUAI_API_KEY` 读取
+- 仅依赖 `requests` + 标准库，`python3 main.py` 直接跑
+
+**防截断设计**——这是本任务的核心，针对技能包实测踩坑点：
+
+| 措施 | 依据 |
+| :-- | :-- |
+| 首轮就给 `max_tokens=8192`（技能实测 600 字简报思考链就要 2400+，3000 才够）并加 `reasoning_effort: "low"` 压缩思考链 | 陷阱 #13：思考 token 计入 `max_tokens`，预算小了正文被截甚至为空 |
+| 对 `glm-5.3` **不传** `thinking: disabled`（标准端点会报 1210），降级时改换 `glm-5.2` 才关思考 | 陷阱 #14：两端点参数校验不一致 |
+| 三级策略兜底：① glm-5.3 整篇（截断→翻倍预算带反馈重试，8192→16384→32768）→ ② glm-5.2 关思考重试 → ③ 按提纲分 5 小节生成再拼接 | SKILL.md 补救表：拿到完整结果才返回，不许把半截东西丢给用户 |
+| 读回响应 `model` 字段核对回显：同族版本差异记日志继续，完全换模型则报警停下 | 陷阱 #2/#3：静默换模型 |
+
+**交付校验**：脚本打印简报全文后输出校验块——字数（去空白与 Markdown 标记的保守口径，硬性 ≥600）、小标题数（≥3）、数据点数（数字 ≥5 处）、`finish_reason == "stop"`、结尾是否完整句子，全部达标才给出「✅ 可直接放入周报」结论；三种策略全失败时明确报错退出，**任何情况下都不会输出半截内容**。进度诊断走 stderr，stdout 只有简报和结论。
+
+## 验证情况（如实说明）
+
+- ✅ `python3 -m py_compile` 编译通过
+- ✅ 无 Key 运行：优雅报错退出（exit 1），不触发 API 调用
+- ✅ 离线 mock 测试（monkeypatch 模拟 API，未打真实网络）：合格样例放行；截断样例被拦下；「第一次 `finish_reason=length` → 翻倍预算重试 → 第二次拿到完整稿才交付」主链路走通；策略②参数正确（glm-5.2 + `thinking: disabled`）；回显模型完全不同时正确放弃
+- ⚠️ **未调用真实 API**（按你的要求，环境无 Key）——真实运行请 `export ZHIPUAI_API_KEY=<Key>` 后执行 `python3 main.py`
+
+另外在简报之外打印了一行提示：内容由 GLM 基于模型知识生成、关键数字建议对外使用前复核（简报正文本身保持干净，可直接复制进周报）。

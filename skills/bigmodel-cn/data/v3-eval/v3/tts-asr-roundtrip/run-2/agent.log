@@ -1,0 +1,25 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已完成并交付到 `outputs/main.py`。说明如下：
+
+## 脚本做了什么
+
+按 `TTS 合成 → 落盘 → ASR 转写 → 比对` 三步走，每步失败都会**明确报出卡在哪一步**并以非零码退出，绝不停在“已生成音频”：
+
+1. **第 1 步 TTS**：`POST /paas/v4/audio/speech`，`model=glm-tts`、`voice=tongtong`，合成「发票需要在七个工作日内申请」存为 `tts_output.wav`。这里处理了速查表第 18 条的坑——**TTS 默认返回裸 PCM 而 ASR 只收 wav/mp3**，所以显式传 `response_format: "wav"`，并且不信任状态码，落盘前校验首 4 字节是 `RIFF`，不是就重试一次、仍不是就报错（错误信息会带上 content-type 和平台错误码）
+2. **第 2 步 ASR**：`POST /paas/v4/audio/transcriptions`，multipart 上传刚生成的同一个文件，`model=glm-asr-2512`。发送前先自查 25MB / 30 秒限制（解析 wav 头估算时长），返回后校验 `text` 字段非空——空文本、JSON 错误体、非 JSON 响应都会点名报错
+3. **第 3 步 比对**：去标点、全角数字转半角后归一化，用 `difflib` 算相似度；逐字一致或相似度 ≥ 0.8（容忍“七/7”这类写法差异，实测这种差异得分 0.92）打印 `✅ 链路打通`，否则报 `❌ 卡在第 3 步`
+
+Key 从 `ZHIPUAI_API_KEY` 读取，只用 `requests` + 标准库，直接 `python3 main.py` 即可运行。
+
+## 已验证 / 未验证
+
+- ✅ `python3 -m py_compile` 编译通过；比对逻辑离线测试（全对 1.0 / 数字变体 0.92 / 无关文本 0.0）；缺 Key 时正确报“卡在【环境准备】”并 exit 1
+- ⚠️ 按要求**没有真实调用 API**（环境无 Key），端点与参数均已与官方文档逐项核对一致（见下方来源），拿到 Key 后跑一次即可出真实结论
+
+Sources:
+- [文本转语音 API 参考 - 智谱开放平台文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E6%96%87%E6%9C%AC%E8%BD%AC%E8%AF%AD%E9%9F%B3)
+- [语音转文本 API 参考 - 智谱开放平台文档](https://docs.bigmodel.cn/api-reference/%E6%A8%A1%E5%9E%8B-api/%E8%AF%AD%E9%9F%B3%E8%BD%AC%E6%96%87%E6%9C%AC)
+- [GLM-TTS 模型介绍](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-tts)
+- [GLM-ASR-2512 模型介绍](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-asr-2512)

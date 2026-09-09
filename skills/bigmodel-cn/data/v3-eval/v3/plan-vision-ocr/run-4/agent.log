@@ -1,0 +1,30 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，缺 Key / 缺图片两条守卫路径实测正常退出，`outputs/` 里只有这一个文件。
+
+## 结论：套餐大概率能用视觉，脚本会先真试再下结论
+
+依据（来自技能包 2026-09-03 用真实套餐 Key 的实测 + 官方文档核实）：
+
+- 套餐 Key 必须打专用端点 `…/api/coding/paas/v4`，打标准端点必报 `1113`——这是最常见的误判来源；
+- 官方文档只承诺 `glm-5.3`/`glm-5.3-flash`，但 **`glm-5.3-flash` 本身就是视觉模型**（支持 `image_url` 输入）；
+- 实测 **`glm-4.6v`、`glm-5v-turbo` 在套餐端点直接传图可用**（官方文档没写，但真跑通了）。
+
+所以脚本按 `glm-5.3-flash → glm-4.6v → glm-5v-turbo` 逐个尝试；只有三者全部被服务端拒绝、且错误码均为 `1113`（此时端点已确认正确，排除了“打错端点”这一成因），才打印“套餐无法直接做图片理解”的结论并附上逐次失败的原始错误码作为依据；若是其他错误（如 Key 无效），会明确说“暂不能下结论”。
+
+## 脚本要点
+
+- **只用 requests + 标准库**，读取脚本同目录的 `invoice.png` 转 base64 data URI（预检 5M 单图上限），`python3 main.py` 直接跑；
+- **对账**：打印服务端响应里的 `model` 字段——服务端会静默换模型（如 `glm-4.6` → `glm-5.3-flash`），不一致时警告，并附 token 用量；
+- 防了技能包里几个静默坑：`finish_reason=length`（思考 token 计入 `max_tokens`）时自动翻倍预算重试（`glm-4.6v` 上限 32768，其余 131072）；视觉模型的 `content` 可能混入 `<think>` 和边界标签，展示前剥掉。
+
+## 用法
+
+```bash
+export GLM_CODING_PLAN_API_KEY=你的套餐Key
+# 把 invoice.png 放到 main.py 同目录
+python3 main.py
+```
+
+一点提醒：官方条款把套餐限定在指定工具（Claude Code 等）内使用，自写脚本调套餐端点技术上行得通，但属条款之外的用法，生产环境建议换标准 API Key。

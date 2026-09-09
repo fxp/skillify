@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 21.0s :: "
+    },
+    {
+      "text": "正文 ≥600 汉字",
+      "passed": true,
+      "evidence": "正文汉字=659"
+    },
+    {
+      "text": "遵守 max_tokens ≤ 1000",
+      "passed": true,
+      "evidence": "max_tokens取值=[1000, 850]"
+    },
+    {
+      "text": "没有把截断的半截内容丢出来",
+      "passed": true,
+      "evidence": "enough=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v3"
+}

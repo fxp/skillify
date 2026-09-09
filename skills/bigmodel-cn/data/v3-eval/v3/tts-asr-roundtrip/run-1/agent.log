@@ -1,0 +1,35 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+完成。脚本已保存到 `outputs/main.py`，编译通过，无 Key 场景实测能正确报错退出（exit 1，不会误报“已生成音频”）。
+
+## 脚本做了什么
+
+按 5 步走，每步失败都会**指明卡在哪一步、原因是什么**，非零退出码结束：
+
+1. **环境变量**：读 `ZHIPUAI_API_KEY`，缺失直接报错
+2. **TTS 合成**：`POST /paas/v4/audio/speech`，模型 `glm-tts`、音色 `tongtong`，合成「发票需要在七个工作日内申请」存为 `tts_output.wav`
+3. **音频校验**：用 magic bytes（`RIFF`/`WAVE`）验容器格式 + 标准库 `wave` 解析采样率/时长，超 30 秒（ASR 上限）提前拦截
+4. **ASR 转写**：multipart 上传刚落盘的文件到 `POST /paas/v4/audio/transcriptions`，模型 `glm-asr-2512`，取出 `text` 字段；返回 200 但无文本也算失败
+5. **比对**：归一化（去标点/空白）后精确匹配或 difflib 相似度，最后明确打印 ✅链路通 / ❌未通
+
+## 关键的坑（skill 速查表 #18，官方文档已二次确认）
+
+- **TTS 不传 `response_format` 默认返回裸 PCM**，而 ASR 只收 wav/mp3，改后缀没用 → 脚本显式传 `"response_format": "wav"`，并且不信任后缀、直接校验 RIFF 头
+- 错误体是 JSON（`error.code/message`），两种接口都会解析出错误码；若撞上 `1113` 会提示可能是 Coding Plan 套餐 Key 打了标准端点（而非余额不足）
+- 音频路径基于 `__file__` 定位，任意目录执行 `python3 main.py` 都能把 wav 落在脚本同目录
+
+## 运行方式
+
+```bash
+export ZHIPUAI_API_KEY=<你的标准 API Key>   # 注意：套餐 Key 不行，语音不在套餐能力内
+python3 outputs/main.py
+```
+
+真实 API 调用我无法验证（当前无可用 Key），但编译和失败路径均已实测。
+
+Sources:
+- [智谱 AI 文档：文本转语音 API](https://docs.bigmodel.cn/api-reference/模型-api/文本转语音)
+- [智谱 AI 文档：语音转文本 API](https://docs.bigmodel.cn/api-reference/模型-api/语音转文本)
+- [GLM-TTS 模型介绍](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-tts)
+- [GLM-ASR-2512 模型介绍](https://docs.bigmodel.cn/cn/guide/models/sound-and-video/glm-asr-2512)

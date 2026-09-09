@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 109.7s :: 错误：答案不完整：生成达到 max_tokens 上限被截断（finish_reason=length）。本脚本已给足 8192 token 预算仍被截断，请调大 MAX_TOKENS 后重跑。\n"
+    },
+    {
+      "text": "答案完整未被截断",
+      "passed": false,
+      "evidence": "truncated_end=True"
+    },
+    {
+      "text": "至少 2 条 http(s) 来源链接",
+      "passed": false,
+      "evidence": "links=0"
+    },
+    {
+      "text": "来源取自接口返回而非编造",
+      "passed": true,
+      "evidence": "reads_api=True"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "executor": "glm-5.3",
+  "skill": "v2"
+}

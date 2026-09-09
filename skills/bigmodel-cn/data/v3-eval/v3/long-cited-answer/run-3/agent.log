@@ -1,0 +1,20 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付到 `outputs/main.py`，`python3 -m py_compile` 通过，各分支逻辑用打桩响应验证过（未真实调 API，按约定当前无 Key）。
+
+**实现要点**（对应技能包速查表的三个静默坑，均已在代码里防住）：
+
+| 坑 | 对策 |
+| :-- | :-- |
+| #4 `search_pro`/`search_std` 的来源 `link` 恒为空串 | 引擎只用 `search_pro_bing` → `_quark` → `_sogou` 轮换，这三个实测返回真实链接 |
+| #5 不传 `search_result: true` 响应里根本没有 `web_search` 数组 | 显式传 `true`；链接从该数组提取，过滤空串、去重，且必须 `http` 开头 |
+| #13 思考 token 计入 `max_tokens`，`finish_reason=length` 才是真判据 | 预算阶梯 8192→16384→32768（glm-5.3 标准端点思考关不掉，从宽给）；截断时自动翻倍重试而非报错退出 |
+
+**报错纪律**（不糊弄）：
+- 答案不完整：三档预算用尽仍截断 → 退出码 2，逐引擎列出失败原因，拒绝输出半截内容；
+- 链接不足：答案完整但可用链接 < 2 → 换引擎重跑，三个引擎全失败才退出码 3，并说明是搜索源未返回 `link` 还是引擎不可用；
+- 缺 Key / 网络错误 / 平台错误码（如 1113、1210）→ 退出码 1，带出真实错误码和 message；
+- 附带防御：回显 `model` 与请求不符（如被静默换成别的模型）时放弃该次结果。
+
+**运行**：`export ZHIPUAI_API_KEY=<key>` 后 `python3 main.py`，输出答案正文 + 编号来源列表（标题｜媒体 + 完整网址），可直接贴周报。

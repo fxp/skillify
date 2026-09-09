@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "读取到 150 条 FAQ\n正在计算 FAQ 向量...\nError calling embeddings API: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/embeddings\nError: Failed to get embeddings for FAQ texts\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.2
+}

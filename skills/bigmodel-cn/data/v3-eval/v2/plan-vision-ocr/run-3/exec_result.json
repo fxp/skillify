@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "已读取 invoice.png（base64 后 4318 字符）\n端点：https://open.bigmodel.cn/api/coding/paas/v4/chat/completions\n\n[尝试] model=glm-4.6v ...\n\n===== 模型的回答 =====\n\n- 发票类型：INVOICE（发票）\n- 发票号码：2026 - 0917\n- 总金额（TOTAL）：48,600 CNY\n- 购买方信息：图片中未显示，不编造\n- 销售方信息：图片中未显示，不编造\n- 开票日期：图片中未显示，不编造\n- 商品或服务明细：图片中未显示，不编造\n- 税额：图片中未显示，不编造\n- 价税合计：图片中未单独显示“价税合计”字段，仅显示TOTAL为48,600 CNY（若TOTAL为价税合计则对应，但无明确区分时按显示内容列）\n\n===== 对账信息 =====\n请求模型     : glm-4.6v\n实际使用模型 : glm-4.6v\n请求 ID      : 20260908121922df48d446d4704e22\nfinish_reason: stop\ntoken 用量   : 输入 180 / 输出 462 / 合计 642\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 9.1,
+  "audio_files": []
+}

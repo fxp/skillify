@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "开始创建 Batch 情感分类任务...\n1. 读取评论文件...\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v1/batch-best-model/run-1/work/main.py\", line 147, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v1/batch-best-model/run-1/work/main.py\", line 120, in main\n    comments = read_comments()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v1/batch-best-model/run-1/work/main.py\", line 24, in read_comments\n    with open(comments_file, \"r\", encoding=\"utf-8\") as f:\nFileNotFoundError: [Errno 2] No such file or directory: '/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v1/comments.txt'\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

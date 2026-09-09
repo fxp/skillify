@@ -1,0 +1,27 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已写好并通过编译，交付在 `outputs/main.py`。
+
+## 结论：套餐大概率能用视觉，脚本会“先真试再下结论"
+
+依据（来自技能包 2026-09-03 用真实套餐 Key 的实测 + 我刚抓取的官方文档核对）：
+
+- **官方文档**只承诺套餐支持 `glm-5.3` / `glm-5.3-flash`，图像理解走附赠的视觉理解 MCP；
+- 但**实测**发现视觉模型 `glm-4.6v`、`glm-5v-turbo` 在 Coding 端点 `…/api/coding/paas/v4` 直接可用；且 chat 文档把 `glm-5.3-flash` 也列为接受图片输入的模型（官方概览页也写着"GLM-5.3-Flash（含视觉理解）"）。
+
+所以**不能**照文档直接回"套餐不支持视觉"。需要坦白的一点：当前环境没有可用 Key，我没有真的发起过 API 调用——"先试过再下结论"落实在脚本的运行时逻辑里：依次真调 `glm-5.3-flash → glm-4.6v → glm-5v-turbo`，只有三个全部失败才打印"套餐无法完成图片理解”的结论，并附上每次的 HTTP 状态码 + 错误码原文作为证据。
+
+## 脚本要点（针对技能包里记录的静默陷阱）
+
+| 陷阱 | 脚本的对策 |
+| :-- | :-- |
+| 套餐 Key 打标准端点必报 `1113` | 只打 `https://open.bigmodel.cn/api/coding/paas/v4/chat/completions` |
+| 服务端静默换模型（如 `glm-4.6`→`glm-5.3-flash`） | 成功后回读响应里的 `model` 字段打印"服务端实际使用模型"，不一致时打警告；同时输出 `request_id` 和 usage token 数方便对账 |
+| 思考 token 吃光 `max_tokens`（`finish_reason=length`、正文为空） | 首次给足 8192；撞上后按补救表"预算翻倍 + `thinking:{"type":"disabled"}`"重试一次（该参数仅 Coding 端点接受） |
+| 瞬时故障 vs 确定性失败不分 | 5xx/非 1113 的 429/网络错误退避重试；`1113` 属确定性失败直接换下一个候选 |
+| 视觉模型 content 夹带 `<think>` 等标签 | 打印前剥离 |
+
+其他细节：只用 `requests`；Key 从 `GLM_CODING_PLAN_API_KEY` 读取；`invoice.png` 按 `main.py` 所在目录解析（不依赖当前工作目录）；图片转 base64 data URI 内联（超 5MB 会警告）。`python3 main.py` 直接可跑，编译已验证（`py_compile` 通过，缓存已清理，outputs 下只有 main.py）。
+
+一个提醒（技能包原文强调的）：官方条款规定套餐仅限指定工具环境使用，自写脚本调 Coding 端点技术上是通的，但属于条款边缘用法；生产系统建议用标准 API Key。

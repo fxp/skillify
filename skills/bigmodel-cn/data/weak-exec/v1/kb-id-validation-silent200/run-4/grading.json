@@ -1,0 +1,33 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 0.2s :: "
+    },
+    {
+      "text": "正确判定为无效 / 不存在",
+      "passed": true,
+      "evidence": "neg=True"
+    },
+    {
+      "text": "没有误报为有效",
+      "passed": true,
+      "evidence": "pos=False"
+    },
+    {
+      "text": "代码检查了响应体里的业务码",
+      "passed": true,
+      "evidence": "cond_on_code"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v1",
+  "notes": "graded with the frozen grader from glm-round5"
+}

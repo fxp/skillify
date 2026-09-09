@@ -1,0 +1,24 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+脚本已交付到 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/v3-eval/v3/tight-budget-complete/run-2/outputs/main.py`，`py_compile` 通过；无 Key 场景实测跑通（明确报出卡在鉴权、退出码 2，不输出半截）。**带 Key 的真实生成路径未执行**——当前环境没有可用 Key，这点如实说明。
+
+## 核心矛盾与解法
+
+任务的本质冲突是技能包速查表 **#13**：思考 token 计入 `max_tokens`，实测一份 600 字简报的思考链要 2400+ token——而你的网关硬约束单请求 ≤1000。补救表的三招里「加大 max_tokens」被禁止，所以脚本用了另外两招的组合：
+
+| 措施 | 依据 | 实现 |
+| :-- | :-- | :-- |
+| **选 `glm-4.6` 并显式关思考** | #13/#14：`glm-5.3` 在标准端点强制思考关不掉（传 `disabled` 报 1210），`glm-4.6` 属「可显式开关」类（官方文档已确认） | 每次请求带 `thinking:{"type":"disabled"}`，850 预算全留给正文 |
+| **分段生成再拼接** | 补救表第③招 | 5 个小节各一次请求，每节目标 180–200 汉字，合计约 950，稳过 600 底线 |
+| **逐段判 `finish_reason`** | #13：判据是 `finish_reason` 不是空串 | `length` 时不报错退出，改压缩字数重问一次；`thinking` 参数被 1210 拒则去掉重试 |
+
+## 其他兜底
+
+- **硬约束防呆**：所有 `max_tokens` 经 `clamp_tokens()` 夹在 1000 以内（实际申请 850），结尾会打印「每次 max_tokens=850（上限 1000，未超出）」供对账。
+- **字数兜底**：拼接后统计纯汉字数（`[一-鿿]` 正则），不足 600 自动追加补充小节；仍不足则报卡点、退出码 1，不把残稿当交付。
+- **回显模型核对**（#2/#3）：同步端点理论不换模型，但读回 `model` 字段，版本后缀差异记日志继续，完全不同的模型报警停止。
+- **网络层重试**：仅对超时/连接异常/429/5xx 退避重试 3 次；429 重试符合「限流按并发算」的规范，且全部串行请求。
+- 只依赖 `requests` + 标准库，`python3 main.py` 直接可跑。
+
+一个如实的提醒：简报数据来自模型自身知识（脚本未接联网搜索），口径是行业估计值，系统提示里已要求模型给出自洽的具体数据；如果你要真实统计口径，可以再加 `web_search` 工具（对应 `references/tools.md`，注意 #4/#5 两个搜索坑），需要的话我可以扩展。

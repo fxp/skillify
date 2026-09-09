@@ -1,0 +1,29 @@
+"glm-5.3" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-5.3","query_source":"sdk"}
+[claude-code:unrecognized_model] {"model":"glm-5.3-flash","query_source":"web_fetch_apply"}
+全部离线测试通过，`outputs/` 里只有 `main.py`。交付完成。
+
+## 交付说明
+
+脚本在 `run-5/outputs/main.py`，流程：读 `comments.txt`（同目录，兼容 BOM、过滤空行）→ 内存构造 jsonl → `POST /paas/v4/files` 上传（`purpose=batch`）→ `POST /paas/v4/batches` 创建任务 → **打印 batch id 后即退出，不等待**。只用了 `requests` + 标准库，`python3 main.py` 直接可跑。
+
+## 关键调整：glm-5.3 走不通，已自动降级到 glm-5.1
+
+这正是本任务的核心坑，依据是技能包里**真实 API 打出来的**结论（官方文档不公布这份名单）：
+
+- **Batch 有一份独立于平台的模型白名单，旗舰 `glm-5.3` 不在其中**。校验发生在**文件上传阶段**（不是创建 batch 时），直接报业务码 `1210 模型名称错误`。我也抓了官方文档核实：[Batch 指南](https://docs.bigmodel.cn/cn/guide/tools/batch)通篇未提 glm-5.3，排队上限表里全是 glm-4 时代的型号——与实测结论一致。
+- 脚本的处理：按 `["glm-5.3", "glm-5.1"]` 优先级**先构造 glm-5.3 的文件上传**（白名单会变，报错才是权威来源；万一哪天放进去了就直接用上最好的模型）；撞到 `1210` 就打印降级提示，改用**白名单内质量最强的 `glm-5.1`** 重建 jsonl 再上传——这是"分类质量优先"约束下 Batch 里能做到的最优解。要真正用 glm-5.3 只能放弃 Batch 走同步/异步对话接口，但那会占并发限额且价格翻倍，与你的批量场景矛盾，故未采用。
+
+## 顺手防掉的其他坑
+
+- `custom_id` 有未文档化的 **6 字符下限**（短了上传即拒），用了 `request-000001` 格式；
+- 请求/创建的响应**即使 HTTP 200 也可能带业务错误码**，统一走 `check_response` 解析 `error.code/message`；
+- 读计数用嵌套的 `request_counts.total`（顶层字段是旧文档的错误写法）；
+- 上传文件名固定 `batch_requests.jsonl`（`purpose=batch` 只接受 `.jsonl`）；
+- 超过单文件 5 万条上限时提前报错提示拆分。
+
+## 验证情况
+
+环境无 Key，**没有真实调 API**；用 `python3 -m py_compile` 编译通过，并用 mock 做了离线测试：jsonl 结构、双形态错误体解析、"glm-5.3 被 1210 拒 → 降级 glm-5.1 → 打印 batch id”的完整降级链路、BOM/空行读取，全部通过。跑的时候：`ZHIPUAI_API_KEY=你的key python3 main.py`。
+
+Sources: [批量处理 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/tools/batch)、[Batch API 常见问题](https://docs.bigmodel.cn/cn/faq/batch-api-issues)

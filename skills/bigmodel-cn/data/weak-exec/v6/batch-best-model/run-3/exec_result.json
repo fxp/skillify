@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "正在读取评论...\n读取到 10 条评论\n正在创建 Batch 请求...\n创建了 10 个请求\n正在上传 Batch 文件...\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v6/batch-best-model/run-3/work/main.py\", line 141, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v6/batch-best-model/run-3/work/main.py\", line 129, in main\n    input_file_id = upload_batch_file(requests_list)\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v6/batch-best-model/run-3/work/main.py\", line 68, in upload_batch_file\n    response = requests.post(\nAttributeError: 'list' object has no attribute 'post'\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

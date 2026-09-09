@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "============================================================\n开始生成 2026 年中国新能源汽车出口市场简报\n============================================================\n正在生成 引言...\n✗ 引言 生成失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n正在生成 出口规模与增长...\n✓ 出口规模与增长 生成完成\n正在生成 主要出口市场分析...\n✓ 主要出口市场分析 生成完成\n正在生成 主要出口企业分析...\n✗ 主要出口企业分析 生成失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n正在生成 未来发展趋势...\n✗ 未来发展趋势 生成失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n正在生成 挑战与机遇...\n✓ 挑战与机遇 生成完成\n正在生成 结论...\n✓ 结论 生成完成\n\n============================================================\n2026 年中国新能源汽车出口市场简报\n============================================================\n\n\n# 2026 年中国新能源汽车出口市场简报\n\n### 引言\n\n生成失败，请检查API配置。\n\n## 出口规模与增长情况\n\n\n\n## 主要出口市场分析\n\n\n\n## 主要出口企业分析\n\n### 主要出口企业分析\n\n生成失败，请检查API配置。\n\n## 未来发展趋势\n\n### 未来发展趋势\n\n生成失败，请检查API配置。\n\n## 挑战与机遇\n\n\n\n## 结论\n\n\n\n---\n*报告生成时间：2026年9月*\n\n\n总字数：103 汉字\n✗ 报告字数不足600字\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 11.1,
+  "audio_files": []
+}

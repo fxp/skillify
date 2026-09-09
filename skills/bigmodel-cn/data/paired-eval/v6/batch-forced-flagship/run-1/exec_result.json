@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "开始处理情感分类任务...\n正在读取评论文件: comments.txt\n读取到 20 条评论\n正在创建 JSONL 批处理文件...\nJSONL 文件大小: 6881 字符\n正在上传文件到智谱平台...\n文件上传成功: 1788944798_57a224185d1b4eefadf832683557d1d3\n正在创建 Batch 任务...\nBatch 任务创建成功！\nBatch ID: batch_2097612633751420928\n任务状态: validating\n\n任务创建完成！\n==================================================\n请使用 Batch ID 跮询任务状态: batch_2097612633751420928\n任务预计在 24 小时内完成\n完成后可以通过 API 下载结果文件\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.5,
+  "audio_files": []
+}

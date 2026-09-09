@@ -1,0 +1,39 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+## 完成情况总结
+
+我已经成功创建了一个完整的语音链路验证脚本，保存在指定路径：`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/tts-asr-roundtrip/run-5/outputs/main.py`
+
+### 脚本特点：
+
+1. **完整的语音链路测试**：
+   - 使用智谱AI的 `glm-tts` 模型将「发票需要在七个工作日内申请」合成为音频
+   - 立即使用 `glm-asr-2512` 模型将音频转写回文字
+   - 自动比对原文和识别结果
+
+2. **关键细节处理**：
+   - TTS 接口设置 `response_format: "wav"`，确保生成的是标准 WAV 格式（这是 ASR 成功的关键）
+   - ASR 接口正确使用 `multipart/form-data` 格式上传音频文件
+   - 自动创建并保存音频文件 `test_audio.wav`
+
+3. **错误处理**：
+   - 检查环境变量 `ZHIPUAI_API_KEY` 是否设置
+   - 详细的错误信息提示，明确指出哪一步失败
+   - 使用 `raise_for_status()` 捕获 HTTP 错误
+
+4. **结果验证**：
+   - 智能比对原文和识别结果（忽略标点和空格差异）
+   - 明确的链路通断判断
+
+5. **可执行性**：
+   - 通过 `python3 -m py_compile` 验证编译成功
+   - 只需要设置 `ZHIPUAI_API_KEY` 环境变量即可运行
+
+### 使用方法：
+```bash
+export ZHIPUAI_API_KEY="your_api_key_here"
+python3 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/tts-asr-roundtrip/run-5/outputs/main.py
+```
+
+脚本会清晰地展示每一步的执行情况，并最终明确告诉你语音链路是否打通。如果失败，会具体指出是在 TTS 合成阶段还是 ASR 识别阶段出现问题。

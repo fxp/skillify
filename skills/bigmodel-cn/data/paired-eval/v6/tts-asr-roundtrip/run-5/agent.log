@@ -1,0 +1,30 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+脚本已成功创建并验证编译通过！
+
+## 脚本功能说明
+
+我创建的 `main.py` 脚本实现了完整的语音链路验证：
+
+### 主要功能
+1. **语音合成（TTS）**：使用智谱的 `glm-tts` 模型将「发票需要在七个工作日内申请」合成为 WAV 格式的音频文件
+2. **语音识别（ASR）**：使用智谱的 `glm-asr-2512` 模型识别生成的音频文件
+3. **结果比对**：将识别结果与原文进行对比，验证链路是否打通
+
+### 关键特性
+- **API Key 管理**：从环境变量 `ZHIPUAI_API_KEY` 读取，确保安全性
+- **格式兼容**：TTS 指定 `response_format: "wav"`，确保能被 ASR 正确识别
+- **详细错误处理**：
+  - TTS 阶段失败时会提示检查 API Key、额度、网络等
+  - ASR 阶段失败时会提示检查音频格式、时长等
+- **智能比对**：去除标点符号后进行精确比对
+- **自动清理**：测试完成后自动删除临时音频文件
+
+### 使用方法
+```bash
+export ZHIPUAI_API_KEY="your_api_key_here"
+python3 main.py
+```
+
+脚本会明确告诉您链路是否打通，如果失败会精确指出卡在哪个步骤以及可能的原因，完全满足冒烟测试的需求。

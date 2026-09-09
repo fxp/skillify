@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "❌ 找不到FAQ文件: ../run-1/faq.txt\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

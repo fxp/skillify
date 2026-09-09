@@ -1,0 +1,44 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+脚本已经成功创建并通过编译验证！
+
+## 脚本说明
+
+我为你创建了一个完整的 main.py 脚本，具有以下特点：
+
+### 关键配置
+1. **使用正确的端点**：`https://open.bigmodel.cn/api/coding/paas/v4`（GLM Coding 专用）
+2. **使用视觉模型**：`glm-5.3-flash`（支持图像识别）
+3. **环境变量**：读取 `GLM_CODING_PLAN_API_KEY`
+
+### 功能实现
+1. **图片处理**：自动读取同目录下的 `invoice.png`，转换为 Base64 编码
+2. **请求构造**：使用 `image_url` 方式传入图片
+3. **模型回答**：打印模型识别出的图片内容
+4. **模型信息**：显示服务端实际使用的模型名（用于对账）
+5. **Token 使用情况**：显示输入/输出 token 数量
+
+### 错误处理
+脚本包含了完善的错误处理，会提示：
+- 环境变量是否设置
+- 图片文件是否存在  
+- API 调用失败的原因
+- 套餐可能不支持视觉能力的情况
+
+### 关于套餐视觉能力的说明
+根据文档（references/coding-plan.md）：
+- **实测情况**：套餐 Key 可以使用 `glm-5.3-flash` 进行多模态识别
+- **如果报错**：可能会遇到 `1113` 错误，这表明套餐确实不支持某些视觉能力
+- **依据说明**：套餐只支持 chat/completions（含函数调用、json_object、思考）和 reader 网页阅读
+
+### 使用方法
+```bash
+# 设置环境变量
+export GLM_CODING_PLAN_API_KEY="你的套餐Key"
+
+# 运行脚本
+python3 main.py
+```
+
+脚本会自动读取同目录下的 `invoice.png` 并分析其内容，然后将结果打印出来。

@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "开始处理合同文件...\n错误：找不到合同文件 ../contract.pdf\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1
+}

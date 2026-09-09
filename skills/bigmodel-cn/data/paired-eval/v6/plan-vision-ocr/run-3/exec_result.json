@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/plan-vision-ocr/run-3/work/main.py\", line 118, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/plan-vision-ocr/run-3/work/main.py\", line 32, in main\n    image_data_url = f\"data:image/png;base64,{image_base64.decode('utf-8')}\"\nUnicodeDecodeError: 'utf-8' codec can't decode byte 0x89 in position 0: invalid start byte\n",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

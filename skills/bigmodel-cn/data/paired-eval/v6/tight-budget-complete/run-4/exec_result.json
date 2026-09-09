@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "开始生成市场简报...\n\n正在生成第 1/6 部分：一、市场概述\n✗ 请求失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.3,
+  "audio_files": []
+}

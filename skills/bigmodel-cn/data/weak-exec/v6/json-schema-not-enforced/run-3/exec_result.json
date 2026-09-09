@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "[\n  {\n    \"sentiment\": \"负面\",\n    \"score\": 0.95\n  },\n  {\n    \"sentiment\": \"中性\",\n    \"score\": 0.3\n  },\n  {\n    \"sentiment\": \"正面\",\n    \"score\": 0.98\n  }\n]\n所有文本情感分析完成！\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 2.4
+}

@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "开始语音链路验证...\n\n=== 步骤1：语音合成 ===\n正在合成文本：发票需要在七个工作日内申请\n音频已保存到：generated_speech.wav\n音频文件大小：212880 字节\n\n=== 步骤2：语音识别 ===\n正在识别音频文件：generated_speech.wav\n识别结果：发票需要在7个工作日内申请。\n\n=== 步骤3：结果比对 ===\n原文：发票需要在七个工作日内申请\n识别：发票需要在7个工作日内申请。\n\n❌ 链路验证失败！\n差异：\n- 原文长度：13 字符\n- 识别长度：13 字符\n- 是否匹配：False\n\n已清理临时文件：generated_speech.wav\n\n最终结果：❌ 链路有问题，需要检查！\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 1.8,
+  "audio_files": []
+}

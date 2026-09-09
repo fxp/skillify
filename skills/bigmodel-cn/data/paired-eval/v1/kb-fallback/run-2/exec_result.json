@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "已复制 FAQ 文件到: /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/kb-fallback/run-2/outputs/faq.txt\n=== 智谱AI知识库检索测试 ===\n已读取FAQ文件，内容长度: 1860 字符\n\n=== 方案一：使用托管知识库 ===\n正在创建知识库: 退换货政策FAQ\n✓ 知识库创建成功，ID: 2097609062370902016\n正在上传文档: faq.txt\n✗ 文档上传失败: Content type 'application/json' not supported\n正在删除知识库: 2097609062370902016\n✓ 知识库删除成功\n\n=== 方案二：使用替代RAG方案 ===\n已添加 0 个文档片段\n[替代方案] 正在搜索: 退换货政策的有效期是多久\n嵌入失败: 未知错误\n未找到相关结果\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.9,
+  "audio_files": []
+}

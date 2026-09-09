@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "🔊 开始语音链路验证...\n==================================================\n🎤 正在合成音频: '发票需要在七个工作日内申请'\n✅ 音频已保存到: /var/folders/7h/spcmv2b17nb8whfjnslyx__40000gn/T/tmp0obwcjj5.wav\n🎧 正在识别音频: /var/folders/7h/spcmv2b17nb8whfjnslyx__40000gn/T/tmp0obwcjj5.wav\n✅ 识别完成: '发票需要在7个工作日内申请'\n\n📊 比对结果:\n原文:   '发票需要在七个工作日内申请'\n识别:   '发票需要在7个工作日内申请'\n长度相同: True\n字符相似度: 92.31%\n⚠️  高度匹配，可能有微小差异\n\n🧹 已清理临时文件: /var/folders/7h/spcmv2b17nb8whfjnslyx__40000gn/T/tmp0obwcjj5.wav\n\n==================================================\n🎉 语音链路验证通过！\n==================================================\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 1.7,
+  "audio_files": []
+}

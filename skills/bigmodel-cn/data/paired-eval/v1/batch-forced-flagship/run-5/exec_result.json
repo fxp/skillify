@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "开始执行用户评论情感分类任务...\n\n步骤1: 读取用户评论...\n成功读取 20 条评论\n\n步骤2: 构造 Batch 请求...\n\n步骤3: 上传文件到智谱平台...\n文件上传成功，文件ID: 1788943944_3926eadc72e8474f948da9466da3141d\n\n步骤4: 创建 Batch 任务...\nBatch 任务创建成功!\n任务ID: batch_2097609055414517760\n任务状态: validating\n\n==================================================\n任务创建完成!\nBatch 任务ID: batch_2097609055414517760\n==================================================\n\n提示:\n- 模型使用: glm-4-plus\n- 任务预计处理时间: 24小时内\n- 可以通过以下方式查看任务状态:\n  curl -H 'Authorization: Bearer <STD>' 'https://open.bigmodel.cn/api/paas/v4/batches/batch_2097609055414517760'\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.6,
+  "audio_files": []
+}

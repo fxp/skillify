@@ -1,0 +1,29 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+完成！我已经帮你修复了代码。主要修改如下：
+
+## 修复内容
+
+1. **Base URL 修改**：
+   - 原代码：`https://open.bigmodel.cn/api/paas/v4`
+   - 修复后：`https://open.bigmodel.cn/api/coding/paas/v4`
+   
+   这是最关键的修改。因为你是GLM Coding Plan套餐用户，必须使用Coding专用的API端点，否则会报429错误（代码：1113，消息：余额不足或无可用资源包）。
+
+2. **环境变量名称**：
+   - 从 `GLM_KEY` 读取API Key，与你提供的环境变量名称保持一致
+
+3. **其他改进**：
+   - 添加了Content-Type请求头
+   - 添加了错误处理（raise_for_status）
+   - 保持了原有的功能：问模型"用一句话介绍 Python"，把回答打印到stdout
+
+## 为什么这样修改
+
+根据查阅的官方文档：
+- GLM Coding Plan套餐用户需要使用专门的API端点：`/api/coding/paas/v4`
+- 标准API端点 `/api/paas/v4` 和Coding端点是两套独立的计费系统
+- 用套餐Key打标准端点会报1113错误，这不是要充值，而是端点用错了
+
+现在代码已经保存到指定路径 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v6/plan-1113-fix/run-5/outputs/main.py`，并且通过了Python编译验证。当你设置了GLM_KEY环境变量后，这段代码就能正常运行了。

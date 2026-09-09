@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "读取到 20 条评论\n构造了 20 个 Batch 请求\n文件上传成功，文件ID: 1788944799_f56fe99ea19745ff8d07b5a2dd10f265\nBatch 任务创建成功！\n任务ID: batch_2097612647072530432\n任务状态: validating\n请使用此任务ID查询任务状态和结果\n\n任务详细信息:\n- 输入文件ID: 1788944799_f56fe99ea19745ff8d07b5a2dd10f265\n- 请求总数: 20\n- 端点: /v4/chat/completions\n- 完成窗口: 24小时内（预计）\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 2.6,
+  "audio_files": []
+}

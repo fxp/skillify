@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "Read 20 comments from comments.txt\nUsing model: glm-4-plus\nProcessing 20 comments...\nCreated JSONL with 20 requests\nJSONL size: 9221 bytes\nFile uploaded successfully: 1788944798_2ce7fd19468a421a959c18433e240011\nBatch task created successfully!\nBatch ID: batch_2097612635777142784\nStatus: validating\nTotal requests: 20\n\n==================================================\n任务创建成功！\nBatch ID: batch_2097612635777142784\n请使用此ID查询任务状态和获取结果\n==================================================\nBatch ID已保存到 batch_id.txt\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.5,
+  "audio_files": []
+}

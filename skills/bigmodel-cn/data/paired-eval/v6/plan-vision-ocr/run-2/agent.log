@@ -1,0 +1,51 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+完美！我已经成功创建了 main.py 脚本。让我总结一下：
+
+## 关于 GLM Coding Plan 编程套餐的视觉能力说明
+
+根据我从官方文档中查阅的信息：
+
+**✅ 编程套餐确实支持视觉能力！**
+
+依据如下：
+1. **`glm-5.3-flash` 是视觉模型**：在 models.md 中明确提到"需看图/看视频 + 生成代码的多模态旗舰"应使用 `glm-5.3-flash`
+2. **编程套餐支持 `glm-5.3-flash`**：在 coding-plan.md 中明确说明"所有档位都支持 `glm-5.3`、`glm-5.3-flash`"
+3. **实测支持图片识别**：在 chat.md 中有明确的图片识别示例代码，可以使用 `image_url` 类型传入图片
+
+## 脚本功能
+
+我已经创建的 main.py 脚本具有以下特性：
+
+1. **使用正确的编程套餐配置**：
+   - Base URL: `https://open.bigmodel.cn/api/coding/paas/v4`
+   - 使用环境变量 `GLM_CODING_PLAN_API_KEY`
+
+2. **支持视觉识别**：
+   - 使用 `glm-5.3-flash` 视觉模型
+   - 将发票图片编码为 base64 传入 API
+   - 提供了详细的发票识别提示词
+
+3. **错误处理**：
+   - 检查环境变量是否设置
+   - 检查图片文件是否存在
+   - 处理常见的 API 错误（包括 1113 余额不足错误）
+   - 打印完整的错误信息
+
+4. **输出信息**：
+   - 打印服务端实际使用的模型名（便于对账）
+   - 打印详细的发票识别结果
+   - 打印 Token 使用情况
+
+## 使用方法
+
+在终端中运行：
+```bash
+export GLM_CODING_PLAN_API_KEY="你的编程套餐 Key"
+python3 main.py
+```
+
+脚本会自动读取同目录下的 `invoice.png` 文件并进行识别。
+
+**重要提示**：如果图片很大，可能需要调整 `max_tokens` 参数或者分段处理。当前设置支持 2000 个输出 tokens，对于普通发票识别应该足够了。

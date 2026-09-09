@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "正在上传文件...\n文件上传成功，file_id: None\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.2
+}

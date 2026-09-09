@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 16.9s :: "
+    },
+    {
+      "text": "真的调通了视觉模型（没有错误地断言套餐不支持）",
+      "passed": true,
+      "evidence": "answered=True gave_up=False"
+    },
+    {
+      "text": "用的是套餐端点",
+      "passed": true,
+      "evidence": "plan_endpoint=True"
+    },
+    {
+      "text": "打印了服务端回显的实际模型名",
+      "passed": true,
+      "evidence": "echoed=True"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-5.3",
+  "skill": "v1"
+}

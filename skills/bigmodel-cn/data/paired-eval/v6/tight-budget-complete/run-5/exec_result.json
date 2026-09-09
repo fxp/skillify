@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "开始生成 2026 年中国新能源汽车出口市场简报...\n\n1. 搜索最新市场数据...\n搜索失败，无法获取数据\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 22.7,
+  "audio_files": []
+}

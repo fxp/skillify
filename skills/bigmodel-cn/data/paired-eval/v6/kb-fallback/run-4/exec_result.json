@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "=== 智谱AI知识库检索示例 ===\n\n正在创建知识库...\n✓ 知识库创建成功，ID: 2097612700761849856\n正在上传文档...\n\n正在清理资源...\n✓ 知识库已删除\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/kb-fallback/run-4/work/main.py\", line 299, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/kb-fallback/run-4/work/main.py\", line 262, in main\n    document_id = upload_document(knowledge_id)\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/kb-fallback/run-4/work/main.py\", line 68, in upload_document\n    with open(faq_file_path, \"rb\") as f:\nFileNotFoundError: [Errno 2] No such file or directory: '../run-3/faq.txt'\n",
+  "timed_out": false,
+  "seconds": 0.4,
+  "audio_files": []
+}

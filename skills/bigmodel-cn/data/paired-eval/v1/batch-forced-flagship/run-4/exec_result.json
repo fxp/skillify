@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "错误：文件 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/batch-forced-flagship/run-4/work/../comments.txt 不存在\n❌ 没有找到评论数据\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

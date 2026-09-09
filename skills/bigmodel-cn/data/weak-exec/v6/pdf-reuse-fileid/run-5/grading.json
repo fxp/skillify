@@ -1,0 +1,33 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0 且未在本地解析 PDF",
+      "passed": false,
+      "evidence": "exit=1 0.2s ::  local_parse=False"
+    },
+    {
+      "text": "真的走了上传拿 file_id 复用的路径（非 base64 内联）",
+      "passed": true,
+      "evidence": "upload_fileid=True"
+    },
+    {
+      "text": "stdout 出现合同编号 HT-2026-0917-XJ",
+      "passed": false,
+      "evidence": "found=False"
+    },
+    {
+      "text": "全程未出现 1210（purpose 用错导致文件解析失败）",
+      "passed": true,
+      "evidence": "no_1210=True"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v6",
+  "notes": "graded with the frozen grader from glm-round2"
+}

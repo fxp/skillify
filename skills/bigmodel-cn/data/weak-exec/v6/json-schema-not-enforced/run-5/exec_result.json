@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v6/json-schema-not-enforced/run-5/work/main.py\", line 13, in <module>\n    HEADERS = {\"Authorization\": f\"Bearer {API_KEY}\", \"Content-Type\": application/json}\nNameError: name 'application' is not defined\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

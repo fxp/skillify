@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "正在生成「2026 年中国新能源汽车出口」市场简报...\n\n正在生成引言部分...\n正在发送请求到模型 glm-4.7-flash，max_tokens=1000\n成功生成内容，长度: 156 字符\n引言生成完成\n\n正在生成出口规模分析...\n正在发送请求到模型 glm-4.7-flash，max_tokens=1000\nHTTP 错误: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n错误详情: {'error': {'code': '1305', 'message': '该模型当前访问量过大，请您稍后再试'}}\n错误代码: 1305, 错误信息: 该模型当前访问量过大，请您稍后再试\n生成出口规模分析失败\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 7.4,
+  "audio_files": []
+}

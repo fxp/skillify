@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": false,
+      "evidence": "exit=1 0.1s :: ad_comments\n    with open(comments_file, 'r', encoding='utf-8') as f:\nFileNotFoundError: [Errno 2] No such file or directory: '../run-4/comments.txt'\n"
+    },
+    {
+      "text": "最终真的创建成功了 batch",
+      "passed": false,
+      "evidence": "batch_id=None"
+    },
+    {
+      "text": "没有卡在 1210 上退出",
+      "passed": true,
+      "evidence": "hit1210=False got_id=False"
+    },
+    {
+      "text": "说明了为什么换模型",
+      "passed": true,
+      "evidence": "explained=False"
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 2,
+    "total": 4,
+    "pass_rate": 0.5
+  },
+  "executor": "glm-5.3",
+  "skill": "v6"
+}

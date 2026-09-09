@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "脚本退出码为 0",
+      "passed": false,
+      "evidence": "exit=1 0.1s :: ace/Skillify/bigmodel-cn-workspace/weak-exec/v6/batch-best-model/run-3/work/main.py\", line 68, in upload_batch_file\n    response = requests.post(\nAttributeError: 'list' object has no attribute 'post'\n"
+    },
+    {
+      "text": "stdout 出现 batch 任务 id",
+      "passed": false,
+      "evidence": "matched=None"
+    },
+    {
+      "text": "全程未出现 1210（模型不在 Batch 白名单）",
+      "passed": true,
+      "evidence": "no_1210=True model=?"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 2,
+    "total": 3,
+    "pass_rate": 0.333
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v6",
+  "notes": "graded with the frozen grader from glm-round2"
+}

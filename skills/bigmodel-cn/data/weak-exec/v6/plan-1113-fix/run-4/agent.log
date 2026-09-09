@@ -1,0 +1,30 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+代码已成功创建并通过编译。主要修改内容：
+
+## 问题分析
+原代码报 `429` 错误，错误信息显示"余额不足或无可用资源包"，这是因为：
+- 你使用的是 GLM Coding Plan 套餐的 API Key
+- 但代码中调用的是标准 API 端点（`/api/paas/v4`）
+- 套餐 Key 必须使用 Coding Plan 专用端点（`/api/coding/paas/v4`）
+
+## 修改内容
+1. **修正了 Base URL**：
+   - 原代码：`https://open.bigmodel.cn/api/paas/v4/chat/completions`
+   - 修改后：`https://open.bigmodel.cn/api/coding/paas/v4/chat/completions`
+
+2. **修正了环境变量读取**：
+   - 原代码：`os.environ[chr(39)+chr(39)]`（这会读取空字符串）
+   - 修改后：`os.environ.get("GLM_KEY")`
+
+3. **添加了错误处理**：
+   - 检查环境变量是否设置
+   - 捕获 HTTP 错误和其他异常
+   - 输出更详细的错误信息
+
+## 使用方法
+1. 设置环境变量：`export GLM_KEY="你的Coding Plan API Key"`
+2. 运行脚本：`python3 main.py`
+
+脚本会向模型提问"用一句话介绍 Python"，并将回答打印到 stdout。

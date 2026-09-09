@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "成功读取 20 条评论\n\n尝试使用模型: glm-5.3\n创建JSONL内容成功，长度: 7181 字符\n正在上传批处理文件...\n❌ 请求失败: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/files\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.2,
+  "audio_files": []
+}

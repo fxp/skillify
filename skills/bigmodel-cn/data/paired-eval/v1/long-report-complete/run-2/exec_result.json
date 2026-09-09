@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "正在生成 2026 年中国新能源汽车出口市场简报...\n",
+  "stderr": "错误：API 请求失败: HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=60)\n",
+  "timed_out": false,
+  "seconds": 60.2,
+  "audio_files": []
+}

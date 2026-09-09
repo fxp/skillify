@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "开始情感分类任务...\n警告: glm-5.3 不在 Batch API 支持列表中\n使用替代模型: glm-4-plus\n将使用模型: glm-4-plus\n错误: 找不到评论文件 ../fixtures/comments.txt\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

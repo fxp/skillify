@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "=== 智谱AI Batch API 情感分析 ===\n成功读取 20 条评论\n\n注意：由于glm-5.3不支持Batch API，使用glm-4-plus作为替代模型\nBatch API支持的模型有限，{BATCH_MODEL}是当前最佳的替代选择\n\n正在创建JSONL请求文件...\n正在上传文件...\n文件上传成功，文件ID: 1788943832_9a1481e4357b48cdba1e2158f8b7906f\n正在创建Batch任务...\nBatch任务创建成功！\n任务ID: batch_2097608582473187328\n初始状态: validating\n请使用以下ID查询任务进度: batch_2097608582473187328\n\n✅ 任务创建成功！\n📋 Batch任务ID: batch_2097608582473187328\n💡 提示：您可以使用此ID查询任务进度或下载结果\n\n任务预计需要一些时间处理，请定期检查任务状态\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.4,
+  "audio_files": []
+}

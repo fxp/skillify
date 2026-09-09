@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "=== 2026 年中国新能源汽车出口市场简报生成器 ===\n\n正在生成 一、市场概况...\n生成 一、市场概况 时出错: API请求失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n正在生成 二、主要出口目的地...\n生成 二、主要出口目的地 时出错: API请求失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n正在生成 三、出口产品结构...\n生成 三、出口产品结构 时出错: API请求失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n正在生成 四、竞争优势分析...\n生成 四、竞争优势分析 时出错: API未返回有效内容\n正在生成 五、面临的挑战...\n生成 五、面临的挑战 时出错: API请求失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n正在生成 六、未来展望...\n生成 六、未来展望 时出错: API请求失败: 429 Client Error: Too Many Requests for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n\n==================================================\n完整市场简报如下：\n==================================================\n\n2026 年中国新能源汽车出口市场简报\n\n本报告基于最新市场数据，全面分析中国新能源汽车产业的出口现状、\n发展趋势及面临的挑战，为相关企业提供决策参考。\n\n\n一、市场概况\n[该部分内容生成失败，请稍后重试]\n\n二、主要出口目的地\n[该部分内容生成失败，请稍后重试]\n\n三、出口产品结构\n[该部分内容生成失败，请稍后重试]\n\n四、竞争优势分析\n[该部分内容生成失败，请稍后重试]\n\n五、面临的挑战\n[该部分内容生成失败，请稍后重试]\n\n六、未来展望\n[该部分内容生成失败，请稍后重试]\n---\n本报告由人工智能自动生成，数据仅供参考。\n实际总字数：134 汉字\n报告生成时间：2026年9月\n\n==================================================\n【报告完成】\n报告标题：2026 年中国新能源汽车出口市场简报\n总字数：134 汉字\n❌ 字数未达到要求（需要≥600字，当前134字）\n==================================================\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 9.6,
+  "audio_files": []
+}

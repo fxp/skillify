@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "正在搜索2026年中国新能源汽车出口信息...\n\n错误：网络请求失败: HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=60)\n\n请确保：\n1. 已设置环境变量 ZHIPUAI_API_KEY\n2. 网络连接正常\n3. API Key 有效且有足够额度\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 60.2,
+  "audio_files": []
+}

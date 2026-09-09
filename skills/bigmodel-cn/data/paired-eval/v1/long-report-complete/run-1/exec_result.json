@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "正在生成市场简报...\n错误：生成的内容过短，可能不完整\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 55.5,
+  "audio_files": []
+}

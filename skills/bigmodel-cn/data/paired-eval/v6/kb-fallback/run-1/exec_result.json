@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "读取FAQ文件失败: [Errno 2] No such file or directory: '../v1/kb-fallback/run-1/faq.txt'\n❌ 无法读取FAQ文件\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

@@ -1,0 +1,41 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+代码已成功创建并通过编译验证！
+
+## 脚本特点
+
+我编写的 `main.py` 脚本具有以下特点：
+
+### 1. **智谱AI联网搜索功能**
+- 使用 `web_search` 工具，选择 `search_pro_bing` 搜索引擎以获取真实链接
+- 设置 `search_result: true` 确保返回来源信息
+- 使用 `glm-5.3` 模型，支持联网搜索
+
+### 2. **答案完整性保障**
+- 设置 `max_tokens: 4000` 确保有足够的输出空间
+- 添加了完整性检查逻辑，检测回答是否被截断
+- 如果回答过短或以省略号结尾，会明确报错
+
+### 3. **来源链接处理**
+- 优先从 `web_search` 字段提取来源
+- 兜底方案：从回答内容中提取链接
+- 验证链接有效性，确保是 http 开头的真实网址
+- 至少要求 2 个有效来源，不足时会明确提示
+
+### 4. **错误处理机制**
+- 检查环境变量是否设置
+- API 请求异常处理
+- 网络连接问题提示
+- 提供具体的错误解决建议
+
+### 5. **运行方式**
+```bash
+# 设置环境变量
+export ZHIPUAI_API_KEY="your_api_key_here"
+
+# 运行脚本
+python3 main.py
+```
+
+脚本会输出完整的搜索结果、来源链接，并验证结果的完整性和有效性，满足周报使用的要求。

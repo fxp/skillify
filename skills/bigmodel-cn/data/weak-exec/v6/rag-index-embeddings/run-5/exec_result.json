@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "正在加载FAQ文件...\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v6/rag-index-embeddings/run-5/work/main.py\", line 120, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v6/rag-index-embeddings/run-5/work/main.py\", line 65, in main\n    faq_lines = load_faq(faq_file)\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v6/rag-index-embeddings/run-5/work/main.py\", line 10, in load_faq\n    with open(file_path, 'r', encoding='utf-8') as f:\nFileNotFoundError: [Errno 2] No such file or directory: '../faq.txt'\n",
+  "timed_out": false,
+  "seconds": 0.1
+}

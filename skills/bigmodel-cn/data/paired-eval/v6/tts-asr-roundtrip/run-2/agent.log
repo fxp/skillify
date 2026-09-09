@@ -1,0 +1,47 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+脚本已经成功创建并验证语法正确。让我总结一下这个脚本的功能：
+
+## 脚本说明
+
+我已经成功创建了 `main.py` 脚本，用于验证智谱AI语音链路是否通畅。脚本具有以下特点：
+
+### 功能流程
+1. **语音合成（TTS）**：使用 `glm-tts` 模型将「发票需要在七个工作日内申请」合成为 WAV 格式的音频
+2. **语音识别（ASR）**：立即使用 `glm-asr-2512` 模型将生成的音频转写回文字
+3. **结果比对**：比较原文和识别结果，明确告知链路是否通畅
+
+### 关键特性
+- **API Key 管理**：从环境变量 `ZHIPUAI_API_KEY` 读取 API Key
+- **错误处理**：对每个 API 调用都有详细的错误提示和异常捕获
+- **临时文件管理**：使用临时文件处理音频，并在完成后自动清理
+- **详细日志**：显示每个步骤的执行状态和结果
+- **结果验证**：不仅检查文本是否完全匹配，还计算字符相似度
+
+### 接口细节（基于参考资料）
+- **TTS 接口**：`POST /paas/v4/audio/speech`
+  - 使用 `glm-tts` 模型
+  - 输出格式为 `wav`（确保能被 ASR 处理）
+  - 使用 `tongtong` 音色（标准女声）
+- **ASR 接口**：`POST /paas/v4/audio/transcriptions`
+  - 使用 `glm-asr-2512` 模型
+  - 支持 `.wav` 格式音频
+  - 单次请求音频时长 ≤30 秒
+
+### 使用方法
+```bash
+# 设置 API Key
+export ZHIPUAI_API_KEY="your_api_key_here"
+
+# 运行脚本
+python3 outputs/main.py
+```
+
+脚本会明确告诉你：
+- 哪个步骤失败了（如果失败）
+- 识别结果是否与原文匹配
+- 链路是否通畅
+- 相似度百分比
+
+这是一个完整的冒烟测试脚本，能够在上线前快速验证语音链路的完整性。

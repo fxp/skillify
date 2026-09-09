@@ -1,0 +1,32 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=1 1.8s :: "
+    },
+    {
+      "text": "落盘音频是真 WAV/MP3 而非裸 PCM",
+      "passed": false,
+      "evidence": "files=[]"
+    },
+    {
+      "text": "ASR 真的转写出了内容",
+      "passed": true,
+      "evidence": "最长汉字重合=13"
+    },
+    {
+      "text": "给出了比对结论且转写确实成功",
+      "passed": true,
+      "evidence": "verdict=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "executor": "glm-5.3",
+  "skill": "v1"
+}

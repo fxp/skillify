@@ -1,0 +1,30 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+脚本已成功创建并保存到指定路径。我来总结一下脚本的主要功能：
+
+## 脚本功能概述
+
+1. **异步接口调用**
+   - 使用智谱异步接口 `/paas/v4/async/chat/completions` 提交任务
+   - 通过轮询 `/paas/v4/async-result/{id}` 获取结果
+
+2. **模型版本审计**
+   - 请求的模型：`glm-4.6`
+   - 实际使用的模型：从响应中提取
+   - 如果两者不一致，会明确报警
+
+3. **情感分类功能**
+   - 对三句话进行情感分类：
+     - "今天天气真好，心情很愉快！"
+     - "这个产品质量太差了，完全不值这个价格。"
+     - "我收到了快递，包装完好。"
+   - 返回JSON格式结果：sentiment、confidence、keywords、analysis
+
+4. **关键特性**
+   - API Key从环境变量 `ZHIPUAI_API_KEY` 读取
+   - 支持批量处理
+   - 结果保存为JSON文件
+   - 完整的错误处理和超时机制
+
+脚本已经验证可以编译通过，可以直接使用 `python3 main.py` 运行（需要设置环境变量）。

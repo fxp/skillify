@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "2026 年中国新能源汽车出口市场简报生成器\n============================================================\n正在生成 2026 年中国新能源汽车出口市场简报...\n============================================================\n\n正在生成第 1 部分...\n✓ 第 1 部分生成完成\n----------------------------------------\n请求失败: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n----------------------------------------\n\n正在生成第 2 部分...\n✓ 第 2 部分生成完成\n----------------------------------------\n请求失败: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n----------------------------------------\n\n正在生成第 3 部分...\n✓ 第 3 部分生成完成\n----------------------------------------\n请求失败: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n----------------------------------------\n\n============================================================\n完整市场简报\n============================================================\n## 市场概况与发展趋势\n\n请求失败: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n\n## 企业竞争与核心优势\n\n请求失败: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n\n## 政策支持与未来展望\n\n请求失败: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n\n\n============================================================\n报告完成！总字数：39 字\n✗ 报告字数不足 600 字（当前 39 字）\n============================================================\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.5,
+  "audio_files": []
+}

@@ -1,0 +1,31 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+任务已完成！我已经成功编写了 `main.py` 脚本，保存在 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/kb-fallback/run-4/outputs/main.py`。
+
+## 脚本功能概述：
+
+1. **托管知识库方案**（优先尝试）：
+   - 创建一个名为"FAQ测试知识库"的托管知识库
+   - 将 faq.txt 文件上传到知识库
+   - 等待向量化完成（会检查状态，避免无限等待）
+   - 使用"退换货政策的有效期是多久"进行检索
+   - 打印检索到的原文片段和相似度分数
+   - 最后删除知识库清理资源
+
+2. **替代方案**（当托管知识库不可用时）：
+   - 读取 FAQ 文档并进行分块
+   - 使用 Embedding API 计算每个文本块的向量
+   - 计算查询向量
+   - 使用相似度计算找到相关文本块
+   - 使用 Rerank API 重排结果
+   - 打印 Top 5 的相关原文片段
+
+3. **资源管理**：
+   - 自动清理临时文件
+   - 删除创建的知识库
+   - 包含完善的错误处理
+
+脚本已经通过语法检查，可以直接运行：`python3 main.py`。
+
+运行时需要设置环境变量 `ZHIPUAI_API_KEY`。脚本会优先尝试托管知识库方案，如果失败会自动切换到替代方案，确保一定能检索到内容并打印出原文片段。

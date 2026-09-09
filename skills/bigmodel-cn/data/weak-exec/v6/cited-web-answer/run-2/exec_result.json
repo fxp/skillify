@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在调用智谱AI API进行联网搜索...\n============================================================\n问题：2026 年智谱 BigModel 发布了哪些新模型\n============================================================\n\n回答：\n2026年智谱BigModel发布的新模型如下：\n\n1.  **GLM-5.1高速版（GLM-5.1-highspeed）**：于2026年5月22日推出，输出速度达到400 tokens/s。\n2.  **GLM-5.2**：于2026年6月17日上线，是新一代旗舰模型，其API同步在BigModel开放平台开放。\n3.  **GLM-5.3**：于2026年8月发布（8月14/15日发布，8月19日上线，8月26日更新）。作为智谱最新旗舰模型，它在GLM-5.2基础上通过后训练提升了复杂软件工程、Agent任务、复杂编程及长程任务处理能力，并具备主动观察界面、渲染与交互反馈的能力。8月26日，智谱AI还上线并开源了GLM-5系列的首个原生多模态模型。\n\n============================================================\n信息来源：\n============================================================\n1. 模型与产品发布记录 - 智谱AI开放文档\n   链接：https://docs.bigmodel.cn/cn/update/new-releases\n\n2. 智谱丨BigModel 平台\n   链接：https://bigmodel.cn/\n\n3. BigModel开放平台_百度百科\n   链接：https://baike.baidu.com/item/BigModel%25E5%25BC%2580%25E6%2594%25BE%25E5%25B9%25B3%25E5%258F%25B0/68064176\n\n4. 上新活动 - 智谱AI开放文档\n   链接：https://docs.bigmodel.cn/cn/update/promotion\n\n5. GLM-5.3 - 智谱AI开放文档\n   链接：https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3\n\n6. 智谱AI - 智谱丨BigModel 平台\n   链接：https://bigmodel.cn/glm-coding\n\n7. 重磅：智谱大模型最靠谱 - 雪球\n   链接：https://xueqiu.com/3191867971/390436720\n\n8. 智谱AI\n   链接：https://bigmodel.cn/special_area\n\n9. AI 大模型动态简报—— 2026-08-15 - 知乎专栏\n   链接：https://zhuanlan.zhihu.com/p/2072069803825746144\n\n10. 智谱AI新一代基座大模型GLM-4，邀您一同见证。\n   链接：https://hub.baai.ac.cn/view/34230\n\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 25.9
+}

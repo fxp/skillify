@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "Loaded 10 comments\nCreated JSONL with 10 requests\nUploading file for batch processing...\nFile uploaded successfully. File ID: 1788927730_8da8ee5257da427ab652068569da8b78\nCreating batch task...\nBatch task created successfully!\nBatch ID: batch_2097541045945368576\nTask status: validating\nTotal requests: 10\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.4
+}

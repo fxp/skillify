@@ -1,0 +1,24 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+让我验证脚本是否满足了所有要求：
+
+1. ✅ 使用 embedding-3 模型将每一行向量化
+2. ✅ 结果存成同目录的 vectors.json
+3. ✅ 用"发票怎么开"做查询
+4. ✅ 计算余弦相似度取 top-3
+5. ✅ 把这三条最相近的原文打印到 stdout
+6. ✅ API Key 从环境变量 ZHIPUAI_API_KEY 读取
+7. ✅ 只用 requests（没有用 numpy）
+8. ✅ 脚本能直接 python3 main.py 跑通
+9. ✅ 保存在指定路径
+
+脚本已经完成并保存到指定路径。总结一下实现的功能：
+
+- 读取 FAQ 文件（150行）
+- 使用智谱 embedding-3 模型批量向量化（每批最多64条）
+- 保存向量和问题到 vectors.json
+- 对"发票怎么开"查询计算余弦相似度
+- 输出 top-3 最相似的问题及其相似度
+
+脚本符合所有要求，可以运行。

@@ -1,0 +1,30 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+已完成任务！我按照接入说明书的指引，编写了一个完整的 main.py 脚本，实现了以下功能：
+
+## 实现的功能
+
+1. **创建知识库**：使用 Embedding-3 模型创建知识库
+2. **上传文档**：将 faq.txt 上传到知识库，按标题段落切分
+3. **等待向量化完成**：轮询文档状态直到向量化完成（embedding_stat == 1）
+4. **检索知识库**：使用「退换货政策的有效期是多久」进行检索
+5. **打印结果**：显示检索到的原文片段和相似度分数
+6. **清理资源**：删除文档和知识库
+7. **替代方案**：如果知识库不可用，使用简单的文本匹配
+
+## 关键特性
+
+- **错误处理**：正确处理 API 返回 200 但实际失败的情况（检查 code 字段）
+- **向量化监控**：上传后轮询确认向量化完成，避免检索空结果
+- **备用方案**：当知识库服务不可用时，自动降级到文本匹配
+- **资源清理**：完成后自动删除临时资源
+- **环境变量**：从 `ZHIPUAI_API_KEY` 读取 API Key
+
+脚本已保存到指定路径：`/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/kb-fallback/run-5/outputs/main.py`
+
+使用方法：
+```bash
+export ZHIPUAI_API_KEY="your_api_key_here"
+python3 main.py
+```

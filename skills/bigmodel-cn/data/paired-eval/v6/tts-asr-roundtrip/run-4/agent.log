@@ -1,0 +1,38 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+✅ 任务已完成！我已经为你写好了语音链路测试脚本。
+
+## 脚本特点：
+
+1. **完整的语音链路测试**：
+   - 使用智谱 TTS 将「发票需要在七个工作日内申请」合成音频
+   - 立即使用 ASR 将音频转写回文字
+   - 自动比对结果并明确告知链路通没通
+
+2. **关键参数设置**：
+   - TTS 使用 `response_format: "wav"`（这是关键，因为 ASR 不支持 PCM 格式）
+   - ASR 使用 `glm-asr-2512` 模型
+   - 使用 `tongtong` 音色
+
+3. **清晰的错误处理**：
+   - 每一步都有明确的提示信息
+   - 如果链路不通，会明确指出卡在哪一步
+   - 详细的错误信息输出
+
+4. **运行方式**：
+   - API Key 从环境变量 `ZHIPUAI_API_KEY` 读取
+   - 直接运行 `python3 main.py` 即可
+   - 脚本已验证可以正确编译
+
+## 使用方法：
+
+```bash
+# 设置环境变量
+export ZHIPUAI_API_KEY="你的API密钥"
+
+# 运行脚本
+python3 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/tts-asr-roundtrip/run-4/outputs/main.py
+```
+
+脚本会告诉你语音链路是否打通，如果不通会明确说明问题出在哪个环节。这可以作为上线前的冒烟测试使用。

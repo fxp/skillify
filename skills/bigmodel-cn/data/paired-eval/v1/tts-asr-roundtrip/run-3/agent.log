@@ -1,0 +1,46 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+✅ 脚本已成功创建并通过编译！
+
+## 脚本说明
+
+我已按照要求编写了 `main.py` 脚本，实现了完整的语音链路验证：
+
+### 功能特点
+
+1. **语音合成（TTS）**
+   - 使用智谱 GLM-TTS 模型
+   - 将「发票需要在七个工作日内申请」合成为音频
+   - 保存为 WAV 格式（确保 ASR 能识别）
+
+2. **语音识别（ASR）**
+   - 使用智谱 GLM-ASR-2512 模型
+   - 立即对刚生成的音频进行转写
+
+3. **结果验证**
+   - 将转写结果与原文逐字比对
+   - 提供详细的差异分析
+   - 明确告诉用户链路通不通
+
+4. **错误处理**
+   - 如果 TTS 失败：显示具体错误信息
+   - 如果 ASR 失败：显示具体错误信息
+   - 如果不匹配：分析可能原因
+
+### 使用方法
+
+```bash
+# 设置环境变量
+export ZHIPUAI_API_KEY="your_api_key_here"
+
+# 运行脚本
+python3 /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/tts-asr-roundtrip/run-3/outputs/main.py
+```
+
+### 链路验证标准
+
+- ✅ **链路通**：TTS 成功 → ASR 成功 → 转写结果与原文完全匹配
+- ❌ **链路断**：任一步骤失败或结果不匹配，并明确指出问题所在
+
+脚本已经准备好，可以直接在具备 API Key 的环境中运行进行冒烟测试。

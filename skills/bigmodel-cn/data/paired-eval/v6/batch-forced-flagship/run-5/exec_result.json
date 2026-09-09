@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "stdout": "开始执行情感分析Batch任务...\n1. 读取评论文件...\n错误: [Errno 2] No such file or directory: '../run-4/comments.txt'\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/batch-forced-flagship/run-5/work/main.py\", line 140, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/batch-forced-flagship/run-5/work/main.py\", line 117, in main\n    comments = read_comments()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v6/batch-forced-flagship/run-5/work/main.py\", line 18, in read_comments\n    with open(comments_file, 'r', encoding='utf-8') as f:\nFileNotFoundError: [Errno 2] No such file or directory: '../run-4/comments.txt'\n",
+  "timed_out": false,
+  "seconds": 0.1,
+  "audio_files": []
+}

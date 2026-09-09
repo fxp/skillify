@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在问：2026 年智谱 BigModel 发布了哪些新模型\n--------------------------------------------------\n回答：\n2026 年智谱 BigModel 发布了以下主要新模型：\n\n*   **GLM-5.1 高速版**：于 2026 年 5 月 22 日正式面向部分企业客户推出，其输出速度达到了 400 tokens/s。\n\n*   **GLM-5.3**：于 2026 年 8 月正式发布（8 月 14 日至 15 日发布，8 月 19 日上线，8 月 26 日更新交互能力）。这是智谱最新的旗舰模型，基于 GLM-5.2 基座，通过后训练实现了复杂软件工程与 Agent 任务能力的全面进阶。该模型能够主动观察界面、渲染与交互反馈，在手写体、表格、印章、竖排等复杂场景中表现稳健，并在复杂编程和长程任务上相比 GLM-5.2 有显著提升，同时涌现了网络安全能力。\n\n--------------------------------------------------\n信息来源：\n1. [模型与产品发布记录 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/update/new-releases)\n2. [智谱丨BigModel 平台](https://bigmodel.cn/)\n3. [上新活动 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/update/promotion)\n4. [GLM-5.3 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/models/text/glm-5.3)\n5. [智谱AI](https://bigmodel.cn/pricing)\n6. [智谱宣布开源新一代旗舰大模型GLM-5 并宣布GLM Coding Plan涨价](https://m.bjnews.com.cn/detail/1770859645129177.html)\n7. [重磅：智谱大模型最靠谱 - 雪球](https://xueqiu.com/3191867971/390436720)\n8. [智谱AI新一代基座大模型GLM-4，邀您一同见证。](https://hub.baai.ac.cn/view/34230)\n9. [模型概览 - 智谱AI开放文档](https://docs.bigmodel.cn/cn/guide/start/model-overview)\n10. [AI 大模型动态简报—— 2026-08-15 - 知乎专栏](https://zhuanlan.zhihu.com/p/2072069803825746144)\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 28.4
+}

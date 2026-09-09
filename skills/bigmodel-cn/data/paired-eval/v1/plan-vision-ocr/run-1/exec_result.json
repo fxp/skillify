@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "stdout": "正在调用 GLM Coding Plan API 分析发票图片...\n使用的模型: glm-4.6v\n图片路径: /Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/plan-vision-ocr/run-1/work/invoice.png\n--------------------------------------------------\n服务端实际使用的模型: glm-4.6v\n--------------------------------------------------\n📋 发票分析结果:\n\n- 发票号码：2026 - 0917\n- 价税合计：48,600 CNY\n\n（注：图片中未显示发票代码、日期、购买方信息、销售方信息、商品/服务名称、金额、税率等其他关键信息，无法提取。）\n\n📊 Token 使用统计:\n输入 tokens: 182\n输出 tokens: 269\n总 tokens: 451\n缓存命中 tokens: 5\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 4.8,
+  "audio_files": []
+}

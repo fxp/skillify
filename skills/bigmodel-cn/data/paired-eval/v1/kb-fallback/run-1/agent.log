@@ -1,0 +1,46 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+脚本已经保存到指定路径。让我总结一下我实现的功能：
+
+## 脚本功能总结
+
+我创建了一个完整的 Python 脚本 `main.py`，实现了以下功能：
+
+### 主要特性：
+
+1. **托管知识库方案**：
+   - 创建知识库
+   - 上传 FAQ 文档
+   - 等待向量化完成（包括状态检查和错误处理）
+   - 执行检索并打印结果
+   - 自动清理资源
+
+2. **备用方案**：
+   - 当托管知识库不可用时，自动切换到 embeddings 方案
+   - 使用 embeddings-3 模型进行语义搜索
+   - 计算余弦相似度
+   - 返回最相关的段落
+
+3. **错误处理**：
+   - API 错误码检查（业务错误不在 HTTP 状态码中）
+   - 向量化失败检测
+   - 超时处理
+   - 详细的日志输出
+
+4. **资源管理**：
+   - 自动删除临时创建的知识库
+   - 清理所有临时资源
+
+### 使用方法：
+```bash
+export ZHIPUAI_API_KEY="your_api_key_here"
+python3 main.py
+```
+
+### 检索策略：
+- 主方案：使用托管知识库的 `/llm-application/open/knowledge/retrieve` 接口
+- 备用方案：使用 embeddings + 相似度计算
+- 无论哪种方案，都会打印出真实的检索内容片段
+
+脚本已经编译通过，可以直接运行。如果托管知识库在您的账号上可用，会使用第一种方案；如果不可用（如权限或服务问题），会自动切换到备用的 embeddings 方案，确保总能检索到相关内容。

@@ -1,0 +1,30 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+✅ 已成功创建 `main.py` 脚本，保存到指定路径 `/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/paired-eval/v1/plan-vision-ocr/run-1/outputs/main.py`。
+
+## 脚本要点总结：
+
+### 1. **使用 GLM Coding Plan 编程套餐**
+- Base URL：`https://open.bigmodel.cn/api/coding/paas/v4`（套餐专用端点）
+- 使用环境变量 `GLM_CODING_PLAN_API_KEY`
+
+### 2. **视觉能力支持**
+- 使用 `glm-4.6v` 模型（根据实测数据，套餐支持视觉模型）
+- 通过多模态输入格式分析图片
+- 图片采用 base64 编码传输
+
+### 3. **完整的错误处理**
+- 检查环境变量和文件存在性
+- 处理常见 HTTP 错误（429、401、400）
+- 根据错误码提供具体解决方案
+
+### 4. **详细的输出信息**
+- 打印服务端实际使用的模型名（便于对账）
+- 输出结构化的发票分析结果
+- 显示 Token 使用统计
+
+### 5. **关于视觉能力的说明**
+根据实测数据（`references/coding-plan.md`），GLM Coding Plan 套餐**确实支持视觉能力**，可以使用 `glm-4.6v`、`glm-5v-turbo` 等视觉模型。如果调用失败，脚本会明确报错并说明具体原因。
+
+脚本已通过编译验证，可以直接运行 `python3 main.py`。

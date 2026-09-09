@@ -1,0 +1,33 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常",
+      "passed": true,
+      "evidence": "exit=0 40.2s :: "
+    },
+    {
+      "text": "拿到 3 条严格符合 schema 的结果",
+      "passed": false,
+      "evidence": "valid_objs=1"
+    },
+    {
+      "text": "脚本自己做了结构校验或兜底",
+      "passed": true,
+      "evidence": "validated=True"
+    },
+    {
+      "text": "没有把不合规输出当成功",
+      "passed": true,
+      "evidence": "failed_claim=False"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 1,
+    "total": 4,
+    "pass_rate": 0.75
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v5",
+  "notes": "graded with the frozen grader from glm-round5"
+}

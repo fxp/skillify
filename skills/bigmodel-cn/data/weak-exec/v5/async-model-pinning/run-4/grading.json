@@ -1,0 +1,28 @@
+{
+  "expectations": [
+    {
+      "text": "无未捕获异常（非零退出码若属主动报警则不扣分）",
+      "passed": true,
+      "evidence": "exit=0 28.6s ::  traceback=False"
+    },
+    {
+      "text": "stdout 同时出现请求模型 glm-4.6 与实际模型 glm-4.7",
+      "passed": true,
+      "evidence": "asked=True actual=True"
+    },
+    {
+      "text": "正确检出模型不一致并报警",
+      "passed": true,
+      "evidence": "flagged=True"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  },
+  "executor": "glm-4.5-flash",
+  "skill": "v5",
+  "notes": "graded with the frozen grader from glm-round4"
+}

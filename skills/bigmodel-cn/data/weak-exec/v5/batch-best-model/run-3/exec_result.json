@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "开始创建 Batch 情感分类任务...\n正在处理 10 条评论...\n上传请求文件...\n文件上传成功，文件ID: 1788925114_8038f9072a6844069e569081cf053051\n创建 Batch 任务...\n\nBatch 任务创建成功！\n任务ID: batch_2097530074283638784\n任务状态: validating\n请记录此任务ID，稍后可用于查询任务状态和获取结果\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.4
+}

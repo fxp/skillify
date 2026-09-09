@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "读取到 20 条评论\n已构造 20 个Batch请求\n正在上传Batch请求文件...\n文件上传成功，文件ID: 1788925113_ae94eede9b8a4210a1d943d78ac32546\n正在创建Batch任务...\nBatch任务创建成功！\nBatch任务ID: batch_2097530072295538688\n任务状态: validating\n请使用此ID查询任务状态或获取结果\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.4
+}

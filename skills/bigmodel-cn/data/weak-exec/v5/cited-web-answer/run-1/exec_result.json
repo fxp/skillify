@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在搜索相关信息...\n请求失败：HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=60)\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 60.6
+}

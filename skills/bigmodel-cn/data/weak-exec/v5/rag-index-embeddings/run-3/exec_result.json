@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "Loaded 150 FAQ questions\nGenerating embeddings...\nVectors saved to vectors.json (150 items)\n\nQuery: '发票怎么开'\n\nTop 3 most similar questions:\n1. (Similarity: 0.7880) 发票需要提供哪些材料？\n2. (Similarity: 0.7865) 发票失败了怎么办？\n3. (Similarity: 0.7799) 如何申请发票相关的服务？\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 2.4
+}

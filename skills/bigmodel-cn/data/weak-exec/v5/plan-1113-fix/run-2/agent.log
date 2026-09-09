@@ -1,0 +1,14 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+完美！我已经为你创建了修正后的 `main.py`。主要修改如下：
+
+1. **使用正确的 Base URL**：从 `https://open.bigmodel.cn/api/paas/v4` 改为 `https://open.bigmodel.cn/api/coding/paas/v4`，这是编程套餐专用的端点。
+
+2. **增加环境变量检查**：添加了对 `GLM_KEY` 环境变量的检查，如果没有设置会提示错误。
+
+3. **改进错误处理**：添加了异常处理，如果请求失败会打印具体的错误信息。
+
+4. **保持原有功能**：仍然使用 `requests` 库，向模型提问"用一句话介绍 Python"，并将回答打印到 stdout。
+
+现在你只需要设置环境变量 `GLM_KEY` 为你的编程套餐 API Key 即可运行这个脚本。由于你已经确认购买了 GLM Coding Plan Max 套餐且额度没用完，使用正确的端点后应该不会再收到 1113 错误。

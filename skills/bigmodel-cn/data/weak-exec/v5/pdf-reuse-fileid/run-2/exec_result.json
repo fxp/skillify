@@ -1,0 +1,7 @@
+{
+  "exit_code": 1,
+  "stdout": "正在上传文件...\n文件上传成功，file_id: 1788752358426-c7e61f5e799d4106b72f0c2b62d53b00.pdf\n\n问题 1: 合同编号是什么\n答案:\n",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v5/pdf-reuse-fileid/run-2/work/main.py\", line 85, in <module>\n    main()\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v5/pdf-reuse-fileid/run-2/work/main.py\", line 81, in main\n    answer = ask_question(file_id, question)\n  File \"/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-workspace/weak-exec/v5/pdf-reuse-fileid/run-2/work/main.py\", line 50, in ask_question\n    response.raise_for_status()\n  File \"/Users/chopinfeng/Library/Python/3.9/lib/python/site-packages/requests/models.py\", line 1026, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://open.bigmodel.cn/api/paas/v4/chat/completions\n",
+  "timed_out": false,
+  "seconds": 0.4
+}

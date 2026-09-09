@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "正在上传合同文件...\n错误：找不到合同文件 ../run-1/contract.pdf\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 0.1
+}

@@ -1,0 +1,7 @@
+{
+  "exit_code": 0,
+  "stdout": "文本: 这家店服务太差了，再也不来了\n情感分析结果: {'sentiment': '负面', 'score': 0.1}\n--------------------------------------------------\n分析文本 '东西还行吧，没什么特别的' 时出错: JSON 解析失败: Expecting value: line 1 column 1 (char 0)\n分析文本 '太惊喜了，比我预期好太多，强烈推荐' 时出错: API 请求失败: HTTPSConnectionPool(host='open.bigmodel.cn', port=443): Read timed out. (read timeout=30)\n\n=== 最终分析结果 ===\n文本1: 这家店服务太差了，再也不来了\n结果: {\"sentiment\": \"负面\", \"score\": 0.1}\n\n结果已保存到: sentiment_results.json\n",
+  "stderr": "",
+  "timed_out": false,
+  "seconds": 40.2
+}

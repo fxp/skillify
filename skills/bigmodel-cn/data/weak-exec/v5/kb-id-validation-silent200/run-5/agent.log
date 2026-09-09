@@ -1,0 +1,43 @@
+"glm-4.5-flash" isn't described by this version's model catalog; update Claude Code, or map it with behavesAs on a modelPicker row (or modelOverrides, if it is a provider id of a model this version knows). Until then auto-compact keeps this session within 200k tokens (the context window it assumes); if the model accepts more, append [1m] to the model name for 1M, or set CLAUDE_CODE_MAX_CONTEXT_TOKENS to its real window; CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1 restores the previous wait-for-the-API behavior.
+[claude-code:unrecognized_model] {"model":"glm-4.5-flash","query_source":"sdk"}
+
+任务完成！我已经成功编写了 `main.py` 脚本，用于验证智谱托管知识库 ID 的有效性。
+
+## 脚本特点：
+
+### 1. **严格验证策略**
+- 完全符合"宁可误报无效，也不能放一个坏 ID 上线"的要求
+- 任何异常情况都判定为无效
+
+### 2. **正确的 API 调用**
+- 使用 `GET /llm-application/open/knowledge/{id}` 接口
+- 正确处理智谱 API 的特性：HTTP 状态码可能是 200，但真实状态在响应的 `code` 字段中
+- 知识库不存在时返回 `code=100013`
+
+### 3. **完整的错误处理**
+- 检查环境变量是否存在
+- 验证 HTTP 状态码
+- 解析 JSON 响应
+- 处理各种网络异常（超时、连接错误等）
+
+### 4. **清晰的输出**
+- 中文提示信息
+- 明确的验证结论
+- 显示知识库的详细信息（名称、文档数量、内容长度）
+
+### 5. **正确的退出码**
+- 成功：`sys.exit(0)`，输出 `✅ [有效]`
+- 失败：`sys.exit(1)`，输出 `❌ [无效]`
+
+## 使用方法：
+
+```bash
+# 设置环境变量
+export ZHIPU_KB_ID="your_knowledge_base_id"
+export ZHIPUAI_API_KEY="your_api_key"
+
+# 运行脚本
+python3 main.py
+```
+
+脚本已经通过语法检查，可以直接使用。会在发布流水线上作为卡点，确保只有有效的知识库 ID 才能通过上线检查。

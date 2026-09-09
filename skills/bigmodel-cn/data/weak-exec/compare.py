@@ -23,8 +23,8 @@ def mw(a,b):
     if sd==0: return 1.0
     return 2*(1-0.5*(1+math.erf(abs((u1-mu)/sd)/math.sqrt(2))))
 
-VERS = ("v1", "v2", "v4")
-S = {v: json.loads((HERE/f"summary-{v}.json").read_text(encoding="utf-8")) for v in ("v1","v2","v4")}
+VERS = ("v1", "v2", "v4", "v5")
+S = {v: json.loads((HERE/f"summary-{v}.json").read_text(encoding="utf-8")) for v in ("v1","v2","v4","v5")}
 
 print("="*84); print("一、准确率（执行 Agent = glm-4.5-flash，n=5）"); print("="*84)
 print(f"{'场景':30s}" + "".join(f"{v+' 满分':>9s}" for v in VERS) + "".join(f"{v+' 均分':>9s}" for v in VERS))
@@ -33,14 +33,14 @@ for k in S["v1"]:
     cs={}
     for v in VERS:
         s=S[v][k]["scores"]; cs[v]=sum(1 for x in s if x>=0.999); F[v]+=cs[v]; A[v]+=s
-    flag=" ↑" if cs["v4"]>cs["v1"] else (" ↓" if cs["v4"]<cs["v1"] else "")
+    flag=" ↑" if cs["v5"]>cs["v1"] else (" ↓" if cs["v5"]<cs["v1"] else "")
     print(f"{k:30s}" + "".join(f"{cs[v]:>7d}/5" for v in VERS)
           + "".join(f"{statistics.mean(S[v][k]['scores']):>9.3f}" for v in VERS) + flag)
 print("-"*84)
 print(f"{'合计':30s}" + "".join(f"{F[v]:>6d}/40" for v in VERS)
       + "".join(f"{statistics.mean(A[v]):>9.3f}" for v in VERS))
 print()
-for v in ("v2","v4"):
+for v in ("v2","v4","v5"):
     pf=fisher(F[v],40-F[v],F["v1"],40-F["v1"]); pm=mw(A[v],A["v1"])
     print(f"{v} vs v1： 满分率 {F[v]}/40 vs {F['v1']}/40  Fisher p={pf:.4f}"
           f"{'  ← 显著' if pf<0.05 else ''}   逐次得分 MW p={pm:.4f}{'  ← 显著' if pm<0.05 else ''}")
@@ -52,7 +52,7 @@ usage_of=ns["usage_of"]
 P="-Users-chopinfeng-Workspace-Skillify-bigmodel-cn-workspace-weak-exec-"
 print("\n"+"="*84); print("二、token"); print("="*84)
 tok={}
-for v in ("v1","v2","v4"):
+for v in VERS:
     rows=[]
     for sc in S["v1"]:
         for r in range(1,6):
@@ -62,7 +62,7 @@ for v in ("v1","v2","v4"):
     print(f"{v}: n={len(rows):>2d}  wire={statistics.mean(x['wire'] for x in rows):>10,.0f}  "
           f"计费当量={statistics.mean(x['billable'] for x in rows):>9,.0f}  "
           f"Read={statistics.mean(x['reads'] for x in rows):.1f}  轮数={statistics.mean(x['turns'] for x in rows):.1f}")
-for v in ("v2","v4"):
+for v in ("v2","v4","v5"):
     for key,name in (("wire","线上总 token"),("billable","计费当量")):
         a=[x[key] for x in tok[v]]; b=[x[key] for x in tok["v1"]]
         d=(statistics.mean(a)-statistics.mean(b))/statistics.mean(b)*100
@@ -73,12 +73,12 @@ cps={}
 for v in VERS:
     tot=sum(x["billable"] for x in tok[v]); cps[v]=tot/F[v]
     print(f"{v}: {cps[v]:>10,.0f}   (总花费 {tot:,} ÷ 成功 {F[v]} 次)")
-for v in ("v2","v4"):
+for v in ("v2","v4","v5"):
     print(f"  {v} 相对 v1： {cps[v]/cps['v1']-1:+.1%}")
 print()
-ok_acc = F["v4"] > F["v1"]
-ok_tok = statistics.mean(x["billable"] for x in tok["v4"]) <= statistics.mean(x["billable"] for x in tok["v1"])
+ok_acc = F["v5"] > F["v1"]
+ok_tok = statistics.mean(x["billable"] for x in tok["v5"]) <= statistics.mean(x["billable"] for x in tok["v1"])
 print("="*84); print("四、对照冻结的达成标准"); print("="*84)
-print(f"  准确率 v4 满分率 > v1 的 {F['v1']}/40 ： {F['v4']}/40  → {'✅ 满足' if ok_acc else '❌ 不满足'}")
-print(f"  token  v4 计费当量 ≤ v1        ： {statistics.mean(x['billable'] for x in tok['v4']):,.0f} vs {statistics.mean(x['billable'] for x in tok['v1']):,.0f}  → {'✅ 满足' if ok_tok else '❌ 不满足'}")
+print(f"  准确率 v5 满分率 > v1 的 {F['v1']}/40 ： {F['v5']}/40  → {'✅ 满足' if ok_acc else '❌ 不满足'}")
+print(f"  token  v5 计费当量 ≤ v1        ： {statistics.mean(x['billable'] for x in tok['v5']):,.0f} vs {statistics.mean(x['billable'] for x in tok['v1']):,.0f}  → {'✅ 满足' if ok_tok else '❌ 不满足'}")
 print(f"\n  两条同时满足 → {'✅ 达成' if (ok_acc and ok_tok) else '❌ 未达成'}")

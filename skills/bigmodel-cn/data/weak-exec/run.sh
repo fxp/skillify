@@ -10,6 +10,7 @@ case "$VER" in
   v1) SKILL=/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-v1-archive/SKILL.md ;;
   v2) SKILL=/Users/chopinfeng/Workspace/Skillify/bigmodel-cn/SKILL.md ;;
   v4) SKILL=/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-v4/SKILL.md ;;
+  v5) SKILL=/Users/chopinfeng/Workspace/Skillify/bigmodel-cn-v5/SKILL.md ;;
   *)  echo "未知版本 $VER"; exit 1 ;;
 esac
 [[ -f "$SKILL" ]] || { echo "找不到 $SKILL"; exit 1; }

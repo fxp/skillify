@@ -35,6 +35,44 @@ Skillify/
 | `create-doc-skill` | 元技能：把任意开放平台的开发者文档站生成为一份经真实调用验证的接入 skill（本工作区方法论的可复用版本，原名 `generate-skill-from-api-docs`） | 1 轮 2 个场景（新版 vs 旧版快照），见 `create-doc-skill-workspace/comparison-report.md` |
 | `volcengine-ark` | 火山引擎·火山方舟（ark.cn-beijing.volces.com，豆包 Doubao / Seedream / Seedance 及方舟上的 GLM / Kimi / DeepSeek / MiniMax）+ Agent Plan 与 Coding Plan 两套订阅套餐 | 以 **GLM-5.3 为执行 Agent**：3 场景 / 30 次运行，**0 个达到统计显著**（技能在 2 个场景领先但 n=5 不够，1 个场景是出题失误）；另经真实调用探针约 45 次，修正 8 条文档 / SDK 错误。见 `volcengine-ark-workspace/comparison-report.md` |
 
+## 装到你的 Agent
+
+把这句话发给 Claude Code / Codex / Cursor，它会自己装好（把加粗部分换成你要的 skill 名）：
+
+```
+读 https://github.com/fxp/skillify/blob/main/skills/bigmodel-cn/prompt.md 并照它执行
+```
+
+或者直接给命令：
+
+```
+npx -y skills add fxp/skillify --skill bigmodel-cn --yes
+```
+
+每份 skill 都配了 `prompt.md`（六段模板：安装 → 自检 → 覆盖范围 → 版本），
+里面明确写了 Agent 做不到的那一步（Claude Code 的 `/reload-plugins` 需要人手动执行），
+也要求它安装前先做幂等检查，不会要求跳过全局配置变更的确认。
+
+## Skill 的三层结构
+
+三份 skill 都按**分段披露**组织，Agent 不会一次读完全部内容：
+
+| 层 | 是什么 | 什么时候加载 | 体积 |
+| :-- | :-- | :-- | :-- |
+| 1 | `description`（frontmatter） | **永远在场**，是触发器 | 一段话 |
+| 2 | `SKILL.md` 正文 | 触发后 | 5–8 KB / 74–89 行 |
+| 3 | `references/*.md` | 按需打开 | 3–14 份 |
+
+第 2 层只做四件事：**当前事实**（Base URL、活的模型名）、**纠正训练记忆**、**路由表**、**house rules**，
+本身几乎不含字段表。文档与实测不符之处在 reference 里用 `<!-- Gap: … -->` 统一标记，可直接 grep。
+
+> ⚠️ **一个反直觉的实测结论：第三层不能为了省 token 而拆细。**
+> 做过一轮把大 reference 拆小、并在 SKILL.md 里加「只读你需要的那节」的版本——
+> token 确实降了，**准确率却掉了**（弱执行器上 22/40 vs 原版 27/40）。
+> 弱模型不知道该开哪一份，省下的正是它写对代码所必需的上下文。
+> 分层的意义是**让常驻层职责单一**，不是让细节层变薄。详见
+> `bigmodel-cn-workspace/weak-exec/RESULTS.md`。
+
 ## 评测流程
 
 1. 在 `glm-round*/PROTOCOL.md` 里写场景与判分标准，**开跑前冻结**。

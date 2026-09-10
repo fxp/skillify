@@ -120,6 +120,7 @@ arkcli helper
 
 ## 3. Claude Code
 
+<!-- Gap: Anthropic 入口把 claude-* 静默路由到 doubao-seed-2-1-turbo，抵扣系数 2.5 -->
 > **先看这条 —— 已用真实 API 验证（2026-09-04，Agent Plan Medium）：不设 `ANTHROPIC_MODEL` / `ANTHROPIC_DEFAULT_{HAIKU,SONNET,OPUS}_MODEL` / `CLAUDE_CODE_SUBAGENT_MODEL` 时，Claude Code 请求里默认的 `claude-*` 模型名会被 Plan 的 Anthropic 入口静默换成 `doubao-seed-2.1-turbo`（响应 `"model":"doubao-seed-2-1-turbo-260628"`），不报错，但按 2.5 抵扣系数扣 AFP。** 实测请求：`POST /api/plan/v1/messages`，`model: "claude-sonnet-4-5"` → 200。也就是说「只配 `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` 就能用」是真的，但会用最贵的通用档位之一，且 Haiku 位（后台小任务）也会打到 2.1-turbo。**3.1 的五个模型变量一个都不要省。** 同理，Codex / OpenCode / 其他工具若不显式写 Model Name 而沿用工具默认模型名，OpenAI 入口对套餐外名字（如 `doubao-seed-2.1-pro`）实测返回 404 UnsupportedModel，`gpt-*` 之类默认名未测——不要依赖默认值，显式填。
 >
 > 其他实测结论（Anthropic 入口原生可用）：`x-api-key: <Key>` 与 `Authorization: Bearer <Key>` **两种鉴权头都接受**，所以 Claude Code 的 `ANTHROPIC_AUTH_TOKEN`（Bearer）没问题；响应是标准 Anthropic Message，思维链为 `{"type":"thinking","thinking":"..."}` block，`usage` 含 `cache_read_input_tokens`；`thinking: {"type":"disabled"}` → 200 只剩 `text` block；`stream: true` 为标准 Anthropic SSE（`message_start` / `content_block_start` / `content_block_delta` …）。配置文件里 `<MODEL_NAME>` **不能写 `auto`**（404），要 Auto 写 `ark-code-latest` + 控制台选 Auto。

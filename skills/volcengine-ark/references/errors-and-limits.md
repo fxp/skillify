@@ -27,6 +27,7 @@
 | `error.code` | string | 错误码，见第 2 节全表；部分带占位符（`InvalidParameter.{{Parameter}}`、`NotFound.{{Parameter}}`） |
 | `error.message` | string | 人类可读信息，以 `Request id: {{id}}` 结尾（实测为小写 `id`，且部分 message 与它之间没有句号），报工单时带上 |
 | `error.type` | string | 错误类型：`BadRequest` / `Unauthorized` / `Forbidden` / `NotFound` / `TooManyRequests` / `InternalServerError`（与 HTTP 状态码大体对应，但 `InvalidSubscription` 是 400 + `Forbidden`，`InvalidAccountStatus` 是 401 + `Forbidden`，见全表）。**已用真实 API 验证（2026-09-04，Agent Plan Medium）**：实测出现 `BadRequest`（400 `InvalidParameter`）、`Unauthorized`（401 `AuthenticationError`）、**空串 `""`**（404 `UnsupportedModel`、图片 `size` 的 400 `InvalidParameter`）三种值——`type` 可能为空，判别只用 `code` |
+<!-- Gap: service_tier fast 在 Agent Plan 入口报错，文案却写的是 coding plan -->
 | `error.param` | string | 出错参数名。错误码页（1299023）只给出 状态码 / Type / Code / Message 四列，未给 HTTP 错误 body 示例；**已用真实 API 验证（2026-09-04，Agent Plan Medium）**：HTTP 数据面错误 body 固定为 `{"error":{"code","message","param","type"}}` 四字段，`param` **总是存在**但常为空串 `""`（401 `AuthenticationError`、`developer` role 的 400、404 `UnsupportedModel`、图片 `size` 400 均为空），只有部分参数校验错误填字段名（`"service_tier"`、`"input[0]"`）。 |
 
 **示例响应**（**已用真实 API 验证（2026-09-04，Agent Plan Medium）**，三条原始 body，只改了 Request id）

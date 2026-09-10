@@ -56,6 +56,7 @@ volcenginesdkcore.Configuration.set_default(cfg)
 # （create/get/list/delete/stop_endpoint、get_endpoint_certificate、create/list_batch_inference_jobs、
 #   模型精调 6 个、create_evaluation_job、get_api_key），**没有** get_personal_plan / get_afp_usage /
 #   list_model_rate_limit 这类 Plan、用量、限流 Action 的封装。写 api.get_afp_usage(...) 会 AttributeError。
+<!-- Gap: SDK 的 ARKApi 没有套餐/用量类方法，必须走 UniversalApi.do_call -->
 # 这些 Action 要走通用签名调用 UniversalApi（同一 SDK 自带），Action 名和 body 照文档原样传：
 client = volcenginesdkcore.ApiClient(cfg)
 universal = volcenginesdkcore.UniversalApi(client)

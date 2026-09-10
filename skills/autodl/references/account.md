@@ -31,6 +31,7 @@ print(resp.json())
         "id": 282382,
         "uid": 282383,
         "assets": 29290,
+<!-- Gap: 余额是元×1000 的整数；blocked_asset 冻结金额文档未提 -->
         "blocked_asset": 0,
         "accumulate": 120710,
         "voucher_balance": 0,

@@ -24,7 +24,9 @@
 |---|---|---|---|---|
 | **(a) Model ID**（带日期版本，连字符分隔） | `doubao-seed-2-1-pro-260628`、`deepseek-v4-flash-ga-260731`、`doubao-seedream-5-0-260128` | 标准 `https://ark.cn-beijing.volces.com/api/v3` | 方舟 API Key（`ARK_API_KEY`） | 系统自动匹配"预置推理接入点"，不存在则自动创建。**唯一例外**：`doubao-seed-evolving` 没有日期后缀，是周级滚动更新的统一 ID |
 | **(a') 推理接入点 Endpoint ID** | `ep-2xxxxxxx1-rr9kp` | 标准 `/api/v3` | 方舟 API Key；**使用 Access Key 签名鉴权时必须用 ep** | 控制台创建的自定义接入点。低延迟 / TPM 保障包 / 模型单元 / 智能路由 / 批量推理 / 精调模型都只能走 ep |
+<!-- Gap: Plan 入口接受带日期 Model ID 但静默按 Name 路由，版本号被忽略 -->
 | **(b) Model Name**（无日期，小写，版本用点） | `doubao-seed-2.1-turbo`、`doubao-seed-2.0-lite`、`glm-5.3`、`deepseek-v4-pro`、`kimi-k2.7-code` | Coding Plan `/api/coding[/v3]`、Agent Plan `/api/plan[/v3]` | Coding Plan：方舟 API Key；Agent Plan：**专属** Key（`ARK_AGENT_PLAN_API_KEY`） | 文档说"支持通过 model name 及控制台选择进行访问"（`deepseek-v4-pro 正式版` 上线公告）。**已用真实 API 验证（2026-09-04，Agent Plan Medium）**：Name 会被解析到一个**固定日期版本**并在响应 `model` 回显（`doubao-seed-2.0-lite` → `doubao-seed-2-0-lite-260215`），对照表见 1.1 |
+<!-- Gap: 控制台列出 Model Name: auto，实测直填 auto 返回 404 UnsupportedModel -->
 | **(b') 路由名** | `ark-code-latest`（在控制台切目标模型，3–5 分钟生效）；`glm-latest` / `minimax-latest` / `kimi-latest` / `deepseek-latest`（自动指向该系列最新版） | Plan 入口 | 同上 | `latest` 对应关系（2026-08）：`glm-latest`→`glm-5.3`，`minimax-latest`→`minimax-m3`，`kimi-latest`→`kimi-k2.7-code`，`deepseek-latest`→`deepseek-v4-pro`。**已用真实 API 验证（2026-09-04，Agent Plan Medium）**：`glm-latest` → 200，响应 `"model":"glm-5.3"`；`ark-code-latest` → 200，响应 `"model":"auto"`（控制台当前选 Auto）。其余 `*-latest` 未测 |
 
 ### 1.1 命名规则：Model ID 用连字符，Model Name 用点

@@ -1,5 +1,6 @@
 # 向量化（Embedding）、语音（TTS / ASR）、同声传译
 
+<!-- Gap: 文档称向量化不支持 OpenAI API，实测 Plan 入口可用；纯文本也只能用 vision 模型 -->
 本文件覆盖火山方舟三类非文本生成能力的接入方式：多模态向量化 `doubao-embedding-vision`、Agent Plan 语音模型 `doubao-seed-tts-2.0` / `doubao-seed-asr-2.0`、同声传译（`service=clasi`）WebSocket API。每个 endpoint 标明在标准 `/api/v3`、Coding Plan `/api/coding/v3`、Agent Plan `/api/plan/v3` 三套入口中的可用性。鉴权与 Base URL 总表见 `auth.md`（同级 reference）。标 **已用真实 API 验证（2026-09-04，Agent Plan Medium）** 的结论均在 Agent Plan `/api/plan/v3` 入口实测；标准 `/api/v3` 与 Coding Plan 入口预期相同但未测。
 
 ## 目录
@@ -7,6 +8,7 @@
 1. [入口与可用性总览](#1-入口与可用性总览)
 2. [向量化：我想把文本 / 图片 / 视频变成向量](#2-向量化)
    - 2.1 模型版本选型
+<!-- Gap: 两个向量化端点响应形状不同：/embeddings 返回数组，/embeddings/multimodal 返回对象且固定 2048 维 -->
    - 2.2 多模态向量化 API（`POST /api/v3/embeddings/multimodal`）
    - 2.3 OpenAI 风格 `POST /embeddings` 是否可用（Plan 入口已实测：可用，仅字符串输入）
    - 2.4 `instructions` 怎么写（直接决定效果）

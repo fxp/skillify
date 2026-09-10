@@ -42,6 +42,7 @@
   - 填带日期 Model ID `doubao-seed-2-0-lite-260428` → **200 但响应 `model` 仍是 `doubao-seed-2-0-lite-260215`**：Plan 入口接受 Model ID 却**静默忽略版本号**，按 Name 路由。不要靠 Model ID 锁版本。
   - `model: "auto"` → **404** `{"error":{"code":"UnsupportedModel","message":"The requested model does not support the agent plan feature. Please refer to the documentation at https://www.volcengine.com/docs/82379/2366394 to select a compatible model. ..."}}`。要用智能调度只能填 `ark-code-latest`（实测 200，响应 `"model":"auto"`，控制台选的是 Auto）。
   - 套餐外模型（`doubao-seed-2.1-pro`）、老 Model ID（`doubao-seed-1-8-251228`）同样 404 UnsupportedModel（同一文案）。
+<!-- Gap: kimi-k3 的 max_tokens 把思维链算进去，会把正文截空 -->
 - Plan 入口下本文各参数的可用性——**已用真实 API 验证（2026-09-04，Agent Plan Medium）**：`thinking`（第 4 节）、`reasoning_effort`（4.2）、`max_tokens` / `max_completion_tokens`（2.1）、`response_format: json_schema`（第 5 节）、`tools` + 强制 `tool_choice`（第 6 节）、`stream` + `stream_options.include_usage`（第 3 节）均生效；`service_tier: fast` 报 400（2.1）。`logprobs` / `logit_bias` / `stop` 未测。`glm-5.3` 默认开思考且 `thinking.disabled` 报 400（4.1）。
 
 所有入口 HTTP 头相同：`Authorization: Bearer <key>`、`Content-Type: application/json`。**已用真实 API 验证（2026-09-04，Agent Plan Medium）**：Agent Plan 专属 Key 打 `/api/v3` 或 `/api/coding/v3` 都是 **401** `{"error":{"code":"AuthenticationError","message":"The API key or AK/SK in the request is missing or invalid. ...","param":"","type":"Unauthorized"}}`——Key 与入口严格绑定，错的是鉴权而不是"套餐不支持"。

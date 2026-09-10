@@ -425,6 +425,7 @@ print(result['output'])
 `response.model` 正常回显，但 `choices[0].message.content` 是**空字符串**。原因是
 **思考过程也算进 `max_tokens`**，`max_tokens` 给小了就会全被推理吃光，正文一个字都没剩：
 
+<!-- Gap: 调用可成功却返回空字符串，判据是 finish_reason 而非空串 -->
 | 调用方式 | `finish_reason` | `content` | `reasoning_content` |
 | :--- | :--- | :--- | :--- |
 | `max_tokens=20`（默认开思考） | `length` | **`''`（空）** | 37 字 |

@@ -179,6 +179,7 @@ print(resp.json())
 | `model` | string | 是 | `glm-4-assistant` | `glm-4-assistant`/`glm-4-alltools` |
 | `messages` | array | 是 | - | **`role` 仅支持 `user`**（不接受 assistant/system 历史）；content 为字符串或多模态数组（text/image_url） |
 | `conversation_id` | string | 否 | - | 传入以继续之前对话 |
+<!-- Gap: 文档称 stream 默认 true，实测 glm-4-assistant 必须显式传 true -->
 | `stream` | boolean | 否 | 见下方警告 | 流式响应。**实测（2026-09-07）`glm-4-assistant` 只能 `stream: true`**：不传或传 `false` 都会返回 `1212 当前模型不支持SYNC调用方式`。文档声称默认 `true`，但实测不传就走同步并失败——请显式传 `true` |
 | `request_id` | string | 否 | - | 6-64 位 |
 | `user_id` | string | 否 | - | 终端用户ID，6-128 位 |
@@ -294,6 +295,7 @@ print(resp.json())
 >
 > **1）这一族接口出错时 HTTP 状态码依然是 200，真实结果在响应体的 `code` 里。**
 > `llm-application/open/*` 下的所有端点（以及 `/zrag/*`）实测均如此：查一个不存在的知识库，
+<!-- Gap: KB 接口出错也返回 HTTP 200，真状态在 body.code -->
 > 返回的是 `HTTP 200` + `{"code":100013,"message":"知识库不存在"}`；上传时字段名写错，
 > 返回的是 `HTTP 200` + `{"code":400,"message":"Required request part 'files' is not present"}`。
 > **`resp.raise_for_status()` 在这里永远不会触发**，必须判断 `resp.json()["code"] == 200`，

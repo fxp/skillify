@@ -36,6 +36,7 @@ API Key 在 https://bigmodel.cn/usercenter/proj-mgmt/apikeys 获取。模型代�
 | `text` | `text`（字符串） | 文本片段 |
 | `image_url` | `image_url.url` | 图片 URL 或 Base64；单图 ≤5M，像素 ≤6000×6000，支持 jpg/png/jpeg。GLM-5.3-Flash/GLM-5V-Turbo/GLM-4.6V/GLM-4.5V 最多 50 张；GLM-4V-Plus-0111 最多 5 张；GLM-4V-Flash 仅 1 张且不支持 Base64 |
 | `video_url` | `video_url.url` | 视频 URL，mp4/mkv/mov。GLM-5.3-Flash/GLM-5V-Turbo/GLM-4.6V/GLM-4.5V 限 200M 内；GLM-4V-Plus 限 20M 内且时长 ≤30s。GLM-4V-Plus-0111 要求 `video_url` 必须是 `content` 数组第一项 |
+<!-- Gap: chat 引用文件必须 purpose=user_data，其他 purpose 上传成功但引用时 1210 -->
 | `file` | `file.file_id` / `file.file_url` / `file.file_data` / `file.filename` | 文件输入，三选一（`file_id` 来自文件上传接口、`file_url` 为直链、`file_data` 为 `data:<MIME>;base64,<DATA>`）。单文件 ≤50M，最多 50 个；`file` 为新类型，兼容历史 `file_url` type（不建议再用旧类型名）。**用 `file_id` 时，上传文件必须传 `purpose=user_data`**（见下方重要提示），此时实际支持的格式只有 `pptx/ppt/docx/doc/xlsx/xls/pdf`，不含 txt/jsonl |
 
 音频模型（`glm-4-voice`）另有 `input_audio` 类型（`data` 为 Base64，`format` 为 `wav`/`mp3`，音频最长 10 分钟，1 秒音频折算 12.5 Token），不属于本节视觉模型范围，用法类似。
@@ -446,6 +447,7 @@ print(final_tool_calls)
 | :-- | :-- | :-- |
 | `function` | `function.name`、`function.description`、`function.parameters`（JSON Schema 对象） | 自定义函数调用，`name` 需匹配 `^[a-zA-Z0-9_-]+$`，长度 ≤64；`description`、`parameters` 均必填 |
 | `retrieval` | `retrieval.knowledge_id`（必填）、`retrieval.prompt_template` | 知识库检索，`knowledge_id` 从平台知识库功能创建获取；`prompt_template` 可自定义，需包含 `{{ knowledge }}` 与 `{{ question }}` 占位符 |
+<!-- Gap: web_search 引用需显式 search_result:true，否则来源数组不出现 -->
 | `web_search` | `web_search.enable`、`search_engine`（`search_std`/`search_pro`/`search_pro_sogou`/`search_pro_quark`）、`search_query`、`search_intent`、`count`（1-50）、`search_domain_filter`、`search_recency_filter`、`content_size`、`result_sequence`、`search_result`、`require_search`、`search_prompt` | 联网搜索工具。**必须显式传 `web_search.search_result: true`**，响应体顶层才会带 `web_search` 引用来源数组（`icon`/`title`/`link`/`media`/`publish_date`/`content`/`refer`；注意 `link` 是否为空取决于 `search_engine`，见 `references/tools.md`）——已用真实 API 验证：不传这个字段（默认 `false`）时搜索依然会正常执行、结果依然会被用于生成回答，但响应体里完全没有 `web_search` 这个顶层字段，代码里如果读 `response.get("web_search")` 期望拿到引用列表，默认情况下永远是 `None`，不会报错，只是"想展示信息来源"这个需求会静默失效 |
 | `mcp` | `mcp.server_label`（必填）、`mcp.server_url`、`mcp.transport_type`（`sse`/`streamable-http`，默认 `streamable-http`）、`mcp.allowed_tools`、`mcp.headers` | 调用外部 MCP Server 上的工具；若连接智谱官方 MCP Server，`server_label` 填 MCP Code 即可，无需 `server_url` |
 

@@ -498,6 +498,7 @@ print(batch["id"], batch["status"])
 
 **注意事项**
 
+<!-- Gap: custom_id 有未文档化的 6 字符下限 -->
 - `endpoint` 目前只支持 `/v4/chat/completions`；`.jsonl` 中每行的 `url` 字段需与之一致。一个 batch 文件只能包含对**单一模型**的请求；每个请求必须包含唯一的 `custom_id`，用于结果与输入的匹配。**`custom_id` 最短 6 个字符**（已用真实调用验证：传 `"r1"` 这种两三位短字符串会在文件上传阶段直接报错 `1210`："custom id 长度不足, 最短: 6"），别用 `id-1`/`r1` 这类过短的编号，建议用 `request-001` 这种格式或 UUID。
 - 单个 batch 文件最多 50,000 个请求且不超过 100MB；向量模型（Embedding-2/Embedding-3）批量请求数不超过 10,000 次。各模型有独立的 Batch 排队上限（如 GLM-4-Plus/GLM-4-Air-250414/Embedding 系列约 200 万次，GLM-4V 系列约 1 万次），达到上限需等待当前任务完成后再提交。
 - 调用 Batch API 前必须完成实名认证。

@@ -49,6 +49,7 @@ Authorization: Bearer YOUR_API_KEY
 
 | `type` 值 | 用途 | 关键字段 |
 | --- | --- | --- |
+<!-- Gap: 握手先到 session.created，AsyncAPI 规范未列此事件 -->
 | `session.created` | 连接建立后服务端**自动**推送的初始会话状态（不是对 `session.update` 的回执，握手一成功就会收到，早于任何客户端消息）；见下方验证说明 | `session`（初始/默认配置对象，字段与 `session.update` 基本一致） |
 | `session.updated` | 确认会话配置已生效，回显完整的会话配置 | `session`（同 `session.update` 里的配置对象） |
 | `response.created` | 响应开始创建，返回初始 `response` 对象 | `response.id`、`response.object`（固定为 `realtime.response`）、`response.status` |

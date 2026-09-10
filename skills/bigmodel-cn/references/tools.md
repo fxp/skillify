@@ -309,6 +309,7 @@ print(resp.json())
 | 参数名 | 类型 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |
 | search_query | string | 是 | 无 | 搜索内容，建议不超过 70 字符 |
+<!-- Gap: search_engine 决定 link 是否为空：search_std/search_pro 恒为空串 -->
 | search_engine | string | 是 | 无 | `search_std`（智谱基础版）、`search_pro`（智谱高阶版）、`search_pro_sogou`（搜狗）、`search_pro_quark`（夸克）；实测另有未列入文档的 `search_pro_jina`、`search_pro_bing` 可用。**注意 `search_std` / `search_pro` 返回的来源 `link` 恒为空**，见下方说明 |
 | search_intent | boolean | 是 | `false` | 是否先做搜索意图识别，识别到意图后才执行搜索；`false` 则跳过识别直接搜索 |
 | count | integer | 否 | `10` | 返回结果条数，1-50；`search_pro_sogou` 仅支持 10/20/30/40/50 |

@@ -1,0 +1,49 @@
+{
+  "skill_name": "kingdee",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我们要用 Python 从客户的金蝶云星空里拉物料主数据。客户只给了我们「第三方系统登录授权」的四个值（账套ID、集成用户名、应用ID、应用密钥）和他们的服务器地址 http://erp.example.com/k3cloud/ 。公司规定不能引第三方 SDK，只能用 requests 自己发请求。请写一个函数，查出所有物料的内码、编码、名称、规格型号。",
+      "expected_output": "不依赖 SDK、用 requests 手工实现第三方授权签名头，POST 到 {ServerUrl}/Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery.common.kdsvc，body 为 {\"data\":{\"FormId\":\"BD_MATERIAL\",\"FieldKeys\":\"FMATERIALID,FNumber,FName,FSpecification\",...}}，按 StartRow/Limit 分页并把二维数组按 FieldKeys 顺序组装。",
+      "files": [],
+      "expectations": [
+        "请求 URL 为 ServerUrl 拼接 Kingdee.BOS.WebApi.ServicesStub.DynamicFormService.ExecuteBillQuery.common.kdsvc，方法为 POST，而不是自造 REST 路径或使用 api.kingdee.com/galaxyapi 作为默认地址",
+        "发送 X-Api-ClientID、X-Api-Auth-Version(2.0)、x-api-timestamp、x-api-nonce、x-api-signheaders、X-Api-Signature、X-Kd-Appkey、X-Kd-Appdata、X-Kd-Signature 这组签名头，而不是把 X-KDApi-AcctID / X-KDApi-AppID 等配置键名当 HTTP 头发送",
+        "X-Api-Signature 的待签串为 POST + 换行 + 把 / 也编码成 %2F 的路径 + 两个换行 + x-api-nonce 与 x-api-timestamp 两行，HMAC-SHA256 结果先转小写十六进制字符串再做 base64",
+        "X-Api-Signature 的密钥来自应用ID按下划线拆分后第二段经解码（base64 解码、与 ROT13 后的固定种子异或、再 base64）得到的值，而 X-Kd-Signature 才用应用密钥对 AppID 加 app_data 签名",
+        "X-Kd-Appdata 为 base64 编码的 账套ID,用户名,lcid,组织编码 字符串，lcid 默认 2052",
+        "FieldKeys 以逗号分隔字符串传入，FormId 为 BD_MATERIAL，FormId 放在 data 对象内部而不是外层 formid",
+        "分页使用 StartRow 与 Limit（Limit 不超过 2000），在返回行数小于 Limit 时结束，而不是使用 page/pageSize 或期待返回 total",
+        "把返回的二维数组按 FieldKeys 顺序映射为字段，而不是按字段名读取 JSON 对象"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "金蝶云星空里有一张未审核的采购订单 CGDD000123，有 5 行明细。业务要求把其中物料 WL0005 那一行的数量改成 50，其他 4 行保持不变。我们已经装了官方 Python SDK（k3cloud_webapi_sdk）并初始化好了 sdk 对象。请写这段代码。",
+      "expected_output": "先用 ExecuteBillQuery 查出单据内码与目标分录的 FPOOrderEntry_FEntryId，再调用 Save（PUR_PurchaseOrder），Model 带表头 FID 与只含目标分录（带 FEntryID 和 FQty）的 FPOOrderEntry，显式 IsDeleteEntry=false，NeedUpDateFields 包含 FPOOrderEntry 与 FQty，并检查 Result.ResponseStatus.IsSuccess。",
+      "files": [],
+      "expectations": [
+        "通过 ExecuteBillQuery 查询 PUR_PurchaseOrder 的表头内码（FID）与分录内码，分录内码的 FieldKeys 写法为 FPOOrderEntry_FEntryId（单据体key加下划线加分录主键）",
+        "调用 Save（或等价的 DynamicFormService.Save）而不是臆造 Update / Modify 接口",
+        "Save 的 data 中显式设置 IsDeleteEntry 为 false，避免默认 true 删除未传入的其他 4 行分录",
+        "NeedUpDateFields 中同时列出单据体 key FPOOrderEntry 和字段 FQty",
+        "Model 中目标分录携带其 FEntryID，单据体使用 FPOOrderEntry 数组，表头带单据内码",
+        "对返回结果 json.loads 后检查 Result.ResponseStatus.IsSuccess（兼容字符串形式），失败时输出 Errors 中的 FieldName 与 Message"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "用金蝶云星空 WebAPI 生成一张总账凭证：借 管理费用-差旅费 1200 元，贷 库存现金 1200 元，并让它提交、审核完成。已有初始化好的官方 Python SDK 对象 sdk。账簿、科目、凭证字等编码我们还不知道，请在代码里体现怎么拿到它们。",
+      "expected_output": "FormId 用 GL_VOUCHER，Model 含 FAccountBookID、FDate、FVOUCHERGROUPID、FVOUCHERGROUPNO、FDocumentStatus 以及单据体 FEntity（每行 FACCOUNTID、FCURRENCYID、FEXCHANGERATETYPE、FDEBIT/FCREDIT），基础资料引用写成 {\"FNumber\": ...}；编码先用 ExecuteBillQuery 查 BD_AccountBook、BD_Account、BD_VOUCHERGROUP、BD_Currency；保存后分别调用 Submit 与 Audit，Numbers 用数组或 Ids 用逗号分隔字符串；不臆造过账接口。",
+      "files": [],
+      "expectations": [
+        "FormId 使用 GL_VOUCHER，单据体 key 为 FEntity（不是 FEntry / FVoucherEntry）",
+        "Model 表头包含 FAccountBookID、FDate、FVOUCHERGROUPID，分录包含 FACCOUNTID、FCURRENCYID、FEXCHANGERATETYPE，并以 FDEBIT / FCREDIT 分别表示借贷而不是用正负号",
+        "账簿、科目、凭证字、币别等基础资料引用写成 {\"FNumber\": 编码} 对象，并通过 ExecuteBillQuery 查询 BD_AccountBook / BD_Account / BD_VOUCHERGROUP / BD_Currency 获取编码，而不是硬编码假定的金蝶固定编码",
+        "保存后分别调用 Submit 和 Audit 两个接口，Numbers 参数为数组或 Ids 参数为逗号分隔字符串",
+        "每一步检查 Result.ResponseStatus.IsSuccess 并输出 Errors",
+        "不调用文档中不存在的过账（Post）接口；如提到过账，说明 WebAPI 文档未提供该操作"
+      ]
+    }
+  ]
+}

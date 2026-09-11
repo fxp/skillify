@@ -35,6 +35,7 @@ Skillify/
 | `create-doc-skill` | 元技能：把任意开放平台的开发者文档站生成为一份经真实调用验证的接入 skill（本工作区方法论的可复用版本，原名 `generate-skill-from-api-docs`） | 1 轮 2 个场景（新版 vs 旧版快照），见 `create-doc-skill-workspace/comparison-report.md` |
 | `volcengine-ark` | 火山引擎·火山方舟（ark.cn-beijing.volces.com，豆包 Doubao / Seedream / Seedance 及方舟上的 GLM / Kimi / DeepSeek / MiniMax）+ Agent Plan 与 Coding Plan 两套订阅套餐 | 以 **GLM-5.3 为执行 Agent**：3 场景 / 30 次运行，**0 个达到统计显著**（技能在 2 个场景领先但 n=5 不够，1 个场景是出题失误）；另经真实调用探针约 45 次，修正 8 条文档 / SDK 错误。见 `volcengine-ark-workspace/comparison-report.md` |
 | `fxiaoke` | 纷享销客 CRM 开放平台（open.fxiaoke.com，客户 / 联系人 / 线索 / 商机与 `__c` 自定义对象、通讯录、企信消息） | **文档版**（2026-09-11）：整理自官方文档，未用真实凭证验证；10 次无凭证探测证实 3 处文档错误（错误码表与实际返回不符、示例域名不是 API 网关）。对照实验待凭证到位，验证计划见 `skills/fxiaoke/data/verification-plan.md` |
+| `kingdee` | 金蝶云星空（K/3 Cloud）WebAPI：第三方授权签名、单据查询 / 保存 / 提交 / 审核 / 下推、物料客户供应商与多组织分配、总账凭证与应收应付；不覆盖星瀚 / 苍穹 / 旗舰版 / 精斗云 / KIS | **文档版**（2026-09-11）：整理自无需登录的旧版官方 API 文档（7.5.1800.6，2020-10）与官方 Python SDK 源码，未用真实凭证验证；新版 API 中心需登录、未抓取，可能有更新。业务接口部署在客户服务器上，只探测了旧公网网关。验证计划见 `skills/kingdee/data/verification-plan.md` |
 
 **两个等级**：「已实测」的 skill 每条结论都用真实 API Key 调过，并做了装与不装的对照实验；「文档版」按 `create-doc-skill` 的降级方案产出（抓取文档 + 无凭证探测 + 写好评测用例），SKILL.md 开头有「验证状态」一节，文档转录的报错一律标「文档原文，未实测」，拿到凭证后补测升级。
 

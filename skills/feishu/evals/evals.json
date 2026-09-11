@@ -1,0 +1,52 @@
+{
+  "skill_name": "feishu",
+  "evals": [
+    {
+      "id": 1,
+      "name": "custom-bot-signed-webhook",
+      "prompt": "我们在飞书群里加了一个自定义机器人，开启了「签名校验」安全设置，拿到了 webhook 地址和签名密钥。帮我写一个 Python 函数 send_alert(title, lines)，用这个机器人往群里推一条富文本（带标题、每行一段）的告警消息，发送失败时抛异常。webhook 地址和密钥从环境变量 FEISHU_BOT_WEBHOOK、FEISHU_BOT_SECRET 读，用 requests。",
+      "expected_output": "直接 POST 到 webhook 地址（不换 access token），请求体带 timestamp（秒）和按飞书自定义机器人算法生成的 sign，msg_type=post 且 content 为 JSON 对象，按 body 的 code 判断成败。",
+      "files": [],
+      "expectations": [
+        "The request is a POST directly to the webhook URL read from FEISHU_BOT_WEBHOOK; the code does not fetch a tenant_access_token and does not call /open-apis/im/v1/messages",
+        "The signature uses HMAC-SHA256 with key = f\"{timestamp}\\n{secret}\" and an EMPTY message, then Base64-encodes the digest (not HMAC(secret, timestamp+secret) or a hex digest)",
+        "timestamp is Unix time in SECONDS (not milliseconds) and is sent together with sign as top-level request body fields named timestamp and sign",
+        "msg_type is 'post' and content is a JSON object (not a json.dumps string) shaped {'post': {'zh_cn': {'title': ..., 'content': [[{'tag': 'text', 'text': ...}], ...]}}}",
+        "Success is judged by the response body code (non-zero raises), not only by HTTP status, because the webhook returns HTTP 200 on failures such as 19021/19001",
+        "The script is syntactically valid Python"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "event-webhook-encrypt-verify",
+      "prompt": "我的飞书自建应用把事件订阅方式设成了「将事件发送至开发者服务器」，并在加密策略里配置了 Encrypt Key 和 Verification Token。请用 Flask 写一个 POST /feishu/events 接收端：要能通过开发者后台保存请求地址时的校验；收到「接收消息 v2.0」事件时把消息的纯文本打印到日志；要做来源校验并防止重复处理。不要用官方 SDK（lark-oapi）。",
+      "expected_output": "手写接收端：先对 {\"encrypt\":...} 做 AES-256-CBC 解密（key=SHA256(EncryptKey)，IV=密文前 16 字节），url_verification 原样返回 challenge，按 sha256(timestamp+nonce+encrypt_key+原始 body) 校验 X-Lark-Signature，v2 事件从 header.token 校验 Verification Token，message.content 再做一次 JSON 解析，用 message_id 去重并在 3 秒内返回 200。",
+      "files": [],
+      "expectations": [
+        "Encrypted bodies {\"encrypt\": ...} are decrypted with AES-256-CBC where key = SHA256(encrypt_key) raw digest, IV = first 16 bytes of the base64-decoded ciphertext, and PKCS7 padding is stripped",
+        "A url_verification request (after decryption when encrypted) is answered with JSON {\"challenge\": <same value>} and no business processing",
+        "Request signature is checked as sha256(X-Lark-Request-Timestamp + X-Lark-Request-Nonce + encrypt_key + raw request body bytes) hex digest compared to X-Lark-Signature — plain SHA-256, not HMAC, computed over the raw body rather than re-serialized JSON",
+        "For the v2.0 event the Verification Token is read from header.token (not a top-level token field) and compared to the configured token",
+        "The event type is read from header.event_type == 'im.message.receive_v1' and the text is obtained by json.loads(event.message.content)['text'] (content is a JSON string)",
+        "Duplicate deliveries are skipped using event.message.message_id (or at least header.event_id), and the handler returns HTTP 200 quickly (heavy work deferred), acknowledging the 3-second timeout / retry behaviour",
+        "The code does not import lark_oapi"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "bitable-sync-people-date-filter",
+      "prompt": "写一个 Python 脚本：用飞书企业自建应用（FEISHU_APP_ID / FEISHU_APP_SECRET 从环境变量读，直接用 requests 调 HTTP 接口）把 CRM 导出的约 3000 条客户跟进记录写进多维表格，表格链接是 https://example.feishu.cn/base/AbCdEf123?table=tblXyz789&view=vewQ1。字段：客户名称（文本）、跟进日期（日期，源数据是 '2026-09-03' 这样的字符串）、负责人（人员，源数据只有员工邮箱）、金额（数字）。写完后再统计「跟进日期」在 2026-09-01 之后的记录条数。",
+      "expected_output": "先换 tenant_access_token 并按 code 判断；从 /base/ 链接取 app_token=AbCdEf123、table_id=tblXyz789；邮箱经 batch_get_id 转成 open_id；日期写毫秒时间戳；人员写 [{\"id\": ...}] 且与 user_id_type 一致；batch_create 每批 ≤1000 串行；查询用 POST records/search，日期条件 value 为 [\"ExactDate\", \"<毫秒>\"]，按 has_more/page_token 翻页（page_size ≤500）。",
+      "files": [],
+      "expectations": [
+        "Obtains the token via POST https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal, reads the top-level tenant_access_token field, and checks body code == 0 rather than relying on HTTP status (failures return HTTP 200)",
+        "Uses app_token 'AbCdEf123' and table_id 'tblXyz789' parsed from the /base/ URL, calling /open-apis/bitable/v1/apps/{app_token}/tables/{table_id}/records/...",
+        "Resolves emails to user IDs with POST /open-apis/contact/v3/users/batch_get_id (emails batched at most 50 per call) and writes the person field as a list of objects [{'id': ...}] whose ID type matches the user_id_type query parameter (default open_id)",
+        "The date field is written as a Unix timestamp in MILLISECONDS (e.g. 1788364800000-style 13-digit values), not seconds and not the raw 'YYYY-MM-DD' string",
+        "Writes use POST .../records/batch_create with at most 1000 records per request, sent sequentially (not concurrently) to the same base",
+        "The count query uses POST .../records/search (not GET) with filter {'conjunction': 'and', 'conditions': [{'field_name': '跟进日期', 'operator': 'isGreater', 'value': ['ExactDate', '<ms timestamp string>']}]} and paginates with page_token until has_more is false, page_size at most 500",
+        "Mentions that with tenant_access_token the app must be added to the base as a collaborator (添加文档应用) or it will fail / return empty"
+      ]
+    }
+  ]
+}

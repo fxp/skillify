@@ -1,0 +1,57 @@
+{
+  "skill_name": "beisen",
+  "evals": [
+    {
+      "id": 1,
+      "name": "incremental-employee-sync",
+      "prompt": "我们要把北森 iTalent 里的员工同步到自己的数据仓库：首次全量（大约 2 万人，含已离职和实习生），之后每小时增量一次，只关心业务上的变化（入转调离、改部门、改经理）。需要每个人当前所在部门和直线经理。我手上有 tenant_id、app_id 和 AppSecret。用 Python 写这个同步脚本。",
+      "expected_output": "脚本用表单 POST https://openapi.italent.cn/OAuth/Token 换 token 并缓存，调用 POST /TenantBaseExternal/api/v5/Employee/GetByTimeWindow，Authorization: Bearer；按 ≤90 天切时间窗，用 scrollId 连续滚动、先拉完再处理，data 为空时结束；timeWindowQueryType=2（业务修改时间）、isGetLatestRecord=false、withDisabled=true 且 employType 含实习生；业务 code 按字符串判断。",
+      "files": [],
+      "expectations": [
+        "[doc-vs-probe 2026-09-11] Token is obtained with POST https://openapi.italent.cn/OAuth/Token (not /token) using a form-encoded body (application/x-www-form-urlencoded), not JSON",
+        "Token request sends grant_type=client_credentials together with tenant_id, app_id and secret",
+        "Business calls send the header Authorization: Bearer followed by the access_token, and call the v3.0 path /TenantBaseExternal/api/v5/Employee/GetByTimeWindow with POST and a JSON body (not a GET with page/pageSize)",
+        "Requests pass scrollId (empty string on the first call, then the scrollId from the previous response) and stop when data is null or empty rather than relying on isLastData",
+        "The full-history pull is split into time windows of at most 90 days, and capacity is at most 300",
+        "The scroll loop collects all batches before doing slow processing (or explicitly keeps calls within 10 seconds), acknowledging that the scrollId expires if calls are more than 10 seconds apart",
+        "Incremental runs use timeWindowQueryType 2 (business modified time) rather than 1, or explicitly explain the difference between ModifiedTime and BusinessModifiedTime",
+        "Sets isGetLatestRecord to false (current effective record) when reading the current department, and includes departed employees via withDisabled true (or explicit empStatus) and trainees via employType including 2",
+        "Treats the business code as a string (for example compares str(code) to '200') and surfaces code '417' messages instead of retrying them"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "transfer-by-job-number",
+      "prompt": "OA 系统每天会给我们一份调岗清单（CSV：工号、新部门的北森组织 OId、新直线经理的工号、生效日期），大概 200 行。帮我用 Python 写个脚本，读 CSV 后在北森里把这些员工直接调动过去，失败的行输出到一个错误文件。北森的 token 获取我已经有函数 get_token() 了。",
+      "expected_output": "脚本先用 POST /TenantBaseExternal/api/v5/Employee/GetUserIDsByJobNumbers 按每批 ≤30 个工号反查 UserID（员工和经理），逐条检查 data[].code；再逐条调用 POST /TenantBaseExternal/api/v5/Employee/Transfer，body 含 userId（不同时传 originalId）和 employmentRecord.oIdDepartment / pOIdEmpAdmin / startDate；按字符串 code 判断 417 并写入错误文件；重试遵守 3 秒防重。",
+      "files": [],
+      "expectations": [
+        "Resolves job numbers to UserIDs with POST /TenantBaseExternal/api/v5/Employee/GetUserIDsByJobNumbers using the jobNumbers field",
+        "Chunks job numbers into batches of at most 30 per call",
+        "Checks the per-item data[].code (and msg) of the job-number lookup and does not use userId from items whose code is not 200, even though the outer code is '200'",
+        "Calls POST /TenantBaseExternal/api/v5/Employee/Transfer with userId at the top level and employmentRecord containing oIdDepartment (the new department) plus the manager as pOIdEmpAdmin and the effective date",
+        "Sends exactly one of userId or originalId for the employee being transferred, never both",
+        "Compares the response code as a string and records code '417' responses with their message to the error file without blindly retrying",
+        "Any retry of the same Transfer request waits more than 3 seconds, or the script explains the documented 3-second duplicate-request rule",
+        "Sends Authorization: Bearer with the token and a JSON body to https://openapi.italent.cn"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "push-punches-and-confirm",
+      "prompt": "我们的门禁系统每 10 分钟导出一批打卡记录（员工北森 UserId、打卡时间、门禁点名称），一次可能有两三千条。写一个 Python 函数把它们推送到北森假勤，并且要能确认这批数据真的进了北森，没进的要告警。",
+      "expected_output": "函数调用 POST /AttendanceOpen/api/v1/SwipingCardData/PostAsync，body 用 DataSourceType=14、PrimaryKeyType=1、Items[{PrimaryKey, CardDateTime, LocationTitle}]，每次 ≤1000 条分批；把响应 Code 200 视为仅受理，读取响应头 X-PAAS-Request-ID，轮询 GET /OpenPlatform/api/AsyncApiExecInfo/GetByRequestId?requestId=… 直到 state 不是 Running，PartialSuccess / Fail 时读 message 告警。",
+      "files": [],
+      "expectations": [
+        "Posts to /AttendanceOpen/api/v1/SwipingCardData/PostAsync on https://openapi.italent.cn with Authorization: Bearer",
+        "Body sets DataSourceType to 14 and PrimaryKeyType to 1 (Beisen UserId) and puts records in an Items array using PrimaryKey and CardDateTime fields (PascalCase as documented)",
+        "Splits the records into batches of at most 1000 items per request",
+        "Does not treat a 200 / Code 200 response as proof the punches were stored; explains the push is asynchronous",
+        "Reads the X-PAAS-Request-ID response header (not a body field) from each push response",
+        "Polls GET /OpenPlatform/api/AsyncApiExecInfo/GetByRequestId with requestId as a query parameter, with a non-trivial interval, until data.state is no longer Running",
+        "Raises an alert when data.state is PartialSuccess, Fail or Overtime and includes data.message",
+        "Reads the push response status from the capitalised Code / Message fields (or handles both Code and code)"
+      ]
+    }
+  ]
+}

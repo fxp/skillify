@@ -1,0 +1,57 @@
+{
+  "skill_name": "qiyuesuo",
+  "evals": [
+    {
+      "id": 1,
+      "name": "signed-client-draft-send-sign",
+      "prompt": "用 Python（requests，不要用契约锁官方 SDK）写一个契约锁开放平台的调用模块，AppToken/AppSecret 从环境变量读，先连测试环境。然后用它完成：给新员工张三（手机 13800000000）发一份劳动合同，合同文件是本地的“劳动合同.pdf”；我们公司“示例科技有限公司”先用印章 2490828768980361630 自动盖公章，张三后签字；最后返回张三的签署链接，链接要 3 天内有效。我们没有在云平台配置业务分类。",
+      "expected_output": "一个可运行的 Python 模块：Base URL 为测试环境 openapi.qiyuesuo.cn；每个请求带四个 x-qys-open-* 头，签名为 MD5(AppToken+AppSecret+timestamp+nonce)；按 草稿(send=false) → multipart 上传文件 → 发起(带签署位置) 的顺序调用；签署位置用草稿返回的 actionId / signatoryId 绑定；发起后调公章静默签；用 pageurl 接口带 user 与 3 天有效期拿签署链接；成功判定兼容 code 与 responseCode。",
+      "files": [],
+      "expectations": [
+        "The base URL is https://openapi.qiyuesuo.cn (test environment), not openapi.qiyuesuo.com or any invented host",
+        "Every request sends x-qys-open-accesstoken, x-qys-open-timestamp (milliseconds), x-qys-open-nonce (a fresh UUID per request) and x-qys-open-signature; there is no Authorization/Bearer header and no token-exchange call",
+        "x-qys-open-signature is the lowercase hex MD5 of AppToken + AppSecret + timestamp + nonce concatenated in that order; the signature does not include the URL, query string or request body, and is not an HMAC",
+        "The flow is POST /v2/contract/draft with send false, then POST /v2/document/addbyfile as multipart/form-data with contractId, title, fileSuffix pdf and the file, then POST /v2/contract/send",
+        "The company signatory has tenantType COMPANY with actions containing a COMPANY-type action, the person has tenantType PERSONAL with receiver {contact: 13800000000, contactType: MOBILE}, and ordering puts the company first (serialNo 1 / 2 with ordinal true or default)",
+        "Signing positions in /v2/contract/send bind the company position with the actionId and the personal position with the signatoryId returned by the draft call, each with the documentId from addbyfile, using relative 0-1 coordinates or a keyword rather than pixels",
+        "After sending, the company seal is applied via POST /v2/contract/companysign with the contractId and sealId 2490828768980361630",
+        "The signing link comes from POST /v2/contract/pageurl with user {contact, contactType} for Zhang San and expireTime 3 with expireTimeUnit DAYS, reading result.pageUrl",
+        "Responses are parsed as JSON and success is judged by code == 0 or responseCode == \"00000000\" rather than by HTTP 200 alone"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "contract-callback-receiver",
+      "prompt": "用 Python Flask 写契约锁的合同状态回调接口。我们创建合同草稿时把订单号作为 bizId 传了，开放平台应用的回调没有开启加密。要求：合同签署完成后，把合同 PDF 下载到 contracts/{订单号}.pdf，并把订单标记为已签约；合同被退回或撤回时把订单标记为待重发。写出回调接口和它调用契约锁接口的代码（签名请求部分可以写成 helper）。",
+      "expected_output": "Flask 路由从 application/x-www-form-urlencoded 表单读 contractId 等字段；处理幂等（契约锁失败会重推 7 次）；快速返回，下载放后台；不臆造回调签名头，而是用签名请求回查 GET /v2/contract/detail 取状态与 bizId；已完成时用 /v2/document/download 下载 PDF（或说明 /v2/contract/download 默认是 ZIP），只下载一次；按 COMPLETE / REJECTED / RECALLED 更新订单。",
+      "files": [],
+      "expectations": [
+        "The callback fields are read from the form body (request.form), not from request.get_json() or a raw JSON body",
+        "The handler is idempotent for repeated deliveries (the platform retries up to 7 times at 5m, 2h x4, 12h, 24h), for example by de-duplicating on contractId plus status",
+        "The endpoint returns quickly and the download is done asynchronously or after enqueueing",
+        "The code does not invent a signature header or HMAC check for contract callbacks; it either notes that none is documented or confirms the state by calling GET /v2/contract/detail with a properly signed request",
+        "The order number is recovered from bizId in the contract detail (or from businessData if it was set), not assumed to be in the callback",
+        "The PDF is fetched with GET /v2/document/download?documentId=... for the contract documents, or /v2/contract/download is used with the understanding that it returns a ZIP by default",
+        "Completed state is recognised as COMPLETE, and REJECTED / RECALLED map to the re-send state, using the platform's status names",
+        "Signed requests to the platform use the four x-qys-open-* headers with MD5(AppToken + AppSecret + timestamp + nonce)",
+        "The code avoids re-downloading the same document on every callback, since repeated downloads of one document can lock it for 12 hours"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "recall-delete-or-invalidate",
+      "prompt": "契约锁上有一份合同发错了（已知 contractId）。写一个 Python 函数：先判断它现在的状态，草稿就直接删掉，还在签署中就撤回，已经全部签完的就发起作废（作废原因“信息填写错误”，我们公司之前没有在这份合同上盖过章，作废文件用印章 2589678690921123947，要求 30 天内完成作废）。函数返回做了什么以及作废是否已经生效。",
+      "expected_output": "函数先用 GET /v2/contract/detail 取 status，然后统一调用 POST /v2/contract/invalid：草稿即删除、签署中即撤回、已完成即发起作废并传 sealId、reason、expireTime（yyyy-MM-dd，30 天后）；说明作废要所有签署方签署作废文件后才变为 INVALIDED，调用返回时状态是 INVALIDING，需通过回调或详情轮询确认。",
+      "files": [],
+      "expectations": [
+        "The function reads the current status with GET /v2/contract/detail before acting",
+        "All three cases use the single endpoint POST /v2/contract/invalid; the code does not invent separate endpoints such as /contract/delete, /contract/cancel, /contract/revoke or /contract/recall",
+        "For a COMPLETE contract the request includes sealId 2589678690921123947 (required because the initiator has not signed) and reason 信息填写错误",
+        "The invalidation deadline is passed as expireTime in yyyy-MM-dd format about 30 days ahead",
+        "The function reports that invalidation of a completed contract only takes effect after all signatories sign the invalidation document, so the immediate state is INVALIDING rather than INVALIDED",
+        "Statuses are compared using the platform's names DRAFT, SIGNING (and FILLING), COMPLETE, INVALIDING, INVALIDED",
+        "Requests carry the four x-qys-open-* headers with MD5(AppToken + AppSecret + timestamp + nonce) and success is judged by code == 0 or responseCode == \"00000000\""
+      ]
+    }
+  ]
+}

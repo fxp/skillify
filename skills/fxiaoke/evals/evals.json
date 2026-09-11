@@ -1,0 +1,50 @@
+{
+  "skill_name": "fxiaoke",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我们用纷享销客 CRM，客户大概 3 万多条。帮我写个 Python 脚本，每天凌晨把纷享里所有客户（AccountObj）的 _id、名称、负责人、最后修改时间全量拉下来写进本地 CSV，给数仓用。凭证我会放环境变量里（appId / appSecret / 永久授权码 / 一个管理员员工ID），纷享云账号。",
+      "expected_output": "一个用客户端凭证模式换 token、按新版 header 传参、用 _id 游标深翻页（突破 offset 10000 限制）拉全量客户的脚本，按 errorCode 判错，缓存 token，控制请求频率。",
+      "files": [],
+      "expectations": [
+        "换 token 调的是 POST https://open.fxiaoke.com/oauth2.0/token（或旧版 /cgi/corpAccessToken/get/V2），body 含 appId、appSecret、permanentCode，新版带 grantType=app_secret；没有用 www.fxiaoke.com 作 API 域名",
+        "业务请求用 header authorization: Bearer <token>（Bearer 后有空格）+ x-fs-ea + x-fs-userid；或完整使用旧版 body 三件套 corpAccessToken/corpId/currentOpenUserId——两种方式没有混用",
+        "每个请求的 URL 都带 thirdTraceId，且每次生成新的 UUID v4",
+        "查询走 POST /cgi/crm/v2/data/query，dataObjectApiName=AccountObj，条件放在 data.search_query_info 里，limit 不超过 100",
+        "意识到 offset 不能超过 10000：用 orders 按 _id 升序、offset 固定 0、filters 加 _id GT 上一页最后一条 _id 的方式翻页，而不是 offset 递增到 3 万",
+        "判断成功依据 body 的 errorCode == 0，而不是 HTTP 状态码或 errorMessage 文本",
+        "token 被缓存复用（不在每个请求前重新换 token），并且没有并发去换 token"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "纷享销客里我们建了一个自定义对象「回款计划」，apiName 是 object_Hk2p1__c，字段有 amount__c（金额）、plan_date__c（日期）、owner（负责人，人员字段）。写一段 Python：新建一条记录（金额 12000.50，计划日期 2026-10-01，负责人是员工 1000，不要触发审批流），查出来确认一下，最后把这条测试数据彻底删掉。",
+      "expected_output": "使用自定义对象专用路径 /cgi/crm/custom/v2/data/*，字段值按纷享的类型格式填写，删除前先作废。",
+      "files": [],
+      "expectations": [
+        "创建调用的是 /cgi/crm/custom/v2/data/create，而不是预置对象的 /cgi/crm/v2/data/create",
+        "dataObjectApiName=object_Hk2p1__c 放在 data.object_data 里面",
+        "金额 amount__c 以字符串 \"12000.50\" 传递，而不是浮点数或以分为单位的整数",
+        "日期 plan_date__c 以毫秒时间戳（Long）传递，而不是 \"2026-10-01\" 字符串或秒级时间戳",
+        "人员字段 owner 以列表形式传递（如 [\"1000\"]），不是单个字符串",
+        "显式传 triggerApprovalFlow: false（默认为 true 会触发审批）",
+        "删除分两步：先 /cgi/crm/custom/v2/data/invalid（object_data_id 单条）或批量作废 /cgi/crm/custom/data/invalid，再 /cgi/crm/custom/v2/data/delete（idList）；没有直接对未作废数据调 delete",
+        "查询 / 取详情同样走 /cgi/crm/custom/v2/data/get 或 /cgi/crm/custom/v2/data/query"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "纷享销客公海里有 20 个客户（我有它们的 _id 列表），销售主管让我写个脚本：把它们分配给销售员工 1005，同时把每个客户的「客户等级」单选字段（apiName 是 account_level）改成「A类」，完事后给 1005 发一条纷享企信提醒，点开能直接跳到客户详情。用 Python。",
+      "expected_output": "先从公海领取，再用专门的变更负责人接口改负责人，用 update 改其他字段（单选传 option value），最后用 /cgi/message/send 发复合消息，链接用 fs://CRM/udobj 内部地址。",
+      "files": [],
+      "expectations": [
+        "意识到公海里的客户不能直接改负责人：先调 POST /cgi/crm/v2/data/choose（data.apiName=AccountObj、data.objectIds）领取",
+        "改负责人用 POST /cgi/crm/v2/data/changeOwner，body 是 data.dataObjectApiName + data.Data[{objectDataId, ownerId}]，而不是在 update 里改 owner 字段",
+        "改客户等级用 POST /cgi/crm/v2/data/update，_id 和 dataObjectApiName 放在 data.object_data 里",
+        "单选字段 account_level 传的是对象描述接口 options 里的 value（先调 /cgi/crm/v2/object/describe 查），而不是直接传中文 label「A类」",
+        "发消息用 POST /cgi/message/send，toUser 为列表，msgType=composite（或 text），复合消息的 link.url 使用 fs://CRM/udobj?{\"objDescApiName\":\"AccountObj\",\"objDataId\":...} 形式跳转客户详情",
+        "没有编造纷享不存在的接口（如 /api/v1/accounts/{id}、PATCH 方法、assign 接口），全部为 POST + JSON 且 URL 带 thirdTraceId"
+      ]
+    }
+  ]
+}

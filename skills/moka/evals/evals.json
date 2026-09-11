@@ -1,0 +1,59 @@
+{
+  "skill_name": "moka",
+  "evals": [
+    {
+      "id": 1,
+      "name": "people-signed-incremental-employee-sync",
+      "prompt": "我们用 Moka People 做人事系统。请用 Python 写一个脚本，每小时跑一次，把过去一小时内信息有更新的员工拉下来，按工号 upsert 到我们自己的 PostgreSQL。CSM 已经给了 apiKey、entCode 和签名用的 RSA 私钥，我们在 People 后台“对外接口设置”里也建好了员工任职信息的接口。",
+      "expected_output": "脚本对 https://api.mokahr.com/api-platform/hcm/oapi/v1/batch/data 发 POST：Authorization 为 Basic base64(apiKey + ':')；query 带 entCode、apiCode、nonce、毫秒 timestamp、userName 和 sign，sign 为除 sign 外 query 参数按字典序拼接后的 MD5withRSA Base64 并 URL 编码；body 用 startDate/endDate（yyyy-MM-dd HH:mm:ss）过滤更新时间，pageNum 翻页、pageSize ≤ 200；判 code 200；处理 HTTP 600 限流；每次请求重新生成 nonce 与签名。",
+      "files": [],
+      "expectations": [
+        "Calls POST https://api.mokahr.com/api-platform/hcm/oapi/v1/batch/data (the People base path hcm/oapi), not an ATS /api-platform/v1 endpoint",
+        "Sends Authorization: Basic with base64 of the apiKey followed by a colon (empty password)",
+        "Puts entCode, apiCode, nonce, timestamp and sign in the query string, not in the JSON body or headers",
+        "timestamp is in milliseconds and nonce is regenerated per request (alphanumeric, at most 8-10 characters)",
+        "sign is computed over all query parameters except sign, sorted by key and joined as k=v with &, signed with RSA PKCS#1 v1.5 using MD5 (MD5withRSA), Base64-encoded, and URL-encoded exactly once when sent",
+        "Includes userName (an employee email, e.g. a super admin) in the query and includes it in the signed string",
+        "Filters by update time with body startDate and endDate in yyyy-MM-dd HH:mm:ss format and paginates with pageNum plus pageSize no greater than 200",
+        "Treats code 200 as success and handles the People rate-limit response (HTTP 600 or code 600) with backoff, keeping below 60 requests per minute",
+        "Uses the uuid / employee_no fields from data.list for the upsert and does not assume pending hires (待入职) are included"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "ats-incremental-applications-and-stage-move",
+      "prompt": "用 Python 写一个每日任务：把 Moka 招聘里从昨天起有更新的申请（候选人投递）全部拉下来，取到候选人姓名、手机号、职位和当前阶段写进我们的 BI 库；另外对 BI 里标记为“笔试通过”的申请，在 Moka 里把它挪到该职位流程的“面试”阶段。我们有 Moka 的 API Key。",
+      "expected_output": "用 GET /api-platform/v1/data/applications 首次带 fromTime、之后只带 next 直到响应没有 next；再把 id 按每批 ≤ 20 调 POST /api-platform/v3/data/getApplictaions（文档原拼写）取详情并判 code == 200；移动阶段先 GET /v1/data/job_stages?jobId= 找到“面试”阶段 id，再 PUT /v1/applications/move_application_stage?applicationId=&stageId=（参数在 query），判 code == 0；Basic 鉴权带冒号，全部 https。",
+      "files": [],
+      "expectations": [
+        "Uses Basic auth with the API key as username and an empty password (requests auth=(key, '') or curl -u 'KEY:')",
+        "Pages GET /api-platform/v1/data/applications by sending fromTime only on the first request and only next afterwards, stopping when the response has no next field",
+        "[doc-vs-probe 2026-09-11] Fetches details with POST /api-platform/v3/data/getApplictaions using the doc's spelling (a probe showed the correctly spelled getApplications path returns 404)",
+        "Batches applicationIds into groups of at most 20 for the detail call and treats code == 200 as success",
+        "Reads name, phone, job title and stage from candidateBaseInfo / contactInfo / job / stage in applicationList",
+        "Resolves the target stage id from GET /api-platform/v1/data/job_stages?jobId=... (a bare JSON array) rather than hard-coding it",
+        "Moves the application with PUT /api-platform/v1/applications/move_application_stage passing applicationId and stageId as query parameters (not a JSON body) and checks code == 0",
+        "Uses https:// for every call even though some doc examples show http://",
+        "[doc-vs-probe 2026-09-11] Does not blindly retry HTTP 500 responses whose msg says 无法识别的认证信息 / 系统中不存在该apiKey (that is how ATS reports bad credentials)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "ats-pushcandidate-webhook-and-hired-writeback",
+      "prompt": "HR 在 Moka 招聘里对待入职候选人点“导入EHR”后，Moka 会推送候选人信息到我们的接口。帮我用 Python Flask 写这个接收接口：校验请求确实来自 Moka，把候选人建档到我们的 EHR；等候选人真正报到后，我们的系统要调用 Moka 接口把这份申请标记为已入职（试用期 3 个月，不关联招聘需求）。CSM 已经给了 webhook 的 signing key 和 API Key。",
+      "expected_output": "Flask 接口读取原始 body，用 signing key 对原始字节做 HMAC-SHA256 十六进制并与 URL query 的 sign 常量时间比较；解析 event == pushCandidate 与 data.applicationId 等；成功返回 2xx，失败返回非 2xx 并在 body 给出可读 msg（HR 会看到）；尽快下载会过期的 resumeUrl。入职回写调用 PUT https://api.mokahr.com/api-platform/v1/applications/{applicationId}/hired，body 含 hiredAt 与 probation=3，不传 hcId 键（不能传 null 或空串），判 success 字段；鉴权为 Basic KEY:。",
+      "files": [],
+      "expectations": [
+        "Reads the signature from the sign query parameter of the webhook URL, not from an HTTP header",
+        "Computes HMAC-SHA256 with the signing key over the raw request body bytes (or an exact JSON.stringify-equivalent compact serialization with ensure_ascii=False) and compares the lowercase hex digest in constant time",
+        "[local-recompute 2026-09-11] Does not re-serialize the parsed body with Python's default json.dumps before signing (default separators and ASCII escaping change the signature)",
+        "Handles the envelope fields id, event, triggeredAt, data and branches on event == 'pushCandidate', using data.applicationId as the key",
+        "Returns a 2xx status on success and a non-2xx status with a human-readable msg on failure (the HR user sees import failures in Moka)",
+        "Downloads or persists data.resumeUrl promptly instead of storing only the URL (it is a signed, expiring link)",
+        "Marks hire with PUT https://api.mokahr.com/api-platform/v1/applications/{applicationId}/hired with hiredAt and probation = 3 in the JSON body",
+        "Omits the hcId key entirely rather than sending hcId: null or an empty string",
+        "Checks the success field (and errorMessage) of the hired response rather than a code field, and uses Basic auth with the API key followed by a colon"
+      ]
+    }
+  ]
+}

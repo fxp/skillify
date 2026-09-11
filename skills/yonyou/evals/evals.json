@@ -1,0 +1,54 @@
+{
+  "skill_name": "yonyou",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我们公司用的是用友 YonBIP 公有云。管理员给了一个企业自建应用的 appKey、appSecret 和我们的租户 ID。公司规定只能用 requests 和 Python 标准库。请写一个客户端类：自动获取并缓存 access_token，然后调用「供应商档案列表查询」把所有启用状态的供应商拉下来。",
+      "expected_output": "先按租户调用 https://apigateway.yonyoucloud.com/open-auth/dataCenter/getGatewayAddress 取 tokenUrl 与 gatewayUrl；再 GET {tokenUrl}/open-auth/selfAppAuth/base/v1/getAccessToken，参数 appKey、毫秒 timestamp、signature（appKey<值>timestamp<值> 以 appSecret 做 HmacSHA256，Base64 后 URL 编码一次）；校验 code == \"00000\" 并按 expire 缓存；然后 POST {gatewayUrl}/yonbip/digitalModel/vendor/list?access_token=…，分页读取 data.recordList，按 stopstatus=false 过滤。",
+      "files": [],
+      "expectations": [
+        "先调用 https://apigateway.yonyoucloud.com/open-auth/dataCenter/getGatewayAddress?tenantId=… 获取 tokenUrl 与 gatewayUrl，而不是写死 api.diwork.com、yonbip.diwork.com 或其他固定域名",
+        "取 token 为 GET {tokenUrl}/open-auth/selfAppAuth/base/v1/getAccessToken（或旧路径 /open-auth/selfAppAuth/getAccessToken），appKey、timestamp、signature 放在 query string",
+        "timestamp 使用毫秒时间戳（例如 int(time.time()*1000)），而不是秒",
+        "待签串为按参数名排序后「参数名+参数值」直接拼接（appKey<值>timestamp<值>），中间没有 = 或 &",
+        "签名为以 appSecret 为 key 的 HmacSHA256 二进制摘要做 Base64（不是 hexdigest），并且 URL 编码只做一次（通过 requests 的 params 传原始 Base64，或自己 quote 后拼 URL，二者不叠加）",
+        "检查 token 响应 code == \"00000\"，读取 data.access_token 与 data.expire，并在过期前复用缓存的 token",
+        "业务调用为 POST {gatewayUrl}/yonbip/digitalModel/vendor/list，access_token 作为 URL 查询参数传递，而不是放在 Authorization 头里，请求头 Content-Type 为 application/json",
+        "分页使用 pageIndex / pageSize，从 data.recordList 取数据并据 recordCount 或本页条数判断结束，用 stopstatus=false 筛选启用状态",
+        "以响应 body 中的 code（兼容字符串 \"200\" 与数字 200）判断成功，而不是只看 HTTP 状态码"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "用 Python 把我们电商系统里的一张采购单同步到用友 YonBIP，生成采购订单，并让它提交、审核生效。网络不稳定，要求重试时不能产生重复订单。已经有一个 call(method, path, body) 函数能带上 access_token 调用网关并返回解析后的 JSON。供应商、物料、采购组织、交易类型、税目我们手上都只有编码。",
+      "expected_output": "POST /yonbip/scm/purchaseorder/singleSave_v1，body 为 {\"data\": {...}}，表头与 purchaseOrders 每行 _status 为 Insert，使用 org_code、vendor_code、invoiceVendor_code、bustype_code、currency_code、natCurrency_code、exchRate、exchRateType、vouchdate(yyyy-MM-dd HH:mm:ss) 以及行上 product_cCode、单位编码、数量、单价金额、taxitems_code、inOrg_code、inInvoiceOrg_code；data 中带由外部单号派生的固定 resubmitCheckKey（≤32 位），超时 / 202 / 310504 用同一个键重试，200 或 100004/10004 视为成功并取 data.id；随后 POST /yonbip/scm/purchaseorder/batchsubmit 与 /batchaudit，body {\"data\":[{\"id\": id}]}，并检查 data.failCount。",
+      "files": [],
+      "expectations": [
+        "调用 POST /yonbip/scm/purchaseorder/singleSave_v1，请求体用 {\"data\": {...}} 包裹，而不是把表头字段放在 body 顶层",
+        "表头和 purchaseOrders 数组中的每一行都设置 _status 为 \"Insert\"",
+        "表头使用编码字段 org_code、vendor_code、invoiceVendor_code、bustype_code、currency_code、natCurrency_code，行上使用 product_cCode、unit_code / purUOM_Code / priceUOM_Code、taxitems_code、inOrg_code、inInvoiceOrg_code",
+        "在 data 对象中传 resubmitCheckKey，长度不超过 32 位，且由外部单号等稳定值派生，同一单据的每次重试保持不变",
+        "遇到超时、202 或 310504 时用相同的 resubmitCheckKey 重试，并把 code 200 与幂等重复码（100004 或 10004）都视为成功、从 data 中取订单 id",
+        "保存后分别调用 POST /yonbip/scm/purchaseorder/batchsubmit 和 /yonbip/scm/purchaseorder/batchaudit，请求体为 {\"data\": [{\"id\": 订单ID}]}",
+        "检查提交 / 审核返回的 data.failCount（或 sucessCount / messages），而不是只判断 code == 200",
+        "vouchdate 使用 yyyy-MM-dd HH:mm:ss 格式"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我们的报销系统要在用友 YonBIP 总账里生成一张凭证：借 管理费用-差旅费（科目编码 660201）1200 元，贷 银行存款（科目编码 1002）1200 元，人民币。账簿编码 BOOK01，凭证类型编码 01，制单人手机号 13800000000，报销单号 EXP-20260911-0001。请用 Python 写这段代码（已有能调用网关的 call(method, path, body)），并说明怎么判断成功、失败时怎么看原因。",
+      "expected_output": "POST /yonbip/fi/ficloud/openapi/voucher/addVoucher，请求体为顶层字段 accbookCode、voucherTypeCode、makerMobile、bodies（不包 data）；借方行 description + accsubjectCode 660201 + debitOriginal 与 debitOrg 各 1200，贷方行 accsubjectCode 1002 + creditOriginal 与 creditOrg 各 1200；可传 businessId / externalSourceDataId 为报销单号防重；以 code == \"200\" 判定并取 data.voucherId；业务失败时 code 为字符串 \"404\"、原因在 message；不臆造审核 / 记账接口。",
+      "files": [],
+      "expectations": [
+        "调用 POST /yonbip/fi/ficloud/openapi/voucher/addVoucher",
+        "请求体为顶层字段（accbookCode、voucherTypeCode、makerMobile、bodies 直接在 JSON 根上），没有包一层 data",
+        "bodies 每条分录都有 description 和 accsubjectCode；借方行只填 debitOriginal 与 debitOrg，贷方行只填 creditOriginal 与 creditOrg，不在同一行同时填借贷，也不用负数表示贷方",
+        "原币金额与账簿本币金额都填写（debitOriginal 与 debitOrg，creditOriginal 与 creditOrg），金额以元为单位而不是分",
+        "提供 makerMobile（或 makerEmail）作为制单人",
+        "用报销单号填 businessId 或 externalSourceDataId 等业务唯一标识以防重复生成凭证",
+        "以 code == \"200\"（兼容数字）判断成功并读取 data.voucherId；说明业务失败时 code 为 \"404\"、原因在 message，而不是 HTTP 404",
+        "不调用文档中不存在的凭证审核或记账接口；如果提到审核 / 记账，说明需在工作台操作或通过 GL_VOUCHER_EVENT_AUDIT_AFTER / GL_VOUCHER_EVENT_TALLY_AFTER 事件感知"
+      ]
+    }
+  ]
+}

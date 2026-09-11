@@ -1,0 +1,57 @@
+{
+  "skill_name": "tapd",
+  "evals": [
+    {
+      "id": 1,
+      "name": "incremental-bug-sync-deep-paging",
+      "prompt": "我们公司用 TAPD 企业版，管理员给了一个 API 账号和口令。帮我写个 Python 脚本，每小时跑一次，把某个项目（workspace_id 已知）里过去一小时内修改过的缺陷同步到本地 SQLite（标题、状态、严重程度、处理人、最后修改时间）。第一次运行要全量导入，这个项目历史缺陷大约 5 万条。",
+      "expected_output": "脚本用 API 账号做 HTTP Basic 调 https://api.tapd.cn/bugs，workspace_id 放 query；增量用 modified=>时间 或 起~止 这种写在值里的时间查询；字段用 title / current_owner / severity / status / modified；limit 不超过 200；全量导入不靠超过 20000 深度的 page 翻页，而是游标或时间窗切片；从 row['Bug'] 解包；判 HTTP 200 且 status==1；ID 存字符串；429/500/502 退避重试。",
+      "files": [],
+      "expectations": [
+        "Authenticates with HTTP Basic using the API account and password read from environment variables (requests auth=(user, password) or an 'Authorization: Basic' header), not a Bearer token and not a personal login email/password",
+        "Calls GET https://api.tapd.cn/bugs over https with workspace_id as a query parameter",
+        "Filters the incremental window with TAPD's value-embedded time syntax on the modified field, e.g. modified=>YYYY-MM-DD HH:MM:SS or modified=start~end, rather than invented parameters such as modified_after, updated_since, start_time or since",
+        "Uses bug field names title, current_owner, severity, status and modified (not name, owner, assignee, updated_at)",
+        "Requests at most 200 rows per page (limit <= 200)",
+        "For the ~50k full import it does not rely on page*limit going beyond 20000: it uses cursor paging (cursor = last id of previous page, id ordering, serial requests) or splits the import into time windows that each stay under 20000 rows",
+        "Unwraps each list item from its 'Bug' wrapper object (row['Bug']) instead of reading fields directly from data[i]",
+        "Treats a response as successful only when HTTP status is 200 and body status == 1, surfacing body info otherwise",
+        "[no-cred probe 2026-09-11, undocumented] Checks that data is a list before iterating (a misspelled path returns HTTP 200, status 1 and a 'Hello world from TAPD API' string)",
+        "Stores bug ids as strings and backs off / retries on HTTP 429, 500 or 502"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "create-story-then-log-time",
+      "prompt": "用 Python 调 TAPD API（凭证是 API 账号）：在项目里新建一条高优先级需求「支付回调超时重试」，处理人 zhangsan，放进名为「2026-W38」的迭代；然后给这条需求记一笔工时：今天、zhangsan、3 小时。如果今天 zhangsan 已经在这条需求上记过工时，就在原来的基础上再加 3 小时。",
+      "expected_output": "先 GET /iterations 按名字查迭代 ID 并精确过滤；POST /stories 带 workspace_id、name、priority_label、owner、iteration_id 创建需求并从 data['Story']['id'] 取字符串 ID；GET /timesheets 按 entity_type=story、entity_id、owner、spentdate=今天 查已有记录；有则 POST /timesheets 带 id、timespent=旧值+3 覆盖更新，无则 POST /timesheets 新建（entity_type、entity_id、timespent、spentdate、owner、workspace_id）；每步判 status==1。",
+      "files": [],
+      "expectations": [
+        "Resolves the iteration id with GET https://api.tapd.cn/iterations?workspace_id=...&name=2026-W38 and filters for an exact name match (the name filter is fuzzy), instead of passing the iteration name as iteration_id",
+        "Creates the story with POST https://api.tapd.cn/stories including workspace_id and name (not title), sent form-encoded, or as JSON with Content-Type: application/json",
+        "Sets priority through priority_label (e.g. High) rather than the legacy numeric priority mapping or a guessed priority=high",
+        "Sets owner to the TAPD nickname (zhangsan or zhangsan;) and iteration_id to the resolved iteration id",
+        "Reads the new story id from data['Story']['id'] (a single wrapped object, not a list) and keeps it as a string",
+        "Before creating a timesheet, queries GET /timesheets with workspace_id, entity_type=story, entity_id, owner and spentdate=today, because one entity/date/owner may only have a single timesheet record",
+        "When a record exists, updates it with POST /timesheets carrying id and timespent = old value + 3 (update overwrites, it does not add); otherwise creates one with POST /timesheets carrying entity_type, entity_id, timespent, spentdate in YYYY-MM-DD, owner and workspace_id",
+        "Uses POST for updates (no PUT or PATCH) and checks body status == 1 after every call"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "webhook-bug-status-receiver",
+      "prompt": "我们在 TAPD 开放平台的应用里配置了「事件订阅」，订阅了缺陷的变更事件，内容类型还没最终定（json 和 form 都可能），也填了 secret。用 Flask 写接收服务：缺陷状态变了就打印「缺陷标题：旧状态(中文) -> 新状态(中文)」，并且要确认请求确实来自 TAPD。",
+      "expected_output": "Flask 接口同时解析 JSON 和 form；用 body 里的 secret 字段与配置值做常量时间比较并拒绝空值，不去算不存在的签名头；按 bug::status_change 或 change_fields 含 status 的 bug::update 判断状态变化；旧状态取 old_status，新状态与标题用 GET /bugs?workspace_id=&id= 拉最新；状态中英文用 /workflows/status_map?system=bug 转换；尽快回 200 并按 event_id 去重；id 当字符串。",
+      "files": [],
+      "expectations": [
+        "Accepts both application/json and application/x-www-form-urlencoded payloads (form is the documented default for the legacy webhook channel and one of the two content types in app event subscriptions)",
+        "Verifies origin by comparing the 'secret' field in the payload body with the configured secret, ideally with a constant-time comparison, and rejects an empty secret; it does not invent an HMAC signature or signature header, which the docs do not define",
+        "Detects a status change via event 'bug::status_change' and/or 'bug::update' whose change_fields contains 'status'",
+        "Takes the previous status from old_status and fetches the current title and status with GET https://api.tapd.cn/bugs?workspace_id=...&id=..., because update payloads carry only old_* values",
+        "Maps English status keys to Chinese names via GET /workflows/status_map?system=bug&workspace_id=... (or /bugs/get_fields_info) instead of a hardcoded dictionary",
+        "Returns HTTP 200 promptly and de-duplicates deliveries by event_id",
+        "Treats id and event_id as strings (19-digit ids)"
+      ]
+    }
+  ]
+}

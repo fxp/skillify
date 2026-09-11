@@ -18,7 +18,7 @@
 | 技能落后 | 0（修复技能自身缺陷前有 1 次，见下） |
 | 四个区分场景合并满分率 | **skill 18/20 vs baseline 1/20，p = 5.8 × 10⁻⁸** |
 | 全部 12 场景合并满分率 | skill 54/56 vs baseline 35/56，p = 9×10⁻⁶ |
-| 实测查出并修正的文档错误 | 15 |
+| 实测查出并修正的文档错误 | 16 |
 
 ---
 
@@ -179,7 +179,7 @@ skill 版 5/5 都读回了 echo 的 `model` 字段、检出不一致并报警；
 
 ---
 
-## 文档修正（15 条）
+## 文档修正（16 条）
 
 以下修正全部来自**对真实 API 的直接探针**（`coding-plan-probe.py`、`kb-probe.py` 等，日志见 `kb-verification-log.jsonl`）或上述 GLM 轮次的实跑，与执行 Agent 无关。每条都带实测日期与证明它的报错原文。
 
@@ -200,6 +200,7 @@ skill 版 5/5 都读回了 echo 的 `model` 字段、检出不一致并报警；
 | `files-batch.md` | Batch 只接受固定的带日期模型列表 |
 | `files-batch.md` | `request_counts` 是嵌套对象；`custom_id` 有未文档化的 6 字符下限 |
 | `realtime.md` | 连接后先到 `session.created`，规范里没有这个事件 |
+| `coding-plan.md`（评测后补充） | 套餐用量有 3 个未文档化接口可查；账户余额没有 API |
 
 ### `coding-plan.md`（新增）— Coding Plan 是独立 Key + 独立端点
 
@@ -238,6 +239,10 @@ skill 版 5/5 都读回了 echo 的 `model` 字段、检出不一致并报警；
 ### `chat.md` / `models.md` — "思考不可关闭"只在标准端点成立
 
 `thinking:{type:"disabled"}` 对 `glm-5.3` / `glm-5.3-flash` 在 `…/api/paas/v4` 返回 `1210`，但在 `…/api/coding/paas/v4` 被接受并返回 `reasoning_tokens: 0`——两种 Key 都是如此。两个端点的参数校验不一致，技能不再给出单一规则。
+
+### `coding-plan.md`（2026-09-11 补充）— 套餐用量能查，账户余额不能查
+
+这条不来自对照评测，是用户问「有没有查余额的 API」时补查的。官方三份 OpenAPI 规范（共 186 条路径）和费用 FAQ 里都没有余额接口，FAQ 只指向控制台页面。但官方 Claude Code 插件 `glm-plan-usage` 的源码调用了三个未文档化的端点：`/api/monitor/usage/quota/limit`、`/model-usage`、`/tool-usage`。用个人 Pro 套餐 Key 实测三个都返回 200 与真实数据，同前缀下编造的路径返回 404 作对照。实测还发现：改版后的账号返回 `type: CREDIT_LIMIT`，官方插件只处理 `TOKENS_LIMIT` / `TIME_LIMIT`；`model-usage` 不带时间参数返回 200 + 空 body；`modelSummaryList` 的合计不受时间窗约束。
 
 ---
 

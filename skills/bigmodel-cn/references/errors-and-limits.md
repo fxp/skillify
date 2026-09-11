@@ -41,6 +41,7 @@
 - **同一个 `1113` 有三种原因**：套餐 Key 打了标准端点；套餐 Key 调了套餐不含的能力（embeddings / rerank / tokenizer / async chat / 独立 web_search / images，均已实测）；套餐 Key 请求了套餐不含的模型（如 `glm-4-long`、`charglm-4`、`codegeex-4`，已实测）。错误体一模一样，只能按「端点 → 能力 → 模型」的顺序排查。
 - `thinking: {"type":"disabled"}` 对 `glm-5.3` / `glm-5.3-flash` 在标准端点报 `1210`，在 Coding 端点却被接受并生效（已实测）——不同端点参数校验不一致。
 - 套餐额度按 **5 小时窗口 + 7 天周期** 双重重置，用完后不会自动扣账户余额；重置时间是动态的，代码里不要写死。
+  剩余额度和下次重置时间可以用 `GET …/api/monitor/usage/quota/limit` 查（未文档化，见 `references/coding-plan.md`）。
 - 套餐只含 `glm-5.3` / `glm-5.3-flash`（旧代码自动路由），不含 embeddings / 图像视频语音生成 / Batch 等，这些要用标准 Key。
 - 官方条款限制套餐只能在指定编码工具内使用，自写脚本调用属于条款外用法。
 - 完整对照与排查顺序见 `references/coding-plan.md`。

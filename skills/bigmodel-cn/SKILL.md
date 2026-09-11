@@ -47,7 +47,7 @@ description: 接入智谱AI开放平台（bigmodel.cn / open.bigmodel.cn，GLM �
 | 文件上传与管理、大文件异步解析、OCR、批量处理 Batch | [`files-batch.md`](references/files-batch.md) | `/files`、`/batches` |
 | 内置智能体、Assistant API、托管知识库 / RAG、多模态检索 | [`agents-assistant-knowledge.md`](references/agents-assistant-knowledge.md) | `/v1/agents`、`/llm-application/open/*` |
 | 用 OpenAI / Claude / LangChain SDK 接入，或官方 Python / Java SDK | [`sdk-and-compat.md`](references/sdk-and-compat.md) | 兼容层 base_url |
-| **GLM Coding Plan 编程套餐**：配置、可用模型、`1113` 排错、附赠 MCP | [`coding-plan.md`](references/coding-plan.md) | `…/api/coding/paas/v4`、`…/api/anthropic` |
+| **GLM Coding Plan 编程套餐**：配置、可用模型、`1113` 排错、附赠 MCP、查剩余额度 | [`coding-plan.md`](references/coding-plan.md) | `…/api/coding/paas/v4`、`…/api/anthropic`、`…/api/monitor/usage/*` |
 | 实时语音 / 视频通话 | [`realtime.md`](references/realtime.md) | GLM-Realtime WebSocket |
 | 选哪个模型、上下文与输出上限、思考模式默认行为 | [`models.md`](references/models.md) | — |
 | 报错排查、重试策略、速率限制 | [`errors-and-limits.md`](references/errors-and-limits.md) | — |
@@ -70,7 +70,7 @@ description: 接入智谱AI开放平台（bigmodel.cn / open.bigmodel.cn，GLM �
 ## 文档与实测不符之处
 
 以下是官方文档写错或没写、只有真实调用才会暴露的地方。详情与报错原文在对应 reference 里，
-在 reference 里统一用 `<!-- Gap: … -->` 标记（8 处），可直接 grep 定位：
+在 reference 里统一用 `<!-- Gap: … -->` 标记（9 处），可直接 grep 定位：
 
 | 位置 | 文档怎么说 | 实测是什么 |
 | :--- | :--- | :--- |
@@ -82,5 +82,6 @@ description: 接入智谱AI开放平台（bigmodel.cn / open.bigmodel.cn，GLM �
 | `agents-assistant-knowledge.md` | Agent 响应 `content` 是字符串 | 实际是 `{"type":"text","text":"…"}` 对象 |
 | `realtime.md` | 握手先到 `session.updated` | 先到 `session.created`，规范里没有这个事件 |
 | `sdk-and-compat.md` | 调用成功就有内容 | 可能返回空字符串，判据是 `finish_reason` |
+| `coding-plan.md` | 没有用量或余额查询接口 | 账户余额确实没有 API；套餐额度有 3 个未文档化的 `/api/monitor/usage/*` 接口可查 |
 
 （其余 7 条与上方「训练数据错误」一节重合，不重复列出。）

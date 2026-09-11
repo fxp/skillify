@@ -24,7 +24,7 @@ npx -y skills add fxp/skillify --skill bigmodel-cn --yes
 
 1. `SKILL.md` 里有「当前事实」和「你的训练数据在这几点上是错的」两节；
 2. `references/` 下有 10 个 `.md`，其中 `coding-plan.md` 讲的是 GLM Coding Plan 编程套餐；
-3. 在 reference 里 `grep '<!-- Gap:'` 能搜到 8 处「文档与实测不符」的标记。
+3. 在 reference 里 `grep '<!-- Gap:'` 能搜到 9 处「文档与实测不符」的标记。
 
 ## 这份 skill 覆盖什么
 
@@ -33,7 +33,7 @@ npx -y skills add fxp/skillify --skill bigmodel-cn --yes
 OpenAI / Claude / LangChain 兼容层，**以及 GLM Coding Plan 编程套餐**——
 套餐的 Key、Base URL、可用模型都与标准 API 不同，「买了套餐却报 1113 余额不足」是最常见的坑。
 
-内容不是文档搬运：**15 条官方文档写错或漏写的地方是用真实 API 调用查出来并改正的**，
+内容不是文档搬运：**16 条官方文档写错或漏写的地方是用真实 API 调用查出来并改正的**，
 每条都带实测日期与证明它的报错原文。
 
 ## 版本

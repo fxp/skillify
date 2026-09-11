@@ -30,7 +30,7 @@ Skillify/
 
 | Skill | 覆盖平台 | 评测状态 |
 |---|---|---|
-| `bigmodel-cn` | 智谱 AI 开放平台（open.bigmodel.cn，GLM 系列）+ GLM Coding Plan 编程套餐 | 以 **GLM-5.3 为执行 Agent** 的 5 轮基准：12 场景 / 122 次运行，其中 **4 个统计显著**（p = 0.008 / 0.048 / 0.048 / 0.048），7 个打平、1 个领先但不显著；合并满分率 skill 54/56 vs baseline 35/56（p = 9×10⁻⁶）；实测查出并修正 15 条文档错误。见 `bigmodel-cn-workspace/comparison-report.md`。<br>**另有 5 轮说明书优化尝试全部失败**（拆分 reference / 陷阱速查表 / 代码片段），在弱执行器 `glm-4.5-flash` 上均不如未优化的原版，已回退；见 `bigmodel-cn-workspace/weak-exec/RESULTS.md` |
+| `bigmodel-cn` | 智谱 AI 开放平台（open.bigmodel.cn，GLM 系列）+ GLM Coding Plan 编程套餐 | 以 **GLM-5.3 为执行 Agent** 的 5 轮基准：12 场景 / 122 次运行，其中 **4 个统计显著**（p = 0.008 / 0.048 / 0.048 / 0.048），7 个打平、1 个领先但不显著；合并满分率 skill 54/56 vs baseline 35/56（p = 9×10⁻⁶）；实测查出并修正 16 条文档错误。见 `bigmodel-cn-workspace/comparison-report.md`。<br>**另有 5 轮说明书优化尝试全部失败**（拆分 reference / 陷阱速查表 / 代码片段），在弱执行器 `glm-4.5-flash` 上均不如未优化的原版，已回退；见 `bigmodel-cn-workspace/weak-exec/RESULTS.md` |
 | `autodl` | AutoDL GPU 算力平台 API（账户 / 容器实例 Pro / 弹性部署） | 以 **GLM-5.3 为执行 Agent**：3 场景 / 30 次运行，1 个统计显著（p = 0.008，5/5 vs 0/5）；全部只读接口零费用；实测修正 11 条文档错误。见 `autodl-workspace/comparison-report.md` |
 | `create-doc-skill` | 元技能：把任意开放平台的开发者文档站生成为一份经真实调用验证的接入 skill（本工作区方法论的可复用版本，原名 `generate-skill-from-api-docs`） | 1 轮 2 个场景（新版 vs 旧版快照），见 `create-doc-skill-workspace/comparison-report.md` |
 | `volcengine-ark` | 火山引擎·火山方舟（ark.cn-beijing.volces.com，豆包 Doubao / Seedream / Seedance 及方舟上的 GLM / Kimi / DeepSeek / MiniMax）+ Agent Plan 与 Coding Plan 两套订阅套餐 | 以 **GLM-5.3 为执行 Agent**：3 场景 / 30 次运行，**0 个达到统计显著**（技能在 2 个场景领先但 n=5 不够，1 个场景是出题失误）；另经真实调用探针约 45 次，修正 8 条文档 / SDK 错误。见 `volcengine-ark-workspace/comparison-report.md` |

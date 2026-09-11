@@ -114,6 +114,47 @@ print(msg.content[0].text)
 
 **务必提醒用户**：官方条款规定套餐只能在指定工具环境内使用，自己写脚本调 Coding 端点在技术上能通，但属于条款之外的用法，是否消耗套餐额度、是否被限制以官方为准；生产系统应当用标准 API Key。
 
+## 查询套餐用量（API 参考里没有，2026-09-11 实测）
+
+<!-- Gap: 官方 API 参考和三份 OpenAPI 规范里都没有用量接口；下面三个端点取自官方插件 glm-plan-usage（zai-org/zai-coding-plugins）的源码，2026-09-11 用个人 Pro 套餐 Key 实测可用 -->
+
+**账户现金余额、资源包余额没有 API**——官方只提供控制台页面（财务总览 / 费用账单 / 资源包）。
+能用代码查的只有 **Coding Plan 的套餐额度**：
+
+| 用途 | 端点 | 参数 |
+| :--- | :--- | :--- |
+| 剩余额度与重置时间 | `GET https://open.bigmodel.cn/api/monitor/usage/quota/limit` | 无 |
+| 按小时的模型调用次数与 token | `GET https://open.bigmodel.cn/api/monitor/usage/model-usage` | `startTime`、`endTime`，格式 `yyyy-MM-dd HH:mm:ss`，需 URL 编码 |
+| 按小时的 MCP 工具调用次数 | `GET https://open.bigmodel.cn/api/monitor/usage/tool-usage` | 同上 |
+
+鉴权：`Authorization: <Coding Plan Key>`，带不带 `Bearer ` 前缀都行。
+响应外层是 `{"code":200,"msg":"操作成功","success":true,"data":…}`，与 `/paas/v4` 的错误结构不同。
+国际站 z.ai 把域名换成 `api.z.ai`（插件源码如此，未实测）。
+
+`quota/limit` 实测响应（个人 Pro 套餐）：
+
+```json
+{"code":200,"msg":"操作成功","success":true,
+ "data":{"level":"pro","limits":[
+   {"type":"CREDIT_LIMIT","unit":3,"number":5,"usage":12000,"currentValue":31,"remaining":11968,"percentage":1,"nextResetTime":1789124197348},
+   {"type":"CREDIT_LIMIT","unit":6,"number":1,"usage":60000,"currentValue":929,"remaining":59070,"percentage":1,"nextResetTime":1789641179991}]}}
+```
+
+- `usage` 是**总额度**，`currentValue` 是**已用**，`remaining = usage - currentValue`（官方插件也是这么映射的）。
+- 两条分别是 **5 小时窗口**和**每周窗口**：`nextResetTime`（毫秒时间戳）实测分别在 5.0 小时和 6.2 天之后。
+  `unit` / `number` 看起来是「时间单位 + 数量」（3 = 小时 × 5，6 = 周 × 1），官方没有说明，属推断。
+- `percentage` 含义未确认：两条都返回 `1`，和已用比例 0.26% / 1.5% 对不上，别依赖它，自己用 `currentValue / usage` 算。
+- **`type` 会变**：官方插件只认 `TOKENS_LIMIT`（5 小时 token）和 `TIME_LIMIT`（月度 MCP 次数），
+  2026-07-30 套餐改版后的账号实测返回的是 `CREDIT_LIMIT`。代码里不要写死 `type`，按 `nextResetTime` 区分窗口。
+
+`model-usage` / `tool-usage` 按小时返回 `x_time` 数组和对应的计数数组（`granularity: "hourly"`），注意两点：
+
+- **不带 `startTime` / `endTime` 返回 HTTP 200 加空响应体**，不是报错——解析前先判空。
+- `data.totalUsage.totalTokensUsage` 等于时间窗内 `tokensUsage` 数组之和；但 `modelSummaryList[].totalTokens`
+  **不受时间窗约束**（实测 1.3 亿，窗口内只有 2462 万）。按时间窗统计不要用它。
+
+这三个是官方插件在用、但没有文档背书的接口，随时可能变。代码里要对字段缺失和 `type` 变化容错。
+
 ## 套餐附赠的 MCP 工具
 
 Coding Plan 用户可以用智谱提供的本地 MCP Server（视觉理解、联网搜索、网页阅读、开源仓库检索等），通过 `npx -y "@z_ai/mcp-server"` 启动，环境变量：

@@ -1,0 +1,60 @@
+{
+  "skill_name": "youzan",
+  "evals": [
+    {
+      "id": 1,
+      "name": "self-use-token-and-order-detail",
+      "prompt": "我们是有赞微商城的商家，在有赞云建了一个自用型无容器应用，拿到了 client_id、client_secret，店铺 kdt_id 也知道。帮我用 Python 写一个小模块：换 access_token 并缓存（以后可能会接第二家店），再查一笔订单详情（订单号 E 开头那种），打印订单状态、实付金额（元）和买家的 yz_open_id。要能长期跑，token 过期能自己续上。",
+      "expected_output": "POST https://open.youzanyun.com/auth/token（JSON，authorize_type=silent，grant_id=kdt_id，refresh 为布尔），按 kdt_id 缓存 token，expires 按毫秒时间戳处理；调用 POST https://open.youzanyun.com/api/youzan.trade.get/4.0.2?access_token=...，token 只放 URL query；同时识别 gw_err_resp 与 success/code 两种错误结构；金额直接读元字符串。",
+      "files": [],
+      "expectations": [
+        "Gets the token with POST https://open.youzanyun.com/auth/token and a JSON body (Content-Type application/json), not form-encoded or GET query parameters",
+        "Uses authorize_type \"silent\" with grant_id set to the shop kdt_id (not authorization_code, not an OAuth client_credentials grant)",
+        "Sends refresh as a JSON boolean and only sets it true when renewing, not on every call",
+        "Treats data.expires as an absolute expiry timestamp in milliseconds (compares against time.time()*1000 or divides by 1000), not as a number of seconds to add to the current time",
+        "Caches tokens keyed by kdt_id (or client_id+kdt_id), not a single global token",
+        "[probe-confirmed 2026-09-11] Puts access_token only in the URL query string; does not send it as an Authorization: Bearer header or inside the JSON body",
+        "Calls the business API as /api/youzan.trade.get/<version> with the version as a separate path segment (e.g. 4.0.2), with the tid in a POST JSON body",
+        "[probe-confirmed 2026-09-11] Detects gateway errors in the gw_err_resp object (err_code / err_msg) in addition to checking success/code == 200, and does not rely on the HTTP status code",
+        "On 4201/4202/4203 refreshes the token once and retries once, without an unbounded refresh loop",
+        "Reads full_order_info.pay_info.payment (or real_payment) as a yuan string and does not divide by 100"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "push-receiver-erp-pending-shipments",
+      "prompt": "给我们的 ERP 写一个接收有赞云消息推送的 Flask 服务（无容器应用）：只要订单变成“待发货”就把订单拉进 ERP 的待发货队列；订单关闭了要从队列里撤掉。要防伪造、不能重复入队，也别漏单。",
+      "expected_output": "Flask POST 接口：用原始请求体计算 MD5(client_id + body + client_secret) 与 Event-Sign 头比较；5 秒内返回 {\"code\":0,\"msg\":\"success\"} 并异步处理；按 Event-Type 分流，待发货监听 trade_TradeBuyerPay，关闭监听 trade_TradeClose；msg 先 urldecode 再 json 解析；按 msg_id 去重、按 version 丢弃旧消息；收到消息后延迟 30 秒以上再调 youzan.trade.get 补详情。",
+      "files": [],
+      "expectations": [
+        "Verifies the Event-Sign header as a lowercase-hex MD5 of client_id + raw request body + client_secret, not HMAC-SHA256 and not a timestamp/nonce scheme",
+        "Computes the signature over the raw request bytes (e.g. request.get_data()), not over a re-serialized JSON object",
+        "Returns a response body containing success (recommended {\"code\":0,\"msg\":\"success\"}) quickly and moves slow work (API calls, DB writes) to a background worker or queue, citing the 5-second push timeout",
+        "Uses Event-Type (or body.type) trade_TradeBuyerPay as the 'pending shipment' trigger rather than trade_TradePaid",
+        "Handles trade_TradeClose to remove the order from the queue",
+        "URL-decodes the msg field before JSON-parsing it for trade_* messages",
+        "Deduplicates retried pushes (msg_id or an equivalent key) and ignores messages whose version is lower than one already processed for the same order",
+        "Waits at least about 30 seconds after a message before calling youzan.trade.get / youzan.trades.sold.get for details, or explains the documented delay",
+        "Mentions that virtual goods, e-vouchers and similar orders never emit trade_TradeBuyerPay, or routes by kdt_id to separate test and production shops"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "create-item-and-ship-with-units",
+      "prompt": "ERP 里有个新商品要上架到有赞微商城单店：一个实物商品，两种颜色（红/黑），每个 19.90 元、各 100 件库存。然后 ERP 出库后要把快递单号回传给有赞发货（整单发，快递公司是顺丰）。用 Python 写这两段对接代码。",
+      "expected_output": "创建商品用 youzan.item.common.create.1.0.0：publish_code 为实物商品 00000000000000000，media.image_ids 必填（先上传图片拿 id），specs/skus 组织两个规格，skus.price 以分为单位传 1990；发货用 youzan.logistics.online.confirm.3.0.0：tid + out_stype（从 youzan.logistics.express.get 查到的顺丰 id）+ out_sid，整单不传 oids；防止并发重复发货。",
+      "files": [],
+      "expectations": [
+        "Creates the item with youzan.item.common.create (version 1.0.0) or explicitly justifies another documented create API",
+        "Passes the SKU price in fen as an integer (1990), not 19.9 or \"19.90\"",
+        "Includes media.image_ids (image ids obtained from an upload API first), noting it is required",
+        "Sets publish_code to the physical-goods value 00000000000000000",
+        "Models the two colours with specs/spec_values and skus[].spec_values rather than inventing a flat sku_list format",
+        "Ships with youzan.logistics.online.confirm version 3.0.0 using tid, out_stype and out_sid",
+        "Looks up the carrier id for out_stype via youzan.logistics.express.get instead of hard-coding a carrier name string",
+        "Omits oids for whole-order shipment (or passes a comma-separated oid string only for partial shipment)",
+        "Guards against duplicate or concurrent shipment calls (idempotency / status check), or handles 102510001 / 102570007"
+      ]
+    }
+  ]
+}

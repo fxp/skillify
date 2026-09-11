@@ -1,0 +1,62 @@
+{
+  "skill_name": "esign",
+  "evals": [
+    {
+      "id": 1,
+      "name": "signed-request-client",
+      "prompt": "用 Python（requests，不要用官方 SDK 或 DEMO）写一个 e签宝 SaaS API V3 的客户端模块：AppId 和 AppSecret 从环境变量读，先连沙箱环境，用官方推荐的请求签名鉴权方式。写一个通用的请求方法，然后用它做两件事：1）按企业名称“杭州某某科技有限公司”查询机构认证信息，打印 orgId；2）撤销 signFlowId 为 429b1d300a63d7e4c0d 的签署流程，撤销原因“合同条款错误”。",
+      "expected_output": "一个可运行的 Python 模块：沙箱 Base URL 为 https://smlopenapi.esign.cn；每个请求带 X-Tsign-Open-App-Id、X-Tsign-Open-Auth-Mode: Signature、毫秒 X-Tsign-Open-Ca-Timestamp、X-Tsign-Open-Ca-Signature、Accept、Content-Type、Content-MD5；签名为 Base64(HmacSHA256(AppSecret, 7 行换行拼接的待签名字符串))；GET 的 query 进入 PathAndParameters；以 code == 0 判断成功；分别调用 GET /v3/organizations/identity-info 和 POST /v3/sign-flow/{signFlowId}/revoke。",
+      "files": [],
+      "expectations": [
+        "The base URL is https://smlopenapi.esign.cn (sandbox), with https://openapi.esign.cn mentioned or configurable for production",
+        "Every request sends X-Tsign-Open-App-Id, X-Tsign-Open-Auth-Mode with the exact value Signature, X-Tsign-Open-Ca-Timestamp as a millisecond Unix timestamp, and X-Tsign-Open-Ca-Signature",
+        "The string to sign is built as HTTPMethod + \\n + Accept + \\n + Content-MD5 + \\n + Content-Type + \\n + Date + \\n + PathAndParameters, keeping the empty Date line and not adding an extra line for empty Headers; it is not a sorted key=value parameter string",
+        "The signature is Base64 of the raw HmacSHA256 digest keyed with AppSecret, not a hex digest",
+        "Content-MD5 for a JSON body is Base64 of the raw 16-byte MD5 digest (not Base64 of the 32-char hex string), computed over exactly the same bytes that are sent; GET requests without a body use an empty Content-MD5 in the string to sign",
+        "Accept and Content-Type values used in the string to sign are identical to the header values actually sent (for example */* and application/json; charset=UTF-8)",
+        "The identity query is GET /v3/organizations/identity-info with orgName as a query parameter, and the query string appears in PathAndParameters without the host and without URL-encoding the value, while the actual request URL is properly encoded",
+        "The revoke call is POST /v3/sign-flow/429b1d300a63d7e4c0d/revoke with JSON body {\"revokeReason\": \"合同条款错误\"}",
+        "Success is judged by parsing the JSON and checking code == 0 (integer); the code parses the JSON body even on HTTP 401 and does not rely on the message text"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "upload-and-send-for-signing",
+      "prompt": "我们是企业自用的 HR 系统，对接 e签宝 SaaS API V3（沙箱）。本地有一份“劳动合同.pdf”，要让新员工签字，然后由我们公司（就是开放平台应用所属的企业）自动盖章，员工先签、公司后盖。员工只知道姓名和手机号，没在 e签宝认证过。签署链接由我们自己推送给员工，不需要 e签宝发短信。流程结束后我们要能下载签好的合同。请用 Python 写出从上传文件到拿到员工签署链接的完整代码（签名部分可以写成一个 helper）。",
+      "expected_output": "代码先调 POST /v3/files/file-upload-url（文件 Content-MD5、application/pdf、带 .pdf 的文件名、文件大小）拿 fileId 和 fileUploadUrl，再用 PUT 把文件字节上传到 fileUploadUrl（Content-MD5/Content-Type 与第一步一致），然后轮询 GET /v3/files/{fileId} 直到 fileStatus 为 2 或 5；再调 POST /v3/sign-flow/create-by-file：员工为个人签署方（psnAccount + psnName）手动签，公司为机构签署方 autoSign=true 且不传 orgSignerInfo，按顺序签，autoFinish=true，不设置短信通知；最后调 POST /v3/sign-flow/{signFlowId}/sign-url 用员工手机号取签署链接。",
+      "files": [],
+      "expectations": [
+        "Upload step 1 calls POST /v3/files/file-upload-url with contentMd5 = Base64(raw MD5 digest of the file bytes), contentType application/pdf (or application/octet-stream), a fileName ending in .pdf, and fileSize in bytes",
+        "Upload step 2 sends an HTTP PUT of the raw file bytes to data.fileUploadUrl with Content-MD5 and Content-Type headers identical to the values passed in step 1, and does not add the e签宝 X-Tsign-Open-* signature headers to this PUT",
+        "Before creating the sign flow the code polls GET /v3/files/{fileId} until data.fileStatus is 2 or 5 (with a delay between polls and a timeout), instead of assuming the file is ready after the PUT returns",
+        "The sign flow is created with POST /v3/sign-flow/create-by-file whose docs contain the uploaded fileId and whose signFlowConfig includes a signFlowTitle",
+        "The employee signer has signerType 0 and psnSignerInfo with psnAccount set to the phone number and psnInfo.psnName set to the name",
+        "The company signer has signerType 1 with normalSignFieldConfig.autoSign true and does not pass orgSignerInfo or transactorInfo",
+        "Signing order is set with signConfig.signOrder 1 for the employee and 2 for the company",
+        "Each signFields entry references the uploaded fileId and gives a position (signFieldPosition with positionPage, positionX, positionY, possibly obtained from the keyword-positions API) or uses an explicit alternative such as freeMode for the manual signer",
+        "The flow is set up so that it reaches the completed state and can be downloaded: autoFinish is true, or the code explicitly calls POST /v3/sign-flow/{signFlowId}/finish after all parties sign; autoStart is left at its default true or set true",
+        "No e签宝 SMS notification is requested: noticeTypes is left unset or empty rather than \"1\"",
+        "The signing link is fetched with POST /v3/sign-flow/{signFlowId}/sign-url passing operator.psnAccount equal to the employee phone number used at creation, and reads data.shortUrl or data.url",
+        "If signFlowExpireTime is set, it is a millisecond timestamp no more than 90 days in the future"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "callback-verify-and-download",
+      "prompt": "用 Python Flask 写一个 e签宝 SaaS API V3 的回调接收接口：我们在发起签署时把 notifyUrl 设成了 https://hr.example.com/esign/notify?tenant=acme 。收到回调要先确认这个请求确实来自 e签宝，只有当整个签署流程真正签署完成时，才把签好的合同下载保存到本地 contracts/{signFlowId}.pdf。AppSecret 从环境变量读。",
+      "expected_output": "Flask 路由读取原始请求体字节和 X-Tsign-Open-TIMESTAMP、X-Tsign-Open-SIGNATURE 头，按 hex(HmacSHA256(AppSecret, timestamp + 按 key 排序后的 query 值拼接（这里是 acme）+ 原始 body)) 验签；快速返回 2xx（建议 {\"code\":\"200\",\"msg\":\"success\"}），下载放后台；处理 action == SIGN_FLOW_COMPLETE 且 signFlowStatus == \"2\"；通过签名请求 POST /v3/sign-flow/{signFlowId}/file-download-url 拿 downloadUrl 并及时下载；对重复推送幂等。",
+      "files": [],
+      "expectations": [
+        "Signature verification uses the raw request body bytes (for example request.get_data()), not a re-serialized JSON object",
+        "The timestamp and signature are read from the X-Tsign-Open-TIMESTAMP and X-Tsign-Open-SIGNATURE headers (not X-Tsign-Open-Ca-Timestamp / X-Tsign-Open-Ca-Signature)",
+        "The signed data is timestamp + the callback URL query values concatenated in ascending key order (here the value acme, without key names or separators) + raw body, HMAC-SHA256 keyed with AppSecret",
+        "The computed signature is a lowercase hex digest compared (preferably with a constant-time compare) against the header value; it is not Base64 and it does not reuse the 7-line request string-to-sign",
+        "The handler returns an HTTP 2xx status quickly (the docs suggest within 5 seconds, body like {\"code\":\"200\",\"msg\":\"success\"}) and performs the download asynchronously or after enqueueing",
+        "Only action SIGN_FLOW_COMPLETE with signFlowStatus equal to \"2\" (string, or compared after converting to int) triggers the download; revoked (3), expired (5) and refused (7) completions do not, and SIGN_MISSON_COMPLETE (per-signer result) is not treated as the whole flow being finished",
+        "Unknown or unhandled action values are acknowledged with 2xx and ignored",
+        "Duplicate deliveries (retries up to 16 times, or both Webhook and notifyUrl configured) are handled idempotently, for example by de-duplicating on signFlowId plus action",
+        "The contract is downloaded by a properly signed request to POST /v3/sign-flow/{signFlowId}/file-download-url (or the legacy GET), reading data.files[].downloadUrl and fetching it promptly because the link expires (default 3600 seconds)"
+      ]
+    }
+  ]
+}

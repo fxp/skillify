@@ -1,0 +1,53 @@
+{
+  "skill_name": "dingtalk",
+  "evals": [
+    {
+      "id": 1,
+      "name": "org-traverse-then-work-notice",
+      "prompt": "用 Python（requests，不用官方 SDK）写一个脚本：用钉钉企业内部应用的 AppKey/AppSecret 获取 access token，从根部门开始遍历整个组织拿到全部员工 userid，然后以应用名义给所有人发一条 markdown 格式的工作通知（周报提醒），发送后要能告诉我哪些人实际没有收到。凭证从环境变量读取，agentId 也从环境变量读。",
+      "expected_output": "脚本先取应用 token 并缓存；用旧版 topapi 接口（token 放在 query 参数 access_token）逐级遍历部门并按部门取 userid 且去重；按每批不超过 100 人、userid_list 为逗号分隔字符串调用 asyncsend_v2 发 markdown 工作通知；用 errcode==0 判定旧版接口成功而非 HTTP 状态码；发送后用 task_id 调 getsendresult，读取 forbidden_user_id_list / failed_user_id_list / invalid_user_id_list 报告未送达的人。",
+      "files": [],
+      "expectations": [
+        "Token is obtained via POST https://api.dingtalk.com/v1.0/oauth2/accessToken with JSON appKey/appSecret (reading accessToken) or GET https://oapi.dingtalk.com/gettoken with appkey/appsecret as query string parameters — not a form/JSON body on the GET",
+        "All oapi.dingtalk.com calls pass the token as the access_token query parameter, never as an Authorization: Bearer header or x-acs-dingtalk-access-token header",
+        "Department traversal starts from dept_id 1 and recursively calls /topapi/v2/department/listsub (which only returns the next level) and /topapi/user/listid per department, de-duplicating userids",
+        "Work notice is sent to https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2 with agent_id, userid_list as a comma-separated string of at most 100 ids per call, and msg = {\"msgtype\":\"markdown\",\"markdown\":{\"title\":...,\"text\":...}}",
+        "Success of old-API calls is judged by errcode == 0 in the JSON body (not by HTTP status / raise_for_status alone)",
+        "After sending, the script calls /topapi/message/corpconversation/getsendresult with agent_id and task_id and reports users from forbidden_user_id_list (flow-controlled, silently not delivered) and failed/invalid lists, rather than treating errcode 0 from asyncsend_v2 as delivery confirmation",
+        "No credentials are hardcoded; AppKey, AppSecret and agent id come from environment variables"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "http-callback-approval-events",
+      "prompt": "我们是企业内部应用，已经有公网网关，所以在钉钉开发者后台选了「HTTP 推送」方式订阅审批实例事件（bpms_instance_change），后台填了签名 token 和 43 位的加密 aes_key。请用 Python + Flask 写接收回调的服务：能通过后台的「验证有效性」，收到审批结束事件时打印审批实例 ID 以及是否审批通过。",
+      "expected_output": "Flask 路由读取 URL 上的签名、时间戳、nonce（兼容 msg_signature/signature 与 timestamp/timeStamp）和 body 里的 encrypt；用 sha1(排序后拼接 token,timestamp,nonce,encrypt) 验签；AES-256-CBC 解密，key=Base64Decode(aes_key+'=')，IV=key[:16]，去 PKCS7（块大小 32）填充，跳过 16 字节随机串、读 4 字节网络序长度取消息并校验末尾 ownerKey（后台配置的事件用 AppKey）；对 check_url 与业务事件都返回 JSON {msg_signature,timeStamp,nonce,encrypt}，其中 encrypt 为字符串 success 的密文；HTTP 推送的审批事件是扁平结构，读 EventType、processInstanceId、type、result。",
+      "files": [],
+      "expectations": [
+        "Signature check computes SHA1 over the lexicographically sorted concatenation of [token, timestamp, nonce, encrypt] and compares the hex digest with the signature from the URL",
+        "AES key is derived as base64-decode(aes_key + '=') giving 32 bytes, cipher is AES-CBC with IV equal to the first 16 bytes of the key",
+        "Decryption strips PKCS7 padding allowing pad values up to 32, skips the 16-byte random prefix, reads a 4-byte big-endian length, extracts the message, and verifies the trailing owner key equals the app's AppKey (for developer-console-configured subscriptions)",
+        "Every callback, including EventType check_url, is answered with JSON containing msg_signature, timeStamp, nonce and encrypt where encrypt is the encrypted string 'success' (not plaintext success, not an empty 200)",
+        "Handler reads HTTP-push event fields from the flat decrypted JSON (EventType == 'bpms_instance_change', processInstanceId, type, result) rather than the Stream-mode shape (eventType + data)",
+        "Approval outcome is reported from result ('agree' / 'refuse') on a finish-type event, not inferred from the event arriving",
+        "Token and aes_key are read from environment variables"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "start-approval-and-poll",
+      "prompt": "用钉钉新版服务端 API（Python requests）写一个函数：以员工 userid=manager432 的身份、复用审批后台已配置的审批流，发起模板 PROC-XXXX 的审批。表单控件有：单行输入框「事由」、多选框「物品」（选 显示器 和 键盘）、日期区间控件（开始 2026-09-14，结束 2026-09-18）。发起后每分钟查一次，直到审批结束，返回是否审批通过。发起人在根部门。",
+      "expected_output": "POST https://api.dingtalk.com/v1.0/workflow/processInstances，header x-acs-dingtalk-access-token；body 含 originatorUserId、processCode、deptId（根部门 -1，不传 approvers 时必填）、formComponentValues，所有 value 为字符串：多选为 JSON 数组字符串，日期区间的 name 为 [\"开始时间\",\"结束时间\"] 的 JSON 字符串、value 为 yyyy-MM-dd 日期数组字符串；取响应 instanceId；轮询 GET /v1.0/workflow/processInstances?processInstanceId=...，直到 status 不为 RUNNING；通过的判定是 status == COMPLETED 且 result == agree，TERMINATED 为撤销。",
+      "files": [],
+      "expectations": [
+        "Request goes to POST https://api.dingtalk.com/v1.0/workflow/processInstances with the token in the x-acs-dingtalk-access-token header (not a query parameter, not Bearer)",
+        "Body uses camelCase fields originatorUserId, processCode, deptId and formComponentValues, and does not pass approvers (to reuse the configured flow); deptId is set (root department) because approvers is omitted",
+        "Every formComponentValues value is a string; the multi-select value is a JSON-array string like '[\"显示器\",\"键盘\"]'",
+        "The date-range control is sent with name '[\"开始时间\",\"结束时间\"]' (a JSON-array string) and value '[\"2026-09-14\",\"2026-09-18\"]' using yyyy-MM-dd",
+        "The instance id is read from the response field instanceId",
+        "Polling uses GET https://api.dingtalk.com/v1.0/workflow/processInstances with processInstanceId as a query parameter and reads result.status / result.result",
+        "Approval is considered passed only when status == 'COMPLETED' and result == 'agree'; a COMPLETED instance with result 'refuse' is reported as rejected and TERMINATED as revoked"
+      ]
+    }
+  ]
+}

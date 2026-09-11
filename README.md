@@ -36,6 +36,9 @@ Skillify/
 | `volcengine-ark` | 火山引擎·火山方舟（ark.cn-beijing.volces.com，豆包 Doubao / Seedream / Seedance 及方舟上的 GLM / Kimi / DeepSeek / MiniMax）+ Agent Plan 与 Coding Plan 两套订阅套餐 | 以 **GLM-5.3 为执行 Agent**：3 场景 / 30 次运行，**0 个达到统计显著**（技能在 2 个场景领先但 n=5 不够，1 个场景是出题失误）；另经真实调用探针约 45 次，修正 8 条文档 / SDK 错误。见 `volcengine-ark-workspace/comparison-report.md` |
 | `fxiaoke` | 纷享销客 CRM 开放平台（open.fxiaoke.com，客户 / 联系人 / 线索 / 商机与 `__c` 自定义对象、通讯录、企信消息） | **文档版**（2026-09-11）：整理自官方文档，未用真实凭证验证；10 次无凭证探测证实 3 处文档错误（错误码表与实际返回不符、示例域名不是 API 网关）。对照实验待凭证到位，验证计划见 `skills/fxiaoke/data/verification-plan.md` |
 | `kingdee` | 金蝶云星空（K/3 Cloud）WebAPI：第三方授权签名、单据查询 / 保存 / 提交 / 审核 / 下推、物料客户供应商与多组织分配、总账凭证与应收应付；不覆盖星瀚 / 苍穹 / 旗舰版 / 精斗云 / KIS | **文档版**（2026-09-11）：整理自无需登录的旧版官方 API 文档（7.5.1800.6，2020-10）与官方 Python SDK 源码，未用真实凭证验证；新版 API 中心需登录、未抓取，可能有更新。业务接口部署在客户服务器上，只探测了旧公网网关。验证计划见 `skills/kingdee/data/verification-plan.md` |
+| `dingtalk` | 钉钉开放平台（新版 api.dingtalk.com 与旧版 oapi.dingtalk.com 两套服务端 API：鉴权、通讯录、工作通知与机器人、OA 审批、考勤、Stream / HTTP 事件订阅） | **文档版**（2026-09-11）：整理自官方文档，未用真实凭证验证；14 次无凭证探测证实 4 处文档错误（旧版 token 接口只认 query 参数、第三方 token 路径缺 `/v1.0`、机器人错误码、错误码表字段名）；回调解密代码经文档测试向量离线校验。验证计划见 `skills/dingtalk/data/verification-plan.md` |
+| `alipay` | 支付宝开放平台·商户收款（v2 网关与 v3 两套协议、当面付、电脑网站 / 手机网站 / APP 支付、查询退款关单、异步通知验签、沙箱） | **文档版**（2026-09-11）：整理自官方文档与官方 v3 描述文件，未用真实凭证验证；10 次伪造 app_id 探测证实多处文档错误（v3 未签名返回 400 而非文档说的 401、SDK 文档里的旧沙箱域名证书已过期、v3 描述文件的沙箱地址不可用等）。验证计划见 `skills/alipay/data/verification-plan.md` |
+| `wecom` | 企业微信服务端 API（access_token 与应用 secret、通讯录、应用消息与群机器人、客户联系 CRM、审批、回调加解密） | **文档版**（2026-09-11）：整理自官方文档（69 页），未用真实凭证验证；26 次无凭证探测证实 1 处文档错误（客户联系接口标注的 http 实际 301 到 https）；回调加解密代码用文档示例在本地跑通。验证计划见 `skills/wecom/data/verification-plan.md` |
 
 **两个等级**：「已实测」的 skill 每条结论都用真实 API Key 调过，并做了装与不装的对照实验；「文档版」按 `create-doc-skill` 的降级方案产出（抓取文档 + 无凭证探测 + 写好评测用例），SKILL.md 开头有「验证状态」一节，文档转录的报错一律标「文档原文，未实测」，拿到凭证后补测升级。
 

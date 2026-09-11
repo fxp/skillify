@@ -1,0 +1,56 @@
+{
+  "skill_name": "wecom",
+  "evals": [
+    {
+      "id": 1,
+      "name": "callback-verify-and-decrypt",
+      "prompt": "我在企业微信管理后台给自建应用配置了“接收消息”，填了 URL、Token 和 EncodingAESKey。帮我用 Python（Flask）写回调服务：能通过保存配置时的 URL 验证，并能接收成员发给应用的消息、解密后打印出来。不要依赖任何第三方企业微信 SDK，加解密自己实现。",
+      "expected_output": "一个 Flask 服务：GET 处理 URL 验证（校验 msg_signature、解密 echostr、原样返回明文），POST 解析 XML 中的 Encrypt、校验签名、按企业微信规则 AES 解密并校验 receiveid，快速返回 200。",
+      "files": [],
+      "expectations": [
+        "Signature is sha1 over the four VALUES token, timestamp, nonce and the encrypted string, sorted lexicographically and concatenated with no separator, compared as lowercase hex",
+        "GET verification signs over echostr and POST signs over the Encrypt field from the XML body",
+        "AES key is base64-decoded from EncodingAESKey + '=' (32 bytes), not the raw EncodingAESKey string",
+        "Uses AES-256-CBC with IV equal to the first 16 bytes of the AES key",
+        "[doc-fidelity, local recompute 2026-09-11] Removes PKCS#7 padding with a 32-byte block (or by trimming the last byte's value up to 32), not a 16-byte PKCS7 unpadder that rejects pad lengths above 16",
+        "After decrypting, strips 16 random bytes, reads a 4-byte big-endian msg_len, extracts msg, and checks the trailing receiveid equals the corpid",
+        "GET handler returns the decrypted echostr as a bare plain-text body (no JSON, quotes or trailing newline)",
+        "POST handler returns HTTP 200 quickly (empty body is acceptable) and does not do slow work synchronously, or explicitly notes the 5-second timeout and three retries"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "app-message-and-tag-batch",
+      "prompt": "用 Python 写个脚本：通过我们的企业微信自建应用（有 corpid、应用 secret、agentid）给一批员工（userid 列表，可能上千人）发一条 markdown 通知，然后把这些员工都加进一个已有的通讯录标签（tagid 已知，是这个应用创建的）。脚本会被 cron 每 5 分钟跑一次，要稳。",
+      "expected_output": "脚本先用 gettoken 换 token 并缓存复用，调用 message/send 时 access_token 放在 URL query，touser 是竖线分隔字符串且每批不超过 1000 人，检查 invaliduser 等部分失败字段；调用 tag/addtagusers 时 userlist 是 JSON 数组、每批不超过 1000；所有调用判 errcode。",
+      "files": [],
+      "expectations": [
+        "Token is obtained from GET https://qyapi.weixin.qq.com/cgi-bin/gettoken with corpid and corpsecret as query parameters",
+        "Token is cached (in memory with expiry, or in a file / shared store across cron runs) instead of calling gettoken before every request",
+        "[doc-vs-probe 2026-09-11] access_token is passed as a URL query parameter, not in an Authorization header or the JSON body",
+        "message/send payload uses touser as a '|'-joined string, msgtype 'markdown' with markdown.content, and agentid as an integer",
+        "Recipients are chunked to at most 1000 userids per message/send call",
+        "Success handling checks errcode (non-zero means failure) and inspects invaliduser / invalidparty / invalidtag / unlicenseduser even when errcode is 0",
+        "tag/addtagusers payload uses userlist as a JSON array (not a '|'-joined string), chunked to at most 1000 per call",
+        "Refreshes the token and retries once on errcode 40014 or 42001 rather than failing or looping"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "crm-welcome-and-tag-by-channel",
+      "prompt": "我们用企业微信的客户联系做获客：给销售生成带渠道参数的“联系我”二维码，客户扫码加好友后，系统要自动给客户发一条欢迎语，并按渠道给这个客户打上对应的企业客户标签。用 Python 写服务端代码（生成二维码 + 处理回调），并告诉我企业微信后台需要做哪些配置。",
+      "expected_output": "说明需把自建应用配置到客户联系“可调用接口的应用”、配置客户联系使用范围、勾选外部联系人变更回调；代码调用 add_contact_way（type/scene/user/state）并保存 config_id；回调里处理 change_external_contact/add_external_contact，20 秒内用 WelcomeCode 调 send_welcome_msg，再用 mark_tag（userid + external_userid + add_tag）打标签。",
+      "files": [],
+      "expectations": [
+        "Explains that the self-built app must be added to Customer Contact's 'apps allowed to call the API' list (or otherwise obtains a token with customer-contact permission) and that members must be in the customer-contact usage scope",
+        "Creates the QR code with POST /cgi-bin/externalcontact/add_contact_way using type=1, scene=2, a user list with exactly one userid, and a state value for the channel",
+        "Persists the returned config_id (the doc warns losing it prevents later edit or delete)",
+        "Callback handler branches on Event == change_external_contact and ChangeType == add_external_contact and reads UserID, ExternalUserID, State and WelcomeCode",
+        "Calls POST /cgi-bin/externalcontact/send_welcome_msg with welcome_code within the 20-second window and handles WelcomeCode being absent",
+        "Tags the customer with POST /cgi-bin/externalcontact/mark_tag passing userid, external_userid and add_tag (a list of corp tag ids), not a tag name",
+        "Does not use add_msg_template for the welcome message (it only creates a mass-send task that the member must confirm)",
+        "[doc-vs-probe 2026-09-11] Uses https:// for all externalcontact endpoints even though some doc pages label the method 'POST(HTTP)'"
+      ]
+    }
+  ]
+}

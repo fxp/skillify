@@ -1,0 +1,53 @@
+{
+  "skill_name": "alipay",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我们是一个 Flask 网站，已经用支付宝「电脑网站支付」下单了。帮我写支付宝的支付结果回调接口：收到回调后校验签名、把订单改成已支付。订单表里金额存的是 Decimal（元），商户 app_id 和收款 PID 在环境变量里。用 Python。",
+      "expected_output": "一个接收表单 POST 的 Flask 路由：去掉 sign 和 sign_type 后排序拼串，用支付宝公钥（不是应用公钥）做 RSA2 验签；验签后校验 out_trade_no、total_amount（Decimal/字符串比较）、seller_id、app_id 四项；TRADE_SUCCESS 和 TRADE_FINISHED 都视为已付款；幂等更新；响应体恰好是纯文本 success（失败回 fail）。",
+      "files": [],
+      "expectations": [
+        "从 request.form（表单参数）读取通知参数，而不是 request.get_json()",
+        "构造待验签串时同时剔除 sign 和 sign_type 两个参数（不是只剔除 sign）",
+        "验签使用的是支付宝公钥（alipay public key），而不是商户上传的应用公钥",
+        "验签通过后还校验了 total_amount 与订单金额一致，并且用 Decimal 或字符串比较而非 float",
+        "验签通过后还校验了 app_id 和 seller_id 是否为商户自己的",
+        "把 TRADE_SUCCESS 和 TRADE_FINISHED 都当作付款成功处理",
+        "处理成功时返回纯文本 success（恰好 7 个字符，不是 JSON、不带引号、不重定向）",
+        "对重复通知做了幂等处理（订单已支付时不重复执行业务，仍返回 success）"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "写一个 Python 函数 refund_order(out_trade_no, amount_fen, reason)，调用支付宝退款。我们系统金额都用「分」存。同一个订单可能分多次部分退款，网络超时的时候要能安全重试。函数要返回退款是否真的成功。",
+      "expected_output": "调用 alipay.trade.refund（或 v3 POST /v3/alipay/trade/refund）：refund_amount 把分转换成元的两位小数字符串；每一笔部分退款生成新的 out_request_no 并持久化，超时重试时复用同一个 out_request_no 和金额；code=10000 不直接等于成功，要看 fund_change=Y，否则间隔 10 秒以上调 alipay.trade.fastpay.refund.query 看 refund_status=REFUND_SUCCESS；ACQ.SYSTEM_ERROR 视为结果未知。",
+      "files": [],
+      "expectations": [
+        "refund_amount 以「元」为单位传入（例如 1234 分转换成 \"12.34\"），没有直接传分",
+        "每一笔新的部分退款都使用不同的 out_request_no",
+        "超时或 ACQ.SYSTEM_ERROR 重试时复用同一个 out_request_no 和相同金额，而不是生成新的请求号",
+        "没有把 code == 10000 直接当作退款成功，而是检查 fund_change == 'Y'",
+        "fund_change 不为 Y 时通过 alipay.trade.fastpay.refund.query（或 v3 对应路径）确认，并以 refund_status == 'REFUND_SUCCESS' 判定成功",
+        "退款查询传入的 out_request_no 与退款时一致，且与退款请求间隔 10 秒以上（或说明了这一要求）",
+        "没有调用 alipay.trade.cancel 来实现退款"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我们用 Node 以外的语言——Python——做后端，想直接对接支付宝新版 v3 接口（不用旧的 gateway.do）查询订单状态。官方没有 Python 版 v3 SDK，请帮我手写签名，给出一个可以同时切换沙箱和生产的 query_trade(out_trade_no) 实现，并正确处理错误响应。",
+      "expected_output": "对 POST /v3/alipay/trade/query 发 JSON body；Authorization 头为 'ALIPAY-SHA256withRSA app_id=…,timestamp=<毫秒>,nonce=<随机>[,expired_seconds=…],sign=<base64>'；待签名内容为 authString\\nPOST\\n/v3/alipay/trade/query\\n<body>\\n，body 与实际发送字节一致；沙箱 host 为 https://openapi-sandbox.dl.alipaydev.com（不是 openapi.yaml 里的 http://openapi.sandbox…，也不是旧的 openapi.alipaydev.com）；错误按 HTTP 4xx/5xx + body.code 处理，不假设 HTTP 200 + xxx_response；可选对响应做 alipay-timestamp\\nalipay-nonce\\nbody\\n 验签。",
+      "files": [],
+      "expectations": [
+        "请求路径是 POST /v3/alipay/trade/query，body 是 JSON，没有使用 method=alipay.trade.query 或 biz_content",
+        "Authorization 头以 'ALIPAY-SHA256withRSA ' 开头（算法与 authString 之间是空格），并以 ',sign=' 连接签名",
+        "authString 中的 timestamp 是 Unix 毫秒时间戳，而不是 yyyy-MM-dd HH:mm:ss 字符串",
+        "authString 包含每次唯一的 nonce",
+        "待签名内容按 authString、HTTP 方法、路径(含 query)、body 四行拼接，每行以换行符结尾（包括最后一行）",
+        "签名用的 body 字符串与实际发送的请求体字节一致（例如用 data= 发送同一字符串，而不是 json= 让库重新序列化）",
+        "沙箱 host 使用 https://openapi-sandbox.dl.alipaydev.com，没有使用 openapi.alipaydev.com 或 http://openapi.sandbox.dl.alipaydev.com",
+        "错误处理基于 HTTP 状态码和响应体顶层的 code/message，而不是查找 alipay_trade_query_response 或 code == '10000'",
+        "没有假设签名错误一定返回 401（按 body.code 区分 missing-timestamp / invalid-signature / invalid-app-id 等）"
+      ]
+    }
+  ]
+}

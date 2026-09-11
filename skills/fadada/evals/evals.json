@@ -1,0 +1,55 @@
+{
+  "skill_name": "fadada",
+  "evals": [
+    {
+      "id": 1,
+      "name": "signed-request-client",
+      "prompt": "用 Python（requests，不要用官方 SDK）写一个法大大 FASC OpenAPI 5.1 的客户端模块：AppId/AppSecret 从环境变量读，先获取 accessToken 并缓存，再提供一个通用方法调用任意业务接口；最后用它调用“撤销签署任务”接口，撤销 signTaskId=1656928831553122296 的任务，撤销原因写“信息填写错误”。先连测试环境。",
+      "expected_output": "一个可运行的 Python 模块：用 UAT Base URL；换 token 时带 X-FASC-Grant-Type；每个请求带完整的 X-FASC-* 公共请求头，按两步派生的 HMAC-SHA256 算法签名；业务参数作为 form-urlencoded 的 bizContent 字段发送；以 code == \"100000\" 判断成功并缓存/刷新 token；调用 POST /sign-task/cancel。",
+      "files": [],
+      "expectations": [
+        "Base URL is https://uat-api.fadada.com/api/v5 and the cancel call is POST /sign-task/cancel with bizContent {\"signTaskId\": \"1656928831553122296\", \"terminationNote\": \"信息填写错误\"}",
+        "Token is obtained via POST /service/get-access-token with header X-FASC-Grant-Type: client_credential and without X-FASC-AccessToken; the token is cached and reused rather than fetched on every call",
+        "Signature derives a key as HMAC-SHA256(key=AppSecret, msg=X-FASC-Timestamp) and then outputs lowercase hex HMAC-SHA256(key=derivedKey, msg=sha256_hex(sortedString)); a single HMAC(AppSecret, sortedString) is wrong",
+        "The string to sign contains every sent X-FASC-* header except X-FASC-Sign, plus bizContent, sorted by key in ASCII order and joined as key=value with &, without percent-encoding the values",
+        "Business parameters are sent as the form-urlencoded field bizContent whose value is the JSON string, and the exact same string is used for signing; the code does not send a JSON request body",
+        "Every request carries X-FASC-App-Id, X-FASC-Sign-Type: HMAC-SHA256, X-FASC-Sign, a millisecond X-FASC-Timestamp, a fresh X-FASC-Nonce of at most 32 characters, and X-FASC-Api-SubVersion: 5.1",
+        "Success is judged by response code == \"100000\" compared as a string; the JSON body is parsed even on HTTP 401, and code 100002 triggers a token refresh and one retry"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "upload-and-send-for-signing",
+      "prompt": "我们是企业自用集成应用，公司自己的 openCorpId 已知（环境变量 FASC_OPEN_CORP_ID）。现在要用法大大给新员工发劳动合同：本地有一个“劳动合同.pdf”，公司先盖章、员工后签字；员工的姓名和手机号已知，他不是我们应用里授权过的用户。我们自己把签署链接发给双方，不需要法大大发短信。用 Python 写出从上传文件到拿到两方签署链接的完整代码（签名和换 token 的部分可以写成一个 helper）。",
+      "expected_output": "代码先通过 /file/get-upload-url 拿上传地址、PUT 文件字节、再调 /file/process 拿 fileId；用 /sign-task/create 创建任务，initiator 为 OpenId 对象，公司同时作为签署参与方，员工用身份信息约束，有序签署；任务被提交（autoStart 或 /sign-task/start）后，用 /sign-task/actor/get-url 按 actorId 拿两个签署链接。",
+      "files": [],
+      "expectations": [
+        "Upload uses POST /file/get-upload-url, then an HTTP PUT of the raw file bytes to data.uploadUrl, then POST /file/process with data.fddFileUrl and a fileName whose extension matches the file (.pdf)",
+        "docs[].docFileId is set to fileIdList[0].fileId returned by /file/process, not to the fddFileUrl or uploadUrl",
+        "POST /sign-task/create is called with initiator as an object {\"idType\": \"corp\", \"openId\": <FASC_OPEN_CORP_ID>}, not a plain string",
+        "The company is also added to actors as a corp actor with permissions [\"sign\"] and actorOpenId equal to the company openCorpId; the code does not assume the initiator signs automatically",
+        "The employee actor is actorType person without actorOpenId, constrained by identNameForMatch and/or accountName (the phone number)",
+        "Ordered signing is configured: signInOrder true, with signConfigInfo.orderNo 1 for the company and 2 for the employee",
+        "The task is actually submitted: either autoStart true together with docs and signing actors in the create call, or an explicit POST /sign-task/start with the signTaskId",
+        "Signing links are fetched after submission via POST /sign-task/actor/get-url with signTaskId and each actorId, reading data.actorSignTaskUrl (or actorSignTaskEmbedUrl with its 10-minute single-use limit noted)",
+        "Boolean fields such as autoStart, signInOrder and sendNotification are JSON booleans, and Fadada notifications are turned off (sendNotification false) or explicitly controlled since the links are distributed by the app"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "callback-verify-and-download",
+      "prompt": "用 Python Flask 写一个法大大回调接收接口：我们订阅了签署任务完成事件，收到后要先确认这个请求确实来自法大大，然后把签好的合同下载保存到本地 contracts/{signTaskId}.pdf。发起方是我们公司，openCorpId 从环境变量 FASC_OPEN_CORP_ID 读。",
+      "expected_output": "Flask 路由从表单读取 bizContent、从请求头读取 X-FASC-Event；用 X-FASC-App-Id、X-FASC-Sign-Type、X-FASC-Timestamp、X-FASC-Nonce、X-FASC-Event 加原始 bizContent 按两步派生 HMAC 验签；3 秒内返回 HTTP 200 且 body 含 success，下载放到后台；对 sign-task-finished 调 /sign-task/owner/get-download-url 并下载；对重试做幂等。",
+      "files": [],
+      "expectations": [
+        "bizContent is read from the form body (request.form), not from request.get_json() or the raw JSON body",
+        "The event type is taken from the X-FASC-Event request header and the handler acts on sign-task-finished (not sign-task-signed)",
+        "Signature verification signs exactly X-FASC-App-Id, X-FASC-Sign-Type, X-FASC-Timestamp, X-FASC-Nonce, X-FASC-Event and the raw bizContent string, without X-FASC-AccessToken or X-FASC-Api-SubVersion, using the same two-step derived-key HMAC-SHA256, and compares with X-FASC-Sign",
+        "The endpoint responds with HTTP 200 and a body containing success (for example {\"msg\":\"success\"}) quickly, and the download is done asynchronously or after enqueueing because the callback times out after 3 seconds",
+        "Duplicate deliveries caused by retries (3m/30m/8h) are handled idempotently, for example by de-duplicating on event plus signTaskId",
+        "The contract is fetched via POST /sign-task/owner/get-download-url with ownerId {\"idType\": \"corp\", \"openId\": <FASC_OPEN_CORP_ID>} and signTaskId through a properly signed request with accessToken, then data.downloadUrl is downloaded promptly (valid for 1 hour)",
+        "The code sets downloadMode to download or otherwise handles that the link may open a preview page or return a zip when there are multiple files"
+      ]
+    }
+  ]
+}

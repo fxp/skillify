@@ -40,6 +40,8 @@ Skillify/
 | `dingtalk` | 钉钉开放平台（新版 api.dingtalk.com 与旧版 oapi.dingtalk.com 两套服务端 API：鉴权、通讯录、工作通知与机器人、OA 审批、考勤、Stream / HTTP 事件订阅） | **文档版**（2026-09-11）：整理自官方文档，未用真实凭证验证；14 次无凭证探测证实 4 处文档错误（旧版 token 接口只认 query 参数、第三方 token 路径缺 `/v1.0`、机器人错误码、错误码表字段名）；回调解密代码经文档测试向量离线校验。验证计划见 `skills/dingtalk/data/verification-plan.md` |
 | `alipay` | 支付宝开放平台·商户收款（v2 网关与 v3 两套协议、当面付、电脑网站 / 手机网站 / APP 支付、查询退款关单、异步通知验签、沙箱） | **文档版**（2026-09-11）：整理自官方文档与官方 v3 描述文件，未用真实凭证验证；10 次伪造 app_id 探测证实多处文档错误（v3 未签名返回 400 而非文档说的 401、SDK 文档里的旧沙箱域名证书已过期、v3 描述文件的沙箱地址不可用等）。验证计划见 `skills/alipay/data/verification-plan.md` |
 | `wecom` | 企业微信服务端 API（access_token 与应用 secret、通讯录、应用消息与群机器人、客户联系 CRM、审批、回调加解密） | **文档版**（2026-09-11）：整理自官方文档（69 页），未用真实凭证验证；26 次无凭证探测证实 1 处文档错误（客户联系接口标注的 http 实际 301 到 https）；回调加解密代码用文档示例在本地跑通。验证计划见 `skills/wecom/data/verification-plan.md` |
+| `wechatpay` | 微信支付商户 APIv3·直连商户（请求签名与应答验签、JSAPI / 小程序 / Native / H5 / APP 下单、查单关单、退款、回调解密、账单对账） | **文档版**（2026-09-11）：整理自官方文档（222 页），未用真实凭证验证，未发起任何交易；13 次伪造商户号探测证实 2 处文档错误（4xx 应答不带 `Wechatpay-*` 签名头、交易类接口 401 不带 `Request-ID`）；签名示例用文档公开测试私钥离线复算。验证计划见 `skills/wechatpay/data/verification-plan.md` |
+| `fadada` | 法大大电子签 FASC OpenAPI 5.1（换 token 与 X-FASC 签名、个人 / 企业授权、文件上传与处理、签署任务、模板、回调验签） | **文档版**（2026-09-11）：整理自官方文档与官方 Python SDK 源码，未用真实凭证验证；8 次无凭证探测证实 3 处文档错误（缺鉴权头返回 100012 而非文档写的 100010、AppId 无效与时间戳过期都是 HTTP 200 + 100001、错误响应多一个 `success` 字段）。验证计划见 `skills/fadada/data/verification-plan.md` |
 
 **两个等级**：「已实测」的 skill 每条结论都用真实 API Key 调过，并做了装与不装的对照实验；「文档版」按 `create-doc-skill` 的降级方案产出（抓取文档 + 无凭证探测 + 写好评测用例），SKILL.md 开头有「验证状态」一节，文档转录的报错一律标「文档原文，未实测」，拿到凭证后补测升级。
 

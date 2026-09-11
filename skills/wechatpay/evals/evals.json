@@ -1,0 +1,57 @@
+{
+  "skill_name": "wechatpay",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "用 Python（requests）写一个函数 create_native_order(out_trade_no, yuan)，调用微信支付商户 APIv3 的 Native 下单接口，给订单 ORDER20260911001 下单 12.5 元，返回 code_url。商户号、商户 API 证书序列号、私钥路径、微信支付公钥 ID 和公钥路径都从环境变量读取。要求自己实现请求签名和应答验签，不要用第三方微信支付 SDK。",
+      "expected_output": "POST https://api.mch.weixin.qq.com/v3/pay/transactions/native，JSON body 中 amount.total=1250（整数分）。Authorization 使用 WECHATPAY2-SHA256-RSA2048，签名串共 5 行，签名用商户 API 证书私钥做 SHA256withRSA；实际发出的 body 与签名时的字符串一致。对 2xx 应答用 Wechatpay-Serial 对应的公钥验签。",
+      "files": [],
+      "expectations": [
+        "请求地址是 https://api.mch.weixin.qq.com/v3/pay/transactions/native，不是 v2 的 /pay/unifiedorder，也不是 XML",
+        "amount.total 是整数 1250（单位分），不是 12.5 或字符串；body 里没有 payer 字段",
+        "Authorization 头的格式是 WECHATPAY2-SHA256-RSA2048 mchid=\"…\",nonce_str=\"…\",signature=\"…\",timestamp=\"…\",serial_no=\"…\"，参数值用双引号",
+        "签名串是 'POST\\n/v3/pay/transactions/native\\n{timestamp}\\n{nonce}\\n{body}\\n'，每行包括最后一行都以换行结尾；URL 去掉了域名",
+        "用商户 API 私钥做 RSA PKCS#1 v1.5 + SHA-256 签名，再做 base64；没有使用 MD5 或 HMAC",
+        "被签名的 body 字符串就是实际发出的字节：先序列化成字符串，再用 data= 发送；没有在签名之后用 requests 的 json= 重新序列化",
+        "serial_no 用的是商户 API 证书序列号，不是微信支付公钥 ID（PUB_KEY_ID_…）",
+        "请求带了 Accept: application/json 和 User-Agent",
+        "对 2xx 应答用 'Wechatpay-Timestamp\\nWechatpay-Nonce\\n原始body\\n' 做验签，公钥根据 Wechatpay-Serial 选取；并检查时间戳偏差不超过 5 分钟",
+        "处理 4xx 时先按 HTTP 状态码和 code 报错，不会因为缺少 Wechatpay-* 签名头而掩盖真实错误"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "用 FastAPI 写微信支付 APIv3 的支付成功回调接口 POST /wechatpay/notify：确认回调确实来自微信支付，拿到订单号和金额后，把本地订单标记为已支付。APIv3 密钥、微信支付公钥 ID 和公钥 PEM 都从环境变量读取。",
+      "expected_output": "读取原始 body 字节，用 3 行验签串和 Wechatpay-Serial 对应的公钥验签（检查时间戳在 5 分钟内），然后用 APIv3 密钥对 resource 做 AEAD_AES_256_GCM 解密，幂等地更新订单。成功时返回 200 或 204 且不带 body；验签失败时返回 4xx 或 5xx。",
+      "files": [],
+      "expectations": [
+        "用原始请求体字节（await request.body()）验签，而不是先解析再序列化的 JSON",
+        "验签串是 '{Wechatpay-Timestamp}\\n{Wechatpay-Nonce}\\n{body}\\n'，用 SHA256withRSA 验证 base64 解码后的 Wechatpay-Signature",
+        "根据 Wechatpay-Serial 选择验签公钥（微信支付公钥 ID 形如 PUB_KEY_ID_…，或平台证书序列号）",
+        "拒绝时间戳偏差超过 5 分钟的回调",
+        "解密用 AES-256-GCM：key 是 32 字符的 APIv3 密钥原串字节，nonce 是 resource.nonce 原串，AAD 是 resource.associated_data 原串（可能为空），ciphertext 先做 base64 解码",
+        "验签成功时返回 HTTP 200 或 204，不带 body；没有返回 v2 的 XML return_code=SUCCESS",
+        "验签失败时返回 4xx 或 5xx（可以带 {\"code\":\"FAIL\",\"message\":…}），而不是返回 200 吞掉请求；对 WECHATPAY/SIGNTEST/ 开头的签名没有特殊放行",
+        "检查 event_type 为 TRANSACTION.SUCCESS 或 trade_state 为 SUCCESS，并且处理是幂等的（重复通知不会重复记账）",
+        "按整数分读取 amount.total 并和本地订单金额比较，或者至少按整数分存储",
+        "耗时的业务处理不会阻塞 5 秒内的应答（异步处理，或者明确说明了 5 秒限制）"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我们有微信小程序和 iOS/Android App 两个端。后端已经分别通过 JSAPI/小程序下单接口和 APP 下单接口拿到了 prepay_id。请写后端的 Python 函数，分别生成小程序 wx.requestPayment 需要的参数，以及 App 端 OpenSDK PayReq 需要的参数（都要包含签名）。",
+      "expected_output": "小程序：签名串是 appId\\ntimeStamp\\nnonceStr\\nprepay_id=xxx\\n，返回 timeStamp、nonceStr、package=prepay_id=xxx、signType=RSA、paySign。App：签名串第 4 行只放 prepay_id 本身，返回 appId、partnerId=mchid、prepayId、packageValue=Sign=WXPay、nonceStr、timeStamp、sign。两者都用商户 API 证书私钥做 SHA256withRSA 签名，时间戳单位为秒。",
+      "files": [],
+      "expectations": [
+        "小程序的签名串是 4 行：'{appid}\\n{timeStamp}\\n{nonceStr}\\nprepay_id={prepay_id}\\n'，每行都以换行结尾",
+        "小程序返回的 package 是 'prepay_id=' 加上 prepay_id，signType 是 'RSA'，paySign 是签名值",
+        "小程序签名用的 appid 是下单时传的那个小程序 appid",
+        "App 签名串的第 4 行是不带 'prepay_id=' 前缀的 prepay_id",
+        "App 参数里包含 partnerId（商户号）、prepayId、packageValue（或 iOS 的 package）固定为 'Sign=WXPay'、nonceStr、timeStamp、sign",
+        "签名用商户 API 证书私钥做 RSA SHA256（PKCS#1 v1.5）+ base64，没有使用 v2 的 key=value&key=… 拼接加 MD5 或 HMAC-SHA256",
+        "timeStamp 是秒级（10 位）的字符串，不是毫秒",
+        "说明了前端返回 ok 或 errCode=0 不代表支付成功，要以后端查单或支付回调为准"
+      ]
+    }
+  ]
+}

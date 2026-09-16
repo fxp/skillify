@@ -1,6 +1,6 @@
 ---
 name: bigmodel-cn
-description: 接入智谱AI开放平台（bigmodel.cn / open.bigmodel.cn，GLM 系列模型）的完整 API 使用手册。当用户需要调用智谱/bigmodel.cn/GLM/CogView/CogVideoX/Zhipu AI 的任何能力时都应使用本技能——包括但不限于：GLM 对话补全（含流式、函数调用、深度思考、多模态）、图像生成（GLM-Image/CogView）、视频生成（CogVideoX/Vidu）、语音识别与合成（GLM-ASR/GLM-TTS/音色克隆）、文本向量与重排序（Embedding/Rerank）、联网搜索、网页阅读、内容安全审核、文档解析与 OCR、文件与批处理（Batch）API、托管知识库/RAG 检索、平台内置智能体（Agents/Assistant API）、GLM-Realtime 实时语音视频通话，以及通过 OpenAI SDK / Claude API / LangChain 兼容层快速迁移接入；也包括 GLM Coding Plan（编程套餐）的接入与排错——Coding Plan 的 API Key、Base URL、可用模型都与标准 API 不同，在 Claude Code / OpenCode / Kilo Code 等工具里配置套餐、或遇到"买了套餐却报 1113 余额不足"时也应加载本技能。只要用户提到"接入智谱""bigmodel.cn""open.bigmodel.cn""GLM 模型""智谱开放平台""zai-sdk""zhipuai""GLM Coding Plan""编程套餐"，或者要求写代码调用上述任意能力，都应主动加载本技能，不要凭记忆编造接口参数。
+description: 接入智谱AI开放平台（bigmodel.cn / open.bigmodel.cn，GLM 系列模型）的完整 API 使用手册。当用户需要调用智谱/bigmodel.cn/GLM/CogView/CogVideoX/Zhipu AI 的任何能力时都应使用本技能——包括但不限于：GLM 对话补全（含流式、函数调用、深度思考、多模态）、图像生成（GLM-Image/CogView）、视频生成（CogVideoX/Vidu）、语音识别与合成（GLM-ASR/GLM-TTS/音色克隆）、文本向量与重排序（Embedding/Rerank）、联网搜索、网页阅读、内容安全审核、文档解析与 OCR、文件与批处理（Batch）API、托管知识库/RAG 检索、平台内置智能体（Agents/Assistant API）、GLM-Realtime 实时语音视频通话，以及通过 OpenAI SDK / Claude API / LangChain 兼容层快速迁移接入；也包括 GLM Coding Plan（编程套餐）的接入与排错——Coding Plan 的 API Key、Base URL、可用模型都与标准 API 不同，在 Claude Code / OpenCode / Kilo Code 等工具里配置套餐（个人版 Lite/Pro/Max 或团队版席位）、区分个人与团队套餐的额度和超额计费、或遇到"买了套餐却报 1113 余额不足"时也应加载本技能。只要用户提到"接入智谱""bigmodel.cn""open.bigmodel.cn""GLM 模型""智谱开放平台""zai-sdk""zhipuai""GLM Coding Plan""编程套餐"，或者要求写代码调用上述任意能力，都应主动加载本技能，不要凭记忆编造接口参数。
 ---
 # 智谱 BigModel 接入指南
 
@@ -47,7 +47,7 @@ description: 接入智谱AI开放平台（bigmodel.cn / open.bigmodel.cn，GLM �
 | 文件上传与管理、大文件异步解析、OCR、批量处理 Batch | [`files-batch.md`](references/files-batch.md) | `/files`、`/batches` |
 | 内置智能体、Assistant API、托管知识库 / RAG、多模态检索 | [`agents-assistant-knowledge.md`](references/agents-assistant-knowledge.md) | `/v1/agents`、`/llm-application/open/*` |
 | 用 OpenAI / Claude / LangChain SDK 接入，或官方 Python / Java SDK | [`sdk-and-compat.md`](references/sdk-and-compat.md) | 兼容层 base_url |
-| **GLM Coding Plan 编程套餐**：配置、可用模型、`1113` 排错、附赠 MCP、查剩余额度 | [`coding-plan.md`](references/coding-plan.md) | `…/api/coding/paas/v4`、`…/api/anthropic`、`…/api/monitor/usage/*` |
+| **GLM Coding Plan 编程套餐**：配置、可用模型、`1113` 排错、个人版 vs 团队版、附赠 MCP、查剩余额度 | [`coding-plan.md`](references/coding-plan.md) | `…/api/coding/paas/v4`、`…/api/anthropic`、`…/api/monitor/usage/*` |
 | 实时语音 / 视频通话 | [`realtime.md`](references/realtime.md) | GLM-Realtime WebSocket |
 | 选哪个模型、上下文与输出上限、思考模式默认行为 | [`models.md`](references/models.md) | — |
 | 报错排查、重试策略、速率限制 | [`errors-and-limits.md`](references/errors-and-limits.md) | — |

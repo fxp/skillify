@@ -1,6 +1,6 @@
 # GLM Coding Plan（编程套餐）vs 标准 API
 
-来源：`docs.bigmodel.cn/cn/coding-plan/overview`、`/cn/coding-plan/faq`、`/cn/coding-plan/tool/claude`、`/cn/coding-plan/tool/opencode`、`/cn/coding-plan/tool/others`、`/cn/coding-plan/mcp/*`（整理于 2026-09）。**文中标注「实测」的结论均已于 2026-09-03 用一把标准 Key 和一把 Coding Plan Key 对真实 API 逐条验证**，脚本见 `bigmodel-cn-workspace/coding-plan-probe.py`。
+来源：`docs.bigmodel.cn/cn/coding-plan/overview`、`/cn/coding-plan/team`、`/cn/coding-plan/faq`、`/cn/coding-plan/tool/claude`、`/cn/coding-plan/tool/opencode`、`/cn/coding-plan/tool/others`、`/cn/coding-plan/mcp/*`（整理于 2026-09）。**文中标注「实测」的结论均已于 2026-09-03 用一把标准 Key 和一把 Coding Plan Key 对真实 API 逐条验证**，脚本见 `bigmodel-cn-workspace/coding-plan-probe.py`。
 
 **一句话结论**：智谱有**两套彼此隔离的计费体系**——按 token 计费的**标准 API**，和按套餐额度计费的 **GLM Coding Plan**。两者的 **API Key 不通用、Base URL 不一样、可用模型范围不一样、允许使用的场景也不一样**。写代码/配工具之前必须先问清楚用户手里是哪一种 Key，用错组合的典型症状是明明买了套餐却报 `1113 余额不足`。
 
@@ -9,7 +9,7 @@
 | 用户的说法 | 属于 | 该用的 Key | 该用的 Base URL |
 | :--- | :--- | :--- | :--- |
 | "开放平台 API Key""按量付费""资源包""我要调 embedding / 生图 / 语音" | 标准 API | 控制台 `https://bigmodel.cn/usercenter/proj-mgmt/apikeys` 创建的 Key | `https://open.bigmodel.cn/api/paas/v4`（OpenAI 兼容 / 原生）或 `https://open.bigmodel.cn/api/anthropic`（Anthropic 兼容） |
-| "GLM Coding Plan""编程套餐""Lite / Pro / Max 套餐""套餐额度""5 小时额度" | Coding Plan | 个人版：`https://bigmodel.cn/coding-plan/personal/overview` 里新建的 Key；团队版：「团队编程套餐 > 我的套餐」里的团队 Key | `https://open.bigmodel.cn/api/coding/paas/v4`（OpenAI 兼容 / 原生）或 `https://open.bigmodel.cn/api/anthropic`（Anthropic 兼容） |
+| "GLM Coding Plan""编程套餐""Lite / Pro / Max 套餐""团队版 / 团队标准版 / 团队高级版""席位""套餐额度""5 小时额度" | Coding Plan | 个人版：`https://bigmodel.cn/coding-plan/personal/overview` 里新建的 Key；团队版：「团队编程套餐 > 我的套餐」里的团队 Key | `https://open.bigmodel.cn/api/coding/paas/v4`（OpenAI 兼容 / 原生）或 `https://open.bigmodel.cn/api/anthropic`（Anthropic 兼容） |
 
 官方原话："团队套餐 Key 与平台其他 API Key 不通用，使用团队额度请务必使用团队套餐 Key"；"Base URL 配置错误将导致无法使用 GLM Coding Plan 额度"。
 
@@ -22,7 +22,7 @@
 | OpenAI 兼容 / 原生 HTTP Base URL | `https://open.bigmodel.cn/api/paas/v4` | `https://open.bigmodel.cn/api/coding/paas/v4` |
 | Anthropic 兼容 Base URL | `https://open.bigmodel.cn/api/anthropic` | **同一个** `https://open.bigmodel.cn/api/anthropic`，靠 Key 区分走哪套额度 |
 | 鉴权 | `Authorization: Bearer <KEY>`（Anthropic 兼容层也接受 `x-api-key`） | 同左，只是换成套餐 Key |
-| 计费 | 按 token / 资源包，上下文缓存命中打折 | 套餐额度，**每 5 小时**滚动重置一档 + **每 7 天**重置一档；额度用尽不会自动扣账户余额（"无额度溢出"）；缓存计费规则**不适用**套餐 |
+| 计费 | 按 token / 资源包，上下文缓存命中打折 | 套餐额度，**每 5 小时**滚动重置一档 + **每 7 天**重置一档；额度用尽时：**个人版**不会自动扣账户余额（"无额度溢出"），只能等窗口刷新；**团队版**取决于管理员是否开了「超额按量付费」，开了就继续调用并按量计费（见下文「团队版差异」）；缓存计费规则**不适用**套餐 |
 | 可用模型 | 全部（见 `references/models.md`） | 官方：所有档位都支持 `glm-5.3`、`glm-5.3-flash`；旧代码自动路由到新版本。**实测**（套餐 Key 打 Coding 端点，看响应里的 `model` 字段）：`glm-5.2`/`glm-5.1` → `glm-5.3`；`glm-5-turbo`/`glm-4.7`/`glm-4.6`/`glm-4.5-air` → `glm-5.3-flash`；视觉模型 `glm-4.6v`、`glm-5v-turbo` 原样可用；免费模型 `glm-4.7-flash`/`glm-4.5-flash`/`glm-4-flash-250414` 原样可用；`glm-4-long`/`charglm-4`/`codegeex-4` 报 `1113`。**别依赖自动路由**：请求 `glm-4.5-air` 实际跑的是 `glm-5.3-flash`，日志/计费里看到的模型名会和代码里写的不一样 |
 | 可用能力 | 对话、多模态、embeddings、rerank、图像/视频/语音生成、文件/Batch、知识库…… | **实测**套餐 Key 在 Coding 端点：`chat/completions`（含函数调用、`response_format: json_object`、思考）✅、`reader` 网页阅读 ✅；`embeddings`、`rerank`、`tokenizer`、`async/chat/completions`、`web_search`（独立端点）、`images/generations` 全部 **429 + `1113`**。`chat/completions` 里挂 `web_search` 工具类型返回 200 但响应没有 `web_search` 结果字段（搜索没真正执行），套餐的联网搜索要走官方 MCP。这些能力需要另用标准 Key 走 `paas/v4` |
 | 使用范围 | 任意程序 | 官方原话："套餐仅限在官方支持的指定工具与产品环境中使用"（Claude Code、Kilo Code、OpenClaw、OpenCode、TRAE、CodeBuddy、Cherry Studio 等）；在指定环境之外调用"无法享受套餐权益" |
@@ -32,7 +32,7 @@
 | `GET /models` | 返回 10 个文本模型 | 返回**同一份** 10 个模型列表（`glm-4.5` … `glm-5.3-flash`），不是套餐专属列表，不能用它判断套餐权益 |
 | OpenClaw 等非编码 Agent | — | "二级调度"：尽力交付，高峰期 Coding Agent 任务优先 |
 
-额度扣减公式（官方，以 `glm-5.3` 为例）：`(输入 tokens × 6.9 + 缓存命中输入 × 1.7 + 输出 × 24) ÷ 10000`，非高峰时段（周一至周五 14:00–18:00 UTC+8 之外）按半价扣。各档 5 小时 / 每周额度：Lite 2,000 / 10,000，Pro 12,000 / 60,000，Max 28,000 / 140,000（数字会调整，以 `docs.bigmodel.cn/cn/coding-plan/overview` 为准）。
+额度扣减公式（官方，以 `glm-5.3` 为例）：`(输入 tokens × 6.9 + 缓存命中输入 × 1.7 + 输出 × 24) ÷ 10000`，非高峰时段（周一至周五 14:00–18:00 UTC+8 之外）按半价扣。各档 5 小时 / 每周额度：Lite 2,000 / 10,000，Pro 12,000 / 60,000，Max 28,000 / 140,000；团队版按**每个席位**计：团队标准版 15,000 / 66,000，团队高级版 35,000 / 155,000（数字会调整，以 `docs.bigmodel.cn/cn/coding-plan/overview` 和 `/cn/coding-plan/team` 为准）。
 
 ## 典型报错与排查顺序
 
@@ -41,12 +41,36 @@
 | 买了 Coding Plan，用 `https://open.bigmodel.cn/api/paas/v4` 调用报 **HTTP 429**，`{"error":{"code":"1113","message":"余额不足或无可用资源包,请充值。"}}` | 套餐 Key 打到了标准 API 端点，标准端点只认账户余额/资源包，看不到套餐额度 | **不要让用户去充值**，把 Base URL 改成 `https://open.bigmodel.cn/api/coding/paas/v4`。**已实测复现**：同一把套餐 Key，标准端点 `1113`，Coding 端点 200 |
 | 请求打到了 `.../api/coding/paas/v4/v1/chat/completions` 报 404（**实测**响应体 `{"status":404,"error":"Not Found","path":"/v4/v1/chat/completions"}`） | 很多客户端会自动在 Base URL 后面拼 `/v1`；Coding 端点的路径没有 `/v1` 这一级 | Base URL 填到 `.../coding/paas/v4` 为止，关闭客户端"自动追加 /v1"的行为；Claude Code 走 `/api/anthropic` 时 SDK 自己会拼 `/v1/messages`，那是正常的 |
 | 团队套餐成员用了个人 Key / 平台 Key，额度没从团队扣 | 团队 Key 与其他 Key 不通用 | 用「团队编程套餐 > 我的套餐」里的 Key |
+| 团队 Key 在本机能用，放到 CI / 服务器 / 换了网络就失败 | 团队管理员可能开了 **IP 白名单**，请求 IP 不在名单内（文档原文，具体错误码未实测） | 先问管理员白名单设置，别急着换 Key 或改 Base URL |
+| 团队成员额度明显用完了却没报错，月底账单多出按量费用 | 管理员开了「超额按量付费」：席位额度耗尽后继续按刊例价计费（文档写限时 9 折），而不是报错 | 这是预期行为；要控成本请管理员给成员设消耗上限。代码里不要把「没报额度错误」当作「还在套餐额度内」 |
 | 套餐到期后工具全部报错 | 套餐额度失效，但账户里可能还有资源包 | 官方 FAQ 建议此时把 Base URL 改回 `https://open.bigmodel.cn/api/paas/v4` 并换成平台 Key 走资源包/按量计费 |
 | 用套餐 Key 调 `embeddings` / `rerank` / `tokenizer` / `async/chat` / `images/generations` / 独立 `web_search`（无论打哪个端点） | **实测**全部 429 + `1113`：这些能力不在套餐内，错误码和「打错端点」一模一样，光看错误码分不清 | 换标准 Key 走 `paas/v4`；同一个脚本里两套 Key 分开管理（例如 `ZHIPUAI_API_KEY` 与 `GLM_CODING_PLAN_API_KEY`） |
 | 用套餐 Key 请求 `glm-4-long` / `charglm-4` / `codegeex-4` 等模型 | **实测** `1113`，模型不在套餐内 | 换 `glm-5.3` / `glm-5.3-flash`，或用标准 Key |
 | 5 小时额度用光 | 套餐额度到顶，等窗口刷新 | 官方定位是"动态重置"，不要写死时间；在代码里对 429 类响应做退避，不要重试风暴 |
 
 排查顺序：**1. 先确认 Key 属于哪套体系 → 2. 再核对 Base URL 是否与之匹配 → 3. 再核对模型是否在该体系可用 → 4. 最后才考虑余额/额度问题。**
+
+## 团队版差异（文档原文，未实测）
+
+<!-- 来源 docs.bigmodel.cn/cn/coding-plan/team（2026-09-16 整理）。手里没有团队套餐 Key，本节未经真实调用验证 -->
+
+团队版（团队标准版 / 团队高级版）和个人版（Lite / Pro / Max）**接入方式文档写法完全一致**：同样的 Base URL、协议、模型（`glm-5.3`、`glm-5.3-flash`）。区别在额度、超额行为和管控，下面几条会改变代码和排错结论：
+
+| 维度 | 个人版 | 团队版 |
+| :--- | :--- | :--- |
+| Key 从哪拿 | 个人编程套餐 > 套餐概览，自己新建 | 成员接受席位邀请后，在「团队编程套餐 > 我的套餐」获取；**与个人 Key、平台 Key 都不通用** |
+| 额度 | 按账号：见上文各档 | **按席位单独计**：团队标准版 15,000 / 66,000，团队高级版 35,000 / 155,000（5 小时 / 每周积分），扣减公式与高峰半价规则同个人版 |
+| 额度用尽 | 限制周期内不可用，等刷新，不扣余额 | 默认同个人版；**管理员可开启「超额按量付费」**，开启后继续可用并按量计费，可按成员设消耗上限 |
+| IP 白名单 | 无 | 管理员可限制只允许指定 IP 访问 |
+| 数据用于训练 | 订阅协议无此承诺 | 官方写明「数据默认不用于模型训练」 |
+| 新模型 / 高峰资源 | — | 高级版「首发接入最新旗舰模型」「高峰期资源优先保障」，标准版没有 |
+| 并发建议 | Lite < Pro < Max，动态调整 | 标准版建议同时 1-2 个项目，高级版 2+ 个 |
+| 用量页面 | `bigmodel.cn/coding-plan/personal/usage` | `bigmodel.cn/coding-plan/team/usage-stats`（可按成员、按周期看） |
+
+- **一个人可以同时持有个人套餐和团队套餐**（还可以加入多个团队），走哪份额度**只看请求里用的是哪把 Key**。帮用户配工具时先问清楚要用哪份额度。
+- 使用范围限制和个人版相同（只能在指定工具内使用），另外**不允许多人共用一个席位**，违规会触发风控。
+- 主管理员（购买账号）默认不占席位，要用额度得给自己分配一个席位——管理员说「我拿不到团队 Key」时先查这个。
+- 席位购买、增减、开票等采购问题不在本 skill 范围，指向 `docs.bigmodel.cn/cn/coding-plan/team`。
 
 ## 在 Claude Code 里使用 Coding Plan
 
@@ -195,4 +219,4 @@ Coding Plan 用户可以用智谱提供的本地 MCP Server（视觉理解、联
 
 **与官方文档不一致的地方**（已在上文标注）：官方只列了 4 个自动路由的旧模型代码，实测 `glm-4.6`、`glm-4.5-air` 也被路由；官方没说视觉模型 `glm-4.6v` / `glm-5v-turbo` 可用，实测可用；官方把 Coding 端点描述成套餐专用，实测标准 Key 也能用。这些行为没有文档背书，随时可能变，代码里只依赖 `glm-5.3` / `glm-5.3-flash` 最稳。
 
-**未覆盖**：团队套餐 Key、套餐额度耗尽时的具体错误码、`glm-4.6v-flash`（探测时恰好 `1305` 过载）。
+**未覆盖**：团队套餐 Key（Base URL 是否与个人版一致、`/api/monitor/usage/quota/limit` 对团队 Key 是否可用及 `level` 取值、IP 白名单拦截时的错误码、开启超额付费后的响应有无区别——官方插件 glm-plan-usage 源码里没有任何团队相关处理）、套餐额度耗尽时的具体错误码、`glm-4.6v-flash`（探测时恰好 `1305` 过载）。

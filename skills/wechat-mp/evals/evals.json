@@ -1,0 +1,61 @@
+{
+  "skill_name": "wechat-mp",
+  "evals": [
+    {
+      "id": 1,
+      "name": "web-login-vs-silent-openid",
+      "prompt": "我们公众号的活动页需要在用户一进入页面时就静默拿到 openid 用来做访问统计（不需要弹授权框，也不需要昵称头像），后续在页面里有一个「登录」按钮，点击后才需要拿用户昵称和头像展示在个人中心。请用 Python + Flask 写这两个网页授权的处理流程：进入页面的静默授权跳转/回调，以及点击登录后的授权跳转/回调。",
+      "expected_output": "进入页面时构造的授权链接 scope 是 snsapi_base（静默跳转，不弹授权页，只能拿到 openid）；点击登录按钮触发的授权链接 scope 是 snsapi_userinfo（会弹授权页，用户手动同意后才能拿到昵称头像，且不要求用户已关注公众号）；两次拿到 code 后分别调 GET https://api.weixin.qq.com/sns/oauth2/access_token 换取网页授权 access_token（不是 cgi-bin 的全局 access_token），snsapi_userinfo 场景下用这个网页授权 access_token + openid 再调 GET https://api.weixin.qq.com/sns/userinfo 才能拿到昵称头像。",
+      "files": [],
+      "expectations": [
+        "The silent openid-only flow constructs the authorize URL with scope=snsapi_base",
+        "The login-with-profile flow constructs the authorize URL with scope=snsapi_userinfo, and does not claim the user must already follow the official account",
+        "Both flows exchange the returned code via GET https://api.weixin.qq.com/sns/oauth2/access_token with grant_type=authorization_code, and treat the resulting access_token as a separate token from the global cgi-bin access_token (not reused for cgi-bin/* calls)",
+        "Only the snsapi_userinfo flow calls GET https://api.weixin.qq.com/sns/userinfo (with the sns access_token and openid) to fetch nickname/avatar; the snsapi_base flow does not attempt to fetch profile fields",
+        "AppID and AppSecret are read from environment variables, not hardcoded"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "customer-service-vs-template-window",
+      "prompt": "用户在公众号里问了一个问题，我们希望：(1) 立即通过客服接口回复一条文字答案；(2) 三天后再补发一条工单处理结果的通知。请用 Python 写这两次下发消息的代码，要能正确处理『客服消息有效期只有一段时间』这件事。",
+      "expected_output": "立即回复走 POST https://api.weixin.qq.com/cgi-bin/message/custom/send（客服消息），这次调用在用户发消息触发的 48 小时/5 条配额窗口内，没有问题；三天后的补发已经超出客服消息 48 小时窗口，不能再用客服消息接口下发，必须改用模板消息或订阅通知（POST /cgi-bin/message/template/send 或 POST /cgi-bin/message/subscribe/bizsend），并且订阅通知场景要求用户此前已经主动点击订阅组件完成授权，不能对任意 openid 直接下发。",
+      "files": [],
+      "expectations": [
+        "The immediate reply uses POST https://api.weixin.qq.com/cgi-bin/message/custom/send with a text msgtype, sent inside the 48-hour/5-message window opened by the user's incoming message",
+        "The 3-day-later notification does NOT use the customer service message endpoint (cgi-bin/message/custom/send), because the 48-hour window has expired",
+        "The delayed notification instead uses a template message (POST /cgi-bin/message/template/send) or subscribe notification (POST /cgi-bin/message/subscribe/bizsend), not an attempt to just retry the customer-service call outside the window",
+        "If subscribe notification is chosen, the code or accompanying explanation notes that the user must have already opted in via a subscribe component before this call can succeed — it is not usable for an arbitrary openid without prior subscription",
+        "Success is not judged by HTTP status code alone; the code checks the JSON errcode field"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "template-vs-subscribe-data-keys",
+      "prompt": "我们从公众号后台申请到了服务类目，选用了一个订阅通知模板（不是模板消息），模板里有关键词 thing1（事项）、time2（时间）、thing3（备注）。请写一个 Python 函数调用正确的接口给已订阅用户 OPENID 下发这条通知，data 内容分别填「审核已通过」「2026-09-20 10:00」「无需补充材料」。",
+      "expected_output": "调用的是订阅通知发送接口 POST https://api.weixin.qq.com/cgi-bin/message/subscribe/bizsend，不是模板消息的 /cgi-bin/message/template/send；请求体包含 touser、template_id、必填的 miniprogram_state 和 lang 字段；data 里的键名按订阅通知的裸键名约定（如 thing1、time2、thing3，不带 .DATA 后缀），而不是套用模板消息 data 键名必须以 .DATA 结尾的约定。",
+      "files": [],
+      "expectations": [
+        "Request goes to POST https://api.weixin.qq.com/cgi-bin/message/subscribe/bizsend, not /cgi-bin/message/template/send",
+        "Request body includes touser, template_id, data, and also miniprogram_state and lang as required fields (not omitted as if optional)",
+        "The data object's keys follow the bare-keyword convention shown in the subscribe-notification examples (e.g. thing1, time2, thing3) rather than appending '.DATA' to each key, which is the template-message-specific convention",
+        "Each data value is wrapped as {\"value\": ...} per key, matching the documented data object shape",
+        "The code or explanation does not claim this call works for a user who has not completed the subscribe-component opt-in"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "passive-reply-vs-active-send",
+      "prompt": "写一个 Flask 路由处理微信服务器推送过来的用户消息（明文模式，未开启加解密）：用户发『你好』时，需要在微信要求的时间限制内同步回复一句问候语；如果是别的内容，需要转给后台异步处理，处理完成后可能要几十秒才能给结果，这种情况该怎么响应这次回调请求？",
+      "expected_output": "路由从 POST body 里解析收到的 XML，判断 Content 是否等于『你好』；是的话在同一次 HTTP 响应里直接返回一段回复用的 XML（ToUserName/FromUserName 对调、MsgType=text、Content=问候语），必须在 5 秒内完成，因为微信服务器 5 秒收不到响应会重试，最多重试 3 次；不是『你好』且处理耗时较长时，不能在这次回调里等待后台处理完成，而是直接回复字符串 success（或空字符串）让微信侧不再重试，后续结果改用客服消息接口（POST /cgi-bin/message/custom/send）异步下发给用户。",
+      "files": [],
+      "expectations": [
+        "The route parses the incoming XML from the POST body (ToUserName, FromUserName, MsgType, Content, MsgId)",
+        "For Content == '你好', the handler returns a passive-reply XML in the SAME HTTP response, with ToUserName/FromUserName swapped relative to the incoming message, MsgType=text, and a Content field with the greeting",
+        "The handler does not attempt to block/wait inside the callback for slow backend processing; for the long-running case it responds immediately with the literal string 'success' (or an empty string), not JSON and not a hang",
+        "The eventual result of the slow processing is delivered later via a separate call to POST https://api.weixin.qq.com/cgi-bin/message/custom/send (customer service message), not by trying to reuse the original callback connection",
+        "The explanation or code comments correctly state the 5-second timeout and up to 3 retries from WeChat's servers"
+      ]
+    }
+  ]
+}

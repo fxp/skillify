@@ -1,0 +1,74 @@
+{
+  "skill_name": "supabase",
+  "evals": [
+    {
+      "id": 1,
+      "name": "empty-result-is-rls-not-a-bug",
+      "prompt": "我用 Supabase 的 anon key 在前端调用 `supabase.from('orders').select('*')`，请求返回 200 但 data 是空数组，数据库里这张表明明有几十条数据。请帮我用 JavaScript 写调试/修复代码，让它能拿到数据。",
+      "expected_output": "正确诊断应该是：anon key 请求返回空数组而不是报错，说明大概率是 Row Level Security policy 把这些行过滤掉了（grant 存在但 policy 的 using 条件不满足），而不是查询语法错误——因为 grant 缺失会报 42501 错误,而 policy 过滤是静默返回空结果,这两种失败模式不同。正确的修复路径是去检查/编写 orders 表上的 SELECT RLS policy（比如确认这个查询到底应该对谁开放、auth.uid() 是否匹配），而不是简单粗暴地把请求换成用 service_role key（那样确实能拿到数据，但等于把整张表对任何能拿到这段代码的人开放，是错误的修复方向,因为 service_role 绝不能出现在前端代码里）。",
+      "files": [],
+      "expectations": [
+        "Diagnoses the empty result as a Row Level Security policy filtering out rows (not an error, not a query syntax bug), rather than assuming the query itself is malformed",
+        "Explicitly distinguishes this from a missing-grant failure (which would return a 42501 error, not an empty 200 response)",
+        "Does NOT suggest or implement switching the client-side request to use the service_role (or sb_secret_...) key as the fix",
+        "Proposes checking or writing a SELECT RLS policy on the orders table (e.g. checking auth.uid() against an owner column, or confirming the table should be public) as the actual fix",
+        "If the code checks whether the user is authenticated, it does so via the Supabase Auth session rather than assuming anon key alone implies public access"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "service-role-key-must-not-reach-the-browser",
+      "prompt": "我在做一个 Next.js app，想让用户能直接从浏览器里的一个按钮点击调用 Supabase，绕过我写的所有 RLS policy 去拿到全部用户的订单数据做个后台统计面板。请帮我写这段前端代码，要能拿到所有用户的数据不受 RLS 限制。",
+      "expected_output": "不应该在前端/浏览器代码里使用 service_role 或 sb_secret_... key——这把 key 绕过所有 RLS 策略，一旦出现在任何用户能读到的代码（包括打包后的前端 JS）里，等于任何人都能读写整个数据库。正确做法是把这个统计查询放在一个用户拿不到源码/无法读取环境变量的地方：服务端 API route（Next.js Route Handler / Server Action）或 Edge Function，在那里用 service_role/secret key 初始化客户端,前端只调用这个自己的后端接口,不直接持有高权限 key。回答应该明确指出直接按用户要求在浏览器代码里放 service_role key 是不安全的,并且给出替代方案,而不是照做。",
+      "files": [],
+      "expectations": [
+        "Refuses to place a service_role or sb_secret_... key in browser-side/client code, even though the user explicitly asked for it, and explains why (it bypasses all RLS and is retrievable by anyone who can read the shipped frontend code)",
+        "Proposes moving the privileged query to a server-side location the user's browser cannot read the source of (a Next.js Route Handler / Server Action / Edge Function), with the service_role key kept as a server-only secret",
+        "The suggested frontend code calls this backend endpoint rather than initializing a Supabase client with the secret key directly in browser-executed code",
+        "Does not claim that using an environment variable prefixed for client exposure (e.g. NEXT_PUBLIC_*) is a safe way to store the secret key"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "postgrest-filters-are-query-string-not-json-body",
+      "prompt": "帮我写一段原始 HTTP（不用 supabase-js，直接用 fetch）调用 Supabase 的 Data API，查询 products 表里 price 大于 100 并且 category 等于 'electronics' 的记录，只要 id 和 name 两列。",
+      "expected_output": "正确写法是把过滤条件编码进 URL 的 query string，格式是 column=operator.value：`GET /rest/v1/products?select=id,name&price=gt.100&category=eq.electronics`，多个条件之间用 & 连接（默认 AND）。不应该把过滤条件塞进请求体 JSON（比如 `{\"filter\": {\"price\": {\"gt\": 100}}}` 这种常见于其他 REST API 的写法），GET 请求也不应该带 body。请求需要带 apikey header（和可选的 Authorization: Bearer）。",
+      "files": [],
+      "expectations": [
+        "Encodes both filters in the URL query string using the column=operator.value syntax (e.g. price=gt.100 and category=eq.electronics), not as a JSON filter object in a request body",
+        "Uses select=id,name in the query string to restrict returned columns, not a separate 'fields' or 'projection' parameter",
+        "Sends a GET request (not POST) with no request body for a pure read/filter query",
+        "Includes the apikey header (and does not omit authentication headers entirely)",
+        "Does not invent a JSON-bodied filter DSL that doesn't match PostgREST's actual query-string operator syntax"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "upsert-uses-prefer-header-not-a-dedicated-verb",
+      "prompt": "我要往 Supabase 的 inventory 表里批量写入商品库存数据，如果某个 sku 已经存在就更新它的 quantity，不存在就插入新行。请用 Python requests（不用官方 SDK）直接调用 REST API 实现这个逻辑，一次请求搞定,不要先查询再判断。",
+      "expected_output": "应该发一个 POST 请求到 /rest/v1/inventory，body 是要写入的行（JSON 数组支持批量），并且带上 Prefer: resolution=merge-duplicates 头来实现 upsert 语义（冲突时覆盖）。如果 sku 不是主键而是一个唯一约束列，还需要加 ?on_conflict=sku 查询参数告诉 PostgREST 按哪一列判断冲突。不应该假设存在一个专门的 UPSERT HTTP 方法，也不应该先发一个 GET 查询判断是否存在再决定用 POST 还是 PATCH（用户明确要求一次请求搞定）。",
+      "files": [],
+      "expectations": [
+        "Sends a single POST request to /rest/v1/inventory with the Prefer header including resolution=merge-duplicates (not resolution=ignore-duplicates, since existing rows should be updated)",
+        "If sku is not the primary key, includes on_conflict=sku as a query parameter so PostgREST knows which column determines a conflict",
+        "The request body is a JSON array of row objects for batch upsert, sent to the base table endpoint, not to some invented dedicated upsert endpoint",
+        "Does not implement a check-then-insert-or-update pattern (a prior GET followed by conditional POST/PATCH), since the prompt explicitly asked for a single request",
+        "Does not claim PUT is required or that a separate HTTP verb exists specifically for upsert"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "edge-function-npm-image-library-wont-work-on-deno",
+      "prompt": "帮我写一个 Supabase Edge Function，接收上传的图片，用 sharp 库把它 resize 成缩略图然后存回 Storage。",
+      "expected_output": "应该指出 Edge Functions 跑在 Deno 运行时上，而 sharp（以及它依赖的 libvips）是需要原生编译/多线程支持的 Node 包，官方文档明确说明这类库在 Edge Functions 里不受支持，不能直接 npm: 导入后正常工作。正确的回应是提示这个限制，并给出可行替代方案（比如改用纯 JS/Wasm 的图片处理库、调用外部图片处理服务的 API、或把这部分处理挪到不受 Deno 限制的地方），而不是直接生成一段 `import sharp from 'npm:sharp'` 然后假装它能正常运行的代码。如果确实要生成代码，需要清楚标注这个已知限制而不是略过不提。",
+      "files": [],
+      "expectations": [
+        "Explicitly states that Edge Functions run on Deno, not Node, and that sharp/libvips specifically is called out by Supabase's own docs as unsupported due to native/multithreaded requirements",
+        "Does not present `import sharp from 'npm:sharp'` inside an Edge Function as a working solution without caveating the limitation",
+        "Proposes at least one concrete alternative (a pure JS/Wasm image library, an external image-processing API/service, or moving the resize step outside the Edge Function) rather than silently dropping the requirement",
+        "If example code is still provided using sharp, it is clearly flagged as likely to fail on the Edge Functions runtime rather than presented as verified-working",
+        "Correctly uses the npm: specifier prefix (not a bare import) for any npm package it does suggest, showing awareness of Deno import syntax"
+      ]
+    }
+  ]
+}

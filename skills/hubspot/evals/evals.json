@@ -1,0 +1,76 @@
+{
+  "skill_name": "hubspot",
+  "verification_status": "UNVERIFIED_DRAFT — expected_output/expectations below are hypotheses derived from HubSpot's public developer docs (developers.hubspot.com, scraped 2026-09-21) and OpenAPI snippets embedded in those pages, not from real API calls. No with/without-skill comparison has been run. Re-confirm every expectation against a live HubSpot account before trusting scores from this file; see hubspot-workspace/verification-plan.md.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "association-is-not-a-field",
+      "prompt": "We're syncing leads from our signup form into HubSpot. Write a Python function using the HubSpot CRM API that creates a new contact and links them to their employer's company record (we already have the company's HubSpot record ID). Read the access token from an environment variable.",
+      "expected_output": "The code creates the contact via POST /crm/v3/objects/contacts, and links it to the company by EITHER (a) including an `associations` array in the same create request body with `to: {id: <companyId>}` and a `types` entry containing `associationCategory` + `associationTypeId` (e.g. 279 for contact-to-company, or 1 for contact-to-primary-company), OR (b) making a separate call afterward to PUT /crm/v3/objects/contacts/{contactId}/associations/companies/{companyId}/{associationTypeId} (or the default-association PUT variant). The code must NOT treat this as done by simply setting a text property like `company` (a company name string) on the contact and stopping there — that property does not create a queryable, UI-visible association between the two records.",
+      "files": [],
+      "expectations": [
+        "The code does not claim the contact is 'linked' to the company purely by setting a `company` (or similarly named) text property on the contact's properties object",
+        "The code either sends an `associations` array in the contact create request body with `to.id` set to the company's record ID and a `types` array containing `associationCategory` and `associationTypeId`, or makes a separate PUT request to a /crm/v3/objects/contacts/{id}/associations/companies/{id}[/{typeId}] style endpoint",
+        "If associationTypeId is hardcoded, it is a plausible contact-to-company HubSpot-defined value (1 or 279), not an arbitrary or company-to-contact value (2 or 280) used in the wrong direction",
+        "The Authorization header uses `Bearer $HUBSPOT_ACCESS_TOKEN` (or equivalent env var), not a `hapikey` query parameter",
+        "The code does not assume the association is created automatically just because both records share the same domain or company name"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "search-filter-groups-and-or-direction",
+      "prompt": "Write Python code that searches HubSpot deals for records that are EITHER (a) in the 'closedwon' dealstage AND have an amount greater than 50000, OR (b) in the 'closedlost' dealstage regardless of amount. Use the CRM Search API directly with the requests library.",
+      "expected_output": "The request body has a top-level `filterGroups` array with exactly two elements (implementing the OR): the first `filterGroups` entry has a `filters` array containing two filter objects ANDed together (dealstage EQ closedwon, amount GT 50000); the second `filterGroups` entry has a `filters` array containing one filter object (dealstage EQ closedlost). The code must NOT put all three conditions inside a single `filterGroups[0].filters` array (which would silently apply AND to all three and return zero or near-zero results instead of the intended OR-of-two-conditions).",
+      "files": [],
+      "expectations": [
+        "The request body's `filterGroups` array has exactly 2 elements, not 1",
+        "The first filterGroups element's `filters` array contains both the dealstage=closedwon filter and the amount>50000 filter together (AND within the group)",
+        "The second filterGroups element's `filters` array contains only the dealstage=closedlost filter, in a separate group from the first",
+        "The code or an accompanying comment does not describe filterGroups-to-filterGroups as AND, or filters-within-a-group as OR (i.e. does not state the semantics backwards)",
+        "The endpoint called is POST to a path ending in /search on the deals object (e.g. /crm/v3/objects/deals/search)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "property-internal-name-not-ui-label",
+      "prompt": "In our HubSpot account, the deal pipeline stage dropdown shows a stage labeled 'Contract Sent' and a lifecycle stage labeled 'Marketing Qualified Lead'. Write Python code that creates a new deal in the 'Contract Sent' stage for a contact whose lifecycle stage should be set to 'Marketing Qualified Lead'. Assume these are HubSpot's default (not custom-renamed) stages.",
+      "expected_output": "The code sets `dealstage` to the internal token value HubSpot uses for the default 'Contract Sent' stage (e.g. `contractsent`), not the literal display string 'Contract Sent'. It sets the contact's `lifecyclestage` property to the internal token `marketingqualifiedlead`, not the literal display string 'Marketing Qualified Lead'. The code or its accompanying explanation acknowledges that these are internal property values that can differ from the UI label, and — since the account might have custom-renamed or custom-ordered stages — ideally notes that the safe approach is to look up the actual internal stage ID via the properties or pipelines API rather than hardcoding a guessed value.",
+      "files": [],
+      "expectations": [
+        "The `dealstage` value sent in the request body is a lowercase/no-space internal token (e.g. `contractsent`), not the string 'Contract Sent'",
+        "The `lifecyclestage` value sent in the request body is a lowercase/no-space internal token (e.g. `marketingqualifiedlead`), not the string 'Marketing Qualified Lead'",
+        "The code does not assume the internal value is simply the label lowercased-with-underscores without acknowledging this is a guess (e.g. it should not confidently invent an unverified token for a case where the mapping isn't obvious)",
+        "Somewhere in the code or explanation, the distinction between a property's internal `name`/value and its UI-facing `label` is explicitly called out",
+        "The deal creation call includes `dealname` as well, since HubSpot's object API requires at least `dealname` and `dealstage` to create a deal"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "batch-endpoint-100-record-cap",
+      "prompt": "We have a CSV of 350 new company records to import into HubSpot. Write Python code that creates all 350 companies using the CRM batch create API as efficiently as possible.",
+      "expected_output": "The code splits the 350 records into chunks of at most 100 and makes multiple POST requests to /crm/v3/objects/companies/batch/create (350 records / 100 per batch = 4 requests: three of 100 and one of 50), rather than sending all 350 in a single `inputs` array in one request. The code does not assume the batch endpoint will auto-paginate or silently process only the first 100 while accepting a larger payload without error — it treats the 100-record limit as a hard client-side chunking requirement.",
+      "files": [],
+      "expectations": [
+        "The code splits the 350 input records into groups of at most 100 before calling the batch endpoint",
+        "The code makes multiple separate requests to POST .../companies/batch/create, one per chunk (at least 4 requests for 350 records at 100/chunk)",
+        "The code does not send a single request with an `inputs` array containing more than 100 items",
+        "Each request body has the `inputs` array at the top level with each item shaped as `{\"properties\": {...}}`, matching the single-object create shape repeated per item",
+        "The code includes at least basic handling for a non-2xx/207 response per batch (e.g. checking status or catching an exception) rather than assuming every chunk always succeeds silently"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "auth-private-app-token-not-legacy-api-key",
+      "prompt": "Write a Python function that authenticates to the HubSpot API and fetches a list of contacts. Use whatever authentication approach is standard for a simple internal script talking to a single HubSpot account.",
+      "expected_output": "The code authenticates with a Bearer token in the Authorization header (`Authorization: Bearer <token>`), where the token is a private app access token (or the newer beta Service Key) read from an environment variable — NOT the legacy `hapikey` query-string parameter pattern (`?hapikey=...`) that appears frequently in older tutorials and training data. The code does not claim HubSpot still issues a single all-purpose account-wide 'API key' for general CRM API authentication.",
+      "files": [],
+      "expectations": [
+        "The code sends credentials via an `Authorization: Bearer <token>` header, not a `hapikey` (or `api_key`) query string parameter, when calling /crm/v3/objects/contacts",
+        "The token is read from an environment variable rather than hardcoded",
+        "The code or explanation does not describe `hapikey` as the current/recommended way to authenticate general CRM object API calls",
+        "The base URL used is https://api.hubapi.com",
+        "If the code or explanation mentions how to obtain the token, it references creating a private app (or service key) in the HubSpot account settings rather than an account-wide legacy API key page"
+      ]
+    }
+  ]
+}

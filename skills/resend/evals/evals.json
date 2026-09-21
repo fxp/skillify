@@ -1,0 +1,75 @@
+{
+  "skill_name": "resend",
+  "evals": [
+    {
+      "id": 1,
+      "name": "unverified-domain-hard-fail-not-silent-fallback",
+      "prompt": "我们刚在 Resend 里添加了自己的发信域名 notifications.acme.com（还没配置 DNS 记录，也没验证完成），现在要给真实客户发一封订单确认邮件。写 Python 代码用这个域名发送，要求：如果域名还没验证好，代码要能正确处理这种情况，而不是把失败当成普通的网络错误重试，也不要把发件地址偷偷换成别的地址继续发。",
+      "expected_output": "代码应当预期从未验证域名发送会返回 HTTP 403、error type 为 validation_error，报错信息类似 \"The notifications.acme.com domain is not verified...\"（Resend 文档错误码参考中的原文）。正确处理方式是捕获这个具体错误并明确报告\"域名未验证\"这一根因（提示去做 DNS 配置 / 调用域名验证），而不是：(a) 把它当成瞬时错误做指数退避重试（因为域名不验证的话重试永远失败，根因不会随时间改变）；(b) 静默地把 from 地址换成 onboarding@resend.dev 或其他任何地址来\"让发送成功\"——文档中没有这种自动降级机制，这是一个真实的硬失败，不是软性回退。",
+      "files": [],
+      "expectations": [
+        "代码预期从未验证域名发送会返回 403 响应、error type 为 validation_error，而不是当成通用的/网络层的错误",
+        "代码区分了这个具体错误（比如检查 error type/message，或者在 Python 里用一个专门的 except ValidationError 分支），而不是把它混进一个通用的兜底重试循环",
+        "代码不会把这个错误当成瞬时故障、对完全相同的请求做盲目重试（不会围绕这个具体失败做无条件的指数退避重试）",
+        "代码不会在目标域名验证失败时，静默地把 `from` 地址换成别的（比如 onboarding@resend.dev 或任何其他域名）来让发送\"成功\"",
+        "解释或代码注释正确说明了域名验证是一个必须先完成的 DNS 配置前置条件，重试 API 调用本身解决不了这个问题"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "batch-send-does-not-support-attachments",
+      "prompt": "我们要给 60 个客户发个性化的月度账单邮件，每个客户的账单 PDF 都不一样（不同文件、不同内容）。要求用尽量少的 API 调用次数完成，并且要让每封邮件都带上对应客户的 PDF 附件。写 Python 代码实现。",
+      "expected_output": "不能直接把 60 封带附件的邮件塞进一次 POST /emails/batch 调用——Resend 文档在两处明确说明 batch 端点不支持 attachments 字段（即便 OpenAPI 规范的 schema 里技术上允许传这个字段，这是文档与规范的自相矛盾，应该以两处重复强调的文档为准）。正确做法是对每个客户循环调用单次 POST /emails（每次都能带附件），不能用 batch。如果关心调用次数/限流，应该意识到这样一来就是 60 次独立请求，需要考虑到默认 10 req/s 的团队级速率限制（不是每个 key 各自 10/s），必要时加节流或退避，而不是假设 batch 端点能同时解决\"少调用次数\"和\"带附件\"这两个需求。",
+      "files": [],
+      "expectations": [
+        "代码通过逐个独立的 POST /emails 调用（即循环调用 resend.Emails.send()）来发送每一封带附件的邮件，而不是用 resend.Batch.send() / POST /emails/batch",
+        "代码或解释明确说明了批量端点不支持附件，而不是假设批量端点支持单封发送的一切能力",
+        "如果涉及节流/限流处理，正确识别出速率限制是整个团队共享的每秒 10 次请求（不是按 API key 各自计算），并据此考虑 60 次连续独立调用的应对方式",
+        "代码没有声称或暗示通过批量端点实现了\"1 次 API 调用发送 60 个个性化附件\"",
+        "每封邮件的附件内容确实是按收件人各不相同的（不是在任务要求个性化文件的情况下，给每个客户都复用同一份 PDF 内容）"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "node-vs-python-error-handling-not-interchangeable",
+      "prompt": "我们的团队同时有一个 Node.js 后端服务和一个 Python 后端服务，两边都要用 Resend 发送交易邮件，并且都需要对发送失败（比如校验错误、限流）做统一的错误处理和日志记录。请分别写出 Node.js 和 Python 两版发送邮件并处理错误的代码。",
+      "expected_output": "两版代码的错误处理机制必须相反，不能照抄同一套逻辑：Node.js 版本里 resend.emails.send() 不会因为 API 错误而 throw，而是返回 { data, error }，必须显式检查返回值里的 error 字段；Python 版本里 resend.Emails.send() 相反，API 错误会直接抛出 resend.exceptions.ResendError（或其子类如 ValidationError、RateLimitError），必须用 try/except 捕获，正常返回值本身就是成功结果，没有 { data, error } 这种结构。如果 Node 版本用了 try/catch 却指望它能捕获 API 校验错误/限流错误（而不是只处理网络层错误），或者 Python 版本检查返回值里有没有 error 字段而不是用 try/except，都是错误的。",
+      "files": [],
+      "expectations": [
+        "Node.js 示例通过检查 `resend.emails.send()` resolve 出的 `{ data, error }` 结果里的 `error` 属性来判断 API 层面的失败，而不是单纯依赖调用外面的 try/catch",
+        "如果 Node.js 示例也用了 try/catch，它的作用范围限定在网络层失败，而不是被当成捕获 API 校验/限流错误的机制",
+        "Python 示例用 try/except 包住 `resend.Emails.send()`，并捕获 `resend.exceptions.ResendError`（或更具体的子类），而不是检查返回值里有没有 `data`/`error` 字典",
+        "Python 示例不会把检查 `resend.Emails.send()` 返回值里有没有 `error` 键，当作主要的错误检测机制",
+        "解释中说明了，或者代码本身能体现出，这两个 SDK 的错误处理契约是真正相反的（不只是语法上不同）——一个返回错误对象，一个抛异常"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "bulk-send-loop-hits-rate-limit-not-per-key",
+      "prompt": "我们要给 400 个新注册用户发欢迎邮件，账号是 Resend 免费套餐。团队里另一个内部工具也在用同一个 Resend 团队账号（不同的 API key）批量发送通知邮件。写代码把这 400 封欢迎邮件发出去，要求今天之内不要因为限流而大面积失败,也不要不知不觉超出当天的发送额度。",
+      "expected_output": "正确实现应该：(1) 优先用 POST /emails/batch，每次最多 100 封，400 封分成至少 4 批，而不是 400 次独立的 POST /emails 调用；(2) 明确认识到限流是按团队共享的每秒 10 次请求，不是每个 API key 各自 10 次——即使这个工具自己的调用频率控制在 10/s 以内，另一个工具用不同 key 同时发送的请求也会占用同一个共享额度，所以需要读 429 响应和 ratelimit-* 响应头做退避，而不是假设\"我这个 key 没超 10/s 就不会被限流\"；(3) 意识到免费套餐每天上限 100 封（多个收件人的每个收件地址都单独计入配额，不是按调用次数算），400 个用户远超这个每日上限，必须要么分多天发送、要么提醒需要升级套餐，而不是闷头发送导致中途大量 429（daily_quota_exceeded）而不自知。",
+      "files": [],
+      "expectations": [
+        "代码使用 POST /emails/batch（每次最多批量 100 个收件人），而不是 400 次独立的 POST /emails 调用",
+        "代码或解释承认速率限制是整个团队跨所有 API key 共享的，不是按 key 各自计算，所以即使这段代码自己控制在 10 req/s 以内，另一个服务的并发使用也可能触发 429",
+        "代码包含了对 429 响应的某种处理（用速率限制响应头做退避/重试，或者至少能区分 rate_limit_exceeded 和配额类的 error type），而不是假设完全不会遇到 429",
+        "代码或解释指出了免费套餐每天 100 封的配额无法覆盖 400 个收件人这一天的发送量，没有闷头尝试把 400 封全部发完而不处理这个问题（比如分多天发送，或明确提示需要升级套餐/申请提额）",
+        "代码没有声称使用多个 API key 就能获得超出一个团队限额的速率预算"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "bounce-complaint-webhook-is-opt-in-not-automatic",
+      "prompt": "我们在用 Resend 给用户发交易邮件。担心的是：如果某个邮箱地址已经失效（会一直 hard bounce）或者被标记成垃圾邮件，我们不应该继续往这个地址发邮件，否则会拖累整个账号的发信声誉。请写出需要做的配置/代码，确保系统在这种情况下'不会持续往无效地址发邮件'，并解释 Resend 在这件事上默认帮你做了什么、还有什么是必须自己显式配置的。",
+      "expected_output": "回答需要区分两层机制：(1) 平台层面，Resend 在硬退信（hard bounce）或投诉发生后会自动把该地址加入团队级别的 suppression list，并且此后所有域名的发信都会自动跳过这个地址——这一层不需要写任何 webhook 代码就已经生效,不能说成'不配置 webhook 就会一直重复发送给失效地址'（那是不准确的）。(2) 应用层面，如果这个系统想自己感知到某次退信/投诉事件（比如同步到自己的用户数据库、通知人工、在自己维护的一份独立邮件列表里也移除这个地址），则必须显式调用 POST /webhooks 创建一个 webhook,并在 events 数组里明确列出 email.bounced、email.complained（以及通常还有 suppression.added）——这不是创建 webhook 就自动包含的,必须显式声明想要哪些事件类型。回答还应该提到 Gmail/Google Workspace 不会把 complained 事件上报给 Resend，所以只靠 email.complained webhook 无法覆盖所有 Gmail 收件人的投诉可见性。",
+      "files": [],
+      "expectations": [
+        "回答正确说明了 Resend 会在一次硬退信或投诉之后，自动把地址加入团队级别的抑制名单，并自动跳过之后对它的发送，这一基础保护不需要任何 webhook",
+        "回答没有声称如果不配置 webhook，系统就会一直无限往失效地址发信（那高估了风险——平台层面的抑制机制已经防止了这一点）",
+        "如果创建了 webhook，代码显式传入了包含 email.bounced 和 email.complained 的 events（不是空的/默认的 events 列表，也没有假设默认就会订阅所有事件）",
+        "回答解释了在这个场景下 webhook 到底是用来做什么的（应用层面的可见性/同步到团队自己的系统），并把它和 Resend 已经自动做的事情区分开",
+        "回答提到 Gmail/Google Workspace 不会把投诉事件上报给 Resend，所以单靠 email.complained 对 Gmail 收件人的投诉可见性是不完整的"
+      ]
+    }
+  ]
+}

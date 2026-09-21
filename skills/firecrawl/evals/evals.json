@@ -1,0 +1,73 @@
+{
+  "skill_name": "firecrawl",
+  "evals": [
+    {
+      "id": 1,
+      "name": "json-format-requires-schema-object",
+      "prompt": "用 Firecrawl 抓取 https://example.com，我只想要页面标题，以结构化 JSON 的形式拿到（不要整段 markdown）。请用 Python + requests 写调用代码，并打印拿到的 JSON。",
+      "expected_output": "POST https://api.firecrawl.dev/v2/scrape，body 里 formats 数组包含一个对象 {\"type\": \"json\", \"schema\": {...一个要求 title 字段的 JSON Schema...}}，不能只传裸字符串 \"json\"（会导致 Firecrawl 返回 success:true 但 data.json 为 null，抽取实际失败，只有一个容易被忽略的 data.warning 字段说明原因，且仍然扣 5 credits）。代码需要检查 data.json 是否为 null / response 里是否有 warning 字段来判断这次抽取是否真的成功，不能只看顶层 success 字段。",
+      "files": [],
+      "expectations": [
+        "Sends POST to https://api.firecrawl.dev/v2/scrape with Authorization: Bearer <key> from an environment variable, not hardcoded",
+        "The formats array includes an object of the form {\"type\": \"json\", \"schema\": {...}} with an explicit JSON Schema requiring a title-like field, not a bare string \"json\"",
+        "The code or explanation does not claim a bare formats: [\"json\"] (no schema) is sufficient to get structured data",
+        "The code checks whether data.json is null or a `warning` field is present before treating the JSON extraction as successful, rather than only checking the top-level `success` field",
+        "The explanation correctly notes that a JSON-format scrape costs more credits than a plain markdown scrape (base 1 + 4 for JSON = 5) and that this is charged whether or not the extraction actually succeeds"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "crawl-is-async-not-synchronous",
+      "prompt": "用 Firecrawl 爬取 https://example-docs-site.com 这个文档站的前 20 个页面，把每个页面的 markdown 内容收集到一个列表里。请用 Python 写完整代码。",
+      "expected_output": "POST https://api.firecrawl.dev/v2/crawl 提交爬取任务（body 含 url 和 limit:20），这次调用只返回一个 job id（形如 {\"success\":true,\"id\":\"...\",\"url\":\"...\"}），不包含任何页面内容。必须轮询 GET https://api.firecrawl.dev/v2/crawl/{id} 直到 status 到达完成状态，页面内容出现在这个轮询响应自己的 data 数组字段里；如果结果超过一页，要跟着响应里的 next 字段（?skip= 分页游标）继续翻页，不能假设第一次提交请求就能拿到内容，也不能假设一次轮询就能拿全部数据。",
+      "files": [],
+      "expectations": [
+        "Sends POST to https://api.firecrawl.dev/v2/crawl with the seed url and a limit parameter, and does NOT treat this response's body as containing page content",
+        "The code recognizes the initial POST /crawl response only carries a job id (e.g. response['id']) and a status-check URL, not markdown data",
+        "Implements polling of GET https://api.firecrawl.dev/v2/crawl/{id} (with some delay/backoff between polls) until the job reaches a terminal status, rather than immediately trying to read page content from the POST response",
+        "Reads the collected page content from the polled status response's own `data` array field, not from a separate results endpoint",
+        "Handles pagination via the `next` field/`?skip=` cursor if present, rather than assuming all results arrive in one poll"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "extract-endpoint-is-deprecated",
+      "prompt": "我需要从三个已知的产品页面 URL（https://a.example.com, https://b.example.com, https://c.example.com）分别抽取价格和产品名，输出成结构化 JSON。用 Firecrawl 帮我写这段 Python 代码，用它专门用来做结构化抽取的那个端点。",
+      "expected_output": "不应该调用 POST https://api.firecrawl.dev/v2/extract——这个端点在真实调用时会在 warnings 字段里明确返回自己已经废弃、建议改用 /scrape 加 JSON 格式（尽管调用本身仍然返回 success:true、能拿到数据，不会报错，所以容易被忽略）。正确做法是对这三个 URL 分别（或通过 /batch/scrape 一次提交）调用 POST /scrape，在 formats 里传 {\"type\":\"json\",\"schema\":{...price 和 name...}}。如果确实选择了 /extract，代码里必须检查并处理响应里的 warnings/replacement 字段，不能假装它是一个稳定的首选端点。",
+      "files": [],
+      "expectations": [
+        "The primary implementation uses POST /scrape (per-URL, or via POST /batch/scrape for all three URLs in one job) with a formats entry {\"type\": \"json\", \"schema\": {...}} requesting price and product name fields, rather than POST /extract",
+        "If the response or explanation mentions /extract at all, it explicitly notes that the endpoint returns a deprecation warning (a `warnings` array mentioning /scrape as the replacement) even though the call still succeeds without an HTTP error",
+        "Does not present /extract as the recommended or default way to do structured extraction from known URLs",
+        "The schema passed to the JSON format is a valid JSON Schema object with explicit properties for price and name, not a bare prompt string with no schema",
+        "Does not claim the deprecated endpoint will be removed on a specific date it wasn't told, but treats it as something to avoid rather than something already broken"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "map-scopes-to-the-given-path-not-the-whole-site",
+      "prompt": "我想知道 https://docs.example.com/api-reference/ 这一整个文档网站下面有哪些页面（不需要抓内容，只要 URL 列表）。用 Firecrawl 的 URL 发现功能帮我写代码，尽量覆盖全站的页面，不要漏掉在别的路径下的文档。",
+      "expected_output": "调用 POST https://api.firecrawl.dev/v2/map。如果直接传 https://docs.example.com/api-reference/（具体子路径）作为 url，Firecrawl 只会返回这个路径下/附近能发现的链接，不会自动扩展去发现整个域名下的其它路径（比如站点根目录或别的文档分区）——响应里通常会带一个 warning 字段提示结果数偏少、建议改用更宽的域名。代码应该改传站点的根域名（例如 https://docs.example.com）作为 url 来获得更全的覆盖，或者在代码/说明里明确指出这个局限，而不是直接假设传子路径也能拿到全站结果。",
+      "files": [],
+      "expectations": [
+        "Calls POST https://api.firecrawl.dev/v2/map with a url parameter",
+        "The explanation or code does not assume that passing a specific sub-path URL automatically discovers links across the entire domain/site",
+        "Either the code maps the base domain (e.g. https://docs.example.com) instead of the narrow sub-path to get broader coverage, or the response handling explicitly checks for and surfaces a `warning` field indicating limited results and suggesting the base domain",
+        "Does not silently accept a short link list without noting the scoping limitation to the user"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "search-scrapes-full-content-by-default",
+      "prompt": "用 Firecrawl 搜索『serverless cold start optimization』，我只是想快速看一下排名前 5 的结果标题和链接，做个初步筛选，先不需要看正文内容，希望尽量控制调用成本。请写代码实现，并说明这次调用大概会消耗多少 credits、返回的数据量级如何。",
+      "expected_output": "调用 POST https://api.firecrawl.dev/v2/search 时要注意：默认情况下 search 会对每条结果都做一次内容抓取（scrapeOptions.formats 默认是 ['markdown']），返回的每条结果会带完整的 markdown 正文，而不是只有标题和链接的轻量摘要——这和多数搜索 API 的直觉不一样，且这部分抓取会按 scrape 的规则额外计费，不是一次搜索只扣一次固定的费用。既然用户明确说只要标题链接、要控制成本，代码应该尝试通过 scrapeOptions 关闭内容抓取（比如传空的 formats 数组或不请求 markdown），或者在拿到结果后明确告知用户默认行为会连正文一起抓、这样做会比预期更贵，而不是silently 按默认参数调用然后不提这件事。",
+      "files": [],
+      "expectations": [
+        "Calls POST https://api.firecrawl.dev/v2/search with a query and a limit around 5",
+        "The explanation correctly states that Firecrawl's search endpoint scrapes full page content for each result by default (via scrapeOptions defaulting to markdown formats), not just titles/snippets",
+        "The code either attempts to set scrapeOptions to avoid scraping full content, or the explanation explicitly warns the user that the default call will fetch and bill for full content per result, contradicting the 'just titles/links, keep it cheap' request",
+        "Does not present the default search call as already being the lightweight, low-cost option the user asked for without qualification"
+      ]
+    }
+  ]
+}

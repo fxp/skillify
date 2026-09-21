@@ -1,0 +1,73 @@
+{
+  "skill_name": "browserbase",
+  "evals": [
+    {
+      "id": 1,
+      "name": "stagehand-v4-api-shape-not-playwright-wrapper",
+      "prompt": "我们要用 Browserbase 的 Stagehand 框架在云端浏览器里打开一个电商页面，点击「加入购物车」按钮，然后用自然语言抽取购物车里显示的商品数量。请用 TypeScript 写这段代码，浏览器跑在 Browserbase 云端（不是本地）。",
+      "expected_output": "从 `@browserbasehq/stagehand` 导入 `browserbase` 和 `Stagehand`，用 `await browserbase.launch({ apiKey: process.env.BROWSERBASE_API_KEY })` 拿到一个 `browser` 对象，再用 `await Stagehand.create({ browser })` 创建 Stagehand 实例；`act`/`extract` 是 `stagehand` 实例自己的方法（`stagehand.act(...)`、`stagehand.extract(...)`），不是挂在某个 Playwright `page` 对象上的方法；不使用 `new Stagehand({ env: \"BROWSERBASE\", apiKey, projectId })` 这种旧构造函数签名，也不通过 `stagehand.page.act(...)` 或导入 playwright-core 来驱动 Stagehand。",
+      "files": [],
+      "expectations": [
+        "Imports `browserbase` and `Stagehand` from `@browserbasehq/stagehand` (not from `@browserbasehq/sdk` alone, and not treating Stagehand as a Playwright wrapper)",
+        "Obtains a browser via `browserbase.launch({ apiKey: ... })` (or equivalent Browserbase cloud factory), not `localBrowser.launch()`, since the task requires a cloud/Browserbase browser",
+        "Creates the Stagehand client via `Stagehand.create({ browser })`",
+        "Calls `stagehand.act(...)` and `stagehand.extract(...)` directly on the Stagehand instance — does NOT call `.act()`/`.extract()` on a `page` object, and does NOT use the old `new Stagehand({ env: \"BROWSERBASE\", apiKey, projectId })` v2/v3 constructor shape",
+        "Reads the Browserbase API key from an environment variable rather than hardcoding it"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "forgotten-session-billing-cleanup",
+      "prompt": "写一个 Node.js 脚本：用 Browserbase 创建一个浏览器会话，用 Playwright 连上去，截一张首页的图，然后把会话干净地收尾，不要留下持续计费的风险。给这个脚本加上基本的错误处理，确保就算截图那步抛异常，会话也不会被落下不管。",
+      "expected_output": "脚本创建会话后用 `try/finally`（或等价的保证执行机制）包裹主要逻辑；`finally` 块里既关闭 Playwright 的 `browser` 连接，也调用 Browserbase API/SDK 显式请求释放该会话（例如 `bb.sessions.update(session.id, { status: \"REQUEST_RELEASE\" })`），而不是只调用 `browser.close()` 就假设会话已经完全结束、不再计费；代码或注释体现出对「未显式释放的会话会持续按分钟计费，尤其是 keepAlive 场景」这件事的认识。",
+      "files": [],
+      "expectations": [
+        "Wraps session creation, connection, and the screenshot step in a try/finally (or equivalent) construct so cleanup runs even if the screenshot step throws",
+        "The cleanup path calls `browser.close()` (Playwright-side disconnect) AND separately calls the Browserbase Sessions API/SDK to request release (e.g. `sessions.update(session.id, { status: \"REQUEST_RELEASE\" })`), rather than assuming closing the Playwright browser object alone ends Browserbase-side billing",
+        "Does not set `keepAlive: true` without also including an explicit release call somewhere reachable in all code paths",
+        "Reads the API key from an environment variable, not hardcoded"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "fully-autonomous-task-agents-not-stagehand-loop",
+      "prompt": "我想要一个完全自动的功能：给一个自然语言描述的任务（比如「去 Hacker News 首页，返回排名前三的新闻标题和链接」），系统自己规划步骤、自己决定点哪里、自己判断什么时候算完成，返回一个结构化的 JSON 结果给我。我不想自己写任何「先做 A 再做 B」的控制流代码。请用 Browserbase 实现这个功能。",
+      "expected_output": "使用 Browserbase Agents 产品（`POST /v1/agents/runs` 或对应 SDK 方法 `bb.agents.runs.create({ task, resultSchema })`），把整个自然语言任务和期望的结构化输出 schema 一次性交给 Browserbase，服务端自主完成规划、点击、判断完成条件的整个循环；调用方代码只负责创建 run 后轮询 `GET /v1/agents/runs/{runId}` 直到状态到达终态（COMPLETED/FAILED/STOPPED/TIMED_OUT），再读取结果，而不是自己写一个调用 Stagehand `act`/`extract`/`observe` 的循环来手动实现「规划-执行-判断」这几步（那样就是自己实现了控制流，违背了任务里「不想自己写任何控制流代码」的要求）。",
+      "files": [],
+      "expectations": [
+        "Uses the Browserbase Agents API (POST /v1/agents/runs or the SDK's `agents.runs.create`), not a hand-rolled loop calling Stagehand `act`/`extract`/`observe` directly",
+        "Passes the natural-language task as `task` and the desired structured output as `resultSchema` (JSON Schema) rather than trying to parse free text after the fact",
+        "Polls the run by its `runId` until a terminal status (COMPLETED/FAILED/STOPPED/TIMED_OUT) rather than assuming the create call returns the final result synchronously",
+        "Does not write its own step-by-step control flow (e.g. explicit if/else deciding which element to click next) — that would defeat the stated requirement of not writing control-flow code",
+        "Reads the API key from an environment variable, not hardcoded"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "clean-internal-tool-session-no-implicit-anti-detection",
+      "prompt": "我们要给内部管理后台做一个自动化巡检脚本，跑在受信任的内网环境，访问的是我们自己公司的内部系统（不是公开网站，不会遇到真实验证码）。请用 Browserbase 创建一个「干净」的会话：不要做任何多余的反爬 / 验证码破解 / 代理处理，我们要的是最简单直接、行为可预测的浏览器连接，方便排查网络问题时不被额外的中间层干扰。",
+      "expected_output": "创建会话时显式传入 `browserSettings: { solveCaptchas: false }`（因为 `solveCaptchas` 默认是开启的，不显式关闭的话，即使目标站点根本没有验证码，这个开关仍然默认为 true，属于「默认值和直觉不符」的一个点，需要显式声明而不是假设不传就是关闭状态），不需要额外传 `proxies`（默认就是 `false`，不需要显式设置也能达到「不用代理」的效果，但代码或说明应体现出对这两个开关默认值不对称的认识——一个默认开、一个默认关）。",
+      "files": [],
+      "expectations": [
+        "Session creation explicitly sets `browserSettings.solveCaptchas: false`, rather than assuming a 'clean' session already has CAPTCHA solving off by default",
+        "Does not need to explicitly set `proxies: false` to satisfy the 'no proxy' requirement, since proxies already default to false, but the code or accompanying explanation does not incorrectly claim solveCaptchas also defaults to false",
+        "The explanation (in code comments or prose) correctly states that solveCaptchas defaults to true and proxies defaults to false — it does not treat both settings as having the same default",
+        "Does not enable `verified` or add proxy configuration, consistent with the 'no extra anti-detection layers' requirement"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "login-persistence-across-days-context-not-keepalive",
+      "prompt": "我们有一个每天早上跑一次的定时任务（cron job，每次都是全新的进程/脚本执行），需要用 Browserbase 打开一个需要登录的网站抓取报表数据。第一次运行时我们会手动登录一次，之后希望后续每天的定时任务都不需要重新登录，直接复用之前的登录态。请说明并写代码实现这个「登录态跨天、跨多次独立脚本运行持续保留」的需求。",
+      "expected_output": "使用 Browserbase 的 Context 功能（`POST /v1/contexts` 创建一个 Context，拿到 `contextId`；之后每次创建会话时在 `browserSettings.context` 里传 `{ id: contextId, persist: true }`）来跨会话保留 cookies/登录态，而不是使用 `keepAlive`——keepAlive 解决的是「同一个会话断线后还能重连」，并不能让登录态跨越『每天全新进程创建全新会话』这种场景，两者是不同的机制；代码里应该有创建 Context（只做一次，通常是手动登录那一步）、以及后续每次定时任务创建会话时复用同一个 `contextId` 并设置 `persist: true` 这两部分。",
+      "files": [],
+      "expectations": [
+        "Uses Browserbase Contexts (create a context, reuse its `contextId` across separate session creations) to persist login state, not `keepAlive`",
+        "Sets `persist: true` when reusing the context so that any state changes (e.g. token refresh during the scrape) are saved back, or explicitly explains persist:false is fine only for a strictly read-only reuse case",
+        "Does not claim `keepAlive: true` alone solves cross-day, cross-process login persistence — keepAlive only survives disconnects of the SAME session/process, not brand-new sessions created by a fresh cron invocation",
+        "The one-time manual login step is done inside a session created with the same `contextId` and `persist: true`, so the login actually gets saved into the context",
+        "Reads the API key from an environment variable, not hardcoded"
+      ]
+    }
+  ]
+}

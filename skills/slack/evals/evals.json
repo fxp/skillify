@@ -1,0 +1,60 @@
+{
+  "skill_name": "slack",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Write a Python function using slack_sdk that posts a deployment notification to a Slack channel with the deploy status in bold, then checks whether the send actually succeeded and logs an error if it didn't. The bot token is in SLACK_BOT_TOKEN.",
+      "expected_output": "Code uses `*bold*` (mrkdwn) rather than `**bold**` (standard Markdown) for the bold status text. Success/failure is determined by inspecting the response body's `ok` field (or catching the SDK's SlackApiError, which the SDK derives from `ok`/`error`), not by checking the HTTP status code, since chat.postMessage returns HTTP 200 even on failure.",
+      "files": [],
+      "expectations": [
+        "Uses mrkdwn bold syntax (*text*) rather than **text** when composing the message",
+        "Checks response['ok'] or catches SlackApiError rather than assuming success from a 200 status code",
+        "Reads the bot token from an environment variable rather than hardcoding it"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I have a Slack bot with a valid xoxb- token and the channels:history scope. Write code to fetch the last 50 messages from channel C0123456789 using conversations.history, and explain why it might still fail even though the token and scope look correct.",
+      "expected_output": "Code calls conversations.history with channel and limit=50, checks ok/error. Explanation notes that a bot token can only read the history of channels the bot user has actually joined -- having the channels:history scope is necessary but not sufficient; a not_in_channel error is expected if the bot hasn't been invited to or hasn't joined that channel (via conversations.join for public channels, or an explicit invite for private ones).",
+      "files": [],
+      "expectations": [
+        "Correctly calls conversations.history with the channel ID and a limit parameter",
+        "Explanation mentions that bot tokens require actual channel membership, not just the scope, to read history (not_in_channel)",
+        "Does not assume having the scope alone guarantees success"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "My agent needs to post about 200 status update messages to different Slack channels in a tight loop using chat.postMessage. Write the posting loop with proper rate-limit handling so it doesn't get the app disabled, and explain how Slack signals it's being rate limited.",
+      "expected_output": "Code respects roughly 1 message/sec per channel with some tolerance for bursts, and on receiving HTTP 429 reads the exact Retry-After header value (in seconds) and waits that long before retrying the same call, rather than inventing its own backoff schedule. Explanation notes rate limits are evaluated per method per workspace per app, so being limited on chat.postMessage doesn't affect other methods or other workspaces.",
+      "files": [],
+      "expectations": [
+        "On HTTP 429, code reads and waits exactly the Retry-After header value before retrying",
+        "Does not implement an arbitrary/generic exponential backoff instead of honoring Retry-After",
+        "Explanation notes rate limits are per-method-per-workspace, not a single global budget"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I'm building a Slack bot that needs to respond in real time whenever someone mentions it in a channel. It'll run as a small script on my laptop during development, behind my home router with no public IP. What approach should I use to receive these events, and what code do I need?",
+      "expected_output": "Recommends Socket Mode for this scenario (no public HTTP endpoint available) rather than the HTTP Events API request URL, since Socket Mode doesn't require exposing a public endpoint. Code sets up an app-level token (xapp-) with connections:write scope and uses Bolt's SocketModeHandler (Python) or socketMode: true (JS) rather than hand-rolling a public webhook receiver. Should also flag that Socket Mode apps can't be published to the Slack Marketplace, so this choice would need revisiting for production distribution.",
+      "files": [],
+      "expectations": [
+        "Recommends Socket Mode rather than an HTTP request URL for the no-public-IP dev scenario",
+        "Code uses an app-level token (xapp-) with connections:write, not just the bot token",
+        "Mentions the tradeoff that Socket Mode apps are not eligible for Slack Marketplace distribution"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Write a Flask endpoint that handles a Slack slash command: it should acknowledge the command and then post an ephemeral confirmation back to the user. Also show how you'd verify that the incoming request actually came from Slack.",
+      "expected_output": "Endpoint returns an HTTP 200 within Slack's ~3 second window (does not do slow synchronous work before responding). Verifies the request using the X-Slack-Signature header computed via HMAC-SHA256 over `v0:{timestamp}:{raw_body}` with the signing secret, using the raw unparsed request body and a constant-time comparison, and checks the X-Slack-Request-Timestamp is within 5 minutes to guard against replay. Uses the response_url or the initial response body to send the ephemeral confirmation, correctly setting/leaving response_type as ephemeral (the default) rather than accidentally broadcasting to the channel.",
+      "files": [],
+      "expectations": [
+        "Verifies X-Slack-Signature using raw request body, the signing secret, and a timestamp freshness check",
+        "Uses a constant-time comparison for the signature check rather than ==",
+        "Responds within the ~3 second acknowledgment window and does not default response_type to in_channel by mistake"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "skill_name": "exa",
+  "verification_status": "UNVERIFIED_DRAFT — expected_output/expectations below are hypotheses derived from Exa's public docs and OpenAPI spec (exa-spec.json, info.version 2.0.0), not from real API calls. No with/without-skill comparison has been run. Re-confirm every expectation against a live call before trusting scores from this file; see exa-workspace/verification-plan.md.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "search-type-not-neural-keyword",
+      "prompt": "We're building a RAG pipeline on top of Exa. Write a Python function using the Exa API that does two searches for the query 'latest transformer inference optimization techniques': one tuned for deep semantic/neural relevance ranking, and one tuned for exact keyword matching, so we can compare result sets. Use the official Python SDK and read the API key from an environment variable.",
+      "expected_output": "Both calls hit POST /search (or exa.search(...) in the SDK) with a `type` value drawn from the current enum {instant, fast, auto, deep-lite, deep, deep-reasoning}, not the legacy `neural`/`keyword` values that no longer appear in Exa's OpenAPI schema. Since Exa's public API no longer exposes a direct neural-vs-keyword toggle, the code either explains that this distinction isn't a selectable `type` value anymore and picks a reasonable current mode (e.g. `auto` vs `fast`), or asks for clarification instead of silently sending `type: \"neural\"` / `type: \"keyword\"`.",
+      "files": [],
+      "expectations": [
+        "Neither call sends `type: \"neural\"` or `type: \"keyword\"` as a literal value to POST /search",
+        "Any `type` value used is one of instant, fast, auto, deep-lite, deep, deep-reasoning",
+        "The code or accompanying explanation does not claim Exa still exposes a dedicated neural-vs-keyword search mode selector",
+        "The API key is read from an environment variable (e.g. EXA_API_KEY), not hardcoded",
+        "Authentication uses the `Authorization: Bearer` header (or the SDK default, which reads EXA_API_KEY) rather than an invented header name"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "similar-articles-not-findsimilar",
+      "prompt": "We have a blog post URL (https://example.com/blog/vector-search-explained) and want to recommend similar articles from across the web to readers. Write Python code using Exa to fetch a list of similar pages, given just that URL.",
+      "expected_output": "The code does not call the deprecated POST /findSimilar endpoint as the primary approach. Per Exa's current OpenAPI spec, /findSimilar is marked `deprecated: true` with guidance to prefer POST /search with a query describing the source page instead. A correct solution either (a) uses /search with a natural-language query describing the source article's topic (optionally first pulling the source page's title/summary via /contents to build that query), or (b) if it does use /findSimilar for some reason, explicitly flags in a comment that the endpoint is deprecated per current docs and that /search is the recommended replacement.",
+      "files": [],
+      "expectations": [
+        "The primary implementation calls POST /search (not POST /findSimilar) to find similar content, OR explicitly comments that /findSimilar is deprecated before using it",
+        "If /search is used, the query is a natural-language description of the source article's topic/content, not just the raw source URL passed as the query string",
+        "The code does not present /findSimilar as Exa's current recommended way to find similar pages",
+        "Results are read from `results[]` with `title`/`url` fields, not assumed to come back in some /findSimilar-specific response shape"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "search-vs-contents-option-placement",
+      "prompt": "Write a Python function that: (1) runs an Exa search for 'open source vector database benchmarks' and gets highlights for each result, then (2) takes three additional URLs the user already has and fetches their full page text (not highlights) via Exa. Use raw HTTP requests (the `requests` library), not the SDK, so the exact JSON request bodies are visible.",
+      "expected_output": "The two request bodies use different structures for their content options, matching Exa's current API: the /search call nests `highlights: true` inside a `contents` object (`{\"query\": ..., \"contents\": {\"highlights\": true}}`), while the /contents call for the three known URLs puts `text` directly at the top level alongside `urls`/`ids` with no `contents` wrapper (`{\"urls\": [...], \"text\": true}`). Wrapping the /contents body's `text` option inside a `contents: {...}` object (mirroring /search) is a documented mismatch.",
+      "files": [],
+      "expectations": [
+        "The /search request body places `highlights` (or `text`/`summary`) inside a nested `contents` object",
+        "The /contents request body places `text` (or `highlights`/`summary`) directly at the top level of the JSON body, NOT nested inside a `contents` key",
+        "The /contents request body uses `urls` or `ids` (not `query`) to specify the three known URLs",
+        "Both requests send `Authorization: Bearer $EXA_API_KEY` and `Content-Type: application/json`",
+        "The code does not assume /contents returns a `resolvedSearchType` or `output` field — those are /search-specific response fields"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "agent-run-async-and-error-shape",
+      "prompt": "Write a Python function that uses Exa Agent to build a structured list of up to 5 AI infrastructure companies that raised funding recently (with name, round, and amount fields), and handles errors the same way we handle errors from our existing Exa /search calls elsewhere in the codebase (a helper that reads `error_json['error']` as a string and `error_json['tag']` as the error code).",
+      "expected_output": "The function calls POST /agent/runs (or exa.agent.runs.create(...)), and does NOT try to read `output.structured` directly from the create call's response — since Exa Agent runs are asynchronous, the create call returns immediately with `status: \"queued\"`, and the code must either poll GET /agent/runs/{id} until status reaches a terminal state (completed/failed/cancelled) or use SSE (Accept: text/event-stream) before reading `output.structured`. The error-handling helper built for /search (`error_json['error']` as a string, `error_json['tag']`) is flagged as incompatible with Agent API errors, because Agent API returns a nested `{\"error\": {\"type\", \"code\", \"message\"}}` envelope instead of the flat `{\"requestId\", \"error\", \"tag\"}` envelope /search uses — reusing the same parser on an Agent error would try to treat an object as a string.",
+      "files": [],
+      "expectations": [
+        "The code does not read `output.structured` (or similar) directly from the response of the initial POST /agent/runs call without first checking status or polling/streaming to completion",
+        "The code polls GET /agent/runs/{id} in a loop until status is completed/failed/cancelled, or uses `Accept: text/event-stream` / the SDK's streaming/poll_until_finished equivalent",
+        "The code does not reuse the /search-style flat error parser (`error_json['error']`, `error_json['tag']`) unmodified for Agent API responses",
+        "The code or explanation notes that Agent API errors are shaped `{\"error\": {\"type\", \"code\", \"message\"}}`, distinct from the flat envelope used by /search, /contents, and /answer",
+        "`outputSchema` is passed on the create call to get structured output rather than trying to parse the company list out of `output.text`"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "freshness-vs-publish-date-filter",
+      "prompt": "Write Python code using Exa to find news articles published in the last 24 hours about a company's product launch, and make sure the content Exa returns for each result is not a stale cached version.",
+      "expected_output": "The code uses `startPublishedDate` (and optionally `endPublishedDate`) to filter results to the last 24 hours by publication date — this is a top-level /search parameter, separate from content freshness. Separately, to avoid stale cached page content, it sets `contents.maxAgeHours` (e.g. to a small number or `0`), understanding that `maxAgeHours` controls how fresh the *fetched page content* must be (0 = always fetch live, -1 = cache-only, omitted = cache-if-available), not a substitute for filtering by publish date. The code does not use `maxAgeHours` alone as if it filters which articles are returned by recency, and does not use the deprecated `startCrawlDate`/`endCrawlDate` parameters (which the OpenAPI spec says are ignored and have no effect) to achieve either goal.",
+      "files": [],
+      "expectations": [
+        "The request sets `startPublishedDate` (ISO 8601) to filter results to roughly the last 24 hours",
+        "The request does not rely on `maxAgeHours` alone to achieve recency filtering by publication date",
+        "If `contents.maxAgeHours` is set for freshness, the code or comments correctly describe it as controlling cached-content staleness, not publication date, and does not claim a positive `maxAgeHours` value filters out old articles",
+        "The code does not use `startCrawlDate`/`endCrawlDate`, or if it does, flags that these are deprecated and documented as having no effect",
+        "`contents.highlights` or `contents.text` is requested inside the nested `contents` object (per the /search request shape), not at the top level"
+      ]
+    }
+  ]
+}

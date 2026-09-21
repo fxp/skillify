@@ -1,0 +1,75 @@
+{
+  "skill_name": "tavily",
+  "evals": [
+    {
+      "id": 1,
+      "name": "auto-parameters-silent-cost-escalation",
+      "prompt": "我们要给一个成本敏感的 Agent 加联网搜索能力，预算按「每次搜索固定 1 个 credit」做的。产品要求：开启 auto_parameters 让 Tavily 自动挑最合适的搜索参数，这样不用我们自己判断该用哪个 search_depth。请用 Python 写一个调用 Tavily /search 的函数，满足这个预算前提。",
+      "expected_output": "代码或说明必须指出：仅设置 auto_parameters=true 而不显式设置 search_depth，Tavily 可能会把 search_depth 自动升级为 advanced（因为它判断这样能提升结果质量），这会把单次请求的成本从 1 credit 变成 2 credit，与「每次固定 1 credit」的预算前提冲突。要满足预算前提，必须在开启 auto_parameters 的同时显式传 search_depth=\"basic\"（或不使用 auto_parameters），因为显式设置的值会覆盖自动选择的值。代码不能仅仅传 auto_parameters=true 就假设成本可控。",
+      "files": [],
+      "expectations": [
+        "The code or explanation explicitly states that auto_parameters=true can silently raise search_depth to \"advanced\", doubling the credit cost from 1 to 2 per request",
+        "To keep the 1-credit-per-search budget, the code explicitly passes search_depth=\"basic\" alongside auto_parameters=true (explicit values override the automatic ones), rather than relying on auto_parameters alone",
+        "The code or explanation does not claim that auto_parameters=true guarantees a fixed, predictable per-request cost on its own",
+        "The API key is read from an environment variable (e.g. TAVILY_API_KEY), not hardcoded",
+        "The request goes to POST https://api.tavily.com/search with Authorization: Bearer <key>"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "extract-http-200-must-check-failed-results",
+      "prompt": "我们要用 Tavily Extract 批量抓 15 个已知 URL 的正文，存进数据库。其中几个 URL 可能已经失效或被目标网站屏蔽爬虫。请写一个 Python 函数：调用 Extract API，把成功抓到的正文存库，并对失败的 URL 做记录以便人工复查。",
+      "expected_output": "代码必须显式检查响应体里的 results 数组（成功）和 failed_results 数组（失败），而不是只根据 HTTP 状态码判断整批请求是否成功——因为即使所有 15 个 URL 都抓取失败，Tavily Extract 仍然会返回 HTTP 200，此时 results 为空数组、failed_results 非空。代码把 results 里的内容存库，把 failed_results 里每个 URL 及其 error 信息记录下来，且不会因为拿到 200 状态码就假设全部 15 个 URL 都成功。只有当所有 URL 连格式校验都不通过时才会返回 400。",
+      "files": [],
+      "expectations": [
+        "The code checks both response['results'] and response['failed_results'] after a successful (200) API call, rather than assuming HTTP 200 means all URLs succeeded",
+        "The code or explanation states that Extract can return HTTP 200 with an empty results array when every valid URL fails during extraction (only fully-invalid URL lists return 400)",
+        "Failed URLs are logged/recorded for manual review using the failed_results[].url and failed_results[].error fields, not silently dropped",
+        "The code does not assume results[] order matches the input urls[] order — it matches by the url field",
+        "The request is POST https://api.tavily.com/extract with up to 20 URLs per call, and the code either batches or documents the 20-URL-per-request limit given 15 URLs fit in one call"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "research-status-code-is-not-standard-rest",
+      "prompt": "我们要接入 Tavily 的 Research（深度研究）接口：提交一个研究任务，然后轮询直到拿到结果。请用 Python 写提交任务和轮询两部分代码，要求能正确识别「任务已完成」和「任务出错」两种情况，不要把还在处理中的任务误判为错误。",
+      "expected_output": "提交任务代码不能把 response.status_code == 200 当作成功的判断标准，因为 POST /research 成功创建任务返回的是 HTTP 201，不是 200。轮询代码同样不能只看状态码：GET /research/{request_id} 在任务还在 pending 或 in_progress 时返回 HTTP 202（不是 200 也不是错误），只有任务真正跑完（无论成功还是失败）才返回 200；判断任务是否成功要看响应体里的 status 字段是 completed 还是 failed，而不是直接假设 200 等于成功、非 200 等于失败。",
+      "files": [],
+      "expectations": [
+        "The task-creation code checks for HTTP 201 (not 200) as the success indicator for POST https://api.tavily.com/research when not streaming",
+        "The polling code treats HTTP 202 as \"still pending/in_progress, keep polling\" rather than as an error, and does not require status_code == 200 to continue the loop",
+        "The polling code distinguishes a completed task from a failed task by reading the 'status' field in the response body (e.g. 'completed' vs 'failed'), not by HTTP status code alone, since both can return 200",
+        "The code polls GET https://api.tavily.com/research/{request_id} using the request_id returned from the creation call",
+        "The API key is passed via Authorization: Bearer <key> read from an environment variable"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "org-usage-requires-owner-personal-key-not-org-key",
+      "prompt": "我们的团队在 Tavily 上开了一个组织账号，我用团队管理员分配给我的 API Key 想调用组织级用量统计接口，查一下这个月整个组织下所有 Key 花了多少 credit。请写调用代码。",
+      "expected_output": "代码或说明必须指出：POST /org-usage 这个接口不接受普通的组织成员/团队 Key，必须使用组织 owner 本人个人账号下的 API Key 来鉴权（ownerBearerAuth，和其余所有 Tavily endpoint 使用的普通 bearerAuth 不是同一回事）；如果调用者手头只有团队管理员分配的组织级 Key，这个 Key 大概率不满足条件，调用会收到 403（错误信息类似「请用组织 owner 的个人 API key 认证，而不是组织 API key」），代码或说明应该提醒用户去找 owner 本人的个人 Key，而不是假设任意一个有效 Key 都能调这个接口。同时该接口需要在请求体里传 organization_name（精确组织名，区分大小写）。",
+      "files": [],
+      "expectations": [
+        "The code or explanation explicitly states that POST https://api.tavily.com/org-usage requires the organization owner's own personal-account API key, not a regular team/organization member key",
+        "The code or explanation warns that using a non-owner or team-level key will likely fail with an HTTP 403 error, and does not claim any valid Tavily API key works for this endpoint",
+        "The request body includes organization_name (exact, case-sensitive) as a required field",
+        "The code does not conflate this endpoint's auth requirement with the standard Authorization: Bearer <regular API key> pattern used by /search, /extract, /crawl, /map, /research",
+        "The explanation recommends the user obtain the owner's personal key rather than trying to work around the restriction with their assigned team key"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "crawl-rate-limit-does-not-scale-with-production-key",
+      "prompt": "我们准备把一个开发环境验证过的爬取流程上线：用 Tavily Crawl 对若干文档站做整站爬取，计划把开发用的 Development API Key 换成 Production API Key 上线，并据此把并发请求数从原来限制的 100 RPM 提高到 1000 RPM 去跑吞吐量更高的批量任务。请写一段代码或说明，评估这个上线计划里的并发设置是否合理。",
+      "expected_output": "回答必须指出这个假设是错的：/crawl 端点的速率限制在 Development 和 Production Key 下都固定是 100 RPM，并不会像 /search、/extract 那样从 100 RPM 提升到 1000 RPM；把并发/请求节流按 1000 RPM 配置会导致大量 429 Too Many Requests。同理 /research 创建任务的限流也固定在 20 RPM，不随 Key 类型升档。正确做法是继续按 100 RPM（Crawl）设置节流/信号量，只有 /search、/extract 这类默认限流的 endpoint 换成生产 Key 后才能把并发放大到 1000 RPM 对应的水平。",
+      "files": [],
+      "expectations": [
+        "The answer explicitly states that the Crawl endpoint's rate limit is fixed at 100 RPM for BOTH Development and Production API keys, and does not increase to 1000 RPM like the default (Search/Extract) endpoints do",
+        "The answer does not recommend configuring crawl concurrency/throttling based on a 1000 RPM budget",
+        "The answer recommends keeping crawl request throttling at (or under) 100 RPM regardless of switching to a Production key",
+        "The answer separately notes (or the code comments note) that POST /research task creation is likewise capped at 20 RPM independent of key tier, if research is mentioned",
+        "The answer does not claim that simply switching from a Development to a Production key automatically raises throughput for every endpoint uniformly"
+      ]
+    }
+  ]
+}

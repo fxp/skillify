@@ -1,0 +1,75 @@
+{
+  "skill_name": "linear",
+  "evals": [
+    {
+      "id": 1,
+      "name": "auth-header-format-differs-by-credential-type",
+      "prompt": "我们在给一个内部工具接 Linear API，用户在设置页粘贴了一个 Linear 个人 API Key（不是 OAuth token）。请写一个 Python 函数，用这个 Key 调用 Linear 的 GraphQL API 查询当前登录用户信息（viewer）。",
+      "expected_output": "代码必须把 Authorization header 设置为裸 key，即 `Authorization: <API_KEY>`，不能加 `Bearer ` 前缀——Linear 的个人 API Key 鉴权明确不使用 Bearer 前缀，这和大多数 API 的习惯（包括 Linear 自己的 OAuth access token）不同。如果代码写成 `Authorization: Bearer <API_KEY>`，用个人 API Key 鉴权会失败。代码应该请求 POST https://api.linear.app/graphql，body 是 JSON 格式的 {\"query\": \"...\"}，且不能假设存在对应的 REST 端点。",
+      "files": [],
+      "expectations": [
+        "The Authorization header for a Linear personal API key is set as 'Authorization: <API_KEY>' with NO 'Bearer' prefix",
+        "The code does not add 'Bearer ' before the personal API key value",
+        "The code or explanation notes that OAuth access tokens DO use 'Authorization: Bearer <token>', contrasting with the personal API key format, rather than treating both credential types identically",
+        "The request is a POST to https://api.linear.app/graphql with a JSON body containing a 'query' field (not a REST-style endpoint)",
+        "The API key is read from an environment variable or config, not hardcoded in the source"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "workflow-state-id-is-team-scoped-not-global",
+      "prompt": "我们要写一个自动化脚本：把团队 A（team key \"ENG\"）里所有状态为 \"In Review\" 的 issue，批量移动到团队 B（team key \"OPS\"）名下（改变 issue 的 teamId），并保持它们在新团队里也处于\"In Review\"这个状态分类。请用 GraphQL 或 TypeScript SDK 写这个批量操作的代码。",
+      "expected_output": "代码不能直接把从团队 A 查到的 WorkflowState id 原样用作团队 B issue 的 stateId——WorkflowState 是团队私有的（WorkflowState.team 是非空字段），团队 A 的状态 ID 在团队 B 下无效或指向错误的状态。正确做法是：先查询团队 B 自己的工作流状态列表（用 team(id: <团队B的ID>) { states(filter: { type: { eq: \"started\" } }) { nodes { id name position } } } 这类查询，或按 name 精确匹配 \"In Review\"），拿到团队 B 自己名下同类型/同名状态的 id，再用这个 id 更新 issue 的 stateId，而不是复用团队 A 查到的状态 id。代码或说明应明确指出状态 ID 不能跨团队复用这一点。",
+      "files": [],
+      "expectations": [
+        "The code does NOT reuse a WorkflowState id obtained from team A's states query as the stateId when updating an issue that now belongs to team B",
+        "The code or explanation explicitly states that WorkflowState ids are scoped to a single team (team A's 'In Review' state id is a different id from team B's 'In Review' state id)",
+        "The code queries team B's own workflow states (e.g. team(id: teamB_id) { states { nodes { id name type } } }) to find the matching state id in team B before updating moved issues",
+        "The code uses issueUpdate with both teamId and the team-B-specific stateId when moving an issue to a new team",
+        "The code does not assume team keys like \"ENG\"/\"OPS\" can be passed directly as teamId — it looks up the team's UUID first via a filtered teams query"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "lookup-by-name-requires-id-first-no-rest-endpoints",
+      "prompt": "产品要求：写一个函数，输入团队的显示名字（比如 \"Engineering\"）和一个 issue 标题，在该团队下创建一个新 issue。用户只知道团队名字，不知道团队的 UUID。",
+      "expected_output": "代码不能把团队名字直接当作 issueCreate 的 teamId 参数传入——Linear 的 IssueCreateInput.teamId 只接受团队 UUID，不接受名字。正确流程分两步：第一步用 GraphQL 查询 teams(filter: { name: { eq: \"Engineering\" } })（或按需要用 contains/startsWith 做模糊匹配）拿到该团队的 id；第二步再用这个 id 作为 teamId 调用 issueCreate。代码也不应假设 Linear 提供类似 REST 的 /teams/{name}/issues 端点——Linear 只有一个 GraphQL endpoint（https://api.linear.app/graphql），没有平行的 REST API，按名字查找必须通过 GraphQL 的 filter 查询完成，不是走不同的 URL 路径。",
+      "files": [],
+      "expectations": [
+        "The code performs a two-step process: first query teams with a name filter (e.g. teams(filter: { name: { eq: \"Engineering\" } })) to resolve the team name to its UUID id",
+        "The code then uses that resolved UUID (not the team name string) as the teamId field in the issueCreate mutation's input",
+        "The code or explanation does not assume a REST-style endpoint exists (e.g. does not construct a URL like /teams/Engineering/issues) — all requests go to the single POST https://api.linear.app/graphql endpoint",
+        "The code handles the case where the team name filter returns zero or multiple matching teams rather than blindly taking nodes[0]",
+        "The mutation used is issueCreate with an IssueCreateInput containing at minimum teamId and title"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "graphql-errors-can-be-200-but-rate-limits-are-400",
+      "prompt": "我们在写一个批量创建 issue 的脚本，需要健壮的错误处理：区分\"这次调用被限流了，应该等一等重试\"和\"这次调用输入有问题，不应该重试\"两种情况。请写 Python 代码处理 Linear GraphQL API 调用的这两种错误情况。",
+      "expected_output": "代码不能只用 HTTP 状态码来判断是否成功——Linear 的常规字段/校验错误（比如输入无效）会返回 HTTP 200，同时在响应体的 errors 数组里包含错误信息（GraphQL 标准的部分成功语义），必须显式检查响应 JSON 里是否存在 errors 字段，而不是只判断 response.status_code == 200 就认为调用成功。触发限流是例外情况：Linear 在触发限流时返回 HTTP 400，且 errors 数组里的某一项包含 extensions.code == \"RATELIMITED\"（或 extensions 里其他标识限流的字段，代码应做一定容错）。正确的重试策略应该只在检测到限流错误码时才等待重试，对于常规的输入校验错误（HTTP 200 + errors 但不是限流码）不应该自动重试，因为重试同样的错误输入不会成功。",
+      "files": [],
+      "expectations": [
+        "The code checks for the presence of an 'errors' array in the response body even when HTTP status is 200, rather than treating 200 as unconditional success",
+        "The code distinguishes a rate-limit error (HTTP 400 with an errors[].extensions field indicating a rate-limit code such as RATELIMITED) from a regular 200-with-errors validation failure",
+        "The retry logic only retries on the detected rate-limit condition, not on every entry in the errors array indiscriminately",
+        "The code does not assume all Linear API errors return a non-200 HTTP status code",
+        "The explanation or code comments note that partial success (200 with both data and errors) is possible per GraphQL semantics"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "pagination-default-50-silently-truncates-export",
+      "prompt": "写一个脚本，导出某个 Linear 团队下所有的 issue（这个团队有几百个 issue）到一个 CSV 文件，包含 id、标题和状态。",
+      "expected_output": "代码不能只发一次不带分页参数的 issues 查询就假设拿到了全部数据——Linear 的分页默认页大小是 50，不传 first/after 等分页参数的查询会静默只返回前 50 条，不会报错也不会有任何提示说还有更多数据。正确做法是必须实现完整的分页循环：每次请求后检查响应里 pageInfo.hasNextPage 字段，如果为 true，则用 pageInfo.endCursor 的值作为下一次请求的 after 参数继续查询，直到 hasNextPage 为 false 为止，将所有页的结果累积起来再写入 CSV。代码不能假设几百个 issue 会在一次响应里全部返回。",
+      "files": [],
+      "expectations": [
+        "The code implements a pagination loop that continues fetching pages using the 'after' cursor until pageInfo.hasNextPage is false",
+        "The code does not treat a single unpaginated issues query as returning the complete dataset",
+        "The code reads pageInfo.endCursor from each response and passes it as the after variable in the subsequent request",
+        "The code accumulates results across all pages before writing the CSV, rather than writing only the first page's 50 records",
+        "The GraphQL query includes pageInfo { hasNextPage endCursor } in its selection set"
+      ]
+    }
+  ]
+}

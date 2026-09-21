@@ -1,0 +1,75 @@
+{
+  "skill_name": "stripe",
+  "evals": [
+    {
+      "id": 1,
+      "name": "amount-is-integer-minor-units-not-decimal-dollars",
+      "prompt": "用 Python 写一段代码，用 Stripe 给一个客户创建一笔 $49.99 美元的 PaymentIntent（自动支付方式）。密钥从环境变量 STRIPE_TEST_SECRET_KEY 读取。",
+      "expected_output": "调用 POST /v1/payment_intents，amount 参数必须是整数 4999（表示 49.99 美元的最小货币单位——美分），currency 传 usd。代码不能把 49.99 直接当 amount 传（那样会被解读成 4999 万倍以上的天价，且 amount 要求是 integer，浮点数还可能直接被 API 拒绝或截断），也不能错误地把 4999 又乘以 100 变成 499900。代码应该体现出对『amount 是目标货币最小单位的整数』这条规则的正确换算（例如把用户输入的十进制美元金额乘以 100 取整），而不是假设所有货币都不需要换算，也不能对不确定是否为零小数货币的场景装作确定。",
+      "files": [],
+      "expectations": [
+        "The PaymentIntent create call uses amount=4999 (an integer), not 49.99 or 499900",
+        "The code or explanation explicitly reasons about USD being a two-decimal currency requiring multiplication by 100, rather than passing the dollar amount unmodified",
+        "currency is set to 'usd' (lowercase)",
+        "The secret key is read from an environment variable (STRIPE_TEST_SECRET_KEY or equivalent), not hardcoded, and a sk_test_/rk_test_ style key is implied rather than a live key",
+        "The code does not claim this amount encoding applies uniformly to all currencies without qualification (zero-decimal currencies like JPY should not be multiplied by 100 if mentioned)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "idempotency-key-required-on-retried-payment-creation",
+      "prompt": "我们的服务器偶尔会因为网络超时收不到 Stripe 的响应。帮我写一段创建 PaymentIntent 的代码，加上超时重试逻辑（比如用 requests 库设置超时并在异常时重试最多 3 次），避免因为超时重试导致客户被重复扣款。",
+      "expected_output": "重试逻辑必须在所有重试尝试中使用同一个 Idempotency-Key（通过请求头 Idempotency-Key 或 SDK 的 idempotency_key/idempotencyKey 选项传递），并且这个 key 在进入重试循环之前生成一次，而不是每次重试都重新生成一个新的随机 key（那样等于没有幂等保护，退化成裸重试）。代码或说明要指出：正是因为网络超时场景下不确定 Stripe 有没有处理这次请求，所以必须靠同一个 idempotency key 让重试安全，而不是靠加了 try/except 就自动避免了重复扣款。",
+      "files": [],
+      "expectations": [
+        "A single idempotency key (e.g. a UUID) is generated once, before the retry loop, and reused across all retry attempts for the same logical PaymentIntent creation",
+        "The Idempotency-Key header (or SDK idempotency_key/idempotencyKey option) is actually attached to the PaymentIntent create call",
+        "The code does not generate a fresh/random idempotency key on each retry attempt",
+        "The explanation correctly states that idempotency keys are what make retrying a POST safe after a network timeout, not merely the try/except retry loop by itself",
+        "Does not claim GET or DELETE requests need an idempotency key (only relevant if mentioned)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "webhook-handler-must-verify-stripe-signature-with-raw-body",
+      "prompt": "用 Flask 写一个接收 Stripe webhook 的端点，处理 payment_intent.succeeded 事件，成功后把订单标记为已支付。",
+      "expected_output": "端点必须先用 Stripe-Signature 请求头 + 该端点的 webhook 签名密钥（whsec_...，从环境变量读取，与 API key 是不同的值）对**原始未解析**的请求体做签名校验（例如用 stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)），校验失败要返回 4xx 并且绝对不能执行『标记订单已付款』这类业务逻辑。代码不能只是用 request.get_json() 或 request.json 解析请求体、检查 type 字段等于 payment_intent.succeeded 就直接信任并执行业务逻辑而不做任何签名校验——那样任何知道端点 URL 的第三方都能伪造一个成功支付事件。如果用 Flask，读取原始 body 要用 request.data / request.get_data()，且要注意不能在签名校验之前被其它中间件/before_request 钩子解析并改写过。",
+      "files": [],
+      "expectations": [
+        "The handler calls a Stripe signature verification function (e.g. stripe.Webhook.construct_event) with the raw request body, the Stripe-Signature header, and a webhook endpoint secret",
+        "The webhook secret is distinct from the Stripe API secret key, is read from an environment variable, and is described as starting with whsec_",
+        "The raw/unparsed request body (e.g. request.data or request.get_data()) is used for verification, not a pre-parsed JSON object (e.g. not just request.get_json() used as the verification input)",
+        "On signature verification failure, the code returns a 4xx response and does not proceed to mark the order as paid or run other business logic",
+        "The code does not treat an unverified POST body's `type` field as sufficient proof the event came from Stripe"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "test-mode-and-live-mode-objects-are-not-interchangeable",
+      "prompt": "我们的后端配置里不小心把一个客户 ID 存错了：这个 cus_ 开头的客户 ID 其实是我们在测试环境联调时用测试密钥创建的，但现在生产环境的代码用 live 密钥去查询这个客户 ID，一直报错说找不到这个客户。请解释一下大概是什么原因，并说明正确的排查/修复思路。",
+      "expected_output": "解释必须指出 Stripe 的 test 模式和 live 模式是两个完全隔离的数据世界，用某个模式的密钥创建的对象 ID，无法用另一个模式的密钥查询到——即使 cus_ 这个 ID 字符串格式本身在两种模式下长得一模一样，也无法从 ID 本身判断它属于哪个模式，只能追溯是哪个 key 返回的这个 ID。修复思路应该是：确认这个客户本来就是测试模式数据（不应该出现在生产配置里），如果生产环境真的需要一个对应的客户，需要用 live 密钥重新在 live 模式下创建一个新的 Customer 对象（并做好新老 ID 的映射迁移），而不是尝试用某种方式把测试模式的对象『转换』成 live 模式对象（Stripe 不提供这种转换）。不应该把这个报错当成普通的权限错误、网络问题或简单的『ID 打错了几个字符』问题来排查。",
+      "files": [],
+      "expectations": [
+        "The explanation identifies the root cause as test-mode and live-mode being fully separate data stores/namespaces per API key type, not a permissions issue or a typo in the ID",
+        "States explicitly that a test-mode object ID and a live-mode object ID share the same string format/prefix and cannot be visually distinguished from the ID alone",
+        "States that there is no conversion path — a test-mode Customer cannot be turned into or reused as a live-mode Customer; a new Customer must be created with a live key if one is needed in production",
+        "Does not suggest the fix is simply retrying, checking network connectivity, or checking IAM/role-style permissions",
+        "Recommends auditing how the test-mode ID ended up in production configuration to prevent recurrence"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "current-recommended-primary-payment-api-is-checkout-sessions-not-raw-payment-intents",
+      "prompt": "我要给一个新的 SaaS 产品接入 Stripe 收款，就是一个标准的『点击购买按钮 -> 填卡信息 -> 完成付款』流程，没有特殊的自定义需求。帮我规划一下应该用哪套 API，并说明为什么不用 Charges API。",
+      "expected_output": "推荐方案应该以 Checkout Sessions API（POST /v1/checkout/sessions，配合 Payment Element / Stripe 托管收银台）作为默认首选，而不是让开发者直接手搭 PaymentIntents + Elements 的完整自定义确认流程——回答需要说明这是 Stripe 当前的官方推荐（代码量更小、内置更多能力），并且明确指出只有在需要完全自定义支付表单、或需要在确认前插入自己的服务端逻辑（deferred payment intent 模式）等场景，才需要绕开 Checkout Sessions 直接使用 PaymentIntents API。回答必须明确说明 Charges API 已经废弃、不应该用于新集成，理由不能只是『它比较老』这种模糊说法，而要提到当前正式支持并推荐的是 PaymentIntents（以及更上层的 Checkout Sessions），不能把 PaymentIntents 直接确认流程当作『没有更简单选项、唯一现代方案』来介绍。",
+      "files": [],
+      "expectations": [
+        "Recommends Checkout Sessions API (POST /v1/checkout/sessions) as the default/first choice for a standard, non-customized purchase flow, not hand-built PaymentIntents + Elements",
+        "Explicitly states this is Stripe's current default recommendation for most integrations, with hand-built PaymentIntents + Elements reserved for custom UI or deferred-confirmation scenarios",
+        "States clearly that the Charges API is deprecated and should not be used for new integrations",
+        "Does not present raw PaymentIntents + Elements as the only modern, currently-recommended option with no simpler alternative",
+        "Does not recommend the Sources API or Tokens API for collecting/saving payment details"
+      ]
+    }
+  ]
+}

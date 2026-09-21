@@ -1,0 +1,75 @@
+{
+  "skill_name": "notion",
+  "evals": [
+    {
+      "id": 1,
+      "name": "sharing-required-causes-404-not-401",
+      "prompt": "我给我们团队的内部自动化建了一个 Notion internal connection，token 看起来是有效的（格式正确，之前也调用成功过别的接口）。但现在调用 GET https://api.notion.com/v1/databases/{database_id} 查一个我确定存在的数据库，一直返回 404 object_not_found。帮我写 Python 代码定位问题原因并修复。",
+      "expected_output": "不应该假设是 database_id 拼错了或 token 过期/失效。Internal connection 以独立 bot 身份运作，必须在 Notion 应用里对目标页面/数据库手动执行『••• → Add connections』把该连接加进去，共享才会对子页面继承，不会反向影响父级或同级。响应体的 message 字段本身通常已经点出『Make sure the relevant pages and databases are shared with your connection』，代码/回答应该指出检查共享状态（而不是重新生成 token 或怀疑 ID 格式），并说明如果用的是 Personal access token 则不适用这条（PAT 直接继承创建者本人的权限，不需要 Add connections）。",
+      "files": [],
+      "expectations": [
+        "Does not conclude the token itself is invalid or expired based solely on a 404 from GET /v1/databases/{id}",
+        "Explains that 404 object_not_found on an internal connection most commonly means the page/database was never explicitly shared with the connection via the 'Add connections' menu in the Notion UI, not that the ID is wrong",
+        "Distinguishes this from a 401 unauthorized error, which would indicate an actual bad/expired token",
+        "Notes that sharing a parent page cascades access to its children but does not affect siblings or ancestors, so the specific database itself (or an ancestor) needs to be shared",
+        "Mentions that this sharing requirement does NOT apply to Personal access tokens (PATs), which inherit the creating user's own Notion permissions instead"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "query-database-requires-data-source-discovery",
+      "prompt": "我有一个 Notion 数据库的 ID（从数据库链接里截出来的），想查询里面所有 Done 为 false 的任务，按 Due date 升序排列。请用 Python + requests 写完整代码，直接调用查询接口。",
+      "expected_output": "不能直接把 database_id 传给一个『查询数据库』接口当成 data_source_id 用。正确流程：先 GET https://api.notion.com/v1/databases/{database_id}（带 Notion-Version 头）拿到响应里的 data_sources 数组（每项有 id 和 name），取其中的 data_source_id；再用这个 data_source_id 调用 PATCH https://api.notion.com/v1/data_sources/{data_source_id}/query，body 里传 filter（{'property':'Done','checkbox':{'equals':false}}）和 sorts（[{'property':'Due date','direction':'ascending'}]）。代码或说明中不能出现『PATCH /v1/databases/{database_id}/query』这种已经不适用当前 API 版本的旧端点形状，也不能把 database_id 直接透传进 data_source 相关端点。",
+      "files": [],
+      "expectations": [
+        "First calls GET https://api.notion.com/v1/databases/{database_id} (with a Notion-Version header) to discover the data_sources list before querying",
+        "Extracts a data_source_id from the discovery response rather than reusing the original database_id for the query call",
+        "Queries via PATCH https://api.notion.com/v1/data_sources/{data_source_id}/query, not PATCH /v1/databases/{database_id}/query",
+        "The filter object uses the shape {\"property\": \"Done\", \"checkbox\": {\"equals\": false}} and the sorts array uses [{\"property\": \"Due date\", \"direction\": \"ascending\"}]",
+        "Does not assume the database has exactly one data source without at least acknowledging multi-source databases are possible"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "property-value-shapes-differ-by-type",
+      "prompt": "帮我写 Python 代码，往一个 Notion 数据库里创建一个新页面（新任务），要同时设置：Status 属性（select 类型，值是 'In progress'）、Tags 属性（multi-select 类型，值是 ['Urgent', 'Backend']）、Project 属性（relation 类型，关联到一个已知的 project 页面 ID）。",
+      "expected_output": "POST https://api.notion.com/v1/pages，body.properties 里三个字段要用完全不同的 JSON 形状：Status 传 {\"select\": {\"name\": \"In progress\"}}（单个对象，不是数组）；Tags 传 {\"multi_select\": [{\"name\": \"Urgent\"}, {\"name\": \"Backend\"}]}（对象数组）；Project 传 {\"relation\": [{\"id\": \"<project_page_id>\"}]}（page 引用对象的数组，用 id 不是 name）。代码不能把这三种属性用同一段通用逻辑（比如统一包一层数组，或统一传字符串）处理。",
+      "files": [],
+      "expectations": [
+        "The select property value is a single object {\"select\": {\"name\": \"...\"}}, not wrapped in an array",
+        "The multi_select property value is an array of objects {\"multi_select\": [{\"name\": \"...\"}, ...]}",
+        "The relation property value is an array of page-id references {\"relation\": [{\"id\": \"...\"}]}, using \"id\" (a UUID), not \"name\"",
+        "The code does not use one generic helper that assumes all three property types share the same JSON shape",
+        "The relation value references an actual page ID passed in, not a bare string name"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "adding-page-text-requires-block-level-write",
+      "prompt": "我有一个已存在 Notion 页面的 ID，想在这个页面末尾追加一段新的正文文字：『Meeting notes: discussed Q3 roadmap.』。请写 Python 代码实现，用最直接的方式。",
+      "expected_output": "不能通过 PATCH https://api.notion.com/v1/pages/{page_id} 传一个类似 {'content': '...'} 或把这段文字塞进 properties 里来实现——Update page 端点只能改属性(properties)/icon/cover/in_trash，不接受也不会处理页面正文内容。正确做法二选一：(a) 用区块 API，PATCH https://api.notion.com/v1/blocks/{page_id}/children，body 传 children: [{'object':'block','type':'paragraph','paragraph':{'rich_text':[{'text':{'content':'Meeting notes: discussed Q3 roadmap.'}}]}}]（页面 ID 本身可以直接当 block_id 用于追加子区块）；或者 (b) 用 markdown 便捷层的 PATCH .../markdown 追加端点传这段文字作为 markdown。两种都可以接受，但不能是对 Update page 端点传纯文本字段的方案。",
+      "files": [],
+      "expectations": [
+        "Does not attempt to add page content by PATCHing /v1/pages/{page_id} with some plain-text or 'content' field",
+        "Recognizes that page properties (via Update page) and page content (via block operations or the markdown endpoints) are handled by different endpoints",
+        "If using the block API, calls PATCH https://api.notion.com/v1/blocks/{page_id}/children with a children array containing a properly-shaped block object (object: 'block', type: 'paragraph', paragraph.rich_text as an array of rich text objects, not a plain string)",
+        "The rich_text content is built as an array of rich text objects (e.g. [{\"text\": {\"content\": \"...\"}}]), not passed as a bare string",
+        "If using the markdown convenience endpoint instead, correctly targets the markdown-specific endpoint rather than the plain Update page endpoint"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "notion-version-header-is-required-and-must-be-pinned",
+      "prompt": "写一段最简单的 Python 代码，用 requests 库调用 Notion API 的 GET /v1/users/me 拿到当前 token 对应的 bot 信息，越简洁越好。",
+      "expected_output": "请求头必须包含 Authorization: Bearer <token> 和显式的 Notion-Version 头（例如 'Notion-Version': '2026-03-11' 或其它明确指定的日期版本号），不能省略 Notion-Version 头——省略会导致 API 返回 400 missing_version 错误，请求根本不会成功，不是『可选头，不传也能正常工作，只是行为可能不同』。代码不应该把 Notion-Version 当成可选参数或注释掉，也不应该编造一个和官方文档不一致的版本号格式（必须是 YYYY-MM-DD 形式的日期字符串）。",
+      "files": [],
+      "expectations": [
+        "The request headers include both 'Authorization': 'Bearer <token>' and an explicit 'Notion-Version' header",
+        "The Notion-Version value is a YYYY-MM-DD-formatted date string, not omitted, not a made-up format like 'v1' or 'latest'",
+        "The explanation states that omitting Notion-Version causes the request to fail outright (400 missing_version) rather than silently falling back to a default version",
+        "The token is read from an environment variable rather than hardcoded in the script",
+        "Targets GET https://api.notion.com/v1/users/me for retrieving the token's own bot user"
+      ]
+    }
+  ]
+}

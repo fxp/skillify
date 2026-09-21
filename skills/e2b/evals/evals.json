@@ -1,0 +1,75 @@
+{
+  "skill_name": "e2b",
+  "evals": [
+    {
+      "id": 1,
+      "name": "long-running-agent-task-vs-default-5min-kill-timeout",
+      "prompt": "我们要用 E2B 跑一个编码 Agent 任务：Agent 在沙箱里生成代码、跑测试、修 bug，循环下来经常要 15-20 分钟才能完成。请用 Python 写创建沙箱并跑这个长任务的代码，要保证任务跑到一半沙箱不会被中途回收、状态不会丢。",
+      "expected_output": "不能用 Sandbox.create() 的默认设置（默认 timeout 5 分钟，超时后默认行为是 onTimeout='kill'，直接销毁沙箱且不可恢复）。正确做法是显式传一个足够长的 timeout（如 timeout=1800，Python 单位是秒），或者配置 lifecycle={'on_timeout': 'pause', 'auto_resume': True} 让超时变成暂停+自动唤醒而不是销毁；如果任务时长不可预测，还应该在关键节点调用 sandbox.set_timeout() 续期。不能假设默认行为就是'空闲不会被杀'或'超时自动 pause'。",
+      "files": [],
+      "expectations": [
+        "代码没有在一个 15-20 分钟的任务上依赖 Sandbox.create() 的默认超时（5 分钟），既没有传更长的 timeout，也没有配置超时后暂停",
+        "如果选择的是一个固定的超时值，传的是 Python 的 `timeout` 参数、单位是秒——代码没有和 JavaScript 的 `timeoutMs`（毫秒）搞混",
+        "解释或代码正确指出默认的 `onTimeout` 行为是 'kill'（破坏性的，不可恢复），不是 'pause'",
+        "如果用的是 lifecycle 暂停/自动唤醒而不是一个固定的长超时，`on_timeout` 被设为 'pause' 且 `auto_resume` 被设为 True（auto_resume 在默认的 'kill' 下是无效的）",
+        "代码没有暗示或假设一个运行中的沙箱不管空闲还是繁忙计费都一样、成本无所谓——也就是说没有在没有任何超时/清理考虑的情况下让沙箱无限期运行下去"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "code-interpreter-state-persists-across-run-code-calls",
+      "prompt": "我们在做一个数据分析 Agent：先执行一段代码把 CSV 读成 pandas DataFrame 并做了一些清洗，这是第一次调用；用户接着追问一个新问题，我们要对刚才清洗好的同一个 DataFrame 再跑一段新代码算个统计量，这是第二次调用（两次调用都是对同一个 sandbox 对象）。请写这两次调用的 Python 代码，不要重复读取和清洗 CSV。",
+      "expected_output": "两次调用都用 e2b_code_interpreter 的 sandbox.run_code()，且是对同一个 sandbox 实例（同一个默认 code context）连续调用。因为 run_code 是在一个持久化的、类似 Jupyter kernel 的执行上下文里跑的，第一次调用里赋值的变量（清洗后的 DataFrame）在第二次调用里可以直接引用，不需要重新读取 CSV、不需要把 DataFrame 序列化到文件再加载、也不需要用 commands.run() 起一个新的一次性脚本进程。",
+      "files": [],
+      "expectations": [
+        "两次调用都对同一个 Sandbox 实例使用 run_code()（Code Interpreter），而不是 commands.run()，也不是分别调用两次 Sandbox.create()",
+        "第二次调用的代码直接引用第一次调用里创建的 DataFrame 变量，没有重新读取或重新解析 CSV 文件",
+        "代码没有为了绕开一个（错误的）'状态不会跨 run_code 调用存活'的假设，而手动把 DataFrame 持久化到文件（pickle/csv/parquet）再在两次调用之间倒手",
+        "解释把这个行为正确归因于 E2B Code Interpreter 在一个持久化的执行上下文里运行代码，而不是归因于某种笼统的'沙箱缓存'或'文件还在'之类的说法",
+        "如果代码创建了一个显式的 code context（create_code_context），两次 run_code 调用传的是同一个 context 对象/ID，而不是隐式地用了两个不同的 context"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "commands-run-does-not-share-shell-state-across-calls",
+      "prompt": "写 Python 代码：先用 sandbox.commands.run() cd 到 /home/user/myrepo 目录并 export 一个环境变量 BUILD_ENV=prod，然后用第二次单独的 sandbox.commands.run() 调用去执行 npm run build，要求 build 是在 /home/user/myrepo 目录下、带着 BUILD_ENV=prod 跑的。",
+      "expected_output": "不能指望第一次 commands.run() 里的 cd 和 export 在第二次独立的 commands.run() 调用里还生效——每次 commands.run() 都是一个全新的进程，不共享上一次调用的 shell 状态（当前目录、临时环境变量）。正确做法是把 cd 和构建命令写进同一条命令字符串里（如一次调用执行 'cd /home/user/myrepo && npm run build'），环境变量通过该次调用的 envs 参数传入，而不是分两次调用、寄望第二次调用记得第一次的状态。",
+      "files": [],
+      "expectations": [
+        "代码没有在一次 commands.run() 调用里做 'cd' 和 'export'，然后指望那个目录/环境变量在另一次、更晚的独立 commands.run() 调用里还生效",
+        "build 命令和目录切换被合并进同一次 shell 调用（比如一个用 '&&' 连起来的命令字符串，或者等效的显式 cwd 设置），并且是在同一次 commands.run() 调用里完成的；环境变量则通过实际运行 build 的那次调用的 `envs` 参数传入",
+        "解释指出每次 commands.run() 调用都会起一个全新进程，不会继承前一次调用的 shell 状态，并且把这一点和沙箱文件系统（跨调用是持久化的）区分开",
+        "BUILD_ENV=prod 确实出现在实际运行 `npm run build` 那个进程的环境变量里，而不是只在更早的、互不相干的那次调用里设置过"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "per-user-session-sandbox-cost-control-pause-vs-kill",
+      "prompt": "我们要给聊天类 Agent 产品的每个用户会话分配一个专属 E2B 沙箱，用户发消息时用它跑代码，消息之间可能间隔几分钟到几小时不等。请设计并写出创建、复用、以及会话彻底结束时清理这个沙箱的 Python 代码，要求消息间隔期间不持续计费，但用户随时回来时沙箱状态（文件、已 import 的库）还在。",
+      "expected_output": "消息间隔期间应该让沙箱进入 Paused 状态而不是保持 Running（Running 按秒计费，Paused 不计费），可以通过较短的 timeout 加 lifecycle={'on_timeout':'pause','auto_resume':True} 让沙箱在空闲后自动 pause、用户下一条消息触发的 SDK 调用自动唤醒（无需手动 connect）。同时必须认识到 Paused 沙箱会被无限期保留、不会自动过期或清理，所以当用户会话彻底结束（比如长期不回来或用户主动关闭会话）时要显式调用 sandbox.kill() 才能真正释放，不能指望暂停的沙箱会自己消失。",
+      "files": [],
+      "expectations": [
+        "设计没有为了让沙箱'随时待命'，就在消息之间几分钟到几小时的间隔里一直让它保持 Running 状态——空闲期间用了暂停（手动暂停，或者通过 on_timeout='pause'）",
+        "auto_resume 被设为 True（或者在下一条消息到来时显式调用了 Sandbox.connect()），这样暂停的沙箱被再次使用时，开发者不需要在每次操作前都特判'它是不是暂停了'",
+        "代码或解释明确承认一个暂停的沙箱不会被自动删除或过期——它会一直保留到被显式 kill 为止",
+        "有一个明确绑定到'会话真正结束/被放弃'这个时机的 sandbox.kill()（或 Sandbox.kill(sandbox_id)）调用，而不是仅仅靠一句注释声称暂停就足够作为清理手段",
+        "代码没有声称 GPU 加速可以用于更重的单用户算力场景，也没有假设 E2B 提供了某个它实际不提供的算力选项"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "background-command-cross-process-result-collection",
+      "prompt": "写一个两段式的 Python 流程：一个 API handler（进程 A）用 E2B 起一个耗时的代码生成任务（跑几分钟），不等它跑完就立刻返回一个任务 ID 给调用方；几分钟后另一个完全独立的进程（进程 B，比如一个轮询的 worker）要能凭这个任务 ID 找回那个沙箱、确认任务是否跑完、并拿到完整的输出结果。",
+      "expected_output": "进程 A 用 sandbox.commands.run(..., background=True) 启动任务，任务的输出要重定向到沙箱内的一个文件（如 '> /home/user/gen.log 2>&1'），而不是依赖 SDK 的 stdout 回调，因为后台命令的流式 stdout/stderr 只会推送给发起它的那个进程，进程 B 是收不到的。进程 A 把 sandbox_id 和 pid（以及必要时较长的 sandbox timeout）持久化返回。进程 B 用 Sandbox.connect(sandbox_id) 重新连接沙箱，用 sandbox.commands.connect(pid) 重新接上那个后台进程句柄，调用 handle.wait() 等它跑完，再用 sandbox.files.read() 读取重定向到的日志文件拿到完整输出——而不是指望重新连接后还能拿到之前的流式回调数据。",
+      "files": [],
+      "expectations": [
+        "进程 A 用 background=True 启动命令，并把 stdout/stderr 重定向到沙箱内的一个文件（比如在命令字符串里用 shell 重定向），而不是单纯依赖 on_stdout/on_stderr 回调来供之后取回",
+        "进程 A 返回/持久化了 sandbox_id 和命令的 pid 这两个进程 B 需要用来重连的信息，而不是只返回 sandbox_id",
+        "沙箱自身的超时被设置得足够长，能撑过这个后台任务（或者命令自己的超时被禁用/延长了），这和命令本身的超时设置是分开处理的两件事",
+        "进程 B 调用 Sandbox.connect(sandbox_id)、再调用 sandbox.commands.connect(pid) 重新接上那个具体的运行中/已完成的进程，并且在判断任务完成之前调用了 wait()",
+        "进程 B 通过 sandbox.files.read() 读取重定向后的日志文件来拿到结果，而不是指望 commands.connect() 或 wait() 能把之前流式推送给进程 A 的 stdout 数据补回来",
+        "后台命令里用到的不可信输入（比如一段 LLM 生成的 prompt）是通过 `envs` 参数传入、并以 shell 变量的形式引用的，而不是直接拼进命令字符串"
+      ]
+    }
+  ]
+}

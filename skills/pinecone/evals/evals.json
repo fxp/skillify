@@ -1,0 +1,75 @@
+{
+  "skill_name": "pinecone",
+  "evals": [
+    {
+      "id": 1,
+      "name": "hybrid-search-not-a-single-query-param",
+      "prompt": "我们有一个 Pinecone 索引，里面既有客服工单的正文（存了 dense embedding 向量）又有工单的分类标签、工号这些结构化字段。请写一个 Python 函数，给定一个自然语言查询，返回既在语义上相关、又必须包含用户提供的关键词（比如工单编号）的前 10 条结果，要求用一次 Pinecone 调用完成，不要额外的客户端分数融合逻辑。",
+      "expected_output": "如果索引是 Documents API 的 schema 化索引（声明了 dense_vector 字段和 full_text_search 的 string 字段），正确做法是用 index.documents.search 的 score_by=[{type: dense_vector, ...}] 做语义排序，同时在 filter 里用 $match_phrase / $match_all 对关键词做文本匹配过滤（一次请求完成）。代码不应该假设 Pinecone 有一个内置的『dense+关键词混合排序』参数能直接传两种信号进同一个 score_by 数组；也不应该臆造一个不存在的 alpha/hybrid_weight 请求参数。如果目标索引其实是 Vectors API 的经典索引（没有 full_text_search 字段），代码应该指出这种索引不支持关键词精确匹配过滤，只能退化为 metadata $eq 等值过滤或换成 dense+sparse 的 alpha 加权模式，而不是假装能一次调用做到『语义+关键词』二合一。",
+      "files": [],
+      "expectations": [
+        "The code does not invent a single non-existent 'hybrid weight' or 'alpha' request parameter on a generic query/search call that combines dense ranking and exact keyword matching in one score_by clause",
+        "If targeting a Documents-API (schema-based) index, the code uses filter with $match_phrase or $match_all/$match_any for the keyword requirement, combined with a score_by dense_vector clause for semantic ranking, in a single documents.search call",
+        "The code or explanation does not claim the classic Vectors API (index.query with a plain vector) supports a text-match/keyword filter operator ($match_phrase etc.) — those are Documents-API-only",
+        "The code/explanation correctly states that combining full keyword-match filtering with semantic ranking in one request requires the Documents API with a full_text_search-enabled string field, not the Vectors API",
+        "No fabricated field names outside what's documented (e.g. no invented 'keywords' top-level query parameter)"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "upsert-overwrite-collision",
+      "prompt": "我们要把一批客户上传的 PDF 按段落切分后存入 Pinecone 做检索。每个 PDF 会被拆成多个段落，写一个 Python 函数完成分块、生成 ID、upsert 到索引里；后续如果同一个客户重新上传了修改过的同一份 PDF（段落数可能变多或变少），也要能正确替换掉旧版本的内容，不残留旧段落，也不会不小心覆盖到其他客户或其他文档的数据。",
+      "expected_output": "ID 必须包含租户/客户标识和文档标识（如 tenant_id#document_id#chunk_index），不能用裸的自增序号或段落哈希做 ID（否则不同客户或不同文档的段落可能撞 ID，静默互相覆盖，upsert 是整条覆盖写而不是追加）。处理『重新上传』场景时，代码需要先用 ID 前缀（tenant_id#document_id#）列出该文档现有的所有分块 ID 并整体删除，再 upsert 新的分块集合——而不是简单地对新分块按索引位置 upsert（如果新版本段落数比旧版本少，按位置覆盖会残留旧版本多出来的尾部段落，因为 upsert 不会自动清理未被覆盖的旧 ID）。",
+      "files": [],
+      "expectations": [
+        "Record IDs are structured to include a tenant/customer identifier and a document identifier (e.g. 'tenant_id#document_id#chunk_index'), not bare sequential integers or content hashes alone",
+        "The code or explanation states that upsert overwrites an existing ID's record entirely rather than appending, and that colliding IDs across tenants/documents would silently overwrite each other",
+        "The re-upload / update path deletes all existing chunks for that document (e.g. via a metadata filter or ID-prefix list-then-delete) before or as part of upserting the new chunk set, rather than only upserting new chunks by position",
+        "The explanation notes that upserting fewer chunks than before, without first deleting old chunks, would leave stale trailing chunks in the index",
+        "Namespace or tenant scoping is used consistently across the upsert and delete calls for the same document"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "read-unit-cost-not-top-k-driven",
+      "prompt": "我们的 Pinecone 索引里有一个很大的 namespace（几十 GB），产品经理担心查询成本，提出把默认 top_k 从 50 降到 5 来省钱。请你评估这个改动能不能达到降低 Pinecone 查询成本的目的，并给出真正有效的降本建议。",
+      "expected_output": "正确回答应指出：Pinecone 的 read units（查询计费单位）是按被查询的 namespace 大小（GB）计算的，和 top_k、include_metadata、include_values 等返回结果相关的参数无关；把 top_k 从 50 降到 5 不会降低这次查询消耗的 read units，不是有效的降本手段。真正影响成本的是缩小被扫描的 namespace 范围（比如按租户/业务维度拆分成更小的 namespace，而不是用一个大 namespace 配合 metadata 过滤器）或减少查询频率；另外 egress（返回数据量）计费才和返回内容相关，降低 top_k 或关闭 include_values 能省一部分 egress 费用，但这和『查询本身的 read units 成本』是两回事，回答应该把这两种计费维度分开讲清楚，不能混为一谈。",
+      "files": [],
+      "expectations": [
+        "The answer explicitly states that Pinecone read-unit (RU) cost for a query scales with the size (GB) of the targeted namespace, not with top_k, include_metadata, or include_values",
+        "The answer explicitly says lowering top_k from 50 to 5 will NOT reduce the read units consumed by the query, contradicting the product manager's assumption",
+        "The answer distinguishes RU cost (namespace-size-driven) from egress cost (response-size-driven), and correctly notes that include_values=false / smaller top_k can reduce egress but not RU",
+        "The answer proposes an actually effective cost lever, such as splitting into smaller/more targeted namespaces, reducing query frequency, or using dedicated read nodes — not just shrinking top_k",
+        "The answer does not claim Pinecone charges per returned record or per API call as a flat fee"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "integrated-embedding-vs-schema-index-choice",
+      "prompt": "我们要在 Pinecone 里新建一个索引，存储几万篇产品文档做 RAG 检索，需求是：(1) 之后可能要加全文关键词搜索（比如按型号精确查找），(2) 不想自己维护 embedding 模型调用逻辑，希望上传文本 Pinecone 自动帮忙转成向量。请写出建索引和写入数据的完整 Python 代码。",
+      "expected_output": "这两个需求存在冲突需要在代码前先指出：Pinecone 目前的『集成 embedding』（Records API，pc.create_index_for_model + index.upsert_records/search）不支持全文检索（BM25/关键词精确匹配），只支持语义/稀疏向量检索；而支持全文检索的『Documents API』（pc.indexes.create(schema=...) + index.documents.*）目前不提供集成 embedding，向量字段必须自己算好再写入。正确做法是二选一并说明取舍：要全文检索能力就用 Documents API 并自己接一个 embedding 模型（可以用 Pinecone 的 POST /embed 独立调用，但索引本身不是『集成 embedding』索引）；要免维护 embedding 逻辑就用 Records API 的集成 embedding 索引，但产品需求里的『全文关键词精确搜索』暂时做不到，只能退化成语义检索或 sparse 检索。代码不能假设有一种索引能同时具备『集成 embedding』和『schema 化全文检索』两个能力。",
+      "files": [],
+      "expectations": [
+        "The response identifies that integrated embedding (Records API, create_index_for_model) and full-text/BM25 search (Documents API, schema-based) are two different, currently non-overlapping capabilities as of the fetched documentation",
+        "The response does not produce code that assumes a single index type provides both integrated embedding AND full_text_search schema fields simultaneously",
+        "The response explicitly asks the user to prioritize or presents both tradeoff options (schema-based index + self-managed embedding via a standalone /embed call, vs. integrated-embedding index without full-text search) rather than silently picking one without flagging the conflict",
+        "If integrated embedding is chosen, the code uses pc.create_index_for_model with an embed.field_map and index.upsert_records/search, not index.documents.*",
+        "If the Documents API is chosen for full-text search, the code does not call a non-existent integrated-embedding parameter on pc.indexes.create's schema-based path"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "metadata-filter-operator-syntax",
+      "prompt": "写一个 Python 函数，查询 Pinecone 索引里 category 等于 'electronics' 并且 price 在 100 到 500 之间（含边界）的相似商品，同时要求商品必须还在库存中（in_stock 字段为 true）。",
+      "expected_output": "filter 参数必须使用 Pinecone 的 MongoDB 风格操作符语法，例如 {\"$and\": [{\"category\": {\"$eq\": \"electronics\"}}, {\"price\": {\"$gte\": 100}}, {\"price\": {\"$lte\": 500}}, {\"in_stock\": {\"$eq\": True}}]}（或利用顶层多字段隐式 AND 的写法），不能写成 SQL 风格的字符串表达式（如 \"category = 'electronics' AND price BETWEEN 100 AND 500\"），也不能在顶层直接使用裸比较操作符（如 {\"$gte\": 100} 不嵌在字段名下）,同一个字段的多个范围条件（$gte 和 $lte）要合并在同一个字段的操作符对象里或放在同一个 $and 数组中，不能写成两个互相覆盖的独立顶层 price 键。",
+      "files": [],
+      "expectations": [
+        "The filter uses MongoDB-style nested operator objects ($eq, $gte, $lte, $and), not a SQL-like string expression",
+        "No bare comparison operator appears at the top level of the filter (e.g. filter={\"$gte\": 100} without being nested under a field name is invalid)",
+        "The price range is expressed with both $gte and $lte on the same 'price' field (either combined in one clause or via $and), not as two conflicting top-level 'price' keys that would silently overwrite each other in the dict",
+        "in_stock uses $eq with a boolean True/true, consistent with boolean being a supported metadata filter type",
+        "The code passes this filter to the correct parameter name for whichever API is used (filter= for Vectors API index.query, or filter= inside documents.search for Documents API)"
+      ]
+    }
+  ]
+}

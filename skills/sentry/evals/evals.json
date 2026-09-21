@@ -1,0 +1,63 @@
+{
+  "skill_name": "sentry",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "给我们的 Node.js 后端接入 Sentry 错误监控,再写一个每天跑一次的小脚本,统计这个项目当前有多少个未解决的 issue,打印出来。",
+      "expected_output": "两段代码,方向完全不同:接入部分用 @sentry/node 的 Sentry.init({dsn: ...}),DSN 从 SENTRY_DSN 环境变量读;统计脚本用 HTTP 请求调 Web API(GET https://{region}.sentry.io/api/0/organizations/{org}/issues/,或至少 sentry.io/api/0/...),带 Authorization: Bearer <auth token>(不是 DSN),token 从另一个环境变量读,不复用 DSN。不把 auth token 塞进 Sentry.init 的 dsn 参数,也不试图用 DSN 去调 REST 查询接口。",
+      "expectations": [
+        "接入部分正确使用 Sentry.init({dsn: ...}) 而不是手写 HTTP POST 到 ingestion 端点",
+        "统计脚本使用 Authorization: Bearer <token> 鉴权,不是把 DSN 当 Bearer token 使用",
+        "统计脚本和 SDK 初始化使用的是两个不同的凭证/环境变量,没有把 DSN 和 auth token 混为一谈",
+        "统计脚本没有依赖裸的 is:unresolved 之外的隐含假设——即代码要么显式传 query=is:unresolved,要么清楚说明不传 query 时默认就是未解决状态",
+        "代码里 Sentry API 请求路径使用 organizations/{org}/issues/ 这种组织级路径,而不是凭空编造的路径"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "写一个 Python 函数,输入一个 Sentry issue 的 short ID(比如 MYAPP-1A2),拿到这个 issue 最近一次报错的完整堆栈跟踪并打印出来。",
+      "expected_output": "函数先把 short ID 解析/查询成可用于 API 路径的 issue 标识(通过 GET /api/0/organizations/{org}/shortids/{issue_id}/ 或等价方式),然后调 GET /api/0/organizations/{org}/issues/{issue_id}/events/latest/ (event_id 用字面量 latest,而不是先拉全部 event 列表再取最后一条),鉴权用 Authorization: Bearer <token>,从响应里取堆栈跟踪相关字段(entries 或等价字段),而不是从 issue 详情本身(GET .../issues/{issue_id}/)直接读堆栈跟踪——因为 issue 详情不含堆栈跟踪。",
+      "expectations": [
+        "代码没有假设 GET /api/0/organizations/{org}/issues/{issue_id}/ (issue 详情本身)包含完整堆栈跟踪",
+        "代码通过某种方式先定位到一个具体 event(理想情况下使用 latest/oldest/recommended 字面量,或至少查询 event 列表后取一条),而不是把 issue_id 和 event_id 当成同一个东西传给同一个字段",
+        "如果使用了 latest 字面量,代码没有先多此一举地调用列表 endpoint 再手动挑最新一条",
+        "鉴权使用 Bearer auth token,不是 DSN",
+        "代码认识到 issue 和 event 是两个不同粒度的概念(至少在注释或变量命名上体现出区分),不是把两者混用同一个 ID"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "写一段代码,查询我们 Sentry 组织里最近 24 小时内新出现的、还未解决的 issue,按受影响用户数从高到低排序,只返回属于 my-service 这个项目的。",
+      "expected_output": "调 GET /api/0/organizations/{org}/issues/,query 参数用 Sentry 自己的搜索 DSL 拼成类似 'is:unresolved age:-24h' 的字符串(不是逗号分隔的关键词列表,不是 SQL WHERE 语法,不使用 AND/OR 连接这两个简单条件因为 issue 搜索本身不需要也不支持布尔操作符做简单 AND 组合时可以直接空格并列),project 参数传 my-service 的 slug 或 ID(而不是把项目名塞进 query 字符串里),sort 参数传 user(而不是拼进 query)。",
+      "expectations": [
+        "query 参数使用 key:value token 语法(如 is:unresolved、age:-24h),不是自然语言或逗号分隔关键词",
+        "项目过滤使用 project query 参数,不是试图在 query DSL 字符串里写项目名",
+        "排序使用 sort=user 这个专门的参数,不是试图在 query 字符串里表达排序",
+        "如果代码里出现了 AND/OR,没有被错误地当作 issue 搜索必需的连接符使用(两个 key:value 并列本身默认就是 AND 关系)",
+        "代码或注释体现出对'默认查询隐含 is:unresolved'这件事的认知,不是想当然地认为不传 query 就是全部"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我们组织的 Sentry 数据存储区域选的是欧盟(EU)。写一段代码,用组织的 API token 列出这个组织下所有项目的名称和 slug。",
+      "expected_output": "代码使用 EU 区域对应的 base URL(https://de.sentry.io/...),而不是不假思索地硬编码 https://sentry.io/...;或者代码体现出'先查一下这个组织的 regionUrl 再决定用哪个域名'这种更稳妥的做法,而不是对所有组织一律假设用 sentry.io。",
+      "expectations": [
+        "代码没有把 base URL 硬编码成裸的 sentry.io 且完全忽略 EU 区域这个前提",
+        "代码使用了 de.sentry.io,或者通过先调用组织详情/组织列表 endpoint 读取 links.regionUrl 字段来动态决定 base URL",
+        "鉴权使用 Authorization: Bearer <token>",
+        "调用的是 GET /api/0/organizations/{org}/projects/ 这个组织级项目列表 endpoint,而不是编造一个不存在的路径"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "写代码把 issue ID 为 123456 的这个 Sentry issue 标记为已解决,然后再写一段代码统计一下:过去 7 天里,is:resolved 状态的 issue 一共有多少个是被我们主动通过 API 批量关闭的(用批量更新接口查一下最近改过状态、且没有指定具体 ID 列表、直接按 query 条件批量操作的场景要怎么写,并说明这类批量操作有什么已知的风险)。",
+      "expected_output": "第一段代码用 PUT /api/0/organizations/{org}/issues/{issue_id}/,body 传 {\"status\": \"resolved\"},鉴权 Bearer token。第二段/说明部分要提到:批量更新 PUT /api/0/organizations/{org}/issues/ 在不传 id 参数、只按 query 过滤时,会隐式更新全部匹配的 issue(最多 1000 个);且明确指出如果传了部分越权/不存在的 id,该 endpoint 不会整体报错,只是那些 ID 不生效,这是一个需要在代码里自行做二次校验的风险点,而不是假设'调用成功=全部生效'。",
+      "expectations": [
+        "单个 issue resolve 使用 PUT /api/0/organizations/{org}/issues/{issue_id}/ 加 status: resolved,不是批量 endpoint",
+        "关于批量操作的说明或代码提到:不传 id 时批量 PUT 会隐式作用于所有匹配 query 的 issue,单次最多 1000 个",
+        "关于批量操作的说明或代码提到:部分 ID 越权/不匹配时该操作不会整体失败,只是那部分 issue 不受影响,响应仍视为成功——即不能假设 HTTP 200/204 就等于'传入的每个 ID 都被处理了'",
+        "没有把 DELETE(永久删除)和 PUT status=resolved(标记为已解决)这两个语义完全不同的操作搞混"
+      ]
+    }
+  ]
+}

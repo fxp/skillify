@@ -1,0 +1,74 @@
+{
+  "skill_name": "elevenlabs",
+  "evals": [
+    {
+      "id": 1,
+      "name": "live-agent-model-choice-vs-quality-default",
+      "prompt": "我们要接入 ElevenLabs 做一个电话客服语音助手：用户打进来后，Agent 需要用语音实时回答问题，对话要尽量流畅、不能有明显卡顿。请写 Python 代码选择合适的 TTS 模型并调用文本转语音接口，把 LLM 生成的回复念出来。",
+      "expected_output": "model_id 应选择面向实时场景的模型（eleven_flash_v2_5 或 eleven_v3_conversational），不应该默认选 eleven_multilingual_v2 或 eleven_v3——后两者官方模型选型指南没有把它们列为 Agents Platform/实时对话的推荐模型，用在电话场景会有明显更高的延迟。代码或说明应提到延迟数量级的取舍（Flash ~75ms 推理延迟 vs Multilingual v2 明显更慢），而不是仅以'质量最高'为唯一选型依据。",
+      "files": [],
+      "expectations": [
+        "The code sets model_id to eleven_flash_v2_5 or eleven_v3_conversational for the real-time phone agent use case, not eleven_multilingual_v2 or eleven_v3",
+        "The explanation or comments justify the choice based on latency (real-time/low-latency requirement), not just audio quality",
+        "The code does not omit model_id and silently rely on the eleven_multilingual_v2 default for a latency-sensitive use case",
+        "If streaming is used, the code prefers a streaming or WebSocket endpoint over the batch (non-streaming) convert endpoint to reduce time-to-first-audio, given the real-time requirement",
+        "API key is read from an environment variable, not hardcoded"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "pvc-consent-someone-elses-voice",
+      "prompt": "我们拿到了一位知名播客主播的口头同意，他录了一段 40 分钟的高质量音频发给我们，希望我们用 ElevenLabs 的 Professional Voice Clone 帮他的团队做一个可以在多个项目里复用的克隆声音，团队账号下直接创建这个 PVC。请写代码完成这个克隆流程。",
+      "expected_output": "代码或说明应明确指出：即使拿到了本人口头同意，团队/我方账号也不能代替这位主播创建他的 Professional Voice Clone——ElevenLabs 官方规则是 PVC 只能由声音所有者本人的账号创建并完成验证，即使征得同意也不行。正确做法是请这位主播本人注册/登录自己的 ElevenLabs 账号、上传自己的音频完成 PVC 创建与验证，然后通过分享链接把这个声音私下分享给团队账号使用，而不是团队直接调用 POST /v1/voices/pvc 拿他的录音去建声音。",
+      "files": [],
+      "expectations": [
+        "The response does not simply write code that uploads the presenter's audio via POST /v1/voices/pvc (or /v1/voices/add) under the team's own account as if that were compliant",
+        "The response explicitly states that ElevenLabs prohibits creating a Professional Voice Clone of someone else's voice even with their consent",
+        "The response proposes the correct workflow: the voice owner creates and verifies the PVC on their own account, then shares it via a voice-sharing link",
+        "The response does not claim that recording consent alone satisfies ElevenLabs' verification/compliance requirement",
+        "If code is still shown, it is framed as what the presenter himself would run on his own account, not as something the requesting team executes on his behalf"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "sdk-namespace-conversational-ai-vs-agents",
+      "prompt": "我们已经在 ElevenLabs 后台创建了一个 Agent（agent_id 已知），现在想用 Python SDK 把它的 turn_timeout（静音多久后 Agent 接话）改成 5 秒。请写这段更新代码。",
+      "expected_output": "正确的 SDK 调用是 elevenlabs.conversational_ai.agents.update(agent_id=..., conversation_config={'turn': {'turn_timeout': 5}})，命名空间是 conversational_ai（不是产品文档里常用的 'ElevenAgents' 或直觉上的 client.agents.*）。字段路径是 conversation_config.turn.turn_timeout，不是拍脑袋编的字段名。",
+      "files": [],
+      "expectations": [
+        "The code calls a method under elevenlabs.conversational_ai.agents (Python) — not elevenlabs.agents.* or any other guessed namespace",
+        "The update call sets conversation_config.turn.turn_timeout to 5, matching the documented field path, not a differently-named or differently-nested field",
+        "The client is instantiated via ElevenLabs() / ElevenLabs(api_key=...) from the elevenlabs package, not a fabricated separate 'agents' package",
+        "The code does not invent a REST endpoint path instead of using the SDK method when the SDK is the natural choice for a config update task"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "stt-required-model-id-and-silent-surcharges",
+      "prompt": "我们要批量转录一批客服录音（每条几分钟），转录时想同时拿到关键产品名的准确识别（比如产品名 'Zylotech Pro'）以及检测出录音里的信用卡号之类的敏感信息做脱敏。请写 Python 代码调用 ElevenLabs Speech to Text API 完成这个批量转录任务。",
+      "expected_output": "代码必须显式传 model_id（例如 scribe_v2），因为 STT 的 model_id 是必填参数，省略会导致 422 错误（这一点和 TTS 的 model_id 有默认值、可以省略正好相反）。要提高 'Zylotech Pro' 的识别准确率应使用 keyterms 参数；要检测并脱敏信用卡号应使用 entity_detection（至少包含 pci 类别）配合 entity_redaction。代码或说明中应提到这几个参数不是免费的：keyterms 会在基础转录费上加收约 20%，entity_detection/entity_redaction 各加收约 30%，这些附加费不会在调用时报错提醒，是静默生效的计费变化，批量转录一大批录音前应该让用户知情这笔额外成本。",
+      "files": [],
+      "expectations": [
+        "The code explicitly passes model_id (e.g. 'scribe_v2') to the speech-to-text convert call; it does not omit model_id as if it were optional the way TTS's model_id is",
+        "The code uses the keyterms parameter to bias recognition toward 'Zylotech Pro'",
+        "The code uses entity_detection (including or equivalent to the 'pci' category for credit card numbers) and entity_redaction to detect and redact sensitive data",
+        "The response notes that keyterms, entity_detection, and entity_redaction each add a surcharge on top of the base per-hour transcription cost, and that enabling them does not produce any error or warning — the cost increase is silent",
+        "The response does not claim these features are free or bundled into the base per-hour STT rate"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "websocket-vs-batch-tts-for-llm-streaming",
+      "prompt": "我们的语音助手后端是 LLM 边生成文本边输出（流式 token），希望这些文本片段一边生成一边被念出来，尽量减少用户等待第一段语音的时间。请写代码把 LLM 的流式输出接到 ElevenLabs 的文本转语音上。",
+      "expected_output": "由于文本本身是流式产生的（不是提前拿到完整文本），应该使用 TTS 的 WebSocket 端点（wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input），而不是批量端点或 SSE 流式端点（这两者假设完整文本提前可用）。代码应该开启 auto_mode（或至少提到 chunk_length_schedule 缓冲机制），避免因为分块调度导致文本分片过小反而增加延迟的问题。鉴权与 model_id 等参数应通过连接时的 query string 传递，文本内容通过后续 WebSocket 消息逐条发送，而不是把整个流式过程硬套成多次独立的 HTTP POST 请求。",
+      "files": [],
+      "expectations": [
+        "The code connects to the WebSocket endpoint (.../stream-input over wss://) rather than the batch POST endpoint or the plain HTTP streaming (SSE) endpoint, given that text arrives incrementally from the LLM",
+        "The code sets auto_mode (or explicitly discusses chunk_length_schedule) so small incrementally-sent text fragments don't stall audio generation while waiting to fill the buffer",
+        "Authentication and parameters like model_id are passed via the WebSocket connection (query string/headers), not stuffed into a JSON body the way the batch HTTP endpoint expects",
+        "The code does not repeatedly open a new batch HTTP request per LLM token/chunk as a substitute for using the WebSocket endpoint",
+        "API key / credentials are not hardcoded in the code"
+      ]
+    }
+  ]
+}

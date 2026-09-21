@@ -1,0 +1,72 @@
+{
+  "skill_name": "apify",
+  "evals": [
+    {
+      "id": 1,
+      "name": "long-crawl-sync-vs-async",
+      "prompt": "我要用 Apify 上的 apify/website-content-crawler 这个 Actor 抓一个有几百个页面的网站,把结果拿回来存到我自己的数据库。请用 Python 写调用 Apify API 的代码,要能稳定处理这种可能跑好几分钟甚至更久的任务。",
+      "expected_output": "不能直接调 run-sync-get-dataset-items(或 apify-client 里等价的一步到位方法)当成万能方案,因为这两个同步端点最长只等 300 秒(MAX_ACTOR_JOB_SYNC_WAIT_SECS),几百个页面的抓取很可能超过这个时间;超时只是这次 HTTP 请求失败,并不会中止后台已经在跑的 run,如果代码只是在超时后报错退出而不做后续处理,那次 run 消耗的资源就白费了,数据也丢了。正确做法是走异步方式:调 POST /v2/actors/{actorId}/runs(或 apify-client 的 actor().call(),它内部就是启动+轮询)启动 run 拿到 run id 和 defaultDatasetId,然后轮询 GET /v2/actor-runs/{runId} 直到状态变成终态(或者配置 webhook 在完成时收到通知),再用 defaultDatasetId 去读 dataset items,并且要对 limit/offset 做分页而不是假设一次能拿完全部条目。",
+      "files": [],
+      "expectations": [
+        "The code does not rely solely on a run-sync / run-sync-get-dataset-items style one-shot synchronous call as the only mechanism for a crawl of unknown/potentially long duration",
+        "The code starts the Actor asynchronously (POST /v2/actors/{actorId}/runs or an equivalent apify-client call that starts a run) and separately polls GET /v2/actor-runs/{runId} (or uses a webhook) until the run reaches a terminal status, rather than assuming a single request will both start and complete the crawl",
+        "The code retrieves the dataset id from the run object (defaultDatasetId) rather than hardcoding or guessing it",
+        "Dataset item retrieval paginates using limit/offset (or an iterator/generator helper) instead of assuming a single unpaginated call returns every item",
+        "The code or accompanying explanation does not claim the 300-second synchronous endpoints are safe for an arbitrarily long crawl"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "run-succeeded-but-empty-results",
+      "prompt": "写一个 Python 函数,调用一个 Apify Actor,判断这次抓取到底成不成功,如果成功就把数据集里的条目返回,不成功就抛异常/重试。请把'成功'的判断逻辑写清楚。",
+      "expected_output": "不能只用 run['status'] == 'SUCCEEDED' 作为'抓取任务成功'的唯一判据。Apify 的 run 状态反映的是 Actor 进程有没有正常退出(类似 exit code 语义),即便目标网站把请求全部拦截、或没有匹配到任何结果,Actor 也完全可能正常退出并得到 SUCCEEDED 状态。判断代码除了检查 status 是否为终态且非 FAILED/ABORTED/TIMED-OUT,还应该实际读取 defaultDatasetId 对应数据集的条目数量(比如用 GET 数据集 items 或数据集的 statistics 端点),数据集为空或条目数远低于预期时,即便 status 是 SUCCEEDED 也应该视为需要人工关注或重试的情况,而不是直接当作成功返回;比较严谨的实现还会检查 run 对象里的 statusMessage/isStatusMessageTerminal 字段。",
+      "files": [],
+      "expectations": [
+        "The function does not treat run['status'] == 'SUCCEEDED' alone as sufficient proof that meaningful data was collected",
+        "The function inspects the actual dataset (item count via dataset items or dataset statistics) tied to defaultDatasetId before declaring success",
+        "The function's success/failure branching distinguishes 'platform-level run failed (FAILED/ABORTED/TIMED-OUT)' from 'platform-level run succeeded but produced zero or unexpectedly few results'",
+        "The explanation does not claim SUCCEEDED status guarantees the scrape achieved its business purpose"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "client-sdk-vs-actor-sdk-package-choice",
+      "prompt": "我在自己的后端服务(不是 Apify 平台上的 Actor,就是普通一个 Flask app)里要调用 Apify 上别人发布的一个 Actor,启动它并把结果读回来。请给出需要安装的 Python 包和对应的示例代码。",
+      "expected_output": "应该安装并使用 apify-client 包(pip install apify-client),用 ApifyClient(token) 初始化,再用 client.actor(actor_id).call(run_input=...) 启动并等待完成,然后用 client.dataset(run['defaultDatasetId']).list_items().items 读结果。不应该安装或使用 apify 这个包(pip install apify)——那是用来编写、开发一个跑在 Apify 平台上的 Actor 本体的 SDK(涉及 Actor.init()/Actor.get_input()/Actor.push_data() 这套生命周期 API,面向的是'被 Apify 调度运行的代码',不是'从外部调用 Apify 的代码'),在一个独立的 Flask 后端服务里引入它是选错了包,概念上也说不通(Flask app 不是跑在 Apify 平台容器里的 Actor)。",
+      "files": [],
+      "expectations": [
+        "The recommended package to install is apify-client (pip install apify-client), not apify",
+        "The code initializes an ApifyClient (or ApifyClientAsync) with an API token, not an Actor class from the 'apify' package",
+        "The code does not use Actor.init()/Actor.get_input()/Actor.push_data() or the 'async with Actor:' pattern, which belongs to the Actor-authoring SDK and only makes sense running inside an Actor container on the Apify platform",
+        "The explanation (if present) correctly distinguishes calling an existing Actor from an external app (apify-client) versus authoring a new Actor that runs on the platform (the apify package), and states the Flask backend scenario calls for the former"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "cost-estimation-not-flat-fee",
+      "prompt": "我们打算用 Apify 上的一个 Actor 批量抓 10000 个商品页面,类似我们之前用 Firecrawl 时,一次调用大概固定收几个 credit,可以直接按'单价 × 10000'估算总成本。请帮我估算一下用 Apify 大概要花多少钱,并给出启动这次批量任务时控制预算的代码。",
+      "expected_output": "不能直接套用 Firecrawl 那种'每次调用固定扣几个 credit'的心智模型来估算 Apify 的成本。Apify 的计费由两层决定:底层平台用量(compute unit,1 CU = 1GB 内存跑 1 小时,加上数据传输、代理、存储读写,和内存分配、页面复杂度、是否用浏览器渲染等因素强相关,不是固定值)乘以该 Actor 开发者选择的定价模型(免费、纯平台用量付费、开发者自定义的按事件收费 pay-per-event、或包月租用四选一,pay-per-event 的 Actor 有的把平台用量含在事件单价里、有的额外收),同一类任务换一个 Actor 价格结构可能完全不同。正确做法是先查这个具体 Actor 在 Store 页面上的 Pricing 说明,并建议先用免费额度小范围试跑(比如抓 10-20 个页面)观察 Billing 里的实际消耗再按比例外推,而不是直接给出一个'单价 × 10000'的肯定数字;控制预算的代码应该在启动 run 时传 maxTotalChargeUsd 参数封顶总花费。",
+      "files": [],
+      "expectations": [
+        "The response explicitly rejects the flat 'fixed credits per call, multiply by 10000' cost model as inapplicable to Apify",
+        "The response explains that cost depends on both platform usage (compute units, proxy, data transfer, storage operations) and the specific Actor's chosen pricing model (free / pay-per-usage / pay-per-event / rental), which vary by Actor",
+        "The response recommends checking the specific Actor's Store page pricing section and/or doing a small-scale test run to observe actual consumption before extrapolating, rather than asserting a single confident total cost figure",
+        "The provided code for starting the batch run includes the maxTotalChargeUsd query parameter (or equivalent) to cap total spend",
+        "The response does not claim Apify Actor pricing is uniform or comparable in structure to Firecrawl/Exa/Tavily's flat per-call credit pricing"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "kv-store-keys-pagination-not-offset",
+      "prompt": "写一个 Python 函数,遍历一个 Apify key-value store 里的所有 key(可能有几万个),把它们全部收集到一个列表里返回。",
+      "expected_output": "不能用 offset/limit 的方式给 GET /v2/key-value-stores/{storeId}/keys 分页(这是 Dataset items 等大多数 list 端点的分页方式,但 key-value store 的 key 列表端点用的是不同的机制)。Key-value store 里的 key 是按 UTF-8 二进制序排列而不是插入顺序,这个端点用的是游标式分页:参数是 exclusiveStartKey,响应里的 isTruncated 表示还有没有更多、nextExclusiveStartKey 是下一页要传的游标值,要一直循环拿 nextExclusiveStartKey 传回 exclusiveStartKey,直到 isTruncated 为 false 才算遍历完;如果用 apify-client,更简单的写法是直接用它提供的 list_keys 分页封装或 iterate 风格的辅助方法,不用自己手写游标循环。",
+      "files": [],
+      "expectations": [
+        "The function does not attempt to paginate the key-value store's list-keys endpoint using offset/limit parameters",
+        "The function uses the exclusiveStartKey cursor parameter and reads nextExclusiveStartKey / isTruncated from each response to drive the loop",
+        "The loop terminates based on isTruncated being false (or nextExclusiveStartKey being absent/null), not on a fixed page count or an offset counter",
+        "The function does not assume key order corresponds to insertion order"
+      ]
+    }
+  ]
+}

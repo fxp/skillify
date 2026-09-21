@@ -1,0 +1,75 @@
+{
+  "skill_name": "twilio",
+  "evals": [
+    {
+      "id": 1,
+      "name": "basic-auth-not-bearer-token",
+      "prompt": "我们这个项目已经接了好几个第三方 API，统一用的是 `Authorization: Bearer <token>` 这种鉴权方式。现在要新加 Twilio，用 Account SID 和 Auth Token 发一条短信。请写 Python 代码，用 requests 库直接调 REST API（不用官方 SDK），保持和项目里其他 API 一致的鉴权风格。",
+      "expected_output": "不能用 `Authorization: Bearer <Auth Token>`。Twilio 的 REST API（包括 Messages 资源）用的是 HTTP Basic Auth，不是 Bearer token：把 Account SID 当用户名、Auth Token 当密码，通过 HTTP Basic Auth 传（requests 库里是 `auth=(account_sid, auth_token)` 或手动构造 `Authorization: Basic base64(sid:token)`）。如果照搬项目里其他 API 的 Bearer 写法，会在每一个请求上都拿到 401 / 错误码 20003（Permission Denied），而且报错看起来像是凭证错了，而不是鉴权方式本身错了，容易误导排查方向去检查凭证内容而不是检查鉴权 scheme。",
+      "files": [],
+      "expectations": [
+        "代码用 HTTP Basic Auth 鉴权（比如 requests 的 `auth=(account_sid, auth_token)` 参数，或者手动 base64 编码构造的 `Authorization: Basic ...` 头）——而不是 `Authorization: Bearer ...`",
+        "Basic Auth 这对凭证里，Account SID 用作用户名，Auth Token 用作密码，没有传反",
+        "代码没有同时发送 Bearer 风格的 Authorization 头和另一个 Basic Auth 头（没有冗余/冲突的鉴权）",
+        "如果解释里提到了原因，要正确说明是 Twilio 所有 REST 端点（不只是 Messages）都用 Basic Auth，不是只有这一个端点特殊",
+        "发消息的请求体是 form-encoded 的（requests 里用 `data=`，即 `application/x-www-form-urlencoded`），而不是 `json=`"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "e164-format-not-validated-client-side",
+      "prompt": "写一个函数，接收用户在表单里填的手机号字符串（比如美国用户可能填 '(415) 555-2671' 或 '415-555-2671'），用 Twilio 给这个号码发一条短信提醒。不需要做手机号格式转换的 UI，就假设用户填的是能用的格式，直接传给 Twilio。",
+      "expected_output": "不能假设用户输入的本地格式（如 '(415) 555-2671'）可以直接传给 Twilio 的 `To` 参数。Twilio 要求 `To` 必须是 E.164 格式（`+` 加国家码加订阅号，没有空格、括号、连字符，如 `+14155552671`），传入非 E.164 格式的号码会在创建消息时就同步报错（错误码 21211 'Invalid To Phone Number'），而不是把号码规整后照常发送、也不是发送后才报错。正确做法是在传给 Twilio 之前，用手机号解析/格式化库（如 phonenumbers/libphonenumber）把用户输入转成 E.164 格式，并且要知道国家码不能瞎猜（不能默认所有号码都是 +1）。",
+      "files": [],
+      "expectations": [
+        "代码没有把用户输入的原始本地格式号码（带括号/连字符/空格，没有国家码）直接当作 `To` 参数传给 Twilio 的 Messages API",
+        "代码在调用 Twilio 之前，用显式的手机号解析步骤（比如一个库，或者至少是显式的去除符号 + 拼接 '+' + 国家码逻辑）把号码规整成 E.164 格式，而不是拼接一个瞎猜的前缀",
+        "解释里说明了非 E.164 的 `To` 值会在消息创建时就同步被拒绝（文档记载为错误码 21211），而不是静默接受或事后异步失败",
+        "代码没有把 '+1' 硬编码成通用默认前缀，至少要提示这个假设只对北美号码成立",
+        "如果包含了错误处理，要能区分 400 级别的校验错误（格式不对）和之后的送达失败（运营商侧问题，体现在异步 Message 资源的 error_code 里）"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "verify-otp-two-step-not-one-call",
+      "prompt": "给我们的登录流程加一个手机号 OTP 验证功能，用 Twilio Verify API。用户输入手机号，点击'发送验证码'，收到短信验证码后输入验证码点击'确认'。请写出后端处理这两个按钮点击的代码。",
+      "expected_output": "这是两个完全独立的 API 调用，不能合并、也不能用第一次调用的返回值去比对用户输入的验证码。'发送验证码'按钮对应 `POST /v2/Services/{ServiceSid}/Verifications`（Twilio 生成验证码并通过短信等渠道发出，返回的 Verification 资源里没有验证码本身，status 是 'pending'）。'确认'按钮对应完全不同的端点 `POST /v2/Services/{ServiceSid}/VerificationCheck`，把用户输入的验证码提交给 Twilio 去核对，通过 `status == 'approved'` 判断是否正确，而不是自己在后端存一份验证码去比对（Twilio 根本不会把验证码返回给你），也不能只看 HTTP 状态码判断是否验证成功（验证码错了也可能是 200/201，要看 body 里的 status 字段）。还需要一个前置的 Verify Service（可以复用同一个，不需要每次请求都新建）。",
+      "files": [],
+      "expectations": [
+        "'发送验证码'的处理逻辑调用的是 Verifications（启动）端点/方法，'确认'的处理逻辑调用的是另一个不同的 VerificationCheck 端点/方法——这两步没有被合并成一次调用，也没有拿同一个端点带着不同意图调用两次",
+        "代码没有试图从'启动'调用的响应里提取或存储验证码——那个响应永远不包含验证码",
+        "'确认'这一步是把用户输入的验证码通过 VerificationCheck 提交给 Twilio 去核对，而不是拿去和本地存储/缓存的值做比对",
+        "是否成功是通过检查响应的 `status` 字段是否等于 'approved'（或等价值）来判断的，而不是只看 HTTP 调用成功（2xx），也不是只检查已废弃的 `valid` 布尔字段",
+        "Verify Service 只创建一次（或者提前复用/配置好它的 SID），而不是在每次 OTP 请求的'发送验证码'处理逻辑里现建一个新的"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "twiml-not-json-for-inbound-webhook",
+      "prompt": "我们要接一个 Twilio 的入站短信 webhook：用户发短信到我们的 Twilio 号码时，Twilio 会调用我们的一个 HTTP 端点，我们想在收到消息后自动回复一句'我们已收到您的消息，稍后跟进'。请写这个 Flask 端点的代码。假设这条回复消息内容里可能包含用户自己输入的一些文本（比如工单号）。",
+      "expected_output": "这个端点收到的是 Twilio 发来的 `application/x-www-form-urlencoded` POST 请求（不是 JSON），要用 `request.form` 读取里面的字段（如 `Body`、`From`）。更重要的是，这个端点必须返回 TwiML（XML），`Content-Type` 设为 `text/xml`，而不是返回一个 JSON 对象——即使这个项目里其他所有 Twilio REST 调用返回的都是 JSON，这个方向反过来了：是 Twilio 在请求你的服务器，你的响应体必须是 TwiML 格式的 `<Response><Message>...</Message></Response>`。如果回复内容里嵌入了用户输入的文本（如工单号），应该用官方 SDK 的 TwiML 构建器（如 Python 的 `MessagingResponse`）生成 XML，而不是手动拼接 XML 字符串，避免用户输入里包含 `<`、`&` 等字符时把 XML 结构破坏掉或引入注入问题。",
+      "files": [],
+      "expectations": [
+        "端点从表单数据（request.form / 解析后的 application/x-www-form-urlencoded body）里读取 Twilio 传入的参数，不是从解析后的 JSON body 里读",
+        "端点的 HTTP 响应是 TwiML（XML），content type 是 text/xml 或 application/xml——不是 JSON 响应体——即使这可能是整个代码库里唯一一处非 JSON 的 Twilio 交互",
+        "回复文本是用 TwiML 生成辅助类（比如 twilio 的 MessagingResponse 类）构建的，或者做了恰当的 XML 转义，而不是把用户可控的输入直接拼接进 XML 字符串",
+        "响应是一份合法的 TwiML 文档，有一个包着 `<Message>` 动词的 `<Response>` 根元素，不是一个裸的片段",
+        "代码没有在同一个 webhook 处理逻辑里，额外再发起一次独立的出站 Messages.json REST 调用来实现自动回复（那本身是一种合理的替代设计，但既然这道题用 TwiML 来回答，就不应该再冗余地多发一次 REST 请求——选一种机制，把 webhook 本身的响应格式写对）"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "international-sms-cost-estimate-not-flat-us-rate",
+      "prompt": "我们要给产品经理做一个成本预估：如果我们每天给 10000 个用户发一条短信提醒，一年下来 Twilio 短信费大概多少钱？用户里有美国、印度、和英国的，大致各占三分之一。请写一段代码或说明计算逻辑来估算年成本。",
+      "expected_output": "不能直接拿一个美国的短信单价（比如常见的 $0.0079/条）乘以全部 10000×365 条来估算，因为 Twilio 的短信定价是按目的地国家（甚至按国家内的具体运营商）分别定价的，印度、英国的每条短信单价和美国的可能差好几倍，用美国单价去估算国际流量会明显低估成本。正确做法是分别用 Twilio 的 Pricing API（`GET https://pricing.twilio.com/v1/Messaging/Countries/{IsoCountry}`，US/IN/GB 分别查）取三个国家各自的 outbound SMS 单价，再按各自的用户占比和发送量分别计算再加总，而不是用一个笼统的全球平均价或美国价格。另外还要考虑消息长度：如果消息内容超过 160 个 GSM-7 字符（或 70 个 UCS-2 字符，比如包含非拉丁字符或大量 emoji），会被拆成多条短信段分别计费，不是按整条消息算一次费用。",
+      "files": [],
+      "expectations": [
+        "成本估算没有对 US、India、UK 三个目的地统一套用一个固定的按条单价（尤其不能是美国专属的单价）",
+        "方案分别针对每个目的地国家（US、IN、GB）调用或引用 Pricing API（pricing.twilio.com/v1/Messaging/Countries/{IsoCountry}），而不是假设一个全局统一数字",
+        "计算方式是每个国家的每段单价分别乘以该国家的发送量占比，再各自求和，而不是简单粗暴地取平均值或者只用一个国家的费率套用到全部",
+        "解释或代码里把消息分段（每段 160 个 GSM-7 / 70 个 UCS-2 字符的限制）当作费用的乘数因素考虑进去了，而不是假设一条消息永远等于一个计费单位",
+        "估算没有假设创建消息的 REST 响应里直接带了一个可用的 `price` 字段、事后拿来求和做规划用——做成本估算要提前查价格，这和实际发送后的 Message 资源上（发送前是 null 的）`price` 字段是两个独立的、时间点不同的步骤"
+      ]
+    }
+  ]
+}

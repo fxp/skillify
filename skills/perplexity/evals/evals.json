@@ -1,0 +1,74 @@
+{
+  "skill_name": "perplexity",
+  "evals": [
+    {
+      "id": 1,
+      "name": "agent-api-model-without-web-search-tool",
+      "prompt": "我们要用 Perplexity 的 Agent API（不是老的 Sonar chat completions）接入 openai/gpt-5.6-sol 模型，做一个「输入问题，返回带引用来源的网页答案」的接口。请写 Python 代码调用 POST /v1/agent，要求返回结果里必须包含引用来源信息（不能是模型凭训练知识编的答案）。",
+      "expected_output": "请求体必须显式带 tools: [{\"type\": \"web_search\"}]（或改用某个 preset，例如 preset=\"low\"），因为 Agent API 传裸 model 而不带 tools 时默认不联网、不产生引用，这和 Sonar chat completions「传 model 就自动搜索」的行为不同。代码应从响应 output 数组里类型为 search_results 的条目取 results[].id/results[].url 作为来源，而不是假设正文里一定会出现 [1][2] 这样的方括号标记——Agent API 的引用标记是否出现取决于 prompt，需要显式要求模型标注，或者干脆不依赖标记、直接展示 search_results 列表。",
+      "files": [],
+      "expectations": [
+        "The request to POST https://api.perplexity.ai/v1/agent includes a tools array containing {\"type\": \"web_search\"}, or uses a preset (e.g. preset=\"low\") that bundles web_search by default — a bare model field with no tools and no preset is not treated as sufficient for grounded/cited answers",
+        "The code does not assume that passing a model name alone (like Sonar's behavior) automatically enables web search on the Agent API",
+        "Source URLs/citations are extracted from the search_results output item (id/url fields), not solely by scraping bracket markers like [1][2] from the generated text",
+        "If the code or explanation claims inline bracket citations will appear, it also notes this depends on the prompt and is not guaranteed by adding the tool alone",
+        "The endpoint used is POST https://api.perplexity.ai/v1/agent (or its /v1/responses OpenAI-compatible alias), not /v1/sonar"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "streaming-ui-shows-citations-progressively",
+      "prompt": "我们想给一个 Perplexity 驱动的问答功能做流式 UI：正文一边生成一边逐字显示，来源引用列表也希望能尽快显示出来，不要等到整个回答生成完才出现。请写调用 Sonar chat completions（stream=True）并解析流式响应的 Python 代码，正文和引用分别用两个独立的 UI 区域实时更新。",
+      "expected_output": "代码可以让正文逐 chunk 更新（choices[0].delta.content 累积拼接），但引用/搜索结果列表不能假设会随内容逐步到达——Sonar 的流式响应把 search_results 和 citations 这类元数据放在最后一个（或最后几个）chunk 里才发送，不是像正文那样渐进式到达。正确做法是：正文区域实时更新，引用区域在流结束前保持空/加载中状态，等检测到最后携带 search_results/citations 的 chunk 后再一次性渲染引用列表，而不是在每个 chunk 里都去检查引用字段并期待它逐步变丰富。",
+      "files": [],
+      "expectations": [
+        "The code streams and progressively renders choices[0].delta.content as chunks arrive",
+        "The code or accompanying explanation does not claim or implement progressive/incremental rendering of citations or search_results as if they arrive chunk-by-chunk throughout the stream",
+        "The code correctly identifies that citations/search_results are only populated in the final chunk(s) of the stream, and renders the citation UI only once that data is available (e.g. after the stream completes or once a chunk with non-empty search_results/citations is seen)",
+        "The code checks for citations/search_results being present rather than assuming they exist on every chunk (e.g. guards with hasattr/None checks)",
+        "The explanation does not claim this behavior differs between Sonar streaming and Agent API streaming without justification — both are documented as delivering search-result metadata late/as separate events, not progressively inline with content"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "anthropic-model-agent-api-missing-max-tokens",
+      "prompt": "请写 Python 代码，用 Perplexity 的 Agent API 调用 anthropic/claude-sonnet-5 模型回答一个问题并联网搜索。只需要传 model、input 和 web_search 工具就够了吧，不用管其他参数。",
+      "expected_output": "代码必须显式传 max_output_tokens，因为 Anthropic 模型族在 Agent API 上强制要求这个字段，省略会返回 HTTP 400（错误信息类似 \"validation failed: max_output_tokens is required when using Anthropic models\"）。这个要求是 Anthropic 模型特有的，不是 Agent API 的通用规则（比如换成 openai/* 模型就不需要显式传这个字段）。代码应该要么直接带上 max_output_tokens，要么在文字说明里明确提醒这是 Anthropic 模型的强制要求并做相应的错误处理/重试逻辑。",
+      "files": [],
+      "expectations": [
+        "The request body for the anthropic/claude-sonnet-5 call includes max_output_tokens explicitly",
+        "The code or explanation states that this requirement is specific to Anthropic models on the Agent API, not a general Agent API requirement",
+        "If the code omits max_output_tokens, the accompanying explanation must at minimum flag that this will cause an HTTP 400 for Anthropic models and needs to be fixed before it will work",
+        "The code does not claim identical parameter requirements would apply uniformly across all Agent API model providers (OpenAI/Google/xAI models are not documented as requiring this field)"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "search-api-recency-plus-exact-date-range",
+      "prompt": "用 Perplexity 的 Search API 写一个 Python 函数：找过去一周内发布、并且发布日期精确落在 2026-01-01 到 2026-01-31 之间的新闻文章。请把这两个时间条件都作为过滤参数传给 POST /search。",
+      "expected_output": "这两个时间条件不能同时作为 search_recency_filter（相对时间窗，如 \"week\"）和 search_after_date_filter/search_before_date_filter（精确日期范围）一起传——官方文档明确说明 search_recency_filter 不能和精确日期过滤器组合使用。代码应该只选择其中一种语义（相对窗口 或 精确范围），如果两个条件确实冲突（过去一周 vs 一月份的范围，取决于当前日期二者可能互斥或包含关系不同），应该在代码里用精确日期范围（search_after_date_filter=\"1/1/2026\", search_before_date_filter=\"1/31/2026\"）表达，不要同时塞两种过滤器。日期格式必须是 MM/DD/YYYY 字符串（例如 \"1/1/2026\"），不能传 ISO 8601 格式（\"2026-01-01\"）。",
+      "files": [],
+      "expectations": [
+        "The code does not pass search_recency_filter together with search_after_date_filter/search_before_date_filter in the same request",
+        "The code or explanation acknowledges that Perplexity's Search API documents these as mutually exclusive and picks one filtering strategy (relative recency OR exact date range), rather than silently sending both and hoping for the best",
+        "Date filter values use the MM/DD/YYYY string format (e.g. \"1/1/2026\"), not ISO 8601 (\"2026-01-01\")",
+        "The endpoint called is POST https://api.perplexity.ai/search (no /v1 prefix)",
+        "If the code needs both 'recent' and 'within a specific month' semantics, it resolves this by using only the exact date range filters rather than combining incompatible filter types"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "sonar-model-name-and-deep-research-cost-estimate",
+      "prompt": "我们要做一个批量任务：对 10,000 个问题分别调用 Perplexity 的推理模型 sonar-reasoning，每个问题预估输入 500 token、输出 1000 token，帮我算一下大概要花多少钱，并给出调用代码。",
+      "expected_output": "不存在名为 sonar-reasoning（非 Pro）的模型——当前 Sonar 模型族只有 sonar、sonar-pro、sonar-reasoning-pro、sonar-deep-research 四个，代码应该使用 sonar-reasoning-pro（如果任务确实只是「多步推理」而非「详尽研究」）。成本估算只按 token 单价乘以数量是不够的：sonar-reasoning-pro 除了 token 费还有按 search_context_size 档位浮动的请求费（每 1000 请求 $6/$10/$14）。如果实际想要的是 sonar-deep-research（如果任务是「详尽研究」而非单纯推理），成本估算还必须额外计入引用 token 费、搜索查询费（次数由模型自主决定，不能精确预估）、推理 token 费三项，不能只用 sonar-reasoning-pro 的定价套用过去。",
+      "files": [],
+      "expectations": [
+        "The code/response does not use a literal model name \"sonar-reasoning\" (without \"-pro\") — it either corrects to sonar-reasoning-pro or asks for clarification about which model was intended",
+        "The cost estimate for sonar-reasoning-pro includes the per-1000-request fee (varies by search_context_size: $6/$10/$14) in addition to input/output token costs, not just token pricing alone",
+        "If the response discusses sonar-deep-research as an alternative, it flags that this model has three additional billed components (citation tokens, search queries, reasoning tokens) beyond input/output tokens and request fees, and that the number of search queries is model-determined and not precisely predictable in advance",
+        "The response does not treat sonar-deep-research pricing as a simple multiple of sonar-reasoning-pro's per-token rate",
+        "The sample code sets model to a currently valid Sonar model id from the documented enum (sonar, sonar-pro, sonar-reasoning-pro, sonar-deep-research)"
+      ]
+    }
+  ]
+}
